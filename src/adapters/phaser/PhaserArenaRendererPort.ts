@@ -71,7 +71,7 @@ export class PhaserArenaRendererPort implements RendererPort {
     enableManualCamera = false,
     cameraZoom = 1,
   ) {
-    scene.cameras.main.setRoundPixels(true).setZoom(cameraZoom);
+    scene.cameras.main.setRoundPixels(false).setZoom(cameraZoom);
     if (enableManualCamera && scene.input.keyboard) {
       this.cameraCursorKeys = scene.input.keyboard.createCursorKeys();
       this.cameraResetKey = scene.input.keyboard.addKey(
