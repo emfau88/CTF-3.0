@@ -146,7 +146,7 @@ export class GameplayV2Scene extends Phaser.Scene {
         useBotOpponent ? "blue-player" : undefined,
         route.skin,
         useBotOpponent,
-        useMobileControls ? .95 : 1,
+        useMobileControls ? .8 : 1,
       ),
       audio: new PhaserArenaAudioPort(this, "blue-player"),
       diagnostics: hud,
