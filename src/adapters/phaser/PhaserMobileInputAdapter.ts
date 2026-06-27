@@ -30,6 +30,8 @@ interface TouchStick extends TouchControl {
   magnitude: number;
 }
 
+const PLAYER_JUMP_INPUT_ENABLED = false;
+
 interface KeyboardFallbackKeys {
   readonly up: Phaser.Input.Keyboard.Key;
   readonly down: Phaser.Input.Keyboard.Key;
@@ -199,7 +201,11 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       direction: { ...this.aim },
     }];
 
-    this.appendJumpActions(actions);
+    if (PLAYER_JUMP_INPUT_ENABLED) {
+      this.appendJumpActions(actions);
+    } else {
+      this.combinedJumpWasHeld = false;
+    }
     this.appendWeaponActions(actions);
     if (this.restartRequested) {
       actions.push({ action: "restartMatch", phase: "pressed" });
@@ -336,7 +342,11 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       control.drag = 0;
       control.dragged = false;
       this.updateWeaponAim(weapon, pointer);
-    } else if (inside(pointer, this.jump, 24) && this.jump.id < 0) {
+    } else if (
+      PLAYER_JUMP_INPUT_ENABLED &&
+      inside(pointer, this.jump, 24) &&
+      this.jump.id < 0
+    ) {
       this.captureControl(this.jump, pointer);
     } else if (
       this.manualFireEnabled &&
@@ -547,17 +557,19 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
           .strokePath();
       }
     }
-    graphics.fillStyle(
-      this.jump.held ? 0xffd86b : 0xffffff,
-      this.jump.held ? .84 : .52,
-    );
-    graphics.lineStyle(
-      3,
-      this.jump.held ? 0xb77516 : 0x17302d,
-      .28,
-    );
-    graphics.fillCircle(this.jump.x, this.jump.y, this.jump.radius);
-    graphics.strokeCircle(this.jump.x, this.jump.y, this.jump.radius);
+    if (PLAYER_JUMP_INPUT_ENABLED) {
+      graphics.fillStyle(
+        this.jump.held ? 0xffd86b : 0xffffff,
+        this.jump.held ? .84 : .52,
+      );
+      graphics.lineStyle(
+        3,
+        this.jump.held ? 0xb77516 : 0x17302d,
+        .28,
+      );
+      graphics.fillCircle(this.jump.x, this.jump.y, this.jump.radius);
+      graphics.strokeCircle(this.jump.x, this.jump.y, this.jump.radius);
+    }
     for (const weaponId of ["rocket", "rail", "whip"] as const) {
       const status = this.weaponStatus?.(weaponId) ?? {
         ammo: 0,

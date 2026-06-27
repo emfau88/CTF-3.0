@@ -1,4 +1,4 @@
-import type { WorldMapData } from "./worldMapData";
+import type { WorldMapData, WorldMapGapPresentation } from "./worldMapData";
 import { createTeamSpawnPoints } from "./createTeamSpawnPoints";
 
 const walls = [
@@ -32,9 +32,7 @@ const walls = [
   { x: 1160, y: 620, width: 60, height: 90, visual: "stone-wall" },
 ] as const;
 
-const gaps = [
-  { x: 1035, y: 690, width: 130, height: 70, visual: "chasm" },
-] as const;
+const gaps: readonly WorldMapGapPresentation[] = [];
 
 export const FLOW_LAB_V2: WorldMapData = {
   id: "flow-lab-v2",

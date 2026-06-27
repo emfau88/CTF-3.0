@@ -23,10 +23,7 @@ export const TRAINING_CROSSING_V2: WorldMapData = {
       { id: "wall-09", x: 612, y: 306, width: 64, height: 64 },
       { id: "wall-10", x: 824, y: 450, width: 64, height: 64 },
     ],
-    gaps: [
-      { id: "gap-01", x: 548, y: 214, width: 128, height: 72 },
-      { id: "gap-02", x: 824, y: 534, width: 128, height: 72 },
-    ],
+    gaps: [],
   },
   navigation: {
     jumpLinks: [
@@ -124,10 +121,7 @@ export const TRAINING_CROSSING_V2: WorldMapData = {
       { x: 612, y: 306, width: 64, height: 64 },
       { x: 824, y: 450, width: 64, height: 64 },
     ],
-    gaps: [
-      { x: 548, y: 214, width: 128, height: 72 },
-      { x: 824, y: 534, width: 128, height: 72 },
-    ],
+    gaps: [],
     decorations: [
       { kind: "ruins-banner-red", x: 0, y: 358, width: 64, height: 104 },
       { kind: "ruins-banner-blue", x: 1436, y: 358, width: 64, height: 104 },

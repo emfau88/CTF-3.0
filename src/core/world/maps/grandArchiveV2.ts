@@ -1,4 +1,4 @@
-import type { WorldMapData } from "./worldMapData";
+import type { WorldMapData, WorldMapGapPresentation } from "./worldMapData";
 import { createTeamSpawnPoints } from "./createTeamSpawnPoints";
 
 const walls = [
@@ -24,12 +24,7 @@ const walls = [
   { x: 1452, y: 430, width: 76, height: 76, visual: "reading-table" },
 ] as const;
 
-const gaps = [
-  { x: 1010, y: 190, width: 124, height: 66, visual: "collapsed-floor" },
-  { x: 1366, y: 190, width: 124, height: 66, visual: "collapsed-floor" },
-  { x: 1010, y: 564, width: 124, height: 66, visual: "collapsed-floor" },
-  { x: 1366, y: 564, width: 124, height: 66, visual: "collapsed-floor" },
-] as const;
+const gaps: readonly WorldMapGapPresentation[] = [];
 
 export const GRAND_ARCHIVE_V2: WorldMapData = {
   id: "grand-archive-v2",

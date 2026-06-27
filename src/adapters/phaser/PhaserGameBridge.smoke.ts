@@ -129,7 +129,7 @@ export function runPhaserGameBridgeSmokeCheck(): void {
     initial.snapshot.geometry.bounds.maxX !== 1500 ||
     initial.snapshot.geometry.bounds.maxY !== 820 ||
     initial.snapshot.geometry.solids.length !== 10 ||
-    initial.snapshot.geometry.gaps.length !== 2 ||
+    initial.snapshot.geometry.gaps.length !== 0 ||
     initial.snapshot.spawnPoints.length !== 11 ||
     initial.snapshot.spawnPoints.filter((spawn) =>
         spawn.teamId === "red"
@@ -409,7 +409,7 @@ function checkWorldMapRegistry(): void {
     if (
       world.actors.length !== 8 ||
       world.geometry.solids.length !== 19 ||
-      world.geometry.gaps.length !== 1 ||
+      world.geometry.gaps.length !== 0 ||
       world.pickups.length !== 15 ||
       world.navigation.jumpLinks.length !== 4 ||
       world.match?.phase !== "running"
@@ -469,7 +469,7 @@ function checkWorldMapRegistry(): void {
     if (
       world.actors.length !== 8 ||
       world.geometry.solids.length !== 22 ||
-      world.geometry.gaps.length !== 2 ||
+      world.geometry.gaps.length !== 0 ||
       world.pickups.length !== 15 ||
       world.navigation.jumpLinks.length !== 4 ||
       world.match?.phase !== "running"
@@ -529,7 +529,7 @@ function checkWorldMapRegistry(): void {
     world.geometry.bounds.maxX !== 2500 ||
     world.geometry.bounds.maxY !== 820 ||
     world.geometry.solids.length !== 20 ||
-    world.geometry.gaps.length !== 4 ||
+    world.geometry.gaps.length !== 0 ||
     world.pickups.length !== 15 ||
     world.actors.find((actor) => actor.id === "red-player")
         ?.spawnPosition.x !== 145 ||
@@ -545,7 +545,7 @@ function checkWorldMapRegistry(): void {
     flankWorld.geometry.bounds.maxX !== 2500 ||
     flankWorld.geometry.bounds.maxY !== 820 ||
     flankWorld.geometry.solids.length !== 14 ||
-    flankWorld.geometry.gaps.length !== 4 ||
+    flankWorld.geometry.gaps.length !== 0 ||
     flankWorld.pickups.length !== 15 ||
     flankWorld.actors.find((actor) => actor.id === "red-player")
         ?.spawnPosition.x !== 150 ||

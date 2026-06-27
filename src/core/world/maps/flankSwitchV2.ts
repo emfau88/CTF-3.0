@@ -1,4 +1,4 @@
-import type { WorldMapData } from "./worldMapData";
+import type { WorldMapData, WorldMapGapPresentation } from "./worldMapData";
 import { createTeamSpawnPoints } from "./createTeamSpawnPoints";
 
 const walls = [
@@ -18,12 +18,7 @@ const walls = [
   { x: 1270, y: 444, width: 150, height: 42, visual: "industrial-barrier" },
 ] as const;
 
-const gaps = [
-  { x: 1015, y: 150, width: 130, height: 68, visual: "maintenance-pit" },
-  { x: 1355, y: 150, width: 130, height: 68, visual: "maintenance-pit" },
-  { x: 1015, y: 602, width: 130, height: 68, visual: "maintenance-pit" },
-  { x: 1355, y: 602, width: 130, height: 68, visual: "maintenance-pit" },
-] as const;
+const gaps: readonly WorldMapGapPresentation[] = [];
 
 export const FLANK_SWITCH_V2: WorldMapData = {
   id: "flank-switch-v2",
