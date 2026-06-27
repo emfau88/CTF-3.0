@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+
+# local environment
+.env
+.env.*
+!.env.example
+
+# additional build output
+build/

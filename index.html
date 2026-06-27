@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>CTF Movement Prototype</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="game"></div>
+    <div id="v2-main-menu" class="v2-main-menu is-hidden">
+      <div class="v2-menu-card">
+        <div id="v2-menu-status" class="v2-menu-status is-hidden" role="status" aria-live="polite"></div>
+        <div class="v2-menu-rotate" aria-live="polite">
+          <div class="v2-menu-kicker">MOBILE LAYOUT</div>
+          <h2>Rotate Device</h2>
+          <p class="v2-menu-intro">
+            The arena menu is optimized for landscape. Turn your device sideways to enter match setup.
+          </p>
+          <a class="v2-menu-v1-link" href="./">Play frozen V1 Classic CTF</a>
+        </div>
+        <div id="v2-menu-home" class="v2-menu-view">
+          <div class="v2-menu-kicker">ARENA PROTOCOL</div>
+          <h1>CORE ARENA</h1>
+          <p class="v2-menu-intro">
+            Mobile-first arena shell for Team Deathmatch, Classic CTF and One Flag.
+          </p>
+          <button id="v2-menu-play" type="button">Play</button>
+          <div class="v2-menu-help">
+            V2 stays opt-in. V1 remains available as the frozen default.
+          </div>
+          <a class="v2-menu-v1-link" href="./">Play frozen V1 Classic CTF</a>
+        </div>
+        <div id="v2-menu-setup" class="v2-menu-view is-hidden">
+          <div class="v2-menu-kicker">MATCH SETUP</div>
+          <h2>Choose Mode</h2>
+          <p class="v2-menu-intro">
+            Pick a mode and start with the current V2 arena rules.
+          </p>
+          <div class="v2-menu-section">
+            <label>Mode
+              <select id="v2-menu-mode">
+                <option value="tdm">Team Deathmatch</option>
+                <option value="ctf">Classic CTF</option>
+                <option value="one-flag">One Flag</option>
+              </select>
+            </label>
+            <label>Arena
+              <select id="v2-menu-map">
+                <option value="training-crossing-v2">Training Crossing</option>
+                <option value="grand-archive-v2">Grand Archive</option>
+                <option value="flank-switch-v2">Flank Switch</option>
+                <option value="flow-lab-v2">Flow Lab</option>
+                <option value="flow-circuit-v2">Flow Circuit</option>
+              </select>
+            </label>
+            <label>Match
+              <select id="v2-menu-players">
+                <option value="bot">Solo vs Bot</option>
+                <option value="local">Local 2 Player (Experimental)</option>
+              </select>
+            </label>
+            <label>Team Size
+              <select id="v2-menu-team-size">
+                <option value="1">1v1</option>
+                <option value="2">2v2</option>
+                <option value="3">3v3</option>
+                <option value="4">4v4</option>
+              </select>
+            </label>
+            <label>Controls
+              <select id="v2-menu-controls">
+                <option value="auto">Auto detect</option>
+                <option value="touch">Touch overlay + keyboard</option>
+                <option value="keyboard">Keyboard only</option>
+              </select>
+            </label>
+            <label>Skin
+              <select id="v2-menu-skin">
+                <option value="alien-runner">Alien Runner</option>
+                <option value="riot-droid">Riot Droid</option>
+              </select>
+            </label>
+            <label>SFX
+              <select id="v2-menu-sfx">
+                <option value="on">On</option>
+                <option value="off">Muted</option>
+              </select>
+            </label>
+          </div>
+          <div class="v2-menu-actions">
+            <button id="v2-menu-back" class="v2-menu-secondary" type="button">Back</button>
+            <button id="v2-menu-start" type="button">Start Match</button>
+          </div>
+          <div class="v2-menu-help">
+            P1: WASD + Space &nbsp; | &nbsp; Fire: J / click &nbsp; | &nbsp; Touch controls remain keyboard-compatible
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="v2-pause-overlay" class="v2-flow-overlay is-hidden">
+      <div class="v2-flow-card">
+        <div class="v2-menu-kicker">PAUSED</div>
+        <h2>Match Paused</h2>
+        <p class="v2-menu-intro">Resume the current match, restart it, or return to the fullscreen main menu.</p>
+        <div class="v2-flow-actions">
+          <button id="v2-pause-resume" type="button">Resume</button>
+          <button id="v2-pause-restart" class="v2-menu-secondary" type="button">Restart</button>
+          <button id="v2-pause-main-menu" class="v2-menu-secondary" type="button">Main Menu</button>
+        </div>
+      </div>
+    </div>
+    <div id="v2-result-overlay" class="v2-flow-overlay is-hidden">
+      <div class="v2-flow-card v2-stats-card">
+        <div class="v2-menu-kicker">RESULT</div>
+        <h2 id="v2-result-title">Blue Wins</h2>
+        <p id="v2-result-detail" class="v2-menu-intro">BLUE 3 : RED 2</p>
+        <div id="v2-result-stats" class="v2-stats-table-wrap"></div>
+        <div class="v2-flow-actions">
+          <button id="v2-result-play-again" type="button">Play Again</button>
+          <button id="v2-result-main-menu" class="v2-menu-secondary" type="button">Main Menu</button>
+        </div>
+      </div>
+    </div>
+    <div id="v2-stats-overlay" class="v2-flow-overlay is-hidden">
+      <div class="v2-flow-card v2-stats-card">
+        <div class="v2-menu-kicker">MATCH STATS</div>
+        <h2>Scoreboard</h2>
+        <div id="v2-stats-table" class="v2-stats-table-wrap"></div>
+        <div class="v2-flow-actions">
+          <button id="v2-stats-close" type="button">Back to Game</button>
+        </div>
+      </div>
+    </div>
+    <button id="v2-game-menu-button" class="v2-game-menu-button is-hidden" type="button">
+      Menu
+    </button>
+    <button id="v2-audio-button" class="v2-game-menu-button v2-audio-button is-hidden" type="button" aria-pressed="false">
+      SFX ON
+    </button>
+    <button id="v2-stats-button" class="v2-game-menu-button v2-stats-button is-hidden" type="button">
+      Stats
+    </button>
+    <div id="v2-respawn-status" class="v2-respawn-status is-hidden" role="status"></div>
+    <div id="hud">
+      <div class="score">
+        <b class="score-team score-red"><span class="score-label">RED</span><span id="red-score">0</span></b>
+        <b id="match-timer">3:00</b>
+        <b class="score-team score-blue"><span id="blue-score">0</span><span class="score-label">BLUE</span></b>
+      </div>
+      <div id="status-toast" role="status" aria-live="polite"></div>
+      <div class="hud-actions">
+        <button id="settings-button" type="button" aria-label="Open settings" title="Settings">&#9881;</button>
+      </div>
+      <div id="settings-panel" class="settings-panel is-hidden">
+        <div class="settings-title">Maps</div>
+        <button type="button" data-map="training-crossing">Training Crossing</button>
+        <button type="button" data-map="midline-rush">Grand Archive</button>
+        <button type="button" data-map="flank-switch">Flank Switch</button>
+        <div class="settings-title">Teams</div>
+        <label>Red <select id="red-count" aria-label="Red team size">
+          <option value="1">1 player</option>
+          <option value="2">2 players</option>
+          <option value="3">3 players</option>
+          <option value="4">4 players</option>
+        </select></label>
+        <label>Blue <select id="blue-count" aria-label="Blue team size">
+          <option value="1">1 player</option>
+          <option value="2" selected>2 players</option>
+          <option value="3">3 players</option>
+          <option value="4">4 players</option>
+        </select></label>
+        <div class="settings-title">Display</div>
+        <div class="settings-actions">
+          <button id="fullscreen-button" type="button">Fullscreen</button>
+          <button id="debug-button" type="button">Debug data</button>
+        </div>
+        <button id="settings-main-menu" type="button">Main menu</button>
+      </div>
+      <pre id="debug"></pre>
+      <div id="match-overlay" class="match-overlay">
+        <div id="match-title" class="match-title">3</div>
+        <div id="match-detail" class="match-detail">First to 3 - 3:00</div>
+        <div class="match-actions">
+          <button id="match-restart" class="is-hidden" type="button">Play again</button>
+          <button id="match-main-menu" class="is-hidden" type="button">Main menu</button>
+        </div>
+      </div>
+      <div id="main-menu" class="main-menu is-hidden">
+        <div class="main-menu-card">
+          <div class="main-menu-kicker">CAPTURE THE FLAG</div>
+          <h1>CTF ARENA</h1>
+          <p>First to 3 captures. Three-minute matches.</p>
+          <label>Map
+            <select id="menu-map">
+              <option value="training-crossing">Training Crossing</option>
+              <option value="midline-rush">Grand Archive</option>
+              <option value="flank-switch">Flank Switch</option>
+            </select>
+          </label>
+          <div class="main-menu-teams">
+            <label>Red team
+              <select id="menu-red-count">
+                <option value="1">1 player</option><option value="2">2 players</option>
+                <option value="3">3 players</option><option value="4">4 players</option>
+              </select>
+            </label>
+            <label>Blue team
+              <select id="menu-blue-count">
+                <option value="1">1 player</option><option value="2">2 players</option>
+                <option value="3">3 players</option><option value="4">4 players</option>
+              </select>
+            </label>
+          </div>
+          <button id="menu-play" type="button">Play</button>
+          <div class="main-menu-help">Move: WASD / arrows - Jump: Space - Whip: F</div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,172 @@
+import type { WorldMapData } from "./worldMapData";
+import { createTeamSpawnPoints } from "./createTeamSpawnPoints";
+
+const walls = [
+  { x: 330, y: 92, width: 58, height: 188, visual: "bookshelf" },
+  { x: 330, y: 540, width: 58, height: 188, visual: "bookshelf" },
+  { x: 2112, y: 92, width: 58, height: 188, visual: "bookshelf" },
+  { x: 2112, y: 540, width: 58, height: 188, visual: "bookshelf" },
+  { x: 500, y: 176, width: 230, height: 52, visual: "bookshelf-damaged" },
+  { x: 780, y: 176, width: 210, height: 52, visual: "bookshelf" },
+  { x: 1510, y: 176, width: 210, height: 52, visual: "bookshelf" },
+  { x: 1770, y: 176, width: 230, height: 52, visual: "bookshelf-damaged" },
+  { x: 500, y: 592, width: 230, height: 52, visual: "bookshelf" },
+  { x: 780, y: 592, width: 210, height: 52, visual: "bookshelf-damaged" },
+  { x: 1510, y: 592, width: 210, height: 52, visual: "bookshelf-damaged" },
+  { x: 1770, y: 592, width: 230, height: 52, visual: "bookshelf" },
+  { x: 850, y: 278, width: 52, height: 128, visual: "bookshelf" },
+  { x: 850, y: 444, width: 52, height: 128, visual: "bookshelf" },
+  { x: 1598, y: 278, width: 52, height: 128, visual: "bookshelf" },
+  { x: 1598, y: 444, width: 52, height: 128, visual: "bookshelf" },
+  { x: 1050, y: 314, width: 76, height: 76, visual: "reading-table" },
+  { x: 1184, y: 430, width: 76, height: 76, visual: "reading-table" },
+  { x: 1318, y: 314, width: 76, height: 76, visual: "reading-table" },
+  { x: 1452, y: 430, width: 76, height: 76, visual: "reading-table" },
+] as const;
+
+const gaps = [
+  { x: 1010, y: 190, width: 124, height: 66, visual: "collapsed-floor" },
+  { x: 1366, y: 190, width: 124, height: 66, visual: "collapsed-floor" },
+  { x: 1010, y: 564, width: 124, height: 66, visual: "collapsed-floor" },
+  { x: 1366, y: 564, width: 124, height: 66, visual: "collapsed-floor" },
+] as const;
+
+export const GRAND_ARCHIVE_V2: WorldMapData = {
+  id: "grand-archive-v2",
+  displayName: "Grand Archive",
+  geometry: {
+    bounds: { minX: 0, minY: 0, maxX: 2500, maxY: 820 },
+    solids: walls.map((wall, index) => ({
+      id: `wall-${String(index + 1).padStart(2, "0")}`,
+      x: wall.x,
+      y: wall.y,
+      width: wall.width,
+      height: wall.height,
+    })),
+    gaps: gaps.map((gap, index) => ({
+      id: `gap-${String(index + 1).padStart(2, "0")}`,
+      x: gap.x,
+      y: gap.y,
+      width: gap.width,
+      height: gap.height,
+    })),
+  },
+  navigation: {
+    jumpLinks: [
+      {
+        id: "gap-01-north-south",
+        from: { x: 1072, y: 156 },
+        to: { x: 1072, y: 290 },
+        activationRadius: 44,
+      },
+      {
+        id: "gap-01-south-north",
+        from: { x: 1072, y: 290 },
+        to: { x: 1072, y: 156 },
+        activationRadius: 44,
+      },
+      {
+        id: "gap-02-north-south",
+        from: { x: 1428, y: 156 },
+        to: { x: 1428, y: 290 },
+        activationRadius: 44,
+      },
+      {
+        id: "gap-02-south-north",
+        from: { x: 1428, y: 290 },
+        to: { x: 1428, y: 156 },
+        activationRadius: 44,
+      },
+      {
+        id: "gap-03-north-south",
+        from: { x: 1072, y: 530 },
+        to: { x: 1072, y: 664 },
+        activationRadius: 44,
+      },
+      {
+        id: "gap-03-south-north",
+        from: { x: 1072, y: 664 },
+        to: { x: 1072, y: 530 },
+        activationRadius: 44,
+      },
+      {
+        id: "gap-04-north-south",
+        from: { x: 1428, y: 530 },
+        to: { x: 1428, y: 664 },
+        activationRadius: 44,
+      },
+      {
+        id: "gap-04-south-north",
+        from: { x: 1428, y: 664 },
+        to: { x: 1428, y: 530 },
+        activationRadius: 44,
+      },
+    ],
+  },
+  spawnPoints: [
+    ...createTeamSpawnPoints({
+      teamId: "blue",
+      position: { x: 2355, y: 410 },
+      facing: { x: -1, y: 0 },
+      tags: ["player", "tdm"],
+    }),
+    ...createTeamSpawnPoints({
+      teamId: "red",
+      position: { x: 145, y: 410 },
+      facing: { x: 1, y: 0 },
+      tags: ["player", "tdm"],
+    }),
+  ],
+  pickupSpawns: [
+    { id: "health-red", type: "health", position: { x: 112, y: 325 } },
+    { id: "armor-red", type: "armor", position: { x: 215, y: 325 } },
+    { id: "rocket-red", type: "rocket", position: { x: 125, y: 500 } },
+    { id: "rail-red", type: "rail", position: { x: 215, y: 500 } },
+    { id: "health-blue", type: "health", position: { x: 2285, y: 325 } },
+    { id: "armor-blue", type: "armor", position: { x: 2388, y: 325 } },
+    { id: "rocket-blue", type: "rocket", position: { x: 2375, y: 500 } },
+    { id: "rail-blue", type: "rail", position: { x: 2285, y: 500 } },
+    { id: "whip-red", type: "whip", position: { x: 285, y: 410 } },
+    { id: "whip-blue", type: "whip", position: { x: 2215, y: 410 } },
+    { id: "health-left", type: "health", position: { x: 760, y: 410 } },
+    { id: "health-right", type: "health", position: { x: 1740, y: 410 } },
+    { id: "rail-top", type: "rail", position: { x: 1250, y: 105 } },
+    { id: "rocket-bottom", type: "rocket", position: { x: 1250, y: 715 } },
+    { id: "armor-center", type: "armor", position: { x: 1250, y: 410 } },
+  ],
+  gameplay: {
+    redBase: { x: 65, y: 285, width: 195, height: 250 },
+    blueBase: { x: 2240, y: 285, width: 195, height: 250 },
+    combatZone: { x: 970, y: 270, width: 560, height: 280 },
+  },
+  presentation: {
+    theme: "library",
+    plan: "A wide library arena with long gallery lanes, an open central reading hall, and simple collapsed-floor shortcuts.",
+    walls,
+    gaps,
+    decorations: [
+      { kind: "rug", x: 982, y: 292, width: 172, height: 120 },
+      { kind: "rug", x: 1170, y: 408, width: 172, height: 120 },
+      { kind: "rug", x: 1358, y: 292, width: 172, height: 120 },
+      { kind: "book-pile", x: 430, y: 322, width: 38, height: 38 },
+      { kind: "book-pile", x: 810, y: 458, width: 38, height: 38 },
+      { kind: "book-pile", x: 1652, y: 322, width: 38, height: 38 },
+      { kind: "book-pile", x: 2032, y: 458, width: 38, height: 38 },
+      { kind: "cobweb-spider", x: 392, y: 96, width: 72, height: 58 },
+      { kind: "cobweb-spider", x: 2036, y: 666, width: 72, height: 58 },
+    ],
+    botRoutes: {
+      attacker: [
+        { x: 2150, y: 752 }, { x: 1850, y: 752 },
+        { x: 1550, y: 752 }, { x: 1250, y: 752 },
+        { x: 950, y: 752 }, { x: 650, y: 752 },
+        { x: 350, y: 752 }, { x: 145, y: 410 },
+      ],
+      defender: [
+        { x: 2210, y: 285 }, { x: 2380, y: 300 },
+        { x: 2380, y: 520 }, { x: 2210, y: 535 },
+      ],
+    },
+  },
+  diagnosticSpawn: { x: 145, y: 410 },
+};
