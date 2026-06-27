@@ -13,7 +13,7 @@ function resolveBasePath(): string {
   if (repositoryName) {
     return `/${repositoryName}/`;
   }
-  return "/CTF/";
+  return "/CTF-3.0/";
 }
 
 function normalizeBasePath(basePath: string): string {
