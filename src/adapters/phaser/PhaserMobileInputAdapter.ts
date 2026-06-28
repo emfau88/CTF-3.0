@@ -31,7 +31,7 @@ interface TouchStick extends TouchControl {
   magnitude: number;
 }
 
-const PLAYER_JUMP_INPUT_ENABLED = false;
+const PLAYER_JUMP_INPUT_ENABLED = true;
 const MOBILE_WEAPON_DRAG_THRESHOLD = 18;
 
 interface KeyboardFallbackKeys {
@@ -429,15 +429,16 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       this.moveStick.originX = this.moveStick.x;
       this.moveStick.originY = this.moveStick.y;
     }
-    this.jump.radius = 0;
-    this.jump.x = -9999;
-    this.jump.y = -9999;
+    this.jump.radius = layout.jump.r;
+    this.jump.x = layout.jump.x;
+    this.jump.y = layout.jump.y;
     this.fire.radius = layout.fire.r;
     this.fire.x = layout.fire.x;
     this.fire.y = layout.fire.y;
     this.fireLabel.setPosition(this.fire.x, this.fire.y)
       .setVisible(this.manualFireEnabled);
-    this.jumpLabel.setVisible(false);
+    this.jumpLabel.setPosition(this.jump.x, this.jump.y)
+      .setVisible(PLAYER_JUMP_INPUT_ENABLED);
     const positions = {
       rocket: layout.rocket,
       rail: layout.rail,

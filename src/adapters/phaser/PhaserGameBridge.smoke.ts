@@ -266,17 +266,21 @@ function checkMobileWeaponTapTargeting(): void {
     }),
   );
   const expectedLength = 100;
-  const targeted = resolveMobileWeaponTapDirection(
-    createWorldSnapshot(world),
-    "blue",
-    "whip",
-  );
-  if (
-    !targeted ||
-    Math.abs(targeted.x - 60 / expectedLength) > .0001 ||
-    Math.abs(targeted.y - 80 / expectedLength) > .0001
-  ) {
-    throw new Error("Mobile weapon tap must auto-aim at the nearest visible enemy.");
+  for (const weaponId of ["rocket", "rail", "whip"] as const) {
+    const targeted = resolveMobileWeaponTapDirection(
+      createWorldSnapshot(world),
+      "blue",
+      weaponId,
+    );
+    if (
+      !targeted ||
+      Math.abs(targeted.x - 60 / expectedLength) > .0001 ||
+      Math.abs(targeted.y - 80 / expectedLength) > .0001
+    ) {
+      throw new Error(
+        `Mobile ${weaponId} tap must auto-aim at the nearest visible enemy.`,
+      );
+    }
   }
 
   world.geometry = {

@@ -565,7 +565,7 @@ test("v2 attack touch zones stay separated in compact and full layouts", () => {
     right: { x: number; y: number },
   ) => Math.hypot(left.x - right.x, left.y - right.y);
   const touchRadius = (id: string, radius: number) =>
-    radius + (id === "rocket" ? 24 : id === "fire" ? 18 : 20);
+    radius + (id === "jump" || id === "rocket" ? 24 : id === "fire" ? 18 : 20);
 
   for (const size of [
     { width: 667, height: 375 },
@@ -573,11 +573,14 @@ test("v2 attack touch zones stay separated in compact and full layouts", () => {
   ]) {
     const layout = calculateV2TouchLayout(size.width, size.height);
     const controls = [
+      { id: "jump", ...layout.jump },
       { id: "fire", ...layout.fire },
       { id: "rocket", ...layout.rocket },
       { id: "rail", ...layout.rail },
       { id: "whip", ...layout.whip },
     ];
+    assert.ok(layout.jump.x > layout.fire.x, "jump stays on the thumb anchor");
+    assert.ok(layout.rail.y < layout.jump.y, "rail stays above jump");
 
     for (let index = 0; index < controls.length; index += 1) {
       const control = controls[index];
