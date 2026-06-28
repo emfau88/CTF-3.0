@@ -270,9 +270,9 @@ function checkMobileWeaponTapTargeting(): void {
     createWorldSnapshot(world),
     "blue",
     "whip",
-    { x: -1, y: 0 },
   );
   if (
+    !targeted ||
     Math.abs(targeted.x - 60 / expectedLength) > .0001 ||
     Math.abs(targeted.y - 80 / expectedLength) > .0001
   ) {
@@ -293,10 +293,9 @@ function checkMobileWeaponTapTargeting(): void {
     createWorldSnapshot(world),
     "blue",
     "rocket",
-    { x: -1, y: 0 },
   );
-  if (blocked.x !== 1 || blocked.y !== 0) {
-    throw new Error("Blocked mobile taps must retain the actor fallback direction.");
+  if (blocked !== null) {
+    throw new Error("Blocked mobile taps without a visible target must not fire.");
   }
 
   const tapRelease = resolveMobileWeaponReleaseDirection({
@@ -317,14 +316,29 @@ function checkMobileWeaponTapTargeting(): void {
     manualDirection: { x: 0, y: -1 },
     autoDirection: { x: 1, y: 0 },
   });
+  const noTargetTapRelease = resolveMobileWeaponReleaseDirection({
+    dragged: false,
+    dragDistance: 0,
+    manualDirection: { x: 0, y: -1 },
+    autoDirection: null,
+  });
+  const thresholdRelease = resolveMobileWeaponReleaseDirection({
+    dragged: true,
+    dragDistance: 18,
+    manualDirection: { x: 0, y: -3 },
+    autoDirection: null,
+  });
   if (
     tapRelease?.x !== .6 ||
     tapRelease.y !== .8 ||
     manualRelease?.x !== 0 ||
     manualRelease.y !== -1 ||
-    cancelledRelease !== null
+    cancelledRelease !== null ||
+    noTargetTapRelease !== null ||
+    thresholdRelease?.x !== 0 ||
+    thresholdRelease.y !== -1
   ) {
-    throw new Error("Mobile weapon release must distinguish tap, manual aim and cancel.");
+    throw new Error("Mobile weapon release must distinguish tap target, no-target tap, manual aim and cancel.");
   }
 }
 

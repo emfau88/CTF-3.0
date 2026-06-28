@@ -10,6 +10,7 @@ import {
   V2_BASIC_AUTOSHOOT_PARITY_CONFIG,
   V2_V1_WEAPON_PARITY_CONFIG,
 } from "../../core";
+import { lineIntersectsRect, type Rect } from "../../math";
 import type { InputAdapterPort } from "../input";
 import { calculateV2TouchLayout } from "./v2TouchLayout";
 
@@ -31,6 +32,7 @@ interface TouchStick extends TouchControl {
 }
 
 const PLAYER_JUMP_INPUT_ENABLED = false;
+const MOBILE_WEAPON_DRAG_THRESHOLD = 18;
 
 interface KeyboardFallbackKeys {
   readonly up: Phaser.Input.Keyboard.Key;
@@ -487,7 +489,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       this.aim = { ...control.aim };
     }
     control.drag = distance;
-    if (distance > 16) control.dragged = true;
+    if (distance >= MOBILE_WEAPON_DRAG_THRESHOLD) control.dragged = true;
   }
 
   private captureControl(
@@ -733,22 +735,23 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
   }
 
   private queueAutoTargetedWeapon(weaponId: WeaponId): void {
+    const direction = this.autoTargetDirection(weaponId);
+    if (!direction) return;
     this.queuedWeapon = {
       weaponId,
-      direction: this.autoTargetDirection(weaponId),
+      direction,
     };
   }
 
-  private autoTargetDirection(weaponId: WeaponId): WorldPosition {
+  private autoTargetDirection(weaponId: WeaponId): WorldPosition | null {
     const snapshot = this.snapshotProvider?.();
     if (!snapshot) {
-      return { ...this.aim };
+      return null;
     }
     return resolveMobileWeaponTapDirection(
       snapshot,
       this.actorId,
       weaponId,
-      this.aim,
     );
   }
 
@@ -808,10 +811,9 @@ export function resolveMobileWeaponTapDirection(
   snapshot: WorldSnapshot,
   actorId: string,
   weaponId: WeaponId,
-  fallbackAim: WorldPosition,
-): WorldPosition {
+): WorldPosition | null {
   const owner = snapshot.actors.find((actor) => actor.id === actorId);
-  if (!owner) return normalizeDirection(fallbackAim);
+  if (!owner) return null;
   const maxRange = weaponId === "rail"
     ? V2_V1_WEAPON_PARITY_CONFIG.railRange
     : weaponId === "whip"
@@ -828,80 +830,37 @@ export function resolveMobileWeaponTapDirection(
     )
     .filter((candidate) =>
       !snapshot.geometry.solids.some((solid) =>
-        lineIntersectsRect(owner.position, candidate.position, solid)
+        lineIntersectsRect(owner.position, candidate.position, toMathRect(solid))
       )
     )
     .sort((left, right) =>
       distance(owner.position, left.position) -
       distance(owner.position, right.position)
     )[0];
-  const fallback = owner.lastMoveDirection.x !== 0 ||
-      owner.lastMoveDirection.y !== 0
-    ? owner.lastMoveDirection
-    : fallbackAim;
-  return normalizeDirection(
-    target
-      ? {
-        x: target.position.x - owner.position.x,
-        y: target.position.y - owner.position.y,
-      }
-      : fallback,
-  );
+  // A tap without a visible target should not reuse stale aim state.
+  if (!target) return null;
+  return normalizeDirection({
+    x: target.position.x - owner.position.x,
+    y: target.position.y - owner.position.y,
+  });
 }
 
 export function resolveMobileWeaponReleaseDirection(input: {
   readonly dragged: boolean;
   readonly dragDistance: number;
   readonly manualDirection: WorldPosition;
-  readonly autoDirection: WorldPosition;
+  readonly autoDirection: WorldPosition | null;
 }): WorldPosition | null {
-  if (input.dragged && input.dragDistance < 18) return null;
-  return normalizeDirection(
-    input.dragged ? input.manualDirection : input.autoDirection,
-  );
+  if (input.dragged && input.dragDistance < MOBILE_WEAPON_DRAG_THRESHOLD) {
+    return null;
+  }
+  if (!input.dragged && !input.autoDirection) return null;
+  const direction = input.dragged ? input.manualDirection : input.autoDirection;
+  return direction ? normalizeDirection(direction) : null;
 }
 
-function lineIntersectsRect(
-  from: WorldPosition,
-  to: WorldPosition,
+function toMathRect(
   rect: { x: number; y: number; width: number; height: number },
-): boolean {
-  if (pointInRect(from, rect) || pointInRect(to, rect)) return true;
-  const topLeft = { x: rect.x, y: rect.y };
-  const topRight = { x: rect.x + rect.width, y: rect.y };
-  const bottomRight = {
-    x: rect.x + rect.width,
-    y: rect.y + rect.height,
-  };
-  const bottomLeft = { x: rect.x, y: rect.y + rect.height };
-  return segmentsIntersect(from, to, topLeft, topRight) ||
-    segmentsIntersect(from, to, topRight, bottomRight) ||
-    segmentsIntersect(from, to, bottomRight, bottomLeft) ||
-    segmentsIntersect(from, to, bottomLeft, topLeft);
-}
-
-function pointInRect(
-  point: WorldPosition,
-  rect: { x: number; y: number; width: number; height: number },
-): boolean {
-  return point.x >= rect.x &&
-    point.x <= rect.x + rect.width &&
-    point.y >= rect.y &&
-    point.y <= rect.y + rect.height;
-}
-
-function segmentsIntersect(
-  a: WorldPosition,
-  b: WorldPosition,
-  c: WorldPosition,
-  d: WorldPosition,
-): boolean {
-  const counterClockwise = (
-    p1: WorldPosition,
-    p2: WorldPosition,
-    p3: WorldPosition,
-  ) => (p3.y - p1.y) * (p2.x - p1.x) >
-    (p2.y - p1.y) * (p3.x - p1.x);
-  return counterClockwise(a, c, d) !== counterClockwise(b, c, d) &&
-    counterClockwise(a, b, c) !== counterClockwise(a, b, d);
+): Rect {
+  return { x: rect.x, y: rect.y, w: rect.width, h: rect.height };
 }
