@@ -559,36 +559,49 @@ test("player basic fire is manual while the bot fallback remains automatic", () 
   );
 });
 
-test("compact v2 attack controls form a clear edge cluster", () => {
-  const width = 667;
-  const layout = calculateV2TouchLayout(width, 375);
+test("v2 attack touch zones stay separated in compact and full layouts", () => {
   const distance = (
     left: { x: number; y: number },
     right: { x: number; y: number },
   ) => Math.hypot(left.x - right.x, left.y - right.y);
+  const touchRadius = (id: string, radius: number) =>
+    radius + (id === "rocket" ? 24 : id === "fire" ? 18 : 20);
 
-  assert.ok(
-    distance(layout.fire, layout.jump) >
-      layout.fire.r + layout.jump.r + 20,
-  );
-  for (const weapon of [layout.rocket, layout.rail, layout.whip]) {
-    assert.ok(
-      distance(layout.fire, weapon) > layout.fire.r + weapon.r + 20,
-    );
+  for (const size of [
+    { width: 667, height: 375 },
+    { width: 1024, height: 768 },
+  ]) {
+    const layout = calculateV2TouchLayout(size.width, size.height);
+    const controls = [
+      { id: "fire", ...layout.fire },
+      { id: "rocket", ...layout.rocket },
+      { id: "rail", ...layout.rail },
+      { id: "whip", ...layout.whip },
+    ];
+
+    for (let index = 0; index < controls.length; index += 1) {
+      const control = controls[index];
+      assert.ok(control.x - control.r >= 12, `${control.id} left edge`);
+      assert.ok(
+        control.x + control.r <= size.width - 12,
+        `${control.id} right edge`,
+      );
+      assert.ok(control.y - control.r >= 12, `${control.id} top edge`);
+      assert.ok(
+        control.y + control.r <= size.height - 28,
+        `${control.id} bottom edge`,
+      );
+      for (const other of controls.slice(index + 1)) {
+        assert.ok(
+          distance(control, other) >
+            touchRadius(control.id, control.r) +
+              touchRadius(other.id, other.r) +
+              12,
+          `${control.id} overlaps ${other.id}`,
+        );
+      }
+    }
   }
-  for (const [left, right] of [
-    [layout.rocket, layout.rail],
-    [layout.rocket, layout.whip],
-    [layout.rail, layout.whip],
-  ] as const) {
-    assert.ok(distance(left, right) > left.r + right.r);
-  }
-  assert.ok(layout.jump.r > layout.fire.r);
-  assert.ok(layout.jump.x > layout.fire.x);
-  assert.ok(layout.jump.x + layout.jump.r <= width);
-  assert.ok(
-    Math.min(layout.rocket.x, layout.rail.x, layout.whip.x) >= width - 210,
-  );
 });
 
 test("arena world factories support symmetric teams from 1v1 through 4v4", () => {

@@ -1,10 +1,16 @@
 export function calculateV2TouchLayout(width: number, height: number) {
   const compact = width <= 720 || height <= 520;
+  const fireRadius = compact ? 32 : 38;
+  const weaponRadius = compact ? 29 : 36;
+  const weaponSpacing = compact ? 116 : 136;
   const attackX = width - Math.max(
-    compact ? 52 : 78,
+    compact ? 64 : 84,
     width * (compact ? .055 : .065),
   );
-  const attackY = height - (compact ? 52 : 80);
+  const attackY = height - Math.max(
+    compact ? 72 : 104,
+    height * (compact ? .09 : .12),
+  );
 
   return {
     joy: {
@@ -13,30 +19,25 @@ export function calculateV2TouchLayout(width: number, height: number) {
       ox: Math.max(compact ? 70 : 96, width * (compact ? .09 : .12)),
       oy: height - (compact ? 62 : 88),
     },
-    jump: {
-      r: compact ? 40 : 48,
+    fire: {
+      r: fireRadius,
       x: attackX,
       y: attackY,
     },
-    fire: {
-      r: compact ? 32 : 38,
-      x: attackX - (compact ? 98 : 118),
-      y: attackY + (compact ? 3 : 4),
-    },
     rocket: {
-      r: compact ? 29 : 36,
-      x: attackX - (compact ? 100 : 118),
-      y: attackY - (compact ? 89 : 122),
+      r: weaponRadius,
+      x: attackX - weaponSpacing,
+      y: attackY,
     },
     rail: {
-      r: compact ? 29 : 36,
-      x: attackX - (compact ? 32 : 38),
-      y: attackY - (compact ? 100 : 138),
+      r: weaponRadius,
+      x: attackX,
+      y: attackY - weaponSpacing,
     },
     whip: {
-      r: compact ? 29 : 36,
-      x: attackX - (compact ? 158 : 188),
-      y: attackY - (compact ? 55 : 66),
+      r: weaponRadius,
+      x: attackX - weaponSpacing,
+      y: attackY - weaponSpacing,
     },
   };
 }
