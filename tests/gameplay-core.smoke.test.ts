@@ -90,17 +90,17 @@ test("v2 routes preserve and validate arena team size", () => {
   assert.deepEqual(invalid.issues, ["Unsupported V2 team size: 5."]);
 });
 
-test("scene selection keeps /CTF/ on v1 and defaults /CTF-2.0/ to v2", () => {
+test("scene selection defaults to v2 and keeps explicit v1 available", () => {
   assert.equal(shouldUseGameplayV2Shell({
     pathname: "/CTF/",
     search: "",
-  }), false);
+  }), true);
   assert.equal(shouldUseGameplayV2Shell({
-    pathname: "/CTF-2.0/",
+    pathname: "/CTF-3.0/",
     search: "",
   }), true);
   assert.equal(shouldUseGameplayV2Shell({
-    pathname: "/CTF-2.0/",
+    pathname: "/CTF-3.0/",
     search: "?scene=v1",
   }), false);
   assert.equal(shouldUseGameplayV2Shell({
