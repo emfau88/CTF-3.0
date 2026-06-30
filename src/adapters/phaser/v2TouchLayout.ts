@@ -3,14 +3,45 @@ export function calculateV2TouchLayout(width: number, height: number) {
   const jumpRadius = compact ? 40 : 48;
   const fireRadius = compact ? 32 : 38;
   const weaponRadius = compact ? 29 : 36;
-  const attackX = width - Math.max(
-    compact ? 64 : 84,
+
+  // Jump is the thumb anchor (like the Wild Rift attack button): it sits in the
+  // lower-right corner where the right thumb rests. fire/rocket/rail/whip fan
+  // out on a single arc that sweeps up and to the left, so every action sits at
+  // the same comfortable reach for that same thumb and no button is stranded in
+  // a corner.
+  const anchorX = width - Math.max(
+    compact ? 80 : 100,
     width * (compact ? .055 : .065),
   );
-  const attackY = height - Math.max(
+  const anchorY = height - Math.max(
     compact ? 72 : 104,
     height * (compact ? .09 : .12),
   );
+
+  // The arc radius scales with the buttons so the gaps stay tappable on small
+  // screens and do not crowd on large ones. The radius is large enough that the
+  // four action buttons never overlap each other, the jump anchor, or the
+  // bottom-left move stick (verified down to 360px-wide portrait screens).
+  const arcRadius = compact ? 210 : 240;
+  const point = (angleDeg: number) => {
+    const angle = (angleDeg * Math.PI) / 180;
+    return {
+      x: anchorX + Math.cos(angle) * arcRadius,
+      y: anchorY - Math.sin(angle) * arcRadius,
+    };
+  };
+
+  // Angles are measured counter-clockwise from the positive x-axis and spaced
+  // evenly across the fan. fire (most used) sits lowest/closest to the resting
+  // thumb just above the jump anchor, sweeping up through rocket and rail to
+  // whip in the upper-left, well clear of the move stick.
+  const arcStart = 78;
+  const arcEnd = 150;
+  const arcStep = (arcEnd - arcStart) / 3;
+  const fire = point(arcStart);
+  const rocket = point(arcStart + arcStep);
+  const rail = point(arcStart + arcStep * 2);
+  const whip = point(arcEnd);
 
   return {
     joy: {
@@ -21,28 +52,28 @@ export function calculateV2TouchLayout(width: number, height: number) {
     },
     jump: {
       r: jumpRadius,
-      x: attackX,
-      y: attackY,
+      x: anchorX,
+      y: anchorY,
     },
     fire: {
       r: fireRadius,
-      x: attackX - (compact ? 142 : 168),
-      y: attackY - (compact ? 4 : 4),
+      x: fire.x,
+      y: fire.y,
     },
     rocket: {
       r: weaponRadius,
-      x: attackX - (compact ? 258 : 260),
-      y: attackY - (compact ? 78 : 98),
+      x: rocket.x,
+      y: rocket.y,
     },
     rail: {
       r: weaponRadius,
-      x: attackX - (compact ? 76 : 90),
-      y: attackY - (compact ? 130 : 162),
+      x: rail.x,
+      y: rail.y,
     },
     whip: {
       r: weaponRadius,
-      x: attackX - (compact ? 190 : 290),
-      y: attackY - (compact ? 172 : 234),
+      x: whip.x,
+      y: whip.y,
     },
   };
 }

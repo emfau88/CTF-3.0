@@ -37,6 +37,12 @@ import {
 import { shouldUseGameplayV2Shell } from "../src/bootSceneSelection";
 import { buildV2MatchSearch, readV2RouteState } from "../src/v2Route";
 import { calculateV2TouchLayout } from "../src/adapters/phaser/v2TouchLayout";
+import {
+  legacyArenaCharacterFrame,
+  resolveV2CharacterPresentation,
+  v2CharacterAnimationState,
+  v2CharacterFrame,
+} from "../src/adapters/phaser/v2CharacterPresentation";
 
 test("gameplay core smoke passes the full phaser game bridge check", () => {
   assert.doesNotThrow(() => runPhaserGameBridgeSmokeCheck());
@@ -77,10 +83,11 @@ test("v2 routes preserve and validate arena team size", () => {
   );
 
   const legacy = readV2RouteState(new URLSearchParams(
-    "scene=v2&mode=tdm&map=training-crossing-v2&players=bot&controls=keyboard",
+    "scene=v2&mode=tdm&map=training-crossing-v2&players=bot&controls=keyboard&skin=space-marine-blue-rifle",
   ));
   assert.equal(legacy.canStartMatch, true);
   assert.equal(legacy.route.teamSize, 1);
+  assert.equal(legacy.route.skin, "space-marine-blue-rifle");
 
   const invalid = readV2RouteState(new URLSearchParams(
     "scene=v2&mode=one-flag&map=flank-switch-v2&players=bot&controls=touch&teamSize=5",
@@ -107,6 +114,61 @@ test("scene selection defaults to v2 and keeps explicit v1 available", () => {
     pathname: "/CTF/",
     search: "?scene=v2",
   }), true);
+});
+
+test("v2 character presentation animates team actors and keeps a legacy fallback", () => {
+  const blue = createActorState({
+    id: "blue-player",
+    kind: "player",
+    teamId: "blue",
+    facing: { x: 1, y: 0 },
+  });
+  const red = createActorState({
+    id: "red-player",
+    kind: "player",
+    teamId: "red",
+    facing: { x: 0, y: 1 },
+  });
+  const neutral = createActorState({
+    id: "neutral-diagnostic",
+    kind: "diagnostic-target",
+    teamId: null,
+    facing: { x: 0, y: -1 },
+  });
+
+  const blueSkin = resolveV2CharacterPresentation(blue, "alien-runner");
+  assert.equal(blueSkin.kind, "animated-skin");
+  assert.equal(blueSkin.texture, "alienRunner");
+  assert.equal(blueSkin.initialFrame, 4);
+  assert.deepEqual(blueSkin.origin, { x: .5, y: .5 });
+
+  const redSkin = resolveV2CharacterPresentation(red, "alien-runner");
+  assert.equal(redSkin.kind, "animated-skin");
+  assert.equal(redSkin.texture, "riotDroidRunner");
+  assert.equal(redSkin.initialFrame, 0);
+  assert.deepEqual(redSkin.origin, { x: .5, y: .5 });
+
+  const marineSkin = resolveV2CharacterPresentation(
+    blue,
+    "space-marine-blue-rifle",
+  );
+  assert.equal(marineSkin.kind, "animated-skin");
+  assert.equal(marineSkin.texture, "spaceMarineBlueRifle");
+  assert.equal(marineSkin.initialFrame, 4);
+  assert.deepEqual(marineSkin.origin, { x: .5, y: .5 });
+
+  const fallback = resolveV2CharacterPresentation(neutral, "riot-droid");
+  assert.equal(fallback.kind, "legacy-arena-character");
+  assert.equal(fallback.texture, "arenaCharacters");
+  assert.equal(fallback.initialFrame, legacyArenaCharacterFrame(neutral));
+  assert.deepEqual(fallback.origin, { x: .5, y: .5 });
+
+  assert.equal(v2CharacterAnimationState(blue), "idle");
+  blue.velocity = { x: 80, y: 0 };
+  assert.equal(v2CharacterAnimationState(blue), "walk");
+  blue.jump.height = 18;
+  assert.equal(v2CharacterAnimationState(blue), "jump");
+  assert.equal(v2CharacterFrame(blueSkin.skin!, blue, "jump"), 4);
 });
 
 test("production arena modes do not emit diagnostic movement events", () => {

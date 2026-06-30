@@ -90,33 +90,34 @@ export class GameplayV2Scene extends Phaser.Scene {
       ),
       allowManualPrimaryFire: false,
     });
+    const readBlueWeaponStatus = (weaponId: "rocket" | "rail" | "whip") => {
+      const actor = (this.bridge?.snapshot ?? runtime.snapshot).actors.find(
+        (candidate) => candidate.id === "blue-player",
+      );
+      if (!actor) return { ammo: 0, cooldownMs: 0 };
+      if (weaponId === "rocket") {
+        return {
+          ammo: actor.weapons.rocketAmmo,
+          cooldownMs: actor.weapons.rocketCooldownMs,
+        };
+      }
+      if (weaponId === "rail") {
+        return {
+          ammo: actor.weapons.railAmmo,
+          cooldownMs: actor.weapons.railCooldownMs,
+        };
+      }
+      return {
+        ammo: actor.weapons.whipAmmo,
+        cooldownMs: actor.weapons.whipCooldownMs,
+      };
+    };
     const mobileInput = useMobileControls
       ? new PhaserMobileInputAdapter(
         this,
         "blue-player",
         true,
-        (weaponId) => {
-          const actor = (this.bridge?.snapshot ?? runtime.snapshot).actors.find(
-            (candidate) => candidate.id === "blue-player",
-          );
-          if (!actor) return { ammo: 0, cooldownMs: 0 };
-          if (weaponId === "rocket") {
-            return {
-              ammo: actor.weapons.rocketAmmo,
-              cooldownMs: actor.weapons.rocketCooldownMs,
-            };
-          }
-          if (weaponId === "rail") {
-            return {
-              ammo: actor.weapons.railAmmo,
-              cooldownMs: actor.weapons.railCooldownMs,
-            };
-          }
-          return {
-            ammo: actor.weapons.whipAmmo,
-            cooldownMs: actor.weapons.whipCooldownMs,
-          };
-        },
+        readBlueWeaponStatus,
         () => this.bridge?.snapshot ?? runtime.snapshot,
       )
       : undefined;
@@ -131,6 +132,8 @@ export class GameplayV2Scene extends Phaser.Scene {
       : new PhaserDiagnosticInputAdapter(
         this,
         useBotOpponent ? "tdm-solo" : "tdm",
+        readBlueWeaponStatus,
+        () => this.bridge?.snapshot ?? runtime.snapshot,
       );
     this.inputAdapter = botControllers.size > 0
       ? new AugmentedInputAdapter(
@@ -283,9 +286,9 @@ function prefersMobileControls(route: { controls: string; players: string }): bo
   if (override === "desktop" || override === "keyboard") {
     return false;
   }
-  if (route.players === "bot") {
-    return true;
-  }
+  // Touch controls follow the device, not the opponent: a desktop solo-vs-bots
+  // match defaults to keyboard + mouse, while real touch devices keep the
+  // overlay. `?controls=touch` still forces the overlay for on-desktop testing.
   return navigator.maxTouchPoints > 0 ||
     window.matchMedia("(pointer: coarse)").matches;
 }

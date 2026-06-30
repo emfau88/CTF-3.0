@@ -14,13 +14,28 @@ import { renderArena } from "../../arenaRenderer";
 import type { LevelData } from "../../level";
 import type { RendererPort } from "../rendering";
 import type { V2PlayerSkinId } from "../../v2Route";
+import {
+  V2_CHARACTER_DIRECTIONS,
+  V2_CHARACTER_SKINS,
+  legacyArenaCharacterFrame,
+  resolveV2CharacterPresentation,
+  v2CharacterAnimationKey,
+  v2CharacterAnimationState,
+  v2CharacterColumns,
+  v2CharacterDirection,
+  v2CharacterDirectionRow,
+  v2CharacterFrame,
+  type V2CharacterAnimationState,
+  type V2CharacterPresentation,
+  type V2CharacterSkinConfig,
+} from "./v2CharacterPresentation";
 
 interface ArenaActorView {
   readonly shadow: Phaser.GameObjects.Ellipse;
   readonly container: Phaser.GameObjects.Container;
   readonly sprite: Phaser.GameObjects.Sprite;
   readonly status: Phaser.GameObjects.Graphics;
-  readonly character: CharacterPresentation;
+  readonly character: V2CharacterPresentation;
 }
 
 interface SpawnPadParticle {
@@ -158,7 +173,17 @@ export class PhaserArenaRendererPort implements RendererPort {
       .setAlpha(actor.lifeState === "active" ? 1 : Math.max(.05, 1 - fallProgress))
       .setVisible(actor.lifeState !== "dead");
     updateActorSprite(view.sprite, view.character, actor);
+    const idleMotion = resolveActorIdleMotion(
+      actor,
+      view.character,
+      this.scene.time.now,
+    );
     view.sprite
+      .setPosition(0, idleMotion.y)
+      .setScale(
+        view.character.scale,
+        view.character.scale * idleMotion.scaleY,
+      )
       .setTint(actor.lifeState === "falling" ? 0x555555 : 0xffffff);
     this.drawActorStatus(view.status, actor);
   }
@@ -172,13 +197,14 @@ export class PhaserArenaRendererPort implements RendererPort {
       0x000000,
       .2,
     ).setDepth(20);
-    const character = characterPresentation(actor, this.playerSkinId);
+    const character = resolveV2CharacterPresentation(actor, this.playerSkinId);
     const sprite = this.scene.add.sprite(
       0,
       0,
       character.texture,
       character.initialFrame,
-    ).setScale(character.scale);
+    ).setOrigin(character.origin.x, character.origin.y)
+      .setScale(character.scale);
     const status = this.scene.add.graphics();
     const container = this.scene.add.container(
       actor.position.x,
@@ -724,86 +750,12 @@ function isWeaponPickup(type: PickupState["type"]): boolean {
   return type === "rocket" || type === "rail" || type === "whip";
 }
 
-type CharacterPresentation = {
-  readonly kind: "arena-character" | "player-skin";
-  readonly texture: string;
-  readonly initialFrame: number;
-  readonly scale: number;
-  readonly skin?: PlayerSkinConfig;
-};
-
-type PlayerSkinDirection = "down" | "right" | "up" | "left";
-
-type PlayerSkinConfig = {
-  readonly id: V2PlayerSkinId;
-  readonly texture: string;
-  readonly scale: number;
-  readonly columns: number;
-  readonly idleColumns: readonly number[];
-  readonly runColumns: readonly number[];
-  readonly idleFrameRate: number;
-  readonly runFrameRate: number;
-};
-
-const PLAYER_SKIN_DIRECTIONS: readonly PlayerSkinDirection[] = [
-  "down",
-  "right",
-  "up",
-  "left",
-];
-
-const PLAYER_SKINS: Record<V2PlayerSkinId, PlayerSkinConfig> = {
-  "alien-runner": {
-    id: "alien-runner",
-    texture: "alienRunner",
-    scale: .64,
-    columns: 4,
-    idleColumns: [0],
-    runColumns: [1, 2, 3],
-    idleFrameRate: 1,
-    runFrameRate: 9,
-  },
-  "riot-droid": {
-    id: "riot-droid",
-    texture: "riotDroidRunner",
-    scale: .64,
-    columns: 6,
-    idleColumns: [0, 1, 2],
-    runColumns: [3, 4, 5],
-    idleFrameRate: 3,
-    runFrameRate: 9,
-  },
-};
-
-function characterPresentation(
-  actor: Readonly<ActorState>,
-  playerSkinId: V2PlayerSkinId,
-): CharacterPresentation {
-  if (actor.id === "blue-player") {
-    const skin = PLAYER_SKINS[playerSkinId];
-    return {
-      kind: "player-skin",
-      texture: skin.texture,
-      initialFrame: playerSkinFrame(skin, actor, skin.idleColumns[0] ?? 0),
-      scale: skin.scale,
-      skin,
-    };
-  }
-
-  return {
-    kind: "arena-character",
-    texture: "arenaCharacters",
-    initialFrame: characterFrame(actor),
-    scale: .42,
-  };
-}
-
 function updateActorSprite(
   sprite: Phaser.GameObjects.Sprite,
-  character: CharacterPresentation,
+  character: V2CharacterPresentation,
   actor: Readonly<ActorState>,
 ): void {
-  if (character.kind === "player-skin" && character.skin) {
+  if (character.kind === "animated-skin" && character.skin) {
     updatePlayerSkinSprite(sprite, character.skin, actor);
     return;
   }
@@ -811,74 +763,58 @@ function updateActorSprite(
   if (sprite.anims.isPlaying) {
     sprite.stop();
   }
-  sprite.setFrame(characterFrame(actor));
+  sprite.setFrame(legacyArenaCharacterFrame(actor));
 }
 
 function updatePlayerSkinSprite(
   sprite: Phaser.GameObjects.Sprite,
-  skin: PlayerSkinConfig,
+  skin: V2CharacterSkinConfig,
   actor: Readonly<ActorState>,
 ): void {
-  const direction = playerSkinDirection(actor);
-  const isMoving = actor.lifeState === "active" &&
-    Math.hypot(actor.velocity.x, actor.velocity.y) > 8;
+  const direction = v2CharacterDirection(actor);
+  const state = v2CharacterAnimationState(actor);
+  const columns = v2CharacterColumns(skin, state);
 
-  if (isMoving) {
-    sprite.play(playerSkinAnimationKey(skin, direction, "run"), true);
+  if (columns.length > 1) {
+    sprite.play(v2CharacterAnimationKey(skin, direction, state), true);
     return;
   }
 
-  if (skin.idleColumns.length > 1) {
-    sprite.play(playerSkinAnimationKey(skin, direction, "idle"), true);
-  } else {
-    sprite.stop();
-    sprite.setFrame(playerSkinFrame(skin, actor, skin.idleColumns[0] ?? 0));
+  sprite.stop();
+  sprite.setFrame(v2CharacterFrame(skin, actor, state));
+}
+
+function resolveActorIdleMotion(
+  actor: Readonly<ActorState>,
+  character: V2CharacterPresentation,
+  timeMs: number,
+): { y: number; scaleY: number } {
+  if (
+    actor.lifeState !== "active" ||
+    character.kind !== "animated-skin" ||
+    !character.skin ||
+    !character.skin.syntheticIdleMotion ||
+    v2CharacterAnimationState(actor) !== "idle" ||
+    v2CharacterColumns(character.skin, "idle").length > 1
+  ) {
+    return { y: 0, scaleY: 1 };
   }
-}
 
-function characterFrame(actor: Readonly<ActorState>): number {
-  const row = actor.teamId === "blue" ? 4 : 0;
-  const direction = Math.abs(actor.facing.x) > Math.abs(actor.facing.y)
-    ? actor.facing.x >= 0 ? 1 : 3
-    : actor.facing.y >= 0 ? 2 : 0;
-  return row * 4 + direction;
-}
-
-function playerSkinFrame(
-  skin: PlayerSkinConfig,
-  actor: Readonly<ActorState>,
-  column: number,
-): number {
-  return playerSkinDirectionRow(playerSkinDirection(actor)) * skin.columns +
-    column;
-}
-
-function playerSkinDirection(
-  actor: Readonly<ActorState>,
-): PlayerSkinDirection {
-  return Math.abs(actor.facing.x) > Math.abs(actor.facing.y)
-    ? actor.facing.x >= 0 ? "right" : "left"
-    : actor.facing.y >= 0 ? "down" : "up";
-}
-
-function playerSkinDirectionRow(direction: PlayerSkinDirection): number {
-  return PLAYER_SKIN_DIRECTIONS.indexOf(direction);
-}
-
-function playerSkinAnimationKey(
-  skin: PlayerSkinConfig,
-  direction: PlayerSkinDirection,
-  state: "idle" | "run",
-): string {
-  return `${skin.id}-${direction}-${state}`;
+  const phase = timeMs * .0045 + actor.id.length * .37 + actor.lifeId * .11;
+  const wave = Math.sin(phase);
+  return {
+    y: wave * 1.35,
+    scaleY: 1 + wave * .012,
+  };
 }
 
 function ensurePlayerSkinAnimations(scene: Phaser.Scene): void {
-  for (const skin of Object.values(PLAYER_SKINS)) {
-    for (const direction of PLAYER_SKIN_DIRECTIONS) {
-      ensurePlayerSkinAnimation(scene, skin, direction, "run");
-      if (skin.idleColumns.length > 1) {
-        ensurePlayerSkinAnimation(scene, skin, direction, "idle");
+  for (const skin of Object.values(V2_CHARACTER_SKINS)) {
+    for (const direction of V2_CHARACTER_DIRECTIONS) {
+      for (const state of ["idle", "walk", "jump"] as const) {
+        if (v2CharacterColumns(skin, state).length > 1) {
+          ensurePlayerSkinAnimation(scene, skin, direction, state);
+        }
       }
     }
   }
@@ -886,23 +822,27 @@ function ensurePlayerSkinAnimations(scene: Phaser.Scene): void {
 
 function ensurePlayerSkinAnimation(
   scene: Phaser.Scene,
-  skin: PlayerSkinConfig,
-  direction: PlayerSkinDirection,
-  state: "idle" | "run",
+  skin: V2CharacterSkinConfig,
+  direction: (typeof V2_CHARACTER_DIRECTIONS)[number],
+  state: V2CharacterAnimationState,
 ): void {
-  const key = playerSkinAnimationKey(skin, direction, state);
+  const key = v2CharacterAnimationKey(skin, direction, state);
   if (scene.anims.exists(key)) {
     return;
   }
-  const row = playerSkinDirectionRow(direction);
-  const columns = state === "idle" ? skin.idleColumns : skin.runColumns;
+  const row = v2CharacterDirectionRow(direction);
+  const columns = v2CharacterColumns(skin, state);
   scene.anims.create({
     key,
     frames: columns.map((column) => ({
       key: skin.texture,
       frame: row * skin.columns + column,
     })),
-    frameRate: state === "idle" ? skin.idleFrameRate : skin.runFrameRate,
+    frameRate: state === "idle"
+      ? skin.idleFrameRate
+      : state === "walk"
+      ? skin.walkFrameRate
+      : skin.jumpFrameRate,
     repeat: -1,
   });
 }

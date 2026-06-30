@@ -50,6 +50,38 @@ export function preloadArenaAssets(scene: Phaser.Scene) {
     frameWidth: 128,
     frameHeight: 128,
   });
+  scene.load.spritesheet("spaceMarineRedRifle", assetUrl("space-marine-red-rifle-spritesheet-4x4.png"), {
+    frameWidth: 128,
+    frameHeight: 128,
+  });
+  scene.load.spritesheet("spaceMarineRedHeavy", assetUrl("space-marine-red-heavy-spritesheet-4x4.png"), {
+    frameWidth: 128,
+    frameHeight: 128,
+  });
+  scene.load.spritesheet("spaceMarineRedScout", assetUrl("space-marine-red-scout-spritesheet-4x4.png"), {
+    frameWidth: 128,
+    frameHeight: 128,
+  });
+  scene.load.spritesheet("spaceMarineRedMedic", assetUrl("space-marine-red-medic-spritesheet-4x4.png"), {
+    frameWidth: 128,
+    frameHeight: 128,
+  });
+  scene.load.spritesheet("spaceMarineBlueRifle", assetUrl("space-marine-blue-rifle-spritesheet-4x4.png"), {
+    frameWidth: 128,
+    frameHeight: 128,
+  });
+  scene.load.spritesheet("spaceMarineBlueHeavy", assetUrl("space-marine-blue-heavy-spritesheet-4x4.png"), {
+    frameWidth: 128,
+    frameHeight: 128,
+  });
+  scene.load.spritesheet("spaceMarineBlueScout", assetUrl("space-marine-blue-scout-spritesheet-4x4.png"), {
+    frameWidth: 128,
+    frameHeight: 128,
+  });
+  scene.load.spritesheet("spaceMarineBlueMedic", assetUrl("space-marine-blue-medic-spritesheet-4x4.png"), {
+    frameWidth: 128,
+    frameHeight: 128,
+  });
   scene.load.image("ruinsFloorStone", assetUrl("ruins/floor-stone.png"));
   scene.load.image("ruinsWallHorizontal", assetUrl("ruins/wall-horizontal.png"));
   scene.load.image("ruinsWallVertical", assetUrl("ruins/wall-vertical.png"));

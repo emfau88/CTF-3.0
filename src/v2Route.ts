@@ -8,7 +8,19 @@ export type V2ModeId = "tdm" | "ctf" | "one-flag";
 export type V2PlayersMode = "bot" | "local";
 export type V2ControlsMode = "auto" | "touch" | "keyboard";
 export type V2SfxMode = "on" | "off";
-export type V2PlayerSkinId = "alien-runner" | "riot-droid";
+export const V2_PLAYER_SKINS = [
+  "alien-runner",
+  "riot-droid",
+  "space-marine-red-rifle",
+  "space-marine-red-heavy",
+  "space-marine-red-scout",
+  "space-marine-red-medic",
+  "space-marine-blue-rifle",
+  "space-marine-blue-heavy",
+  "space-marine-blue-scout",
+  "space-marine-blue-medic",
+] as const;
+export type V2PlayerSkinId = (typeof V2_PLAYER_SKINS)[number];
 
 export interface V2RouteConfig {
   readonly scene: "v2";
@@ -170,5 +182,5 @@ function isControlsMode(value: string | null): value is V2ControlsMode {
 }
 
 function isPlayerSkin(value: string | null): value is V2PlayerSkinId {
-  return value === "alien-runner" || value === "riot-droid";
+  return V2_PLAYER_SKINS.includes(value as V2PlayerSkinId);
 }
