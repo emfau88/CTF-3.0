@@ -346,7 +346,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       this.updateWeaponAim(weapon, pointer);
     } else if (
       PLAYER_JUMP_INPUT_ENABLED &&
-      inside(pointer, this.jump, 24) &&
+      inside(pointer, this.jump, 10) &&
       this.jump.id < 0
     ) {
       this.captureControl(this.jump, pointer);
@@ -675,7 +675,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       inside(
         pointer,
         this.weaponControls[weaponId],
-        weaponId === "rocket" ? 24 : 20,
+        8,
       )
     ) ?? null;
   }
@@ -766,7 +766,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
 function inside(
   pointer: Phaser.Input.Pointer,
   control: TouchControl,
-  padding = 18,
+  padding = 8,
 ): boolean {
   return Phaser.Math.Distance.Between(
     pointer.x,

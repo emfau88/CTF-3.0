@@ -627,7 +627,7 @@ test("v2 attack touch zones stay separated in compact and full layouts", () => {
     right: { x: number; y: number },
   ) => Math.hypot(left.x - right.x, left.y - right.y);
   const touchRadius = (id: string, radius: number) =>
-    radius + (id === "jump" || id === "rocket" ? 24 : id === "fire" ? 18 : 20);
+    radius + (id === "jump" ? 10 : 8);
 
   for (const size of [
     { width: 667, height: 375 },
