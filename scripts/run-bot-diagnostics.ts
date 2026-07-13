@@ -90,7 +90,7 @@ function createDiagnosticsArtifact() {
   ];
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     runId: timestamp.replace(/[:.]/g, "-"),
     timestamp,
     git,
@@ -413,6 +413,13 @@ function serializeMovementMetric(metric: BotMovementMetric) {
     basicShots: metric.basicShots,
     pickupCollections: metric.pickupCollections,
     specialWeaponShots: metric.specialWeaponShots,
+    jumpStarts: metric.jumpStarts,
+    jumpLandings: metric.jumpLandings,
+    jumpFailures: metric.jumpFailures,
+    unlinkedJumpStarts: metric.unlinkedJumpStarts,
+    jumpLinks: [...metric.jumpLinks.values()]
+      .sort((left, right) => left.linkId.localeCompare(right.linkId))
+      .map((jumpLink) => ({ ...jumpLink })),
   };
 }
 
@@ -637,6 +644,13 @@ function collectPassHints(
   }
   if (matrix.every((summary) => summary.idleActionFrames === 0)) {
     passHints.push("no_idle_action_frames_in_matrix");
+  }
+  if (
+    [...matrix, ...fullSmokeMatrix].every((summary) =>
+      summary.actors.every((actor) => actor.unlinkedJumpStarts === 0)
+    )
+  ) {
+    passHints.push("no_unlinked_bot_jump_starts");
   }
   if (fullSmokeMatrix.length === 60) {
     passHints.push("full_mode_map_team_smoke_matrix_60_cases");

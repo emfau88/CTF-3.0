@@ -1,5 +1,8 @@
 # P0-Zwischenabschluss und P1-Handoff
 
+> Fortsetzungsstand nach dem P1-B1-Abschluss: siehe
+> `P1_INTERIM_HANDOFF_2026-07-13.md`.
+
 Stand: 2026-07-13  
 Projekt: `C:\Users\madde\Documents\CTF-3.0`  
 Branch/Basis: `main` bei `1d651a5`  

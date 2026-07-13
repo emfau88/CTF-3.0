@@ -38,10 +38,15 @@ import {
   type WorldSnapshot,
   type WorldState,
 } from "../src/core";
+import {
+  captureJumpTelemetry,
+  createJumpTelemetryMetric,
+  type JumpTelemetryMetric,
+} from "./bot-jump-telemetry";
 
 export const FRAME_DELTA_MS = 34;
 
-export interface BotMovementMetric {
+export interface BotMovementMetric extends JumpTelemetryMetric {
   readonly actorId: string;
   readonly teamId: ArenaTeamId;
   initialDistanceToObjective: number | null;
@@ -58,9 +63,6 @@ export interface BotMovementMetric {
   specialWeaponShots: number;
   allWeaponAmmoEmptyMs: number;
   zeroAmmoMs: Record<"rocket" | "rail" | "whip", number>;
-  jumpStarts: number;
-  jumpLandings: number;
-  jumpFailures: number;
 }
 
 export interface SimulationSummary {
@@ -363,9 +365,7 @@ export function runSimulationScenario(
       specialWeaponShots: 0,
       allWeaponAmmoEmptyMs: 0,
       zeroAmmoMs: { rocket: 0, rail: 0, whip: 0 },
-      jumpStarts: 0,
-      jumpLandings: 0,
-      jumpFailures: 0,
+      ...createJumpTelemetryMetric(),
     }]),
   );
 
@@ -468,14 +468,12 @@ export function runSimulationScenario(
           metric.allWeaponAmmoEmptyMs += FRAME_DELTA_MS;
         }
       }
-      if (!previous.jump.active && current.jump.active) metric.jumpStarts += 1;
-      if (previous.jump.active && !current.jump.active) {
-        if (current.lifeState === "active" && !current.overGap) {
-          metric.jumpLandings += 1;
-        } else {
-          metric.jumpFailures += 1;
-        }
-      }
+      captureJumpTelemetry(
+        metric,
+        previous,
+        current,
+        after.navigation.jumpLinks,
+      );
     }
     if (after.match?.phase === "ended") break;
   }
@@ -578,9 +576,7 @@ export function runOneFlagNavigatorDiagnostics(
       specialWeaponShots: 0,
       allWeaponAmmoEmptyMs: 0,
       zeroAmmoMs: { rocket: 0, rail: 0, whip: 0 },
-      jumpStarts: 0,
-      jumpLandings: 0,
-      jumpFailures: 0,
+      ...createJumpTelemetryMetric(),
       repathCount: 0,
       pathMissCount: 0,
       blockedGoalFrames: 0,
@@ -681,6 +677,12 @@ export function runOneFlagNavigatorDiagnostics(
       }
       const controllerDebug = controller.debugSnapshot();
       const navigatorDebug = navigator.debugSnapshot();
+      captureJumpTelemetry(
+        metric,
+        previous,
+        current,
+        after.navigation.jumpLinks,
+      );
       updateMovementMetric(
         metric,
         previous.position,
@@ -2132,6 +2134,7 @@ export function groupProgressByTeam(
   jumpStarts: number;
   jumpLandings: number;
   jumpFailures: number;
+  unlinkedJumpStarts: number;
 }> {
   const grouped = {
     blue: {
@@ -2148,6 +2151,7 @@ export function groupProgressByTeam(
       jumpStarts: 0,
       jumpLandings: 0,
       jumpFailures: 0,
+      unlinkedJumpStarts: 0,
     },
     red: {
       bestDistanceReduction: 0,
@@ -2163,6 +2167,7 @@ export function groupProgressByTeam(
       jumpStarts: 0,
       jumpLandings: 0,
       jumpFailures: 0,
+      unlinkedJumpStarts: 0,
     },
   } satisfies Record<ArenaTeamId, {
     bestDistanceReduction: number;
@@ -2178,6 +2183,7 @@ export function groupProgressByTeam(
     jumpStarts: number;
     jumpLandings: number;
     jumpFailures: number;
+    unlinkedJumpStarts: number;
   }>;
 
   for (const metric of movementByActor.values()) {
@@ -2206,6 +2212,7 @@ export function groupProgressByTeam(
     target.jumpStarts += metric.jumpStarts;
     target.jumpLandings += metric.jumpLandings;
     target.jumpFailures += metric.jumpFailures;
+    target.unlinkedJumpStarts += metric.unlinkedJumpStarts;
     if (
       metric.minimumDistanceToObjective !== null &&
       metric.initialDistanceToObjective !== null

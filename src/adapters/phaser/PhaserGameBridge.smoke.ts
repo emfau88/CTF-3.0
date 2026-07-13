@@ -3210,15 +3210,32 @@ function checkBotJumpUsesCoreSystem(): void {
     allowManualPrimaryFire: false,
   });
   runtime.initialize();
-  const controller = new TdmBotController("red-player", "blue-player");
+  const navigator = new GridBotNavigator();
+  const controller = new TdmBotController(
+    "red-player",
+    "blue-player",
+    undefined,
+    navigator,
+  );
   let jumped = false;
   let fell = false;
+  let activeJumpLinkId: string | null = null;
+  let bestJumpLinkProgress = 0;
   for (let sequence = 1; sequence <= 180; sequence++) {
+    const actions = controller.readActions(runtime.snapshot, 34);
+    const navigatorDebug = navigator.debugSnapshot();
+    if (navigatorDebug.jumpLinkId) {
+      activeJumpLinkId = navigatorDebug.jumpLinkId;
+      bestJumpLinkProgress = Math.max(
+        bestJumpLinkProgress,
+        navigatorDebug.jumpLinkProgress ?? 0,
+      );
+    }
     const frame = runtime.advance({
       sequence,
       timeMs: sequence * 34,
       deltaMs: 34,
-      actions: controller.readActions(runtime.snapshot, 34),
+      actions,
     });
     jumped ||= frame.events.some((event) =>
       event.type === "actor.jumped" &&
@@ -3236,6 +3253,14 @@ function checkBotJumpUsesCoreSystem(): void {
   if (!jumped || fell || (red?.position.x ?? 0) < 260) {
     throw new Error(
       "Bot jump links must cross gaps through normal core jump actions.",
+    );
+  }
+  if (
+    activeJumpLinkId !== "jump-gap-west-east" ||
+    bestJumpLinkProgress < .5
+  ) {
+    throw new Error(
+      "Bot jump diagnostics must expose the authored link id and traversal progress.",
     );
   }
 }

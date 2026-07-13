@@ -55,6 +55,8 @@ export interface GridBotNavigatorDebugState {
   readonly repathReason: GridBotRepathReason;
   readonly traversingJump: boolean;
   readonly jumpLinkActive: boolean;
+  readonly jumpLinkId: string | null;
+  readonly jumpLinkProgress: number | null;
   readonly goalBlocked: boolean;
   readonly pathFound: boolean;
 }
@@ -89,6 +91,8 @@ export class GridBotNavigator implements BotNavigator {
     repathReason: "none",
     traversingJump: false,
     jumpLinkActive: false,
+    jumpLinkId: null,
+    jumpLinkProgress: null,
     goalBlocked: false,
     pathFound: false,
   };
@@ -173,6 +177,10 @@ export class GridBotNavigator implements BotNavigator {
       repathReason,
       traversingJump,
       jumpLinkActive: Boolean(jumpLink),
+      jumpLinkId: jumpLink?.id ?? null,
+      jumpLinkProgress: jumpLink
+        ? progressAlongSegment(from, jumpLink.from, jumpLink.to)
+        : null,
       goalBlocked: blocked(target, blockers, this.config.obstaclePadding),
       pathFound: this.path.length > 0 &&
         !positionsMatch(this.path[0]?.position, from),
@@ -199,6 +207,8 @@ export class GridBotNavigator implements BotNavigator {
       repathReason: "none",
       traversingJump: false,
       jumpLinkActive: false,
+      jumpLinkId: null,
+      jumpLinkProgress: null,
       goalBlocked: false,
       pathFound: false,
     };
@@ -220,6 +230,22 @@ export class GridBotNavigator implements BotNavigator {
         : null,
     };
   }
+}
+
+function progressAlongSegment(
+  position: WorldPosition,
+  from: WorldPosition,
+  to: WorldPosition,
+): number {
+  const deltaX = to.x - from.x;
+  const deltaY = to.y - from.y;
+  const lengthSquared = deltaX * deltaX + deltaY * deltaY;
+  if (lengthSquared <= Number.EPSILON) return 0;
+  const progress = (
+    (position.x - from.x) * deltaX +
+    (position.y - from.y) * deltaY
+  ) / lengthSquared;
+  return Math.max(0, Math.min(1, progress));
 }
 
 function findPath(
