@@ -11,11 +11,24 @@ import type {
 } from "../world";
 
 export type ClassicCtfBotRole = "attacker" | "defender" | "support";
+export type ClassicCtfTeamCommand = "auto" | "defend" | "follow" | "attack";
+export type ClassicCtfManualTeamCommand = Exclude<
+  ClassicCtfTeamCommand,
+  "auto"
+>;
+
+export function toggleClassicCtfTeamCommand(
+  current: ClassicCtfTeamCommand,
+  selected: ClassicCtfManualTeamCommand,
+): ClassicCtfTeamCommand {
+  return current === selected ? "auto" : selected;
+}
 
 export type ClassicCtfBotGoalKind =
   | "return-flag"
   | "recover-own-flag"
   | "escort-carrier"
+  | "follow-player"
   | "attack-flag"
   | "defend-base"
   | "patrol-base"
@@ -29,6 +42,8 @@ export interface ClassicCtfBotGoal {
 
 export class ClassicCtfBotDecisionController {
   private patrolIndex = 0;
+  private command: ClassicCtfTeamCommand = "auto";
+  private commandTeamId: TeamId | null = null;
 
   constructor(
     private readonly role: ClassicCtfBotRole,
@@ -73,13 +88,38 @@ export class ClassicCtfBotDecisionController {
       );
     }
 
+    const activeCommand = actor.teamId === this.commandTeamId
+      ? this.command
+      : "auto";
+    if (activeCommand === "defend") {
+      return this.chooseDefenseGoal(actor, snapshot);
+    }
+
+    const humanTeammate = activeActor(snapshot, `${actor.teamId}-player`);
+    if (
+      activeCommand === "follow" &&
+      humanTeammate?.teamId === actor.teamId &&
+      humanTeammate.id !== actor.id
+    ) {
+      return goal(
+        "follow-player",
+        followPoint(actor.position, humanTeammate.position),
+        movingTargetKey("follow", humanTeammate),
+      );
+    }
+
     const alliedCarrier = activeActor(
       snapshot,
       enemyFlag?.state.interactingActorId,
     );
+    const defenderJoinsReturn = this.role === "defender" &&
+      alliedCarrier?.teamId === actor.teamId &&
+      flagReturnProgress(this.map, actor.teamId, alliedCarrier.position) >= .45;
     if (
       alliedCarrier?.teamId === actor.teamId &&
-      this.role !== "defender"
+      (activeCommand === "attack" ||
+        this.role !== "defender" ||
+        defenderJoinsReturn)
     ) {
       return goal(
         "escort-carrier",
@@ -91,7 +131,15 @@ export class ClassicCtfBotDecisionController {
       );
     }
 
-    if (enemyFlag?.state.status === "dropped" && this.role !== "defender") {
+    const defenderCanSecureDrop = this.role === "defender" &&
+      enemyFlag?.state.status === "dropped" &&
+      flagReturnProgress(this.map, actor.teamId, enemyFlag.position) >= .55;
+    if (
+      enemyFlag?.state.status === "dropped" &&
+      (activeCommand === "attack" ||
+        this.role !== "defender" ||
+        defenderCanSecureDrop)
+    ) {
       return goal(
         "attack-flag",
         enemyFlag.position,
@@ -99,7 +147,7 @@ export class ClassicCtfBotDecisionController {
       );
     }
 
-    if (this.role === "attacker") {
+    if (activeCommand === "attack" || this.role === "attacker") {
       return goal(
         "attack-flag",
         enemyFlag?.position ??
@@ -109,31 +157,7 @@ export class ClassicCtfBotDecisionController {
     }
 
     if (this.role === "defender") {
-      const ownBase = centerOf(baseFor(this.map, actor.teamId));
-      const invader = nearestEnemy(snapshot, actor, ownBase, 420);
-      if (invader) {
-        return goal(
-          "defend-base",
-          invader.position,
-          `defend:${invader.id}:${invader.lifeId}`,
-        );
-      }
-      const route = routeForTeam(
-        this.map.presentation.botRoutes.defender,
-        actor.teamId,
-        this.map.geometry.bounds.maxX - this.map.geometry.bounds.minX,
-      );
-      const patrol = nextRoutePoint(
-        route,
-        actor.position,
-        this.patrolIndex,
-      );
-      this.patrolIndex = patrol.nextIndex;
-      return goal(
-        "patrol-base",
-        patrol.position ?? ownBase,
-        `patrol:${this.patrolIndex}`,
-      );
+      return this.chooseDefenseGoal(actor, snapshot);
     }
 
     return goal(
@@ -145,6 +169,40 @@ export class ClassicCtfBotDecisionController {
 
   reset(): void {
     this.patrolIndex = 0;
+    this.command = "auto";
+    this.commandTeamId = null;
+  }
+
+  setTeamCommand(teamId: TeamId, command: ClassicCtfTeamCommand): void {
+    this.commandTeamId = teamId;
+    this.command = command;
+  }
+
+  private chooseDefenseGoal(
+    actor: Readonly<ActorState>,
+    snapshot: WorldSnapshot,
+  ): ClassicCtfBotGoal {
+    const ownBase = centerOf(baseFor(this.map, actor.teamId));
+    const invader = nearestEnemy(snapshot, actor, ownBase, 420);
+    if (invader) {
+      return goal(
+        "defend-base",
+        invader.position,
+        `defend:${invader.id}:${invader.lifeId}`,
+      );
+    }
+    const route = routeForTeam(
+      this.map.presentation.botRoutes.defender,
+      actor.teamId,
+      this.map.geometry.bounds.maxX - this.map.geometry.bounds.minX,
+    );
+    const patrol = nextRoutePoint(route, actor.position, this.patrolIndex);
+    this.patrolIndex = patrol.nextIndex;
+    return goal(
+      "patrol-base",
+      patrol.position ?? ownBase,
+      `patrol:${this.patrolIndex}`,
+    );
   }
 }
 
@@ -269,6 +327,42 @@ function escortPoint(
     x: carrier.x + (home.x - carrier.x) * .28,
     y: carrier.y + (home.y - carrier.y) * .28,
   };
+}
+
+function followPoint(
+  follower: WorldPosition,
+  leader: WorldPosition,
+): WorldPosition {
+  const dx = follower.x - leader.x;
+  const dy = follower.y - leader.y;
+  const distance = Math.hypot(dx, dy);
+  if (distance >= 80 && distance <= 145) {
+    return { ...follower };
+  }
+  const scale = distance > .001 ? 105 / distance : 0;
+  return {
+    x: leader.x + dx * scale,
+    y: leader.y + dy * scale,
+  };
+}
+
+function movingTargetKey(prefix: string, actor: Readonly<ActorState>): string {
+  return `${prefix}:${actor.id}:${actor.lifeId}:` +
+    `${Math.round(actor.position.x / 80)}:${Math.round(actor.position.y / 80)}`;
+}
+
+function flagReturnProgress(
+  map: WorldMapData,
+  teamId: TeamId | null,
+  position: WorldPosition,
+): number {
+  const home = centerOf(baseFor(map, teamId));
+  const enemy = centerOf(baseFor(map, opposingTeam(teamId)));
+  const fullDistance = Math.max(1, distanceBetween(enemy, home));
+  return Math.max(
+    0,
+    Math.min(1, 1 - distanceBetween(position, home) / fullDistance),
+  );
 }
 
 function baseFor(

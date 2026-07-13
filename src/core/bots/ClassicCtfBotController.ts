@@ -1,4 +1,4 @@
-import type { ActorState, WorldPosition } from "../actors";
+import type { ActorState, TeamId, WorldPosition } from "../actors";
 import type { CoreActionIntent } from "../input";
 import type { WorldMapData, WorldSnapshot } from "../world";
 import {
@@ -9,6 +9,7 @@ import {
   ClassicCtfBotDecisionController,
   type ClassicCtfBotGoal,
   type ClassicCtfBotRole,
+  type ClassicCtfTeamCommand,
 } from "./ClassicCtfBotDecisionController";
 import {
   GridBotNavigator,
@@ -103,6 +104,10 @@ export class ClassicCtfBotController {
     this.navigator.reset();
     this.decision.reset();
     this.resetTransientState();
+  }
+
+  setTeamCommand(teamId: TeamId, command: ClassicCtfTeamCommand): void {
+    this.decision.setTeamCommand(teamId, command);
   }
 
   private resetTransientState(): void {

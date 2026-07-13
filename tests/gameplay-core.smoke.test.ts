@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { runPhaserGameBridgeSmokeCheck } from "../src/adapters/phaser/PhaserGameBridge.smoke";
 import {
+  applyDamage,
   ClassicCtfBotController,
+  ClassicCtfBotDecisionController,
   ClassicCtfMode,
   classicCtfRoleForSlot,
   createActorState,
@@ -15,15 +17,18 @@ import {
   createTeamDeathmatchWorldState,
   fireV1Weapons,
   GameplayCoreRuntime,
+  getWorldMap,
   OneFlagMode,
   OneFlagBotController,
   TeamDeathmatchMode,
   TdmBotController,
   TdmBotCombatController,
+  toggleClassicCtfTeamCommand,
   TRAINING_CROSSING_V2,
   clampRuntimeDeltaMs,
   FLANK_SWITCH_V2,
   GRAND_ARCHIVE_V2,
+  V2_ACTOR_LIFECYCLE_CONFIG,
   V2_GAMEPLAY_RUNTIME_TIMING_CONFIG,
   V2_BASIC_AUTOSHOOT_PARITY_CONFIG,
   V2_BOT_MOVEMENT_CONFIG,
@@ -33,10 +38,21 @@ import {
   validateWorldMapForMode,
   type BotCombatConfig,
   type ArenaTeamSize,
+  type GameEvent,
+  type MatchStatEntry,
 } from "../src/core";
 import { shouldUseGameplayV2Shell } from "../src/bootSceneSelection";
 import { buildV2MatchSearch, readV2RouteState } from "../src/v2Route";
 import { calculateV2TouchLayout } from "../src/adapters/phaser/v2TouchLayout";
+import { resolveDesktopAimDirection } from "../src/adapters/phaser/desktopAim";
+import { formatArenaObjectiveAlert } from "../src/adapters/phaser/PhaserArenaHudPort";
+import { readArenaKillNotice } from "../src/adapters/phaser/arenaKillFeed";
+import { calculateMatchImpact } from "../src/v2Menu";
+import {
+  calculateDesktopWeaponLayout,
+  cooldownWipeState,
+  formatCooldownSeconds,
+} from "../src/adapters/phaser/weaponHudLayout";
 import {
   legacyArenaCharacterFrame,
   resolveV2CharacterPresentation,
@@ -86,7 +102,7 @@ test("v2 routes preserve and validate arena team size", () => {
     "scene=v2&mode=tdm&map=training-crossing-v2&players=bot&controls=keyboard&skin=space-marine-blue-rifle",
   ));
   assert.equal(legacy.canStartMatch, true);
-  assert.equal(legacy.route.teamSize, 1);
+  assert.equal(legacy.route.teamSize, 2);
   assert.equal(legacy.route.skin, "space-marine-blue-rifle");
 
   const invalid = readV2RouteState(new URLSearchParams(
@@ -114,6 +130,30 @@ test("scene selection defaults to v2 and keeps explicit v1 available", () => {
     pathname: "/CTF/",
     search: "?scene=v2",
   }), true);
+});
+
+test("v2 menu defaults to the 2v2 Foundry Circuit CTF hero slice", () => {
+  const state = readV2RouteState(new URLSearchParams());
+
+  assert.equal(state.route.mode, "ctf");
+  assert.equal(state.route.map, "flow-circuit-v2");
+  assert.equal(state.route.teamSize, 2);
+  assert.equal(state.route.players, "bot");
+  assert.equal(state.route.menu, true);
+});
+
+test("desktop aim uses the actor and pointer world positions", () => {
+  const direction = resolveDesktopAimDirection(
+    { x: 120, y: 240 },
+    { x: 420, y: 140 },
+  );
+
+  assert.ok(Math.abs(direction.x - .9486832981) < .000001);
+  assert.ok(Math.abs(direction.y + .316227766) < .000001);
+  assert.deepEqual(
+    resolveDesktopAimDirection({ x: 12, y: 34 }, { x: 12, y: 34 }),
+    { x: 0, y: 0 },
+  );
 });
 
 test("v2 character presentation animates team actors and keeps a legacy fallback", () => {
@@ -526,6 +566,7 @@ test("rail bot waits for target acquisition and applies deterministic spread", (
     rocketDecisionCooldownMs: 3000,
     railReactionMs: 320,
     railAimJitterRadians: .04,
+    railLongRangeJitterMultiplier: 2.5,
     railPreferredMinRange: 300,
     railRange: 1100,
     whipRange: 100,
@@ -549,7 +590,7 @@ test("rail bot waits for target acquisition and applies deterministic spread", (
   );
 });
 
-test("player basic fire is manual while the bot fallback remains automatic", () => {
+test("basic fire remains an opt-in core capability", () => {
   const createWorld = () => {
     const world = createEmptyWorldState("manual-basic-fire");
     world.geometry = {
@@ -631,6 +672,7 @@ test("v2 attack touch zones stay separated in compact and full layouts", () => {
 
   for (const size of [
     { width: 667, height: 375 },
+    { width: 844, height: 390 },
     { width: 1024, height: 768 },
   ]) {
     const layout = calculateV2TouchLayout(size.width, size.height);
@@ -643,6 +685,11 @@ test("v2 attack touch zones stay separated in compact and full layouts", () => {
     ];
     assert.ok(layout.jump.x > layout.fire.x, "jump stays on the thumb anchor");
     assert.ok(layout.rail.y < layout.jump.y, "rail stays above jump");
+    assert.ok(layout.rocket.y < layout.jump.y, "rocket stays above jump");
+    assert.ok(layout.whip.y < layout.jump.y, "whip stays above jump");
+    assert.ok(layout.fire.x < layout.whip.x, "fire begins the ability arc");
+    assert.ok(layout.whip.x < layout.rocket.x, "whip precedes rocket");
+    assert.ok(layout.rocket.x < layout.rail.x, "rocket precedes rail");
 
     for (let index = 0; index < controls.length; index += 1) {
       const control = controls[index];
@@ -667,6 +714,97 @@ test("v2 attack touch zones stay separated in compact and full layouts", () => {
       }
     }
   }
+});
+
+test("desktop weapon pickups use stable ordered slots", () => {
+  for (const size of [
+    { width: 800, height: 450 },
+    { width: 1280, height: 720 },
+  ]) {
+    const layout = calculateDesktopWeaponLayout(size.width, size.height);
+    assert.ok(layout.rocket.x < layout.rail.x);
+    assert.ok(layout.rail.x < layout.whip.x);
+    assert.equal(layout.rocket.y, layout.rail.y);
+    assert.equal(layout.rail.y, layout.whip.y);
+    assert.equal(layout.rail.x, size.width / 2);
+    assert.ok(layout.rocket.x - layout.rocket.r >= 12);
+    assert.ok(layout.whip.x + layout.whip.r <= size.width - 12);
+    assert.ok(layout.rocket.r <= 29);
+    assert.ok(
+      layout.whip.x + layout.whip.r -
+          (layout.rocket.x - layout.rocket.r) <= 202,
+    );
+    assert.ok(layout.rocket.y + layout.rocket.r <= size.height - 5);
+  }
+});
+
+test("cooldown wipe reveals elapsed time clockwise", () => {
+  const fresh = cooldownWipeState(2500, 2500);
+  const half = cooldownWipeState(1250, 2500);
+  const ready = cooldownWipeState(0, 2500);
+
+  assert.equal(fresh.remainingRatio, 1);
+  assert.equal(fresh.elapsedRatio, 0);
+  assert.equal(fresh.boundaryAngle, -Math.PI / 2);
+  assert.equal(half.remainingRatio, .5);
+  assert.equal(half.elapsedRatio, .5);
+  assert.ok(Math.abs(half.boundaryAngle - Math.PI / 2) < .000001);
+  assert.equal(ready.remainingRatio, 0);
+  assert.equal(ready.elapsedRatio, 1);
+  assert.equal(formatCooldownSeconds(2431), "2.5");
+});
+
+test("rail bot becomes less precise toward maximum range", () => {
+  const config: BotCombatConfig = {
+    rocketMinRange: 190,
+    rocketMaxRange: 700,
+    rocketDecisionCooldownMs: 3000,
+    railReactionMs: 0,
+    railAimJitterRadians: .04,
+    railLongRangeJitterMultiplier: 2.5,
+    railPreferredMinRange: 300,
+    railRange: 1100,
+    whipRange: 100,
+  };
+  const createShot = (targetX: number) => {
+    const world = createEmptyWorldState("rail-distance-balance");
+    world.geometry = {
+      bounds: { minX: 0, minY: 0, maxX: 1300, maxY: 600 },
+      solids: [],
+      gaps: [],
+    };
+    const bot = createActorState({
+      id: "distance-rail-bot",
+      kind: "bot",
+      teamId: "red",
+      position: { x: 100, y: 100 },
+      radius: 16,
+      maxHealth: 100,
+      maxArmor: 0,
+      weapons: { railAmmo: 1 },
+    });
+    const target = createActorState({
+      id: "distance-rail-target",
+      kind: "player",
+      teamId: "blue",
+      position: { x: targetX, y: 100 },
+      radius: 16,
+      maxHealth: 100,
+      maxArmor: 0,
+    });
+    world.actors.push(bot, target);
+    const combat = new TdmBotCombatController(config);
+    combat.readAction(bot, target, createWorldSnapshot(world), 0);
+    return combat.readAction(bot, target, createWorldSnapshot(world), 0);
+  };
+
+  const mediumShot = createShot(500);
+  const longShot = createShot(1100);
+
+  assert.equal(mediumShot?.payload?.weaponId, "rail");
+  assert.equal(longShot?.payload?.weaponId, "rail");
+  assert.ok(mediumShot?.direction && longShot?.direction);
+  assert.ok(Math.abs(longShot.direction.y) > Math.abs(mediumShot.direction.y));
 });
 
 test("arena world factories support symmetric teams from 1v1 through 4v4", () => {
@@ -830,5 +968,205 @@ test("classic CTF bot roles are stable for four team slots", () => {
   assert.deepEqual(
     ([1, 2, 3, 4] as const).map(classicCtfRoleForSlot),
     ["attacker", "defender", "support", "attacker"],
+  );
+});
+
+test("2v2 CTF defender joins a safe human flag return after midfield", () => {
+  const map = getWorldMap("flow-circuit-v2")!;
+  const world = createClassicCtfWorldState(map, { teamSize: 2 });
+  new ClassicCtfMode(map).initialize(world);
+  const human = world.actors.find((actor) => actor.id === "blue-player")!;
+  const defender = world.actors.find((actor) =>
+    actor.id === "blue-player-2"
+  )!;
+  const enemyFlag = world.objectives.find((objective) =>
+    objective.id === "red-flag"
+  )!;
+  const decision = new ClassicCtfBotDecisionController("defender", map);
+
+  enemyFlag.state.status = "carried";
+  enemyFlag.state.interactingActorId = human.id;
+  human.position = { x: 850, y: 410 };
+
+  assert.equal(
+    decision.chooseGoal(defender, createWorldSnapshot(world)).kind,
+    "escort-carrier",
+  );
+});
+
+test("2v2 CTF defender stays home early and secures a nearby dropped flag", () => {
+  const map = getWorldMap("flow-circuit-v2")!;
+  const world = createClassicCtfWorldState(map, { teamSize: 2 });
+  new ClassicCtfMode(map).initialize(world);
+  const human = world.actors.find((actor) => actor.id === "blue-player")!;
+  const defender = world.actors.find((actor) =>
+    actor.id === "blue-player-2"
+  )!;
+  const enemyFlag = world.objectives.find((objective) =>
+    objective.id === "red-flag"
+  )!;
+  const decision = new ClassicCtfBotDecisionController("defender", map);
+
+  enemyFlag.state.status = "carried";
+  enemyFlag.state.interactingActorId = human.id;
+  human.position = { x: 1400, y: 410 };
+  assert.equal(
+    decision.chooseGoal(defender, createWorldSnapshot(world)).kind,
+    "patrol-base",
+  );
+
+  enemyFlag.state.status = "dropped";
+  enemyFlag.state.interactingActorId = null;
+  enemyFlag.position = { x: 650, y: 410 };
+  assert.equal(
+    decision.chooseGoal(defender, createWorldSnapshot(world)).kind,
+    "attack-flag",
+  );
+});
+
+test("CTF team commands toggle back to auto when selected twice", () => {
+  assert.equal(toggleClassicCtfTeamCommand("auto", "follow"), "follow");
+  assert.equal(toggleClassicCtfTeamCommand("follow", "follow"), "auto");
+  assert.equal(toggleClassicCtfTeamCommand("defend", "attack"), "attack");
+});
+
+test("scoreboard impact prioritizes kills and objective contribution", () => {
+  const entry = (changes: Partial<MatchStatEntry>): MatchStatEntry => ({
+    actorId: "blue-player",
+    teamId: "blue",
+    kills: 0,
+    deaths: 0,
+    flagPickups: 0,
+    flagCaptures: 0,
+    flagReturns: 0,
+    ...changes,
+  });
+
+  assert.equal(calculateMatchImpact(entry({ kills: 1 })), 100);
+  assert.equal(calculateMatchImpact(entry({ kills: 1, deaths: 1 })), 70);
+  assert.equal(calculateMatchImpact(entry({ flagCaptures: 1 })), 350);
+  assert.equal(calculateMatchImpact(entry({ flagReturns: 1 })), 150);
+});
+
+test("kill feed distinguishes weapons, falls, and suicides", () => {
+  const event = (
+    id: string,
+    payload: Record<string, unknown>,
+    sourceActorId?: string,
+  ): GameEvent => ({
+    id,
+    type: "actor.died",
+    timeMs: 100,
+    sourceActorId,
+    targetActorId: "red-player",
+    payload,
+  });
+
+  assert.equal(
+    readArenaKillNotice(event("rocket-kill", { weaponId: "rocket" }, "blue-player"))
+      ?.cause,
+    "rocket",
+  );
+  assert.equal(
+    readArenaKillNotice(event("fall", { reason: "fall" }))?.cause,
+    "fall",
+  );
+  assert.equal(
+    readArenaKillNotice(event("suicide", { weaponId: "rocket" }, "red-player"))
+      ?.cause,
+    "suicide",
+  );
+});
+
+test("lethal combat damage forwards the weapon into the death event", () => {
+  const victim = createActorState({
+    id: "kill-feed-victim",
+    kind: "player",
+    teamId: "red",
+    position: { x: 0, y: 0 },
+    radius: 16,
+    maxHealth: 100,
+    maxArmor: 0,
+  });
+  const result = applyDamage(
+    victim,
+    100,
+    200,
+    V2_ACTOR_LIFECYCLE_CONFIG,
+    "blue-player",
+    "rail",
+  );
+  const death = result.events.find((candidate) => candidate.type === "actor.died");
+
+  assert.equal(
+    (death?.payload as { weaponId?: string } | undefined)?.weaponId,
+    "rail",
+  );
+});
+
+test("arena HUD hides home flags and only reports active CTF events", () => {
+  const map = getWorldMap("flow-circuit-v2")!;
+  const world = createClassicCtfWorldState(map, { teamSize: 2 });
+  const mode = new ClassicCtfMode(map);
+  mode.initialize(world);
+
+  assert.equal(
+    formatArenaObjectiveAlert(mode.getHudState(createWorldSnapshot(world)), false),
+    "",
+  );
+
+  const redFlag = world.objectives.find((objective) =>
+    objective.id === "red-flag"
+  )!;
+  redFlag.state.status = "carried";
+  redFlag.state.interactingActorId = "blue-player";
+  assert.equal(
+    formatArenaObjectiveAlert(mode.getHudState(createWorldSnapshot(world)), false),
+    "RED FLAG TAKEN",
+  );
+});
+
+test("CTF team commands direct the teammate but preserve flag emergencies", () => {
+  const map = getWorldMap("flow-circuit-v2")!;
+  const world = createClassicCtfWorldState(map, { teamSize: 2 });
+  new ClassicCtfMode(map).initialize(world);
+  const human = world.actors.find((actor) => actor.id === "blue-player")!;
+  const defender = world.actors.find((actor) =>
+    actor.id === "blue-player-2"
+  )!;
+  const enemy = world.actors.find((actor) => actor.id === "red-player")!;
+  const ownFlag = world.objectives.find((objective) =>
+    objective.id === "blue-flag"
+  )!;
+  const decision = new ClassicCtfBotDecisionController("defender", map);
+
+  human.position = { x: 800, y: 410 };
+  defender.position = { x: 220, y: 410 };
+  decision.setTeamCommand("blue", "follow");
+  const follow = decision.chooseGoal(defender, createWorldSnapshot(world));
+  assert.equal(follow.kind, "follow-player");
+  assert.ok(Math.hypot(
+    follow.position.x - human.position.x,
+    follow.position.y - human.position.y,
+  ) <= 106);
+
+  decision.setTeamCommand("blue", "attack");
+  assert.equal(
+    decision.chooseGoal(defender, createWorldSnapshot(world)).kind,
+    "attack-flag",
+  );
+
+  decision.setTeamCommand("blue", "defend");
+  assert.equal(
+    decision.chooseGoal(defender, createWorldSnapshot(world)).kind,
+    "patrol-base",
+  );
+
+  decision.setTeamCommand("blue", "attack");
+  ownFlag.state.status = "carried";
+  ownFlag.state.interactingActorId = enemy.id;
+  assert.equal(
+    decision.chooseGoal(defender, createWorldSnapshot(world)).kind,
+    "recover-own-flag",
   );
 });

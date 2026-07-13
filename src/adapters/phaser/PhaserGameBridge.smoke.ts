@@ -387,7 +387,7 @@ function checkWorldMapRegistry(): void {
     getWorldMap("grand-archive-v2") !== GRAND_ARCHIVE_V2 ||
     getWorldMap("flank-switch-v2") !== FLANK_SWITCH_V2 ||
     flowLab?.displayName !== "Flow Lab" ||
-    flowCircuit?.displayName !== "Flow Circuit" ||
+    flowCircuit?.displayName !== "Foundry Circuit" ||
     getWorldMap("missing-map") !== undefined ||
     resolveWorldMap("missing-map").id !== "training-crossing-v2"
   ) {
@@ -487,7 +487,7 @@ function checkWorldMapRegistry(): void {
     if (
       world.actors.length !== 8 ||
       world.geometry.solids.length !== 22 ||
-      world.geometry.gaps.length !== 0 ||
+      world.geometry.gaps.length !== 2 ||
       world.pickups.length !== 15 ||
       world.navigation.jumpLinks.length !== 4 ||
       world.match?.phase !== "running"
@@ -1468,10 +1468,11 @@ function checkJumpParity(): void {
     speedActor.velocity.y,
   );
   if (
-    V2_GROUND_PARITY_CONFIG.maxSpeed !== 241.2 ||
     Math.abs(cappedSpeed - V2_GROUND_PARITY_CONFIG.maxSpeed) > .001
   ) {
-    throw new Error("V2 movement must enforce the approved 241.2 speed cap.");
+    throw new Error(
+      `V2 movement must enforce its configured ${V2_GROUND_PARITY_CONFIG.maxSpeed} speed cap.`,
+    );
   }
 
   const shortJump = runJumpSequence(1);
@@ -2346,11 +2347,12 @@ function checkTeamDeathmatchSlice(): void {
     initialRed?.spawnPosition.x !== 150 ||
     productionWorld.pickups.some((pickup) =>
       pickup.radius !== 22 ||
-      pickup.respawnDelayMs !== 20_000 ||
+      pickup.respawnDelayMs !==
+        V2_ARENA_PICKUP_PARITY_CONFIG.defaultRespawnDelayMs ||
       pickup.value !== pickupParityValue(pickup.type)
     )
   ) {
-    throw new Error("Training Crossing TDM content must mirror V1 placement.");
+    throw new Error("Training Crossing TDM content must use arena pickup tuning.");
   }
 
   const moved = runtime.advance({

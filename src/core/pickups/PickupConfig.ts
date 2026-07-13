@@ -20,10 +20,10 @@ export const V2_DIAGNOSTIC_PICKUP_CONFIG: PickupConfig = {
 
 export const V2_ARENA_PICKUP_PARITY_CONFIG: PickupConfig = {
   defaultRadius: 22,
-  defaultRespawnDelayMs: 20_000,
-  healthValue: 50,
+  defaultRespawnDelayMs: 12_000,
+  healthValue: 35,
   armorValue: 25,
-  rocketValue: 5,
-  railValue: 5,
-  whipValue: 8,
+  rocketValue: 3,
+  railValue: 2,
+  whipValue: 5,
 };

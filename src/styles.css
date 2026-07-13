@@ -189,15 +189,57 @@ canvas { display: block; }
   right: max(92px, calc(env(safe-area-inset-right) + 82px));
   min-width: 64px;
 }
-.v2-stats-card { width: min(760px, calc(100vw - 28px)); }
-.v2-stats-table-wrap { max-width: 100%; overflow-x: auto; }
-.v2-stats-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.v2-stats-card { width: min(660px, calc(100vw - 28px)); }
+.v2-stats-hold-hint { display: none; margin: -7px 0 2px; color: #87a39d; font-size: 11px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.v2-flow-overlay.is-held-scoreboard {
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 42%, rgb(9 24 28 / .3), rgb(3 8 13 / .68));
+}
+.v2-flow-overlay.is-held-scoreboard .v2-stats-card {
+  width: min(620px, calc(100vw - 40px));
+  padding: 18px 20px 20px;
+  gap: 8px;
+  border: 1px solid rgb(132 191 181 / .34);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgb(15 34 38 / .97), rgb(7 19 24 / .97));
+  color: #eef8f6;
+  box-shadow: 0 22px 70px rgb(0 0 0 / .52), inset 0 1px rgb(255 255 255 / .07);
+}
+.v2-flow-overlay.is-held-scoreboard .v2-menu-kicker { color: #73b9ad; }
+.v2-flow-overlay.is-held-scoreboard h2 { margin: -2px 0 4px; color: #f4fbfa; font-size: 26px; letter-spacing: .06em; }
+.v2-flow-overlay.is-held-scoreboard .v2-stats-hold-hint { display: block; }
+.v2-flow-overlay.is-held-scoreboard .v2-flow-actions { display: none; }
+.v2-stats-table-wrap { max-width: 100%; overflow: hidden; border: 1px solid rgb(23 48 45 / .16); border-radius: 8px; }
+.v2-stats-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 .v2-stats-table th,
-.v2-stats-table td { padding: 7px 8px; border-bottom: 1px solid rgb(23 48 45 / .14); text-align: center; }
+.v2-stats-table td { padding: 7px 6px; border-bottom: 1px solid rgb(23 48 45 / .12); text-align: center; font-weight: 800; }
+.v2-stats-table th { padding: 7px 6px; background: rgb(23 48 45 / .08); color: #607772; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
 .v2-stats-table th:first-child,
-.v2-stats-table td:first-child { text-align: left; }
-.v2-stats-team-blue td:first-child { color: #2459a9; }
-.v2-stats-team-red td:first-child { color: #a9262d; }
+.v2-stats-player td:first-child { width: 34%; padding-left: 12px; text-align: left; }
+.v2-stats-table th:last-child,
+.v2-stats-player td:last-child { width: 18%; }
+.v2-stats-team-header td { padding: 5px 10px; background: rgb(23 48 45 / .1); border-bottom: 1px solid rgb(23 48 45 / .12); font-size: 10px; letter-spacing: .08em; }
+.v2-stats-team-header-content { display: flex; justify-content: space-between; }
+.v2-stats-team-header strong { font-size: 9px; opacity: .7; }
+.v2-stats-group-blue .v2-stats-team-header td { color: #477dd0; box-shadow: inset 3px 0 #477dd0; }
+.v2-stats-group-red .v2-stats-team-header td { color: #c34349; box-shadow: inset 3px 0 #c34349; }
+.v2-stats-player.is-human { background: rgb(83 183 153 / .08); }
+.v2-stats-team-blue .v2-stats-player-name { color: #3772cb; }
+.v2-stats-team-red .v2-stats-player-name { color: #bd353d; }
+.v2-stats-mvp { margin-left: 7px; padding: 2px 4px; border-radius: 3px; background: #dcae45; color: #14201f; font-size: 8px; font-weight: 950; letter-spacing: .06em; vertical-align: 1px; }
+.v2-stats-impact strong { display: block; line-height: 1; }
+.v2-stats-impact-bar { display: block; width: 44px; height: 3px; margin: 4px auto 0; overflow: hidden; border-radius: 2px; background: rgb(23 48 45 / .15); }
+.v2-stats-impact-bar::after { content: ""; display: block; width: 100%; height: 100%; border-radius: inherit; background: #49b99d; transform: scaleX(var(--impact-ratio)); transform-origin: left; }
+.v2-stats-impact-note { margin: 2px 0 0; color: #6f8580; font-size: 10px; font-weight: 700; }
+.v2-flow-overlay.is-held-scoreboard .v2-stats-table-wrap { border-color: rgb(148 195 187 / .2); }
+.v2-flow-overlay.is-held-scoreboard .v2-stats-table th { background: rgb(255 255 255 / .055); color: #9ab0ac; }
+.v2-flow-overlay.is-held-scoreboard .v2-stats-table td { border-bottom-color: rgb(255 255 255 / .07); }
+.v2-flow-overlay.is-held-scoreboard .v2-stats-team-header td { background: rgb(255 255 255 / .035); border-bottom-color: rgb(255 255 255 / .07); }
+.v2-flow-overlay.is-held-scoreboard .v2-stats-team-blue .v2-stats-player-name { color: #8db7ff; }
+.v2-flow-overlay.is-held-scoreboard .v2-stats-team-red .v2-stats-player-name { color: #ff9e91; }
+.v2-flow-overlay.is-held-scoreboard .v2-stats-player.is-human { background: rgb(73 185 157 / .09); }
+.v2-flow-overlay.is-held-scoreboard .v2-stats-impact-bar { background: rgb(255 255 255 / .12); }
+.v2-flow-overlay.is-held-scoreboard .v2-stats-impact-note { color: #829994; }
 .v2-respawn-status {
   position: fixed;
   z-index: 1880;

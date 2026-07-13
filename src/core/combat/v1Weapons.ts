@@ -174,6 +174,7 @@ function fireRail(
       world.timeMs,
       V2_ACTOR_LIFECYCLE_CONFIG,
       actor.id,
+      "rail",
     ).events);
   }
   return events;
@@ -240,6 +241,7 @@ function fireWhip(
       world.timeMs,
       V2_ACTOR_LIFECYCLE_CONFIG,
       actor.id,
+      "whip",
     ).events);
   }
   return events;

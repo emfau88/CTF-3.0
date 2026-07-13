@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { V2_ACTOR_LIFECYCLE_CONFIG } from "../../core";
 import type {
   ActorState,
+  ClassicCtfManualTeamCommand,
   CoreActionIntent,
   CoreInputFrame,
   WorldPosition,
@@ -11,11 +12,13 @@ import {
   V2_V1_WEAPON_PARITY_CONFIG,
 } from "../../core";
 import type { InputAdapterPort } from "../input";
-import { calculateV2TouchLayout } from "./v2TouchLayout";
+import { drawRadialCooldownWipe } from "./PhaserRadialCooldown";
+import { resolveDesktopAimDirection } from "./desktopAim";
 import {
-  resolveMobileWeaponReleaseDirection,
-  resolveMobileWeaponTapDirection,
-} from "./PhaserMobileInputAdapter";
+  calculateDesktopWeaponLayout,
+  formatCooldownSeconds,
+  weaponIconScale,
+} from "./weaponHudLayout";
 
 interface DiagnosticKeys {
   readonly up: Phaser.Input.Keyboard.Key;
@@ -23,11 +26,13 @@ interface DiagnosticKeys {
   readonly left: Phaser.Input.Keyboard.Key;
   readonly right: Phaser.Input.Keyboard.Key;
   readonly jump: Phaser.Input.Keyboard.Key;
-  readonly firePrimary: Phaser.Input.Keyboard.Key;
   readonly fireSpecial: Phaser.Input.Keyboard.Key;
   readonly rocket: Phaser.Input.Keyboard.Key;
   readonly rail: Phaser.Input.Keyboard.Key;
   readonly whip: Phaser.Input.Keyboard.Key;
+  readonly teamDefend: Phaser.Input.Keyboard.Key;
+  readonly teamFollow: Phaser.Input.Keyboard.Key;
+  readonly teamAttack: Phaser.Input.Keyboard.Key;
   readonly debugDamage: Phaser.Input.Keyboard.Key;
   readonly debugScore: Phaser.Input.Keyboard.Key;
   readonly restartMatch: Phaser.Input.Keyboard.Key;
@@ -36,7 +41,6 @@ interface DiagnosticKeys {
   readonly redLeft: Phaser.Input.Keyboard.Key;
   readonly redRight: Phaser.Input.Keyboard.Key;
   readonly redJump: Phaser.Input.Keyboard.Key;
-  readonly redFire: Phaser.Input.Keyboard.Key;
 }
 
 export type PhaserInputProfile = "diagnostic" | "tdm" | "tdm-solo";
@@ -44,14 +48,9 @@ export type PhaserInputProfile = "diagnostic" | "tdm" | "tdm-solo";
 type WeaponId = "rocket" | "rail" | "whip";
 
 interface DesktopWeaponControl {
-  id: number;
   x: number;
   y: number;
   radius: number;
-  aim: WorldPosition;
-  drag: number;
-  dragged: boolean;
-  held: boolean;
 }
 
 interface DesktopWeaponBadgeView {
@@ -64,14 +63,17 @@ export interface DesktopWeaponStatus {
   readonly cooldownMs: number;
 }
 
-const DESKTOP_WEAPON_DRAG_THRESHOLD = 18;
-
 export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   private readonly keys: DiagnosticKeys;
   private readonly graphics: Phaser.GameObjects.Graphics;
-  private readonly aimGraphics: Phaser.GameObjects.Graphics;
+  private readonly cooldownGraphics: Phaser.GameObjects.Graphics;
   private readonly weaponViews: Record<WeaponId, Phaser.GameObjects.Image>;
   private readonly weaponBadges: Record<WeaponId, DesktopWeaponBadgeView>;
+  private readonly weaponCooldownLabels: Record<
+    WeaponId,
+    Phaser.GameObjects.Text
+  >;
+  private readonly weaponKeyLabels: Record<WeaponId, Phaser.GameObjects.Text>;
   private sequence = 0;
   private jumpWasHeld = false;
   private damageWasHeld = false;
@@ -81,10 +83,9 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   private rocketWasHeld = false;
   private railWasHeld = false;
   private whipWasHeld = false;
-  private queuedWeapon: {
-    weaponId: WeaponId;
-    direction: WorldPosition;
-  } | null = null;
+  private teamDefendWasHeld = false;
+  private teamFollowWasHeld = false;
+  private teamAttackWasHeld = false;
   private readonly weaponControls: Record<WeaponId, DesktopWeaponControl> = {
     rocket: createDesktopWeaponControl(),
     rail: createDesktopWeaponControl(),
@@ -97,6 +98,9 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     private readonly weaponStatus?: (weaponId: WeaponId) => DesktopWeaponStatus,
     private readonly snapshotProvider?: () => WorldSnapshot,
     private readonly actorId = "blue-player",
+    private readonly onTeamCommand?: (
+      command: ClassicCtfManualTeamCommand,
+    ) => void,
   ) {
     const keyboard = scene.input.keyboard;
     if (!keyboard) {
@@ -109,11 +113,13 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       left: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
       right: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
       jump: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
-      firePrimary: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.J),
       fireSpecial: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F),
       rocket: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q),
       rail: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),
       whip: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F),
+      teamDefend: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE),
+      teamFollow: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO),
+      teamAttack: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE),
       debugDamage: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.K),
       debugScore: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.L),
       restartMatch: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R),
@@ -122,10 +128,11 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       redLeft: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT),
       redRight: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
       redJump: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER),
-      redFire: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT),
     };
     this.graphics = scene.add.graphics().setScrollFactor(0).setDepth(1100);
-    this.aimGraphics = scene.add.graphics().setDepth(1099);
+    this.cooldownGraphics = scene.add.graphics()
+      .setScrollFactor(0)
+      .setDepth(1102);
     this.weaponViews = {
       rocket: scene.add.image(0, 0, "uiRocketButton"),
       rail: scene.add.image(0, 0, "uiRailButton"),
@@ -139,10 +146,16 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       rail: this.createWeaponBadge("uiRailBadge", "#10281a"),
       whip: this.createWeaponBadge("uiAmmoBadge", "#2b1c36"),
     };
-    scene.input.on("pointerdown", this.handlePointerDown, this);
-    scene.input.on("pointermove", this.handlePointerMove, this);
-    scene.input.on("pointerup", this.handlePointerUp, this);
-    scene.input.on("pointerupoutside", this.handlePointerUp, this);
+    this.weaponCooldownLabels = {
+      rocket: this.createCooldownLabel(),
+      rail: this.createCooldownLabel(),
+      whip: this.createCooldownLabel(),
+    };
+    this.weaponKeyLabels = {
+      rocket: this.createKeyLabel("Q"),
+      rail: this.createKeyLabel("E"),
+      whip: this.createKeyLabel("F"),
+    };
     scene.scale.on("resize", this.layout, this);
     this.layout(scene.scale.gameSize);
   }
@@ -153,8 +166,6 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     const aim = this.readAimDirection();
     const jumpHeld = this.keys.jump.isDown;
     const pointer = this.scene.input.activePointer;
-    const firePrimary = this.keys.firePrimary.isDown ||
-      (pointer.isDown && !this.isPointerCapturedByWeapon(pointer.id));
     const fireSpecial =
       this.keys.fireSpecial.isDown || pointer.rightButtonDown();
 
@@ -184,18 +195,11 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     if (!jumpHeld && this.jumpWasHeld) {
       actions.push({ action: "jump", phase: "released", actorId: blueActorId });
     }
-    if (firePrimary) {
-      actions.push({
-        action: "firePrimary",
-        phase: "held",
-        actorId: blueActorId,
-      });
-    }
     if (this.profile === "diagnostic" && fireSpecial) {
       actions.push({ action: "fireSpecial", phase: "held" });
     }
     this.appendWeaponActions(actions, blueActorId, aim);
-    this.appendQueuedWeaponAction(actions, blueActorId);
+    this.readTeamCommand();
     if (
       this.profile === "diagnostic" &&
       this.keys.debugDamage.isDown &&
@@ -248,30 +252,31 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     this.rocketWasHeld = false;
     this.railWasHeld = false;
     this.whipWasHeld = false;
-    this.queuedWeapon = null;
-    for (const control of Object.values(this.weaponControls)) {
-      this.releaseWeaponControl(control);
-    }
+    this.teamDefendWasHeld = false;
+    this.teamFollowWasHeld = false;
+    this.teamAttackWasHeld = false;
     this.draw();
   }
 
   dispose(): void {
-    this.scene.input.off("pointerdown", this.handlePointerDown, this);
-    this.scene.input.off("pointermove", this.handlePointerMove, this);
-    this.scene.input.off("pointerup", this.handlePointerUp, this);
-    this.scene.input.off("pointerupoutside", this.handlePointerUp, this);
     this.scene.scale.off("resize", this.layout, this);
     for (const key of Object.values(this.keys)) {
       key.destroy();
     }
     this.graphics.destroy();
-    this.aimGraphics.destroy();
+    this.cooldownGraphics.destroy();
     for (const view of Object.values(this.weaponViews)) {
       view.destroy();
     }
     for (const badge of Object.values(this.weaponBadges)) {
       badge.image.destroy();
       badge.text.destroy();
+    }
+    for (const label of Object.values(this.weaponCooldownLabels)) {
+      label.destroy();
+    }
+    for (const label of Object.values(this.weaponKeyLabels)) {
+      label.destroy();
     }
   }
 
@@ -285,11 +290,17 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
 
   private readAimDirection(): WorldPosition {
     const pointer = this.scene.input.activePointer;
-    const x = pointer.x - this.scene.scale.width / 2;
-    const y = pointer.y - this.scene.scale.height / 2;
-    const length = Math.hypot(x, y);
+    const camera = this.scene.cameras.main;
+    const pointerWorld = camera.getWorldPoint(pointer.x, pointer.y);
+    const actor = this.controlledActor();
+    const aimOrigin = actor?.lifeState === "active"
+      ? actor.position
+      : camera.getWorldPoint(
+        this.scene.scale.width / 2,
+        this.scene.scale.height / 2,
+      );
 
-    return length > 0 ? { x: x / length, y: y / length } : { x: 0, y: 0 };
+    return resolveDesktopAimDirection(aimOrigin, pointerWorld);
   }
 
   private appendRedPlayerActions(actions: CoreActionIntent[]): void {
@@ -318,9 +329,21 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     if (!jumpHeld && this.redJumpWasHeld) {
       actions.push({ action: "jump", phase: "released", actorId });
     }
-    if (this.keys.redFire.isDown) {
-      actions.push({ action: "firePrimary", phase: "held", actorId });
-    }
+  }
+
+  private readTeamCommand(): void {
+    const selected = this.keys.teamDefend.isDown && !this.teamDefendWasHeld
+      ? "defend"
+      : this.keys.teamFollow.isDown && !this.teamFollowWasHeld
+      ? "follow"
+      : this.keys.teamAttack.isDown && !this.teamAttackWasHeld
+      ? "attack"
+      : null;
+    this.teamDefendWasHeld = this.keys.teamDefend.isDown;
+    this.teamFollowWasHeld = this.keys.teamFollow.isDown;
+    this.teamAttackWasHeld = this.keys.teamAttack.isDown;
+    if (!selected || !this.onTeamCommand) return;
+    this.onTeamCommand(selected);
   }
 
   private appendWeaponActions(
@@ -345,23 +368,6 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     }
   }
 
-  private appendQueuedWeaponAction(
-    actions: CoreActionIntent[],
-    actorId: string | undefined,
-  ): void {
-    if (!this.queuedWeapon) {
-      return;
-    }
-    actions.push({
-      action: "fireWeapon",
-      phase: "pressed",
-      actorId,
-      direction: { ...this.queuedWeapon.direction },
-      payload: { weaponId: this.queuedWeapon.weaponId },
-    });
-    this.queuedWeapon = null;
-  }
-
   private readRedMoveDirection(): WorldPosition {
     const x = Number(this.keys.redRight.isDown) -
       Number(this.keys.redLeft.isDown);
@@ -371,115 +377,50 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     return length > 1 ? { x: x / length, y: y / length } : { x, y };
   }
 
-  private readonly handlePointerDown = (
-    pointer: Phaser.Input.Pointer,
-  ): void => {
-    const weapon = this.weaponAt(pointer);
-    if (!weapon) {
-      return;
-    }
-    const control = this.weaponControls[weapon];
-    if (control.id >= 0) {
-      return;
-    }
-    this.captureWeaponControl(control, pointer);
-    control.drag = 0;
-    control.dragged = false;
-    this.updateWeaponAim(weapon, pointer);
-    this.draw();
-  };
-
-  private readonly handlePointerMove = (
-    pointer: Phaser.Input.Pointer,
-  ): void => {
-    const weapon = this.capturedWeapon(pointer.id);
-    if (!weapon) {
-      return;
-    }
-    this.updateWeaponAim(weapon, pointer);
-    this.draw();
-  };
-
-  private readonly handlePointerUp = (
-    pointer: Phaser.Input.Pointer,
-  ): void => {
-    const weapon = this.capturedWeapon(pointer.id);
-    if (!weapon) {
-      return;
-    }
-    const control = this.weaponControls[weapon];
-    const direction = resolveMobileWeaponReleaseDirection({
-      dragged: control.dragged,
-      dragDistance: control.drag,
-      manualDirection: control.aim,
-      autoDirection: this.autoTargetDirection(weapon),
-    });
-    if (direction) {
-      this.queuedWeapon = {
-        weaponId: weapon,
-        direction,
-      };
-    }
-    this.releaseWeaponControl(control);
-    control.drag = 0;
-    control.dragged = false;
-    this.draw();
-  };
-
   private layout(gameSize: Phaser.Structs.Size): void {
-    const layout = calculateV2TouchLayout(gameSize.width, gameSize.height);
-    const compact = layout.rocket.r <= 36;
-    const positions = {
-      rocket: layout.rocket,
-      rail: layout.rail,
-      whip: layout.whip,
-    };
+    const positions = calculateDesktopWeaponLayout(
+      gameSize.width,
+      gameSize.height,
+    );
+    const compact = positions.rocket.r <= 25;
     for (const weaponId of ["rocket", "rail", "whip"] as const) {
       Object.assign(this.weaponControls[weaponId], positions[weaponId], {
         radius: positions[weaponId].r,
       });
       this.weaponViews[weaponId]
         .setPosition(positions[weaponId].x, positions[weaponId].y)
-        .setScale(weaponId === "whip"
-          ? compact ? .42 : .54
-          : compact ? .27 : .38);
+        .setScale(weaponIconScale(weaponId, positions[weaponId].r));
+      this.weaponCooldownLabels[weaponId]
+        .setPosition(positions[weaponId].x, positions[weaponId].y)
+        .setFontSize(compact ? 14 : 16);
+      this.weaponKeyLabels[weaponId]
+        .setPosition(
+          positions[weaponId].x - positions[weaponId].r * .68,
+          positions[weaponId].y - positions[weaponId].r * .68,
+        )
+        .setFontSize(compact ? 11 : 12);
     }
     this.draw();
   }
 
-  private updateWeaponAim(
-    weaponId: WeaponId,
-    pointer: Phaser.Input.Pointer,
-  ): void {
-    const control = this.weaponControls[weaponId];
-    const dx = pointer.x - control.x;
-    const dy = pointer.y - control.y;
-    const distance = Math.hypot(dx, dy);
-    if (distance > 10) {
-      control.aim = { x: dx / distance, y: dy / distance };
-    }
-    control.drag = distance;
-    if (distance >= DESKTOP_WEAPON_DRAG_THRESHOLD) {
-      control.dragged = true;
-    }
-  }
-
-  private captureWeaponControl(
-    control: DesktopWeaponControl,
-    pointer: Phaser.Input.Pointer,
-  ): void {
-    control.id = pointer.id;
-    control.held = true;
-  }
-
-  private releaseWeaponControl(control: DesktopWeaponControl): void {
-    control.id = -1;
-    control.held = false;
-  }
-
   private draw(): void {
     this.graphics.clear();
-    this.aimGraphics.clear();
+    this.cooldownGraphics.clear();
+    if (["rocket", "rail", "whip"].some((weaponId) =>
+      this.weaponAvailable(weaponId as WeaponId)
+    )) {
+      const first = this.weaponControls.rocket;
+      const last = this.weaponControls.whip;
+      const padding = first.radius <= 25 ? 6 : 7;
+      const left = first.x - first.radius - padding;
+      const top = first.y - first.radius - padding;
+      const width = last.x - first.x + first.radius + last.radius + padding * 2;
+      const height = first.radius * 2 + padding * 2;
+      this.graphics.fillStyle(0x08131d, .52)
+        .fillRoundedRect(left, top, width, height, 13);
+      this.graphics.lineStyle(1, 0x8ea6b6, .22)
+        .strokeRoundedRect(left, top, width, height, 13);
+    }
     for (const weaponId of ["rocket", "rail", "whip"] as const) {
       const status = this.weaponStatus?.(weaponId) ?? {
         ammo: 0,
@@ -487,78 +428,32 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       };
       const available = status.ammo > 0;
       const control = this.weaponControls[weaponId];
-      const compact = control.radius <= 36;
-      const badgeOffset = compact ? 21 : 27;
+      const compact = control.radius <= 25;
+      const badgeOffset = control.radius * .72;
       const badge = this.weaponBadges[weaponId];
-      const active = control.held && status.cooldownMs <= 0;
-      const baseScale = weaponId === "whip"
-        ? compact ? .42 : .54
-        : compact ? .27 : .38;
+      const baseScale = weaponIconScale(weaponId, control.radius);
       this.weaponViews[weaponId]
         .setVisible(available)
-        .setAlpha(status.cooldownMs > 0
-          ? weaponId === "rail" ? .62 : .58
-          : 1)
-        .setScale(
-          active && weaponId !== "whip" ? baseScale + .025 : baseScale,
-        );
+        .setAlpha(1)
+        .setScale(baseScale);
       badge.image
         .setPosition(control.x + badgeOffset, control.y + badgeOffset)
-        .setScale(compact ? .1 : .14)
+        .setScale(compact ? .085 : .1)
         .setAlpha(.95)
         .setVisible(available);
       badge.text
         .setPosition(control.x + badgeOffset, control.y + badgeOffset)
-        .setFontSize(compact ? 12 : 15)
+        .setFontSize(compact ? 10 : 12)
         .setText(String(status.ammo))
         .setVisible(available);
+      this.weaponKeyLabels[weaponId].setVisible(available);
+      this.weaponCooldownLabels[weaponId]
+        .setText(formatCooldownSeconds(status.cooldownMs))
+        .setVisible(available && status.cooldownMs > 0);
       if (available) {
         this.drawCooldown(weaponId, control, status.cooldownMs);
       }
-      if (
-        available &&
-        control.held &&
-        control.dragged &&
-        weaponId !== "whip"
-      ) {
-        this.drawWeaponAim(weaponId, control, status.cooldownMs);
-      }
     }
-  }
-
-  private drawWeaponAim(
-    weaponId: "rocket" | "rail",
-    control: DesktopWeaponControl,
-    cooldownMs: number,
-  ): void {
-    const ready = cooldownMs <= 0;
-    const buttonLength = Math.min(68, Math.max(28, control.drag));
-    const color = weaponId === "rocket" ? 0xffd36c : 0x62ff91;
-    const lightColor = weaponId === "rocket" ? 0xfff0b2 : 0xcaffd9;
-    const alpha = ready ? .8 : .3;
-    this.graphics.lineStyle(5, lightColor, ready ? .92 : .38)
-      .beginPath()
-      .moveTo(control.x, control.y)
-      .lineTo(
-        control.x + control.aim.x * buttonLength,
-        control.y + control.aim.y * buttonLength,
-      )
-      .strokePath();
-
-    const actor = this.controlledActor();
-    if (!actor || actor.lifeState !== "active") return;
-    const length = weaponId === "rocket" ? 260 : 310;
-    const startX = actor.position.x;
-    const startY = actor.position.y - actor.jump.height;
-    const endX = startX + control.aim.x * length;
-    const endY = startY + control.aim.y * length;
-    this.aimGraphics.lineStyle(weaponId === "rocket" ? 4 : 3, color, alpha)
-      .beginPath()
-      .moveTo(startX, startY)
-      .lineTo(endX, endY)
-      .strokePath();
-    this.aimGraphics.fillStyle(lightColor, ready ? .86 : .35)
-      .fillCircle(endX, endY, weaponId === "rocket" ? 7 : 6);
   }
 
   private drawCooldown(
@@ -566,61 +461,26 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     control: DesktopWeaponControl,
     cooldownMs: number,
   ): void {
-    if (cooldownMs <= 0 || weaponId === "rocket") {
+    if (cooldownMs <= 0) {
       return;
     }
-    const total = weaponId === "rail"
+    const total = weaponId === "rocket"
+      ? V2_V1_WEAPON_PARITY_CONFIG.rocketCooldownMs
+      : weaponId === "rail"
       ? V2_V1_WEAPON_PARITY_CONFIG.railCooldownMs
       : V2_V1_WEAPON_PARITY_CONFIG.whipCooldownMs;
-    const ratio = Phaser.Math.Clamp(cooldownMs / total, 0, 1);
-    this.graphics.lineStyle(
-      5,
-      weaponId === "rail" ? 0x62ff91 : 0xf4b35d,
-      .72,
-    ).beginPath()
-      .arc(
-        control.x,
-        control.y,
-        control.radius + 5,
-        -Math.PI / 2,
-        -Math.PI / 2 + Math.PI * 2 * (1 - ratio),
-      )
-      .strokePath();
-  }
-
-  private weaponAt(pointer: Phaser.Input.Pointer): WeaponId | null {
-    return (["rocket", "rail", "whip"] as const).find((weaponId) =>
-      this.weaponAvailable(weaponId) &&
-      Phaser.Math.Distance.Between(
-          pointer.x,
-          pointer.y,
-          this.weaponControls[weaponId].x,
-          this.weaponControls[weaponId].y,
-        ) <= this.weaponControls[weaponId].radius +
-          (weaponId === "rocket" ? 24 : 20)
-    ) ?? null;
-  }
-
-  private capturedWeapon(pointerId: number): WeaponId | null {
-    return (["rocket", "rail", "whip"] as const).find((weaponId) =>
-      this.weaponControls[weaponId].id === pointerId
-    ) ?? null;
-  }
-
-  private isPointerCapturedByWeapon(pointerId: number): boolean {
-    return this.capturedWeapon(pointerId) !== null;
+    drawRadialCooldownWipe(
+      this.cooldownGraphics,
+      control.x,
+      control.y,
+      control.radius + 4,
+      cooldownMs,
+      total,
+    );
   }
 
   private weaponAvailable(weaponId: WeaponId): boolean {
     return (this.weaponStatus?.(weaponId).ammo ?? 0) > 0;
-  }
-
-  private autoTargetDirection(weaponId: WeaponId): WorldPosition | null {
-    const snapshot = this.snapshotProvider?.();
-    if (!snapshot) {
-      return null;
-    }
-    return resolveMobileWeaponTapDirection(snapshot, this.actorId, weaponId);
   }
 
   private controlledActor(
@@ -635,7 +495,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   ): DesktopWeaponBadgeView {
     const image = this.scene.add.image(0, 0, texture)
       .setScrollFactor(0)
-      .setDepth(1102)
+      .setDepth(1103)
       .setVisible(false);
     const text = this.scene.add.text(0, 0, "0", {
       fontFamily: "Arial",
@@ -643,20 +503,37 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       color: "#ffffff",
       stroke,
       strokeThickness: 5,
-    }).setOrigin(.5).setScrollFactor(0).setDepth(1103).setVisible(false);
+    }).setOrigin(.5).setScrollFactor(0).setDepth(1104).setVisible(false);
     return { image, text };
+  }
+
+  private createCooldownLabel(): Phaser.GameObjects.Text {
+    return this.scene.add.text(0, 0, "", {
+      fontFamily: "Arial, sans-serif",
+      fontSize: "14px",
+      fontStyle: "bold",
+      color: "#ffffff",
+      stroke: "#101820",
+      strokeThickness: 5,
+    }).setOrigin(.5).setScrollFactor(0).setDepth(1104).setVisible(false);
+  }
+
+  private createKeyLabel(key: string): Phaser.GameObjects.Text {
+    return this.scene.add.text(0, 0, key, {
+      fontFamily: "Arial, sans-serif",
+      fontSize: "11px",
+      fontStyle: "bold",
+      color: "#eaf7ff",
+      backgroundColor: "#17232d",
+      padding: { x: 4, y: 2 },
+    }).setOrigin(.5).setScrollFactor(0).setDepth(1104).setVisible(false);
   }
 }
 
 function createDesktopWeaponControl(): DesktopWeaponControl {
   return {
-    id: -1,
     x: 0,
     y: 0,
     radius: 36,
-    aim: { x: 1, y: 0 },
-    drag: 0,
-    dragged: false,
-    held: false,
   };
 }

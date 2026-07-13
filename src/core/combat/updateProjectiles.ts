@@ -97,6 +97,7 @@ export function updateProjectiles(
           timeMs,
           lifecycleConfig,
           projectile.ownerActorId,
+          projectile.weaponId,
         );
         events.push(...damage.events);
       }
@@ -194,6 +195,7 @@ function explodeRocket(
       timeMs,
       lifecycleConfig,
       projectile.ownerActorId,
+      projectile.weaponId,
     ).events);
     const normal = distance || 1;
     actor.velocity.x += dx / normal * knockback * falloff;

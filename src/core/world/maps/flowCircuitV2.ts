@@ -33,11 +33,28 @@ const walls = [
   { x: 1055, y: 650, width: 70, height: 105, visual: "industrial-barrier" },
 ] as const;
 
-const gaps: readonly WorldMapGapPresentation[] = [];
+const gaps: readonly WorldMapGapPresentation[] = [
+  // Optional movement shortcuts: the safer route bends toward the courtyard,
+  // while a clean jump preserves momentum on the exposed outer circuit.
+  {
+    x: 945,
+    y: 62,
+    width: 110,
+    height: 112,
+    visual: "maintenance-pit",
+  },
+  {
+    x: 945,
+    y: 646,
+    width: 110,
+    height: 112,
+    visual: "maintenance-pit",
+  },
+];
 
 export const FLOW_CIRCUIT_V2: WorldMapData = {
   id: "flow-circuit-v2",
-  displayName: "Flow Circuit",
+  displayName: "Foundry Circuit",
   geometry: {
     bounds: { minX: 0, minY: 0, maxX: 2000, maxY: 820 },
     solids: walls.map((wall, index) => ({
@@ -59,26 +76,26 @@ export const FLOW_CIRCUIT_V2: WorldMapData = {
     jumpLinks: [
       {
         id: "upper-gap-west-east",
-        from: { x: 925, y: 135 },
-        to: { x: 1075, y: 135 },
+        from: { x: 918, y: 118 },
+        to: { x: 1082, y: 118 },
         activationRadius: 44,
       },
       {
         id: "upper-gap-east-west",
-        from: { x: 1075, y: 135 },
-        to: { x: 925, y: 135 },
+        from: { x: 1082, y: 118 },
+        to: { x: 918, y: 118 },
         activationRadius: 44,
       },
       {
         id: "lower-gap-west-east",
-        from: { x: 925, y: 685 },
-        to: { x: 1075, y: 685 },
+        from: { x: 918, y: 702 },
+        to: { x: 1082, y: 702 },
         activationRadius: 44,
       },
       {
         id: "lower-gap-east-west",
-        from: { x: 1075, y: 685 },
-        to: { x: 925, y: 685 },
+        from: { x: 1082, y: 702 },
+        to: { x: 918, y: 702 },
         activationRadius: 44,
       },
     ],
@@ -88,29 +105,29 @@ export const FLOW_CIRCUIT_V2: WorldMapData = {
       teamId: "blue",
       position: { x: 135, y: 410 },
       facing: { x: 1, y: 0 },
-      tags: ["player", "tdm", "flow-test"],
+      tags: ["player", "tdm", "featured"],
     }),
     ...createTeamSpawnPoints({
       teamId: "red",
       position: { x: 1865, y: 410 },
       facing: { x: -1, y: 0 },
-      tags: ["player", "tdm", "flow-test"],
+      tags: ["player", "tdm", "featured"],
     }),
   ],
   pickupSpawns: [
     { id: "armor-center", type: "armor", position: { x: 1000, y: 410 } },
     { id: "health-court-west", type: "health", position: { x: 850, y: 410 } },
     { id: "health-court-east", type: "health", position: { x: 1150, y: 410 } },
-    { id: "health-upper-west", type: "health", position: { x: 700, y: 85 } },
-    { id: "health-upper-east", type: "health", position: { x: 1300, y: 85 } },
-    { id: "health-lower-west", type: "health", position: { x: 700, y: 735 } },
-    { id: "health-lower-east", type: "health", position: { x: 1300, y: 735 } },
-    { id: "rocket-west", type: "rocket", position: { x: 500, y: 220 } },
-    { id: "rocket-east", type: "rocket", position: { x: 1500, y: 220 } },
-    { id: "rail-upper", type: "rail", position: { x: 1000, y: 45 } },
-    { id: "rail-lower", type: "rail", position: { x: 1000, y: 775 } },
-    { id: "whip-west", type: "whip", position: { x: 680, y: 410 } },
-    { id: "whip-east", type: "whip", position: { x: 1320, y: 410 } },
+    { id: "health-upper-west", type: "health", position: { x: 700, y: 105 } },
+    { id: "health-upper-east", type: "health", position: { x: 1300, y: 105 } },
+    { id: "health-lower-west", type: "health", position: { x: 700, y: 715 } },
+    { id: "health-lower-east", type: "health", position: { x: 1300, y: 715 } },
+    { id: "rocket-west", type: "rocket", position: { x: 510, y: 620 } },
+    { id: "rocket-east", type: "rocket", position: { x: 1490, y: 620 } },
+    { id: "rocket-contested", type: "rocket", position: { x: 1000, y: 610 } },
+    { id: "rail-contested", type: "rail", position: { x: 1000, y: 210 } },
+    { id: "whip-blue", type: "whip", position: { x: 265, y: 410 } },
+    { id: "whip-red", type: "whip", position: { x: 1735, y: 410 } },
     { id: "armor-blue", type: "armor", position: { x: 390, y: 610 } },
     { id: "armor-red", type: "armor", position: { x: 1610, y: 610 } },
   ],
@@ -121,16 +138,20 @@ export const FLOW_CIRCUIT_V2: WorldMapData = {
   },
   presentation: {
     theme: "industrial",
-    plan: "Compact symmetric flow test with an outer circuit, a four-entry objective courtyard, bounded sightlines, and short recovery routes.",
+    plan: "Featured competitive CTF arena with three readable routes: a precision lane with exposed jump shortcuts, a fast four-entry objective court, and a covered splash lane with short recovery rotations.",
     walls,
     gaps,
     decorations: [
+      { kind: "industrial-energy-blue", x: 58, y: 363, width: 410, height: 94 },
+      { kind: "industrial-energy-red", x: 1532, y: 363, width: 410, height: 94 },
+      { kind: "industrial-switch-gate", x: 285, y: 155, width: 46, height: 140 },
+      { kind: "industrial-switch-gate", x: 1669, y: 155, width: 46, height: 140 },
       { kind: "industrial-edge-pipes", x: 350, y: -12, width: 520, height: 94 },
       { kind: "industrial-edge-pipes", x: 1130, y: 738, width: 520, height: 94 },
       { kind: "industrial-edge-tank", x: 38, y: -34, width: 128, height: 160 },
       { kind: "industrial-edge-tank", x: 1834, y: 694, width: 128, height: 160 },
-      { kind: "industrial-edge-turbine", x: 918, y: -42, width: 164, height: 164 },
-      { kind: "industrial-edge-turbine", x: 918, y: 698, width: 164, height: 164 },
+      { kind: "industrial-edge-turbine", x: 918, y: -72, width: 164, height: 128 },
+      { kind: "industrial-edge-turbine", x: 918, y: 764, width: 164, height: 128 },
     ],
     botRoutes: {
       attacker: [
@@ -140,8 +161,8 @@ export const FLOW_CIRCUIT_V2: WorldMapData = {
         { x: 165, y: 410 },
       ],
       defender: [
-        { x: 1770, y: 250 }, { x: 1900, y: 315 },
-        { x: 1900, y: 505 }, { x: 1770, y: 570 },
+        { x: 230, y: 250 }, { x: 100, y: 315 },
+        { x: 100, y: 505 }, { x: 230, y: 570 },
       ],
     },
   },

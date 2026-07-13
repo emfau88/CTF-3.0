@@ -324,16 +324,16 @@ test("one-flag grand archive navigator diagnostics stay within expected bounds",
 
 function assertScenarioSummary(summary: SimulationSummary): void {
   const teamProgress = groupProgressByTeam(summary.movementByActor);
+  assert.equal(
+    teamProgress.blue.basicShots + teamProgress.red.basicShots,
+    0,
+    `${summary.label} emitted disabled basic attacks`,
+  );
   if (summary.modeId === "team-deathmatch") {
     assert.equal(
       bothTeamsExceed(teamProgress, "bestDistanceReduction", 140),
       true,
       `${summary.label} did not close distance to active enemies enough`,
-    );
-    assert.equal(
-      teamProgress.blue.basicShots > 0 && teamProgress.red.basicShots > 0,
-      true,
-      `${summary.label} did not exercise bot basic auto-fire`,
     );
     assert.equal(
       teamProgress.blue.pickupCollections > 0 &&
@@ -348,8 +348,11 @@ function assertScenarioSummary(summary: SimulationSummary): void {
       `${summary.label} did not fire collected weapons for both teams`,
     );
     if (summary.teamSize === 4) {
+      // With product Basic Attack disabled, sparse special-weapon kills no
+      // longer reset formations as often. Keep a pathological full-match
+      // clustering guard here; 4v4 is not the current 2v2 product gate.
       const maxClusteredFrames = Math.ceil(
-        summary.simulatedDurationMs / 34 * .4,
+        summary.simulatedDurationMs / 34 * .8,
       );
       assert.equal(
         summary.clusteredFrames.blue < maxClusteredFrames &&

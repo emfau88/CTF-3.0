@@ -23,6 +23,7 @@ export type { GameEvent } from "./events";
 export {
   ClassicCtfBotController,
   ClassicCtfBotDecisionController,
+  toggleClassicCtfTeamCommand,
   GridBotNavigator,
   OneFlagBotController,
   OneFlagBotDecisionController,
@@ -39,6 +40,8 @@ export {
   type ClassicCtfBotGoal,
   type ClassicCtfBotGoalKind,
   type ClassicCtfBotRole,
+  type ClassicCtfManualTeamCommand,
+  type ClassicCtfTeamCommand,
   type BotMovementConfig,
   type BotNavigationDecision,
   type GridBotNavigatorDebugState,

@@ -47,11 +47,11 @@
             </label>
             <label>Arena
               <select id="v2-menu-map">
+                <option value="flow-circuit-v2">Foundry Circuit</option>
                 <option value="training-crossing-v2">Training Crossing</option>
                 <option value="grand-archive-v2">Grand Archive</option>
                 <option value="flank-switch-v2">Flank Switch</option>
                 <option value="flow-lab-v2">Flow Lab</option>
-                <option value="flow-circuit-v2">Flow Circuit</option>
               </select>
             </label>
             <label>Match
@@ -101,7 +101,8 @@
             <button id="v2-menu-start" type="button">Start Match</button>
           </div>
           <div class="v2-menu-help">
-            P1: WASD + Space &nbsp; | &nbsp; Fire: J / click &nbsp; | &nbsp; Touch controls remain keyboard-compatible
+            P1: WASD + Space &nbsp; | &nbsp; Aim: Mouse &nbsp; | &nbsp; Weapons: Q Rocket · E Rail · F Whip<br>
+            Team: 1 Defend · 2 Follow · 3 Attack &nbsp; | &nbsp; Repeat command: Auto
           </div>
         </div>
       </div>
@@ -132,9 +133,11 @@
     </div>
     <div id="v2-stats-overlay" class="v2-flow-overlay is-hidden">
       <div class="v2-flow-card v2-stats-card">
-        <div class="v2-menu-kicker">MATCH STATS</div>
-        <h2>Scoreboard</h2>
+        <div class="v2-menu-kicker">ARENA LIVE</div>
+        <h2>Match Scoreboard</h2>
+        <p class="v2-stats-hold-hint">Release TAB to close</p>
         <div id="v2-stats-table" class="v2-stats-table-wrap"></div>
+        <p class="v2-stats-impact-note">Impact combines kills and objective play, reduced by deaths.</p>
         <div class="v2-flow-actions">
           <button id="v2-stats-close" type="button">Back to Game</button>
         </div>

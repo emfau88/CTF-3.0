@@ -144,16 +144,23 @@ export function showGameplayV2Result(input: {
 export function showGameplayV2Stats(
   stats: readonly MatchStatEntry[],
   humanActorIds: readonly string[],
-  onClose: () => void,
+  onClose: () => void = () => {},
+  options: { readonly holdToView?: boolean } = {},
 ): void {
   const elements = readStatsElements();
   renderStatsTable(elements.table, stats, humanActorIds);
   elements.close.onclick = onClose;
+  elements.root.classList.toggle(
+    "is-held-scoreboard",
+    options.holdToView === true,
+  );
   elements.root.classList.remove("is-hidden");
 }
 
 export function hideGameplayV2Stats(): void {
-  readStatsElements().root.classList.add("is-hidden");
+  const root = readStatsElements().root;
+  root.classList.add("is-hidden");
+  root.classList.remove("is-held-scoreboard");
 }
 
 export function hideGameplayV2Result(): void {
@@ -221,30 +228,107 @@ function renderStatsTable(
   const table = document.createElement("table");
   table.className = "v2-stats-table";
   const head = table.createTHead().insertRow();
-  for (const label of ["Player", "K", "D", "Flag", "Cap", "Ret"]) {
+  for (const label of ["Player", "K", "D", "K/D", "Cap", "Ret", "Impact"]) {
     const cell = document.createElement("th");
     cell.scope = "col";
     cell.textContent = label;
+    if (label === "Impact") {
+      cell.title = "Kills and objective contribution, reduced by deaths";
+    }
     head.append(cell);
   }
-  const body = table.createTBody();
-  for (const entry of stats) {
-    const row = body.insertRow();
-    row.className = `v2-stats-team-${entry.teamId ?? "neutral"}`;
-    const values = [
-      formatActorName(entry, stats, new Set(humanActorIds)),
-      entry.kills,
-      entry.deaths,
-      entry.flagPickups,
-      entry.flagCaptures,
-      entry.flagReturns,
-    ];
-    for (const value of values) {
-      const cell = row.insertCell();
-      cell.textContent = String(value);
+  const humans = new Set(humanActorIds);
+  const maxImpact = Math.max(1, ...stats.map(calculateMatchImpact));
+  const mvp = [...stats].sort(compareMatchImpact)[0];
+  for (const teamId of orderedTeamIds(stats)) {
+    const entries = stats
+      .filter((entry) => (entry.teamId ?? "neutral") === teamId)
+      .sort(compareMatchImpact);
+    const body = table.createTBody();
+    body.className = `v2-stats-group v2-stats-group-${teamId}`;
+    const teamRow = body.insertRow();
+    teamRow.className = "v2-stats-team-header";
+    const teamCell = teamRow.insertCell();
+    teamCell.colSpan = 7;
+    teamCell.innerHTML = `<div class="v2-stats-team-header-content"><span>${
+      teamLabel(teamId)
+    }</span><strong>${
+      entries.reduce((sum, entry) => sum + calculateMatchImpact(entry), 0)
+    } IMPACT</strong></div>`;
+    for (const entry of entries) {
+      const impact = calculateMatchImpact(entry);
+      const row = body.insertRow();
+      row.className = `v2-stats-player v2-stats-team-${teamId}${
+        humans.has(entry.actorId) ? " is-human" : ""
+      }`;
+      row.title = `Flag pickups: ${entry.flagPickups}`;
+      const playerCell = row.insertCell();
+      const name = document.createElement("span");
+      name.className = "v2-stats-player-name";
+      name.textContent = formatActorName(entry, stats, humans);
+      playerCell.append(name);
+      if (mvp?.actorId === entry.actorId && impact > 0) {
+        const badge = document.createElement("span");
+        badge.className = "v2-stats-mvp";
+        badge.textContent = "MVP";
+        playerCell.append(badge);
+      }
+      for (const value of [
+        entry.kills,
+        entry.deaths,
+        formatKillDeathRatio(entry),
+        entry.flagCaptures,
+        entry.flagReturns,
+      ]) {
+        const cell = row.insertCell();
+        cell.textContent = String(value);
+      }
+      const impactCell = row.insertCell();
+      impactCell.className = "v2-stats-impact";
+      const impactValue = document.createElement("strong");
+      impactValue.textContent = String(impact);
+      const impactBar = document.createElement("span");
+      impactBar.className = "v2-stats-impact-bar";
+      impactBar.style.setProperty("--impact-ratio", String(impact / maxImpact));
+      impactCell.append(impactValue, impactBar);
     }
   }
   root.append(table);
+}
+
+export function calculateMatchImpact(entry: MatchStatEntry): number {
+  return Math.max(
+    0,
+    entry.kills * 100 +
+      entry.flagCaptures * 350 +
+      entry.flagReturns * 150 +
+      entry.flagPickups * 25 -
+      entry.deaths * 30,
+  );
+}
+
+function compareMatchImpact(a: MatchStatEntry, b: MatchStatEntry): number {
+  return calculateMatchImpact(b) - calculateMatchImpact(a) ||
+    b.kills - a.kills || a.deaths - b.deaths ||
+    a.actorId.localeCompare(b.actorId);
+}
+
+function formatKillDeathRatio(entry: MatchStatEntry): string {
+  if (entry.deaths === 0) return entry.kills === 0 ? "0.0" : `${entry.kills}.0`;
+  return (entry.kills / entry.deaths).toFixed(1);
+}
+
+function orderedTeamIds(stats: readonly MatchStatEntry[]): string[] {
+  const present = new Set(stats.map((entry) => entry.teamId ?? "neutral"));
+  return ["blue", "red", "neutral"].filter((teamId) => present.has(teamId));
+}
+
+function teamLabel(teamId: string): string {
+  return teamId === "blue"
+    ? "BLUE TEAM"
+    : teamId === "red"
+    ? "RED TEAM"
+    : "NEUTRAL";
 }
 
 function formatActorName(
@@ -257,8 +341,8 @@ function formatActorName(
     : "Neutral";
   if (humanActorIds.has(entry.actorId)) {
     return entry.actorId === "blue-player"
-      ? `YOU · ${teamName}`
-      : `PLAYER 2 · ${teamName}`;
+      ? `YOU / ${teamName}`
+      : `PLAYER 2 / ${teamName}`;
   }
   const teamBots = stats.filter((candidate) =>
     candidate.teamId === entry.teamId && !humanActorIds.has(candidate.actorId)

@@ -1,5 +1,10 @@
 # CTF Project Handoff - Current State 2026-06-20
 
+> Historischer Hinweis fuer CTF-3.0: Dieses Dokument beschreibt den importierten
+> CTF-2.0-Stand vom 2026-06-20 und ist nicht mehr die aktuelle Produktplanung.
+> Fuer den aktuellen Kurs zuerst `ARENA_LEAGUE_IMPLEMENTATION_PLAN.md` und
+> `PROJECT_STATUS_2026-07-13.md` lesen.
+
 ## Zweck dieses Dokuments
 
 Dieses Dokument ist die aktuelle Uebergabe fuer einen neuen Kollegen oder einen neuen Codex-Chat. Es konsolidiert den verifizierten Ist-Stand des Projekts, verweist auf die wichtigen bestehenden Markdown-Dateien und benennt klar:

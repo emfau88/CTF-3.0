@@ -12,8 +12,10 @@ import {
   OneFlagMode,
   resolveWorldMap,
   TeamDeathmatchMode,
+  toggleClassicCtfTeamCommand,
+  type ClassicCtfManualTeamCommand,
+  type ClassicCtfTeamCommand,
   V2_ACTOR_LIFECYCLE_CONFIG,
-  V2_BASIC_AUTOSHOOT_PARITY_CONFIG,
   V2_COLLISION_GROUNDWORK_CONFIG,
 } from "../../../core";
 import {
@@ -83,12 +85,6 @@ export class GameplayV2Scene extends Phaser.Scene {
         : isOneFlag
         ? createOneFlagWorldState(selectedMap, { teamSize: route.teamSize })
         : createTeamDeathmatchWorldState(selectedMap, { teamSize: route.teamSize }),
-      basicAutoAttack: V2_BASIC_AUTOSHOOT_PARITY_CONFIG,
-      manualBasicAttackActorIds: humanActorIds,
-      autoBasicAttackActorIds: botParticipants.map(
-        (participant) => participant.actorId,
-      ),
-      allowManualPrimaryFire: false,
     });
     const readBlueWeaponStatus = (weaponId: "rocket" | "rail" | "whip") => {
       const actor = (this.bridge?.snapshot ?? runtime.snapshot).actors.find(
@@ -116,16 +112,28 @@ export class GameplayV2Scene extends Phaser.Scene {
       ? new PhaserMobileInputAdapter(
         this,
         "blue-player",
-        true,
+        false,
         readBlueWeaponStatus,
         () => this.bridge?.snapshot ?? runtime.snapshot,
       )
       : undefined;
+    let activeTeamCommand: ClassicCtfTeamCommand = "auto";
+    const requestTeamCommand = (
+      selected: ClassicCtfManualTeamCommand,
+    ): void => {
+      activeTeamCommand = toggleClassicCtfTeamCommand(
+        activeTeamCommand,
+        selected,
+      );
+      botControllers.setTeamCommand("blue", activeTeamCommand);
+      hud.showTeamCommand(activeTeamCommand);
+    };
     const hud = new PhaserArenaHudPort(
       this,
       useMobileControls,
       useBotOpponent,
       () => mobileInput?.requestRestart(),
+      isClassicCtf && useBotOpponent ? requestTeamCommand : undefined,
     );
     const playerInput = useMobileControls && mobileInput
       ? mobileInput
@@ -134,6 +142,8 @@ export class GameplayV2Scene extends Phaser.Scene {
         useBotOpponent ? "tdm-solo" : "tdm",
         readBlueWeaponStatus,
         () => this.bridge?.snapshot ?? runtime.snapshot,
+        "blue-player",
+        isClassicCtf && useBotOpponent ? requestTeamCommand : undefined,
       );
     this.inputAdapter = botControllers.size > 0
       ? new AugmentedInputAdapter(

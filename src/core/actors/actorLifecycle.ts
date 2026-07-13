@@ -21,6 +21,7 @@ export function applyDamage(
   timeMs: number,
   config: ActorLifecycleConfig,
   sourceActorId?: ActorId,
+  weaponId?: string,
 ): ActorDamageResult {
   const damage = Math.max(0, amount);
   if (actor.lifeState !== "active" || damage <= 0) {
@@ -51,6 +52,7 @@ export function applyDamage(
       healthDamage,
       remainingArmor: actor.armor,
       remainingHealth: actor.health,
+      ...(weaponId ? { weaponId } : {}),
     },
   }];
 
@@ -82,6 +84,7 @@ export function applyDamage(
         victimActorId: actor.id,
         victimLifeId: actor.lifeId,
         respawnDelayMs: config.respawnDelayMs,
+        ...(weaponId ? { weaponId } : {}),
       },
     });
   }

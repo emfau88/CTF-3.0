@@ -18,9 +18,12 @@ export {
 } from "./ArenaBotControllerGroup";
 export {
   ClassicCtfBotDecisionController,
+  toggleClassicCtfTeamCommand,
   type ClassicCtfBotGoal,
   type ClassicCtfBotGoalKind,
   type ClassicCtfBotRole,
+  type ClassicCtfManualTeamCommand,
+  type ClassicCtfTeamCommand,
 } from "./ClassicCtfBotDecisionController";
 export { ClassicCtfBotController } from "./ClassicCtfBotController";
 export {

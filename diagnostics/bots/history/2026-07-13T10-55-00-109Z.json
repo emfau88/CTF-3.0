@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "runId": "2026-07-13T11-56-55-041Z",
-  "timestamp": "2026-07-13T11:56:55.041Z",
+  "runId": "2026-07-13T10-55-00-109Z",
+  "timestamp": "2026-07-13T10:55:00.109Z",
   "git": {
     "branch": "main",
     "commit": "e575194",
     "dirty": true,
-    "statusShort": "M diagnostics/bots/latest.json\n M diagnostics/bots/latest.md\n M docs/GAMEPLAY_CORE_V2_ROADMAP.md\n M docs/PROJECT_HANDOFF_2026-06-20.md\n M docs/V1_V2_FEELING_PARITY.md\n M index.html\n M src/adapters/phaser/PhaserArenaHudPort.ts\n M src/adapters/phaser/PhaserDiagnosticInputAdapter.ts\n M src/adapters/phaser/PhaserGameBridge.smoke.ts\n M src/adapters/phaser/PhaserMobileInputAdapter.ts\n M src/adapters/phaser/scenes/GameplayV2Scene.ts\n M src/adapters/phaser/v2TouchLayout.ts\n M src/core/actors/actorLifecycle.ts\n M src/core/bots/ArenaBotControllerGroup.ts\n M src/core/bots/BotCombatConfig.ts\n M src/core/bots/ClassicCtfBotController.ts\n M src/core/bots/ClassicCtfBotDecisionController.ts\n M src/core/bots/TdmBotCombatController.ts\n M src/core/bots/TdmBotController.ts\n M src/core/bots/index.ts\n M src/core/combat/updateProjectiles.ts\n M src/core/combat/v1Weapons.ts\n M src/core/index.ts\n M src/core/movement/MovementConfig.ts\n M src/core/pickups/PickupConfig.ts\n M src/core/world/maps/flowCircuitV2.ts\n M src/main.ts\n M src/styles.css\n M src/v2Menu.ts\n M src/v2Route.ts\n M tests/bot-diagnostics.ts\n M tests/bot-simulation.test.ts\n M tests/gameplay-core.smoke.test.ts\n?? diagnostics/bots/history/\n?? docs/ARENA_LEAGUE_IMPLEMENTATION_PLAN.md\n?? docs/PROJECT_STATUS_2026-07-13.md\n?? src/adapters/phaser/PhaserRadialCooldown.ts\n?? src/adapters/phaser/arenaKillFeed.ts\n?? src/adapters/phaser/desktopAim.ts\n?? src/adapters/phaser/weaponHudLayout.ts"
+    "statusShort": "M diagnostics/bots/latest.json\n M diagnostics/bots/latest.md\n M docs/GAMEPLAY_CORE_V2_ROADMAP.md\n M docs/PROJECT_HANDOFF_2026-06-20.md\n M docs/V1_V2_FEELING_PARITY.md\n M index.html\n M src/adapters/phaser/PhaserArenaHudPort.ts\n M src/adapters/phaser/PhaserDiagnosticInputAdapter.ts\n M src/adapters/phaser/PhaserGameBridge.smoke.ts\n M src/adapters/phaser/PhaserMobileInputAdapter.ts\n M src/adapters/phaser/scenes/GameplayV2Scene.ts\n M src/adapters/phaser/v2TouchLayout.ts\n M src/core/bots/BotCombatConfig.ts\n M src/core/bots/ClassicCtfBotDecisionController.ts\n M src/core/bots/TdmBotCombatController.ts\n M src/core/bots/TdmBotController.ts\n M src/core/movement/MovementConfig.ts\n M src/core/pickups/PickupConfig.ts\n M src/core/world/maps/flowCircuitV2.ts\n M src/v2Route.ts\n M tests/bot-diagnostics.ts\n M tests/bot-simulation.test.ts\n M tests/gameplay-core.smoke.test.ts\n?? diagnostics/bots/history/\n?? docs/ARENA_LEAGUE_IMPLEMENTATION_PLAN.md\n?? docs/PROJECT_STATUS_2026-07-13.md\n?? src/adapters/phaser/PhaserRadialCooldown.ts\n?? src/adapters/phaser/desktopAim.ts\n?? src/adapters/phaser/weaponHudLayout.ts"
   },
   "diagnosticsConfig": {
     "command": "npm.cmd run bot:diagnostics",

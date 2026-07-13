@@ -4,22 +4,26 @@ export function calculateV2TouchLayout(width: number, height: number) {
   const fireRadius = compact ? 30 : 36;
   const weaponRadius = compact ? 28 : 34;
 
-  // Jump is the right-thumb anchor and the dominant action, mirrored against
-  // the movement stick. Weapon and fire buttons are smaller satellites around
-  // that same thumb position, so visible buttons and hit zones stay aligned.
-  const safeRight = compact ? 76 : 104;
-  const safeBottom = compact ? 78 : 96;
-  const anchorX = width - Math.max(safeRight, width * (compact ? .06 : .075));
-  const anchorY = height - Math.max(safeBottom, height * (compact ? .105 : .135));
+  // Jump is the right-thumb anchor. Fire and picked-up weapons form one
+  // predictable ability arc around it, matching the spatial language of
+  // mobile MOBAs instead of stretching into an unrelated horizontal row.
+  const safeRight = compact ? 107 : 140;
+  const safeBottom = compact ? 78 : 118;
+  const anchorX = width - safeRight;
+  const anchorY = height - safeBottom;
+  const orbit = compact ? 135 : 165;
+  const satellite = (degrees: number) => {
+    const radians = degrees * Math.PI / 180;
+    return {
+      x: anchorX + Math.cos(radians) * orbit,
+      y: anchorY + Math.sin(radians) * orbit,
+    };
+  };
 
-  const fireOffsetX = compact ? 131 : 146;
-  const fireOffsetY = compact ? -5 : -8;
-  const rocketOffsetX = compact ? 71 : 90;
-  const rocketOffsetY = compact ? 119 : 140;
-  const railOffsetX = compact ? 201 : 230;
-  const railOffsetY = compact ? 92 : 114;
-  const whipOffsetX = compact ? 251 : 300;
-  const whipOffsetY = compact ? 3 : -8;
+  const fire = satellite(185);
+  const whip = satellite(223);
+  const rocket = satellite(261);
+  const rail = satellite(299);
 
   return {
     joy: {
@@ -35,23 +39,19 @@ export function calculateV2TouchLayout(width: number, height: number) {
     },
     fire: {
       r: fireRadius,
-      x: anchorX - fireOffsetX,
-      y: anchorY + fireOffsetY,
+      ...fire,
     },
     rocket: {
       r: weaponRadius,
-      x: anchorX - rocketOffsetX,
-      y: anchorY - rocketOffsetY,
+      ...rocket,
     },
     rail: {
       r: weaponRadius,
-      x: anchorX - railOffsetX,
-      y: anchorY - railOffsetY,
+      ...rail,
     },
     whip: {
       r: weaponRadius,
-      x: anchorX - whipOffsetX,
-      y: anchorY + whipOffsetY,
+      ...whip,
     },
   };
 }

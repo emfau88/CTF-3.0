@@ -1,5 +1,10 @@
 # V1/V2 Feeling Parity
 
+> Historischer Hinweis fuer CTF-3.0: Einzelne Restabweichungen und Map-Aussagen
+> in diesem Dokument sind ueberholt. Aktuelle Phase-0-Entscheidungen stehen in
+> `PROJECT_STATUS_2026-07-13.md`; konkrete Werte sind immer gegen den Code zu
+> pruefen.
+
 ## Referenz
 
 V1 bleibt die verbindliche Referenz. Die relevanten Implementierungen liegen
@@ -14,8 +19,8 @@ in:
 
 - Beschleunigung: `1580`
 - V1-Maximalgeschwindigkeit: `335`
-- V2-Maximalgeschwindigkeit: bewusst auf `241.2` reduziert (`72 %`), da sich
-  `335` insbesondere auf Touch deutlich zu schnell anfuehlt.
+- V2-Maximalgeschwindigkeit: nach Desktop-Spieltest bewusst auf `228` reduziert
+  (`68 %` von V1), weil `241.2` einen kleinen Tick zu schnell wirkte.
 - Bodenreibung: `7`
 - Reibung mit Input: `1.25`
 - Luftreibung: `1.05`
@@ -49,7 +54,7 @@ in:
 - Audio-Schrittfrequenz und Bewegungsspur skalieren ueber denselben
   `V2_GROUND_PARITY_CONFIG`-Wert.
 - Deterministische Smokes pruefen jedes authored Gap und Solid auf allen drei
-  Karten mit einem gehaltenen Sprung bei `241.2`.
+  Karten mit einem gehaltenen Sprung bei `228`.
 - Short-Jump- und Long-Jump-Unterschied, Landung und Jump-Events bleiben
   weiterhin separat abgesichert.
 

@@ -12,7 +12,12 @@ import {
 } from "../../core";
 import { lineIntersectsRect, type Rect } from "../../math";
 import type { InputAdapterPort } from "../input";
+import { drawRadialCooldownWipe } from "./PhaserRadialCooldown";
 import { calculateV2TouchLayout } from "./v2TouchLayout";
+import {
+  formatCooldownSeconds,
+  weaponIconScale,
+} from "./weaponHudLayout";
 
 interface TouchControl {
   id: number;
@@ -67,10 +72,15 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
   private restartRequested = false;
   private readonly graphics: Phaser.GameObjects.Graphics;
   private readonly aimGraphics: Phaser.GameObjects.Graphics;
+  private readonly cooldownGraphics: Phaser.GameObjects.Graphics;
   private readonly fireLabel: Phaser.GameObjects.Text;
   private readonly jumpLabel: Phaser.GameObjects.Text;
   private readonly weaponViews: Record<WeaponId, Phaser.GameObjects.Image>;
   private readonly weaponBadges: Record<WeaponId, WeaponBadgeView>;
+  private readonly weaponCooldownLabels: Record<
+    WeaponId,
+    Phaser.GameObjects.Text
+  >;
   private readonly moveStick: TouchStick = {
     id: -1,
     x: 0,
@@ -123,7 +133,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly actorId = "blue-player",
-    private readonly manualFireEnabled = true,
+    private readonly manualFireEnabled = false,
     private readonly weaponStatus?: (weaponId: WeaponId) => MobileWeaponStatus,
     private readonly snapshotProvider?: () => WorldSnapshot,
   ) {
@@ -143,6 +153,9 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     }
     this.graphics = scene.add.graphics().setScrollFactor(0).setDepth(1100);
     this.aimGraphics = scene.add.graphics().setDepth(1099);
+    this.cooldownGraphics = scene.add.graphics()
+      .setScrollFactor(0)
+      .setDepth(1102);
     const labelStyle: Phaser.Types.GameObjects.Text.TextStyle = {
       fontFamily: "Arial, sans-serif",
       fontSize: "12px",
@@ -151,9 +164,9 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       align: "center",
     };
     this.fireLabel = scene.add.text(0, 0, "FIRE", labelStyle)
-      .setOrigin(.5).setScrollFactor(0).setDepth(1101);
+      .setOrigin(.5).setScrollFactor(0).setDepth(1103);
     this.jumpLabel = scene.add.text(0, 0, "JUMP", labelStyle)
-      .setOrigin(.5).setScrollFactor(0).setDepth(1101).setVisible(false);
+      .setOrigin(.5).setScrollFactor(0).setDepth(1103).setVisible(false);
     this.weaponViews = {
       rocket: scene.add.image(0, 0, "uiRocketButton"),
       rail: scene.add.image(0, 0, "uiRailButton"),
@@ -166,6 +179,11 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       rocket: this.createWeaponBadge("uiAmmoBadge", "#17211f"),
       rail: this.createWeaponBadge("uiRailBadge", "#10281a"),
       whip: this.createWeaponBadge("uiAmmoBadge", "#2b1c36"),
+    };
+    this.weaponCooldownLabels = {
+      rocket: this.createCooldownLabel(),
+      rail: this.createCooldownLabel(),
+      whip: this.createCooldownLabel(),
     };
 
     scene.input.on("pointerdown", this.handlePointerDown, this);
@@ -258,6 +276,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     this.scene.scale.off("resize", this.layout, this);
     this.graphics.destroy();
     this.aimGraphics.destroy();
+    this.cooldownGraphics.destroy();
     this.fireLabel.destroy();
     this.jumpLabel.destroy();
     for (const view of Object.values(this.weaponViews)) {
@@ -266,6 +285,9 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     for (const badge of Object.values(this.weaponBadges)) {
       badge.image.destroy();
       badge.text.destroy();
+    }
+    for (const label of Object.values(this.weaponCooldownLabels)) {
+      label.destroy();
     }
     for (const key of Object.values(this.keyboardKeys ?? {})) {
       key.destroy();
@@ -450,10 +472,11 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       });
       this.weaponViews[weaponId]
         .setPosition(positions[weaponId].x, positions[weaponId].y)
-        .setScale(weaponId === "whip"
-          ? compact ? .42 : .54
-          : compact ? .27 : .38)
+        .setScale(weaponIconScale(weaponId, positions[weaponId].r))
         .setVisible(this.weaponAvailable(weaponId));
+      this.weaponCooldownLabels[weaponId]
+        .setPosition(positions[weaponId].x, positions[weaponId].y)
+        .setFontSize(compact ? 14 : 16);
     }
     this.draw();
   }
@@ -514,6 +537,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     const graphics = this.graphics;
     graphics.clear();
     this.aimGraphics.clear();
+    this.cooldownGraphics.clear();
     graphics.fillStyle(0xffffff, .38);
     graphics.lineStyle(2, 0x17302d, .2);
     graphics.fillCircle(
@@ -537,28 +561,20 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     );
     if (this.manualFireEnabled) {
       const cooldownMs = this.controlledActor()?.primaryFireCooldownMs ?? 0;
-      this.drawButton(this.fire, 0xf3c453, cooldownMs <= 0);
+      this.drawButton(this.fire, 0xf3c453);
       this.fireLabel.setText(
         cooldownMs > 0
           ? `FIRE\n${(Math.ceil(cooldownMs / 100) / 10).toFixed(1)}`
           : "FIRE",
       );
-      if (cooldownMs > 0) {
-        const ratio = Phaser.Math.Clamp(
-          cooldownMs / V2_BASIC_AUTOSHOOT_PARITY_CONFIG.cooldownMs,
-          0,
-          1,
-        );
-        graphics.lineStyle(5, 0xf3c453, .72).beginPath()
-          .arc(
-            this.fire.x,
-            this.fire.y,
-            this.fire.radius + 5,
-            -Math.PI / 2,
-            -Math.PI / 2 + Math.PI * 2 * (1 - ratio),
-          )
-          .strokePath();
-      }
+      drawRadialCooldownWipe(
+        this.cooldownGraphics,
+        this.fire.x,
+        this.fire.y,
+        this.fire.radius,
+        cooldownMs,
+        V2_BASIC_AUTOSHOOT_PARITY_CONFIG.cooldownMs,
+      );
     }
     if (PLAYER_JUMP_INPUT_ENABLED) {
       graphics.fillStyle(
@@ -584,14 +600,10 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       const badgeOffset = compact ? 21 : 27;
       const badge = this.weaponBadges[weaponId];
       const active = control.held && status.cooldownMs <= 0;
-      const baseScale = weaponId === "whip"
-        ? compact ? .42 : .54
-        : compact ? .27 : .38;
+      const baseScale = weaponIconScale(weaponId, control.radius);
       this.weaponViews[weaponId]
         .setVisible(available)
-        .setAlpha(status.cooldownMs > 0
-          ? weaponId === "rail" ? .62 : .58
-          : 1)
+        .setAlpha(1)
         .setScale(
           active && weaponId !== "whip" ? baseScale + .025 : baseScale,
         );
@@ -605,6 +617,9 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
         .setFontSize(compact ? 12 : 15)
         .setText(String(status.ammo))
         .setVisible(available);
+      this.weaponCooldownLabels[weaponId]
+        .setText(formatCooldownSeconds(status.cooldownMs))
+        .setVisible(available && status.cooldownMs > 0);
       if (available) {
         this.drawCooldown(weaponId, control, status.cooldownMs);
       }
@@ -657,13 +672,12 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
   private drawButton(
     control: TouchControl,
     color: number,
-    ready = true,
   ): void {
-    this.graphics.fillStyle(color, ready ? control.held ? .9 : .55 : .28);
+    this.graphics.fillStyle(color, control.held ? .9 : .55);
     this.graphics.lineStyle(
       3,
       0x17302d,
-      ready ? control.held ? .55 : .25 : .16,
+      control.held ? .55 : .25,
     );
     this.graphics.fillCircle(control.x, control.y, control.radius);
     this.graphics.strokeCircle(control.x, control.y, control.radius);
@@ -686,7 +700,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
   ): WeaponBadgeView {
     const image = this.scene.add.image(0, 0, texture)
       .setScrollFactor(0)
-      .setDepth(1102)
+      .setDepth(1103)
       .setVisible(false);
     const text = this.scene.add.text(0, 0, "0", {
       fontFamily: "Arial",
@@ -694,8 +708,19 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       color: "#ffffff",
       stroke,
       strokeThickness: 5,
-    }).setOrigin(.5).setScrollFactor(0).setDepth(1103).setVisible(false);
+    }).setOrigin(.5).setScrollFactor(0).setDepth(1104).setVisible(false);
     return { image, text };
+  }
+
+  private createCooldownLabel(): Phaser.GameObjects.Text {
+    return this.scene.add.text(0, 0, "", {
+      fontFamily: "Arial, sans-serif",
+      fontSize: "14px",
+      fontStyle: "bold",
+      color: "#ffffff",
+      stroke: "#101820",
+      strokeThickness: 5,
+    }).setOrigin(.5).setScrollFactor(0).setDepth(1104).setVisible(false);
   }
 
   private drawCooldown(
@@ -703,26 +728,22 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     control: TouchControl,
     cooldownMs: number,
   ): void {
-    if (cooldownMs <= 0 || weaponId === "rocket") {
+    if (cooldownMs <= 0) {
       return;
     }
-    const total = weaponId === "rail"
+    const total = weaponId === "rocket"
+      ? V2_V1_WEAPON_PARITY_CONFIG.rocketCooldownMs
+      : weaponId === "rail"
       ? V2_V1_WEAPON_PARITY_CONFIG.railCooldownMs
       : V2_V1_WEAPON_PARITY_CONFIG.whipCooldownMs;
-    const ratio = Phaser.Math.Clamp(cooldownMs / total, 0, 1);
-    this.graphics.lineStyle(
-      5,
-      weaponId === "rail" ? 0x62ff91 : 0xf4b35d,
-      .72,
-    ).beginPath()
-      .arc(
-        control.x,
-        control.y,
-        control.radius + 5,
-        -Math.PI / 2,
-        -Math.PI / 2 + Math.PI * 2 * (1 - ratio),
-      )
-      .strokePath();
+    drawRadialCooldownWipe(
+      this.cooldownGraphics,
+      control.x,
+      control.y,
+      control.radius + 4,
+      cooldownMs,
+      total,
+    );
   }
 
   private capturedWeapon(pointerId: number): WeaponId | null {

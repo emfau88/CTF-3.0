@@ -51,7 +51,7 @@ export class TdmBotCombatController {
       this.rocketDecisionCooldownMs = this.config.rocketDecisionCooldownMs;
     }
     const direction = weaponId === "rail"
-      ? this.createRailAim(actor, target, directAim)
+      ? this.createRailAim(actor, target, directAim, distance)
       : directAim;
     return {
       action: "fireWeapon",
@@ -93,14 +93,21 @@ export class TdmBotCombatController {
     actor: Readonly<ActorState>,
     target: Readonly<ActorState>,
     directAim: WorldPosition,
+    distance: number,
   ): WorldPosition {
     const sample = deterministicSignedUnit(
       `${actor.id}:${actor.lifeId}:${target.id}:${target.lifeId}:${this.railShotSequence}`,
     );
     this.railShotSequence++;
+    const longRangeProgress = clamp01(
+      (distance - this.config.railPreferredMinRange) /
+        Math.max(1, this.config.railRange - this.config.railPreferredMinRange),
+    );
+    const jitterMultiplier = 1 + longRangeProgress *
+      (this.config.railLongRangeJitterMultiplier - 1);
     return rotateDirection(
       directAim,
-      sample * this.config.railAimJitterRadians,
+      sample * this.config.railAimJitterRadians * jitterMultiplier,
     );
   }
 
@@ -140,6 +147,10 @@ export class TdmBotCombatController {
     }
     return null;
   }
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
 
 function deterministicSignedUnit(key: string): number {

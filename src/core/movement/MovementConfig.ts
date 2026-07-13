@@ -1,8 +1,8 @@
 import type { GroundMovementConfig } from "./movementTypes";
 
 export const V2_GROUND_PARITY_CONFIG: GroundMovementConfig = {
-  acceleration: 1100,
-  maxSpeed: 150,
+  acceleration: 1580,
+  maxSpeed: 228,
   friction: 7,
   inputFriction: 1.25,
   airFriction: 1.05,

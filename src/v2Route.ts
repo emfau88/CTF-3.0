@@ -1,5 +1,4 @@
 import {
-  DEFAULT_ARENA_TEAM_SIZE,
   isArenaTeamSize,
   type ArenaTeamSize,
 } from "./core/spawning";
@@ -42,10 +41,10 @@ export interface V2RouteState {
 
 const DEFAULT_ROUTE: V2RouteConfig = {
   scene: "v2",
-  mode: "tdm",
-  map: "training-crossing-v2",
+  mode: "ctf",
+  map: "flow-circuit-v2",
   players: "bot",
-  teamSize: DEFAULT_ARENA_TEAM_SIZE,
+  teamSize: 2,
   controls: "auto",
   skin: "alien-runner",
   sfx: "on",

@@ -67,7 +67,13 @@ if (showV2Menu) {
     const statsButton = document.querySelector<HTMLButtonElement>(
       "#v2-stats-button",
     );
+    const audioButton = document.querySelector<HTMLButtonElement>(
+      "#v2-audio-button",
+    );
+    const usesTouchControls = activeRoute?.controls === "touch";
     let latestStats: readonly MatchStatEntry[] = [];
+    let matchEnded = false;
+    let heldScoreboardVisible = false;
     const humanActorIds = activeRoute?.players === "local"
       ? ["blue-player", "red-player"]
       : ["blue-player"];
@@ -77,7 +83,12 @@ if (showV2Menu) {
     const setIngameButtonsVisible = (visible: boolean): void => {
       menuButton?.classList.toggle("is-hidden", !visible);
       audioButton?.classList.toggle("is-hidden", !visible);
-      statsButton?.classList.toggle("is-hidden", !visible);
+      statsButton?.classList.toggle("is-hidden", !visible || !usesTouchControls);
+    };
+    const closeHeldScoreboard = (): void => {
+      if (!heldScoreboardVisible) return;
+      heldScoreboardVisible = false;
+      hideGameplayV2Stats();
     };
     const releaseOverlayPause = (): void => {
       window.dispatchEvent(
@@ -85,6 +96,7 @@ if (showV2Menu) {
       );
     };
     const showMenuRoute = (): void => {
+      closeHeldScoreboard();
       hideGameplayV2Pause();
       hideGameplayV2Result();
       hideGameplayV2Stats();
@@ -94,6 +106,7 @@ if (showV2Menu) {
       }
     };
     const restartCurrentMatch = (): void => {
+      closeHeldScoreboard();
       hideGameplayV2Pause();
       hideGameplayV2Result();
       hideGameplayV2Stats();
@@ -103,12 +116,14 @@ if (showV2Menu) {
       }
     };
     const closePauseOverlay = (): void => {
+      closeHeldScoreboard();
       hideGameplayV2Pause();
       hideGameplayV2Stats();
       releaseOverlayPause();
       setIngameButtonsVisible(true);
     };
     const openPauseOverlay = (): void => {
+      closeHeldScoreboard();
       hideGameplayV2Result();
       window.dispatchEvent(
         new CustomEvent("v2-overlay-state", { detail: { paused: true } }),
@@ -124,8 +139,8 @@ if (showV2Menu) {
     if (menuButton && activeRoute) {
       menuButton.onclick = openPauseOverlay;
     }
-    statsButton?.classList.remove("is-hidden");
-    if (statsButton && activeRoute) {
+    statsButton?.classList.toggle("is-hidden", !usesTouchControls);
+    if (statsButton && activeRoute && usesTouchControls) {
       statsButton.onclick = () => {
         window.dispatchEvent(
           new CustomEvent("v2-overlay-state", { detail: { paused: true } }),
@@ -138,9 +153,35 @@ if (showV2Menu) {
         });
       };
     }
-    const audioButton = document.querySelector<HTMLButtonElement>(
-      "#v2-audio-button",
-    );
+    const heldScoreboardAvailable = (): boolean => {
+      const pauseVisible = !document.querySelector("#v2-pause-overlay")
+        ?.classList.contains("is-hidden");
+      const resultVisible = !document.querySelector("#v2-result-overlay")
+        ?.classList.contains("is-hidden");
+      return !usesTouchControls && !matchEnded && !pauseVisible && !resultVisible;
+    };
+    const handleScoreboardKeyDown = (event: KeyboardEvent): void => {
+      if (event.code !== "Tab") return;
+      event.preventDefault();
+      if (event.repeat || heldScoreboardVisible || !heldScoreboardAvailable()) {
+        return;
+      }
+      heldScoreboardVisible = true;
+      showGameplayV2Stats(latestStats, humanActorIds, undefined, {
+        holdToView: true,
+      });
+    };
+    const handleScoreboardKeyUp = (event: KeyboardEvent): void => {
+      if (event.code !== "Tab") return;
+      event.preventDefault();
+      closeHeldScoreboard();
+    };
+    window.addEventListener("keydown", handleScoreboardKeyDown);
+    window.addEventListener("keyup", handleScoreboardKeyUp);
+    window.addEventListener("blur", closeHeldScoreboard);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) closeHeldScoreboard();
+    });
     audioButton?.classList.remove("is-hidden");
     if (audioButton && activeRoute) {
       let currentSfx = activeRoute.sfx;
@@ -179,6 +220,7 @@ if (showV2Menu) {
         playerRespawnMs?: number;
       }>).detail;
       latestStats = detail.stats ?? latestStats;
+      matchEnded = detail.phase === "ended";
       const respawnMs = Math.max(0, detail.playerRespawnMs ?? 0);
       const showRespawn = detail.playerLifeState === "falling" ||
         detail.playerLifeState === "dead" ||
@@ -192,6 +234,7 @@ if (showV2Menu) {
       if (detail.phase !== "ended" || !detail.result || !activeRoute) {
         return;
       }
+      closeHeldScoreboard();
       setIngameButtonsVisible(false);
       hideGameplayV2Pause();
       releaseOverlayPause();

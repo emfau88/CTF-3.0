@@ -1,11 +1,15 @@
 import type { CoreActionIntent } from "../input";
+import type { TeamId } from "../actors";
 import type { GameModeId } from "../modes";
 import type { ArenaParticipant, ArenaTeamSlot } from "../spawning";
 import type { WorldMapData, WorldSnapshot } from "../world";
 import {
   ClassicCtfBotController,
 } from "./ClassicCtfBotController";
-import type { ClassicCtfBotRole } from "./ClassicCtfBotDecisionController";
+import type {
+  ClassicCtfBotRole,
+  ClassicCtfTeamCommand,
+} from "./ClassicCtfBotDecisionController";
 import { OneFlagBotController } from "./OneFlagBotController";
 import { TdmBotController } from "./TdmBotController";
 
@@ -15,6 +19,10 @@ export interface BotActionSource {
     deltaMs: number,
   ): readonly CoreActionIntent[];
   reset(): void;
+  setTeamCommand?(
+    teamId: TeamId,
+    command: ClassicCtfTeamCommand,
+  ): void;
 }
 
 export class ArenaBotControllerGroup implements BotActionSource {
@@ -35,6 +43,12 @@ export class ArenaBotControllerGroup implements BotActionSource {
 
   reset(): void {
     for (const controller of this.controllers) controller.reset();
+  }
+
+  setTeamCommand(teamId: TeamId, command: ClassicCtfTeamCommand): void {
+    for (const controller of this.controllers) {
+      controller.setTeamCommand?.(teamId, command);
+    }
   }
 }
 

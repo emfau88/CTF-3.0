@@ -297,9 +297,6 @@ function laneBiasedTarget(
   slot: ArenaTeamSlot,
   fallback: Readonly<{ x: number; y: number }>,
 ): { x: number; y: number } {
-  if (Math.abs(target.position.x - actor.position.x) < 340) {
-    return { ...fallback };
-  }
   const bounds = snapshot.geometry.bounds;
   const ratio = slot === 2
     ? .24
@@ -308,9 +305,21 @@ function laneBiasedTarget(
     : slot === 4
     ? actor.teamId === "blue" ? .38 : .62
     : .5;
+  const laneY = bounds.minY + (bounds.maxY - bounds.minY) * ratio;
+  if (Math.abs(target.position.x - actor.position.x) < 340) {
+    if (slot === 1) return { ...fallback };
+    const closeRangeSpread = Math.max(
+      -120,
+      Math.min(120, (laneY - fallback.y) * .45),
+    );
+    return {
+      x: fallback.x,
+      y: fallback.y + closeRangeSpread,
+    };
+  }
   return {
     x: fallback.x,
-    y: bounds.minY + (bounds.maxY - bounds.minY) * ratio,
+    y: laneY,
   };
 }
 

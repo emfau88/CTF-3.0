@@ -20,7 +20,6 @@ import {
   TeamDeathmatchMode,
   TRAINING_CROSSING_V2,
   V2_ARENA_PICKUP_PARITY_CONFIG,
-  V2_BASIC_AUTOSHOOT_PARITY_CONFIG,
   V2_BOT_NAVIGATION_CONFIG,
   WORLD_MAPS,
   type ArenaTeamId,
@@ -334,10 +333,6 @@ export function runSimulationScenario(
   const runtime = new GameplayCoreRuntime({
     mode: scenario.createMode(),
     createWorld: () => scenario.createWorld(scenario.map, scenario.teamSize),
-    basicAutoAttack: V2_BASIC_AUTOSHOOT_PARITY_CONFIG,
-    autoBasicAttackActorIds: participants.map(
-      (participant) => participant.actorId,
-    ),
   });
   runtime.initialize();
   const bots = createArenaBotControllerGroup(
@@ -976,9 +971,6 @@ export function runTdmCombatStandoffScenario(
       worldRef = createTeamDeathmatchWorldState(TRAINING_CROSSING_V2);
       return worldRef;
     },
-    basicAutoAttack: V2_BASIC_AUTOSHOOT_PARITY_CONFIG,
-    autoBasicAttackActorIds: [],
-    allowManualPrimaryFire: false,
   });
   runtime.initialize();
   if (!worldRef) throw new Error("Missing TDM combat standoff scenario world.");
@@ -1597,7 +1589,7 @@ function captureTdmLowHealthVsEnemyFrame(
   if (
     !metric.pickupCollected &&
     metric.previousHealthDistance !== null &&
-    healthDistance >= metric.previousHealthDistance - 4
+    healthDistance >= metric.previousHealthDistance - .5
   ) {
     metric.currentNoProgressMs += FRAME_DELTA_MS;
     metric.longestNoProgressMs = Math.max(

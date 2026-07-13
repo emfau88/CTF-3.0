@@ -1,5 +1,14 @@
 # Gameplay Core V2 Roadmap
 
+> Historischer Hinweis fuer CTF-3.0: Die technische Core-Roadmap bleibt als
+> Architekturreferenz erhalten. Produktreihenfolge und aktuelle Gates stehen in
+> `ARENA_LEAGUE_IMPLEMENTATION_PLAN.md` und `PROJECT_STATUS_2026-07-13.md`.
+
+> Aktuelle Produktabweichung von der historischen V1-Paritaet: Basic Autoshoot
+> bleibt als opt-in Core-Faehigkeit erhalten, ist aber in V2-Produktmatches fuer
+> Menschen und Bots deaktiviert. Der Hero-Slice verwendet nur Rocket (`Q`),
+> Rail (`E`) und Whip (`F`), ohne Eingabepuffer waehrend Cooldowns.
+
 ## Zielbild
 
 V2 wird kein anderes Spiel, sondern eine saubere, erweiterbare
