@@ -1,5 +1,6 @@
 export {
   applyDamage,
+  cancelSpawnProtection,
   createActorState,
   updateActorLifecycle,
   V2_ACTOR_LIFECYCLE_CONFIG,
@@ -55,6 +56,7 @@ export {
 export {
   fireDiagnosticProjectile,
   fireV1Weapons,
+  resolveNearestValidEnemy,
   updateBasicAutoAttacks,
   updateProjectiles,
   V2_BASIC_AUTOSHOOT_PARITY_CONFIG,
@@ -63,6 +65,7 @@ export {
   type BasicAutoAttackConfig,
   type DiagnosticFireResult,
   type DiagnosticWeaponConfig,
+  type NearestValidEnemyResult,
   type V1WeaponConfig,
   type ProjectileId,
   type ProjectileLifeState,

@@ -1,6 +1,7 @@
 import type { ActorState } from "../actors";
 import type { GameEvent } from "../events";
 import type { PickupState } from "./pickup";
+import { V2_V1_WEAPON_PARITY_CONFIG } from "../combat";
 
 export interface PickupUpdateResult {
   readonly events: readonly GameEvent[];
@@ -11,9 +12,11 @@ export function updatePickups(
   actors: ActorState[],
   deltaMs: number,
   timeMs: number,
+  humanActorIds: readonly string[] = [],
 ): PickupUpdateResult {
   const events: GameEvent[] = [];
   const ms = Math.max(0, deltaMs);
+  const humans = new Set(humanActorIds);
 
   for (const pickup of pickups) {
     if (pickup.lifeState === "inactive") {
@@ -37,11 +40,15 @@ export function updatePickups(
       continue;
     }
 
-    const collector = actors.find((actor) =>
-      actor.lifeState === "active" &&
-      circlesOverlap(actor, pickup) &&
-      canApplyPickup(actor, pickup)
-    );
+    const collector = actors
+      .filter((actor) =>
+        actor.lifeState === "active" &&
+        circlesOverlap(actor, pickup) &&
+        canApplyPickup(actor, pickup)
+      )
+      .sort((left, right) =>
+        Number(humans.has(right.id)) - Number(humans.has(left.id))
+      )[0];
     if (!collector) {
       continue;
     }
@@ -74,6 +81,10 @@ function canApplyPickup(actor: ActorState, pickup: PickupState): boolean {
   if (pickup.type === "armor") {
     return actor.armor < actor.maxArmor;
   }
+  if (pickup.type === "whip") {
+    return actor.weapons.whipAmmo <
+      V2_V1_WEAPON_PARITY_CONFIG.whipMaxCharges;
+  }
   return true;
 }
 
@@ -94,7 +105,16 @@ function applyPickup(actor: ActorState, pickup: PickupState): number {
   } else if (pickup.type === "rail") {
     actor.weapons.railAmmo += pickup.value;
   } else {
-    actor.weapons.whipAmmo += pickup.value;
+    const before = actor.weapons.whipAmmo;
+    actor.weapons.whipAmmo = Math.min(
+      V2_V1_WEAPON_PARITY_CONFIG.whipMaxCharges,
+      actor.weapons.whipAmmo + pickup.value,
+    );
+    actor.weapons.whipRechargeMs = actor.weapons.whipAmmo >=
+        V2_V1_WEAPON_PARITY_CONFIG.whipMaxCharges
+      ? 0
+      : actor.weapons.whipRechargeMs;
+    return actor.weapons.whipAmmo - before;
   }
   return pickup.value;
 }

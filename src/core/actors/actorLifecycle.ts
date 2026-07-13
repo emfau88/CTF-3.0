@@ -4,6 +4,7 @@ import type { ActorLifecycleConfig } from "./ActorLifecycleConfig";
 
 export interface ActorDamageResult {
   readonly applied: boolean;
+  readonly blockedBySpawnProtection: boolean;
   readonly armorDamage: number;
   readonly healthDamage: number;
   readonly killed: boolean;
@@ -27,10 +28,34 @@ export function applyDamage(
   if (actor.lifeState !== "active" || damage <= 0) {
     return {
       applied: false,
+      blockedBySpawnProtection: false,
       armorDamage: 0,
       healthDamage: 0,
       killed: false,
       events: [],
+    };
+  }
+  if (actor.spawnProtectionRemainingMs > 0) {
+    return {
+      applied: false,
+      blockedBySpawnProtection: true,
+      armorDamage: 0,
+      healthDamage: 0,
+      killed: false,
+      events: [{
+        id: `actor-damage-blocked-${actor.id}-${timeMs}`,
+        type: "actor.damageBlocked",
+        timeMs,
+        sourceActorId,
+        targetActorId: actor.id,
+        teamId: actor.teamId ?? undefined,
+        payload: {
+          amount: damage,
+          blockedBySpawnProtection: true,
+          protectionRemainingMs: actor.spawnProtectionRemainingMs,
+          ...(weaponId ? { weaponId } : {}),
+        },
+      }],
     };
   }
 
@@ -68,6 +93,8 @@ export function applyDamage(
     actor.weapons.railCooldownMs = 0;
     actor.weapons.whipAmmo = 0;
     actor.weapons.whipCooldownMs = 0;
+    actor.weapons.whipRechargeMs = 0;
+    actor.spawnProtectionRemainingMs = 0;
     actor.respawn = {
       reason: "death",
       remainingMs: config.respawnDelayMs,
@@ -91,6 +118,7 @@ export function applyDamage(
 
   return {
     applied: true,
+    blockedBySpawnProtection: false,
     armorDamage,
     healthDamage,
     killed,
@@ -127,6 +155,10 @@ export function updateActorLifecycle(
   actor.velocity.y = 0;
   actor.health = actor.maxHealth;
   actor.armor = Math.min(actor.maxArmor, config.respawnArmor);
+  actor.spawnProtectionRemainingMs = config.spawnProtectionMs;
+  actor.weapons.whipAmmo = config.respawnWhipCharges;
+  actor.weapons.whipCooldownMs = 0;
+  actor.weapons.whipRechargeMs = 0;
   actor.lifeId += 1;
   actor.lifeState = "active";
   actor.respawn = null;
@@ -150,6 +182,25 @@ export function updateActorLifecycle(
         armor: actor.armor,
       },
     }],
+  };
+}
+
+export function cancelSpawnProtection(
+  actor: ActorState,
+  timeMs: number,
+  reason: "attack" | "objective",
+): GameEvent | null {
+  if (actor.spawnProtectionRemainingMs <= 0) {
+    return null;
+  }
+  actor.spawnProtectionRemainingMs = 0;
+  return {
+    id: `actor-spawn-protection-ended-${actor.id}-${timeMs}-${reason}`,
+    type: "actor.spawnProtectionEnded",
+    timeMs,
+    sourceActorId: actor.id,
+    teamId: actor.teamId ?? undefined,
+    payload: { reason },
   };
 }
 

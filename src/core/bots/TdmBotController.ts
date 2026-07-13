@@ -54,6 +54,7 @@ export class TdmBotController {
     private readonly combat: TdmBotCombatController =
       new TdmBotCombatController(),
     private readonly slot: ArenaTeamSlot = 1,
+    private readonly humanActorIds: readonly string[] = [],
   ) {
     this.lastDebugState = createEmptyDebugState(actorId);
   }
@@ -89,6 +90,7 @@ export class TdmBotController {
       this.slot,
       enemyDistance,
       this.stickyPickupRemainingMs > 0 ? this.stickyPickupId : null,
+      this.humanActorIds,
     );
     if (pickup) {
       this.stickyPickupId = pickup.id;
@@ -103,16 +105,21 @@ export class TdmBotController {
       snapshot,
       this.movement,
     );
-    const navigationTarget = pickup?.position ?? laneBiasedTarget(
+    const separationTarget = pickup
+      ? null
+      : clusteredSeparationTarget(snapshot, actor, this.slot);
+    const navigationTarget = pickup?.position ?? separationTarget ?? laneBiasedTarget(
       snapshot,
       actor,
       target,
       this.slot,
       engagement.targetPosition,
     );
-    const holdPosition = !pickup && engagement.holdPosition;
+    const holdPosition = !pickup && !separationTarget && engagement.holdPosition;
     const navigationTargetKey = pickup
       ? `pickup:${pickup.id}`
+      : separationTarget
+      ? `spread:${actor.lifeId}:lane-${this.slot}`
       : `${target.id}:${target.lifeId}:${engagement.key}:lane-${this.slot}`;
     const navigation = holdPosition
       ? {
@@ -219,6 +226,7 @@ function selectPickupGoal(
   slot: ArenaTeamSlot,
   enemyDistance: number,
   preferredPickupId: string | null,
+  humanActorIds: readonly string[],
 ): Readonly<PickupState> | null {
   const active = snapshot.pickups.filter((pickup) => pickup.lifeState === "active");
   const urgentType = actor.health <= actor.maxHealth * .55
@@ -250,6 +258,14 @@ function selectPickupGoal(
   }
   const candidates = active
     .filter((pickup) => desiredTypes.includes(pickup.type))
+    .filter((pickup) =>
+      !isWeaponPickupReservedForHuman(
+        snapshot,
+        actor,
+        pickup,
+        humanActorIds,
+      )
+    )
     .map((pickup) => ({
       pickup,
       distance: distance(actor.position, pickup.position),
@@ -321,6 +337,66 @@ function laneBiasedTarget(
     x: fallback.x,
     y: laneY,
   };
+}
+
+function clusteredSeparationTarget(
+  snapshot: WorldSnapshot,
+  actor: Readonly<ActorState>,
+  slot: ArenaTeamSlot,
+): { x: number; y: number } | null {
+  const nearbyAllies = snapshot.actors.filter((candidate) =>
+    candidate.id !== actor.id &&
+    candidate.teamId === actor.teamId &&
+    candidate.lifeState === "active" &&
+    distance(candidate.position, actor.position) <= 170
+  );
+  if (nearbyAllies.length < 2) return null;
+  const bounds = snapshot.geometry.bounds;
+  const laneRatio = slot === 1 ? .15 : slot === 2 ? .36 : slot === 3 ? .64 : .85;
+  const advance = actor.teamId === "blue" ? 100 : -100;
+  return {
+    x: Math.max(bounds.minX + actor.radius, Math.min(
+      bounds.maxX - actor.radius,
+      actor.position.x + advance,
+    )),
+    y: bounds.minY + (bounds.maxY - bounds.minY) * laneRatio,
+  };
+}
+
+function isWeaponPickupReservedForHuman(
+  snapshot: WorldSnapshot,
+  actor: Readonly<ActorState>,
+  pickup: Readonly<PickupState>,
+  humanActorIds: readonly string[],
+): boolean {
+  if (
+    pickup.type !== "rocket" &&
+    pickup.type !== "rail" &&
+    pickup.type !== "whip"
+  ) {
+    return false;
+  }
+  const weapon = pickup.type as "rocket" | "rail" | "whip";
+  const actorAmmo = ammoFor(actor, weapon);
+  const humans = new Set(humanActorIds);
+  return snapshot.actors.some((candidate) =>
+    humans.has(candidate.id) &&
+    candidate.teamId === actor.teamId &&
+    candidate.lifeState === "active" &&
+    distance(candidate.position, pickup.position) <= 240 &&
+    ammoFor(candidate, weapon) <= actorAmmo
+  );
+}
+
+function ammoFor(
+  actor: Readonly<ActorState>,
+  weapon: "rocket" | "rail" | "whip",
+): number {
+  return weapon === "rocket"
+    ? actor.weapons.rocketAmmo
+    : weapon === "rail"
+    ? actor.weapons.railAmmo
+    : actor.weapons.whipAmmo;
 }
 
 function distance(

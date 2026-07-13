@@ -357,13 +357,14 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       ["whip", this.keys.whip.isDown, this.whipWasHeld],
     ] as const) {
       if (held && !wasHeld) {
-        actions.push({
+        const action: CoreActionIntent = {
           action: "fireWeapon",
           phase: "pressed",
           actorId,
-          direction,
+          ...(weaponId === "whip" ? {} : { direction }),
           payload: { weaponId },
-        });
+        };
+        actions.push(action);
       }
     }
   }

@@ -53,6 +53,7 @@ export interface ActorWeaponState {
   railCooldownMs: number;
   whipAmmo: number;
   whipCooldownMs: number;
+  whipRechargeMs: number;
 }
 
 export interface ActorState {
@@ -76,6 +77,7 @@ export interface ActorState {
   maxHealth: number;
   armor: number;
   maxArmor: number;
+  spawnProtectionRemainingMs: number;
   primaryFireCooldownMs: number;
   weapons: ActorWeaponState;
   respawn: ActorRespawnState | null;
@@ -102,6 +104,7 @@ export type CreateActorStateInput = {
   readonly maxHealth?: number;
   readonly armor?: number;
   readonly maxArmor?: number;
+  readonly spawnProtectionRemainingMs?: number;
   readonly primaryFireCooldownMs?: number;
   readonly weapons?: Partial<ActorWeaponState>;
   readonly respawn?: ActorRespawnState | null;
@@ -149,6 +152,7 @@ export function createActorState(input: CreateActorStateInput): ActorState {
     maxHealth,
     armor: input.armor ?? maxArmor,
     maxArmor,
+    spawnProtectionRemainingMs: input.spawnProtectionRemainingMs ?? 0,
     primaryFireCooldownMs: input.primaryFireCooldownMs ?? 0,
     weapons: {
       rocketAmmo: input.weapons?.rocketAmmo ?? 0,
@@ -157,6 +161,7 @@ export function createActorState(input: CreateActorStateInput): ActorState {
       railCooldownMs: input.weapons?.railCooldownMs ?? 0,
       whipAmmo: input.weapons?.whipAmmo ?? 0,
       whipCooldownMs: input.weapons?.whipCooldownMs ?? 0,
+      whipRechargeMs: input.weapons?.whipRechargeMs ?? 0,
     },
     respawn: input.respawn ? { ...input.respawn } : null,
   };

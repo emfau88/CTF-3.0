@@ -1,4 +1,8 @@
-import type { ActorState, WorldPosition } from "../actors";
+import {
+  cancelSpawnProtection,
+  type ActorState,
+  type WorldPosition,
+} from "../actors";
 import type { GameEvent } from "../events";
 import type { WorldRect, WorldState } from "../world";
 import type { BasicAutoAttackConfig } from "./BasicAutoAttackConfig";
@@ -34,7 +38,14 @@ export function fireBasicAttack(
   const projectile = createBasicProjectile(actor, target, world.timeMs, config);
   world.projectiles.push(projectile);
   actor.primaryFireCooldownMs = config.cooldownMs;
-  return [{
+  const protectionEnded = cancelSpawnProtection(
+    actor,
+    world.timeMs,
+    "attack",
+  );
+  return [
+    ...(protectionEnded ? [protectionEnded] : []),
+    {
     id: `projectile-spawned-${projectile.id}`,
     type: "projectile.spawned",
     timeMs: world.timeMs,

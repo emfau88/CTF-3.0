@@ -78,6 +78,9 @@ if (showV2Menu) {
       "#v2-audio-button",
     );
     const usesTouchControls = activeRoute?.controls === "touch";
+    const activeModeId = activeRoute
+      ? modeIdForRoute(activeRoute.mode)
+      : "team-deathmatch";
     let latestStats: readonly MatchStatEntry[] = [];
     let matchEnded = false;
     let leagueResultRecorded = false;
@@ -161,7 +164,7 @@ if (showV2Menu) {
           hideGameplayV2Stats();
           releaseOverlayPause();
           setIngameButtonsVisible(true);
-        });
+        }, { modeId: activeModeId });
       };
     }
     const heldScoreboardAvailable = (): boolean => {
@@ -180,6 +183,7 @@ if (showV2Menu) {
       heldScoreboardVisible = true;
       showGameplayV2Stats(latestStats, humanActorIds, undefined, {
         holdToView: true,
+        modeId: activeModeId,
       });
     };
     const handleScoreboardKeyUp = (event: KeyboardEvent): void => {
@@ -285,6 +289,7 @@ if (showV2Menu) {
           : formatResultScores(detail.scores ?? []),
         stats: latestStats,
         humanActorIds,
+        modeId: activeModeId,
         onPlayAgain: leagueMatchContext ? showMenuRoute : restartCurrentMatch,
         onMainMenu: showMenuRoute,
         playAgainLabel: leagueMatchContext ? "Continue League" : "Play Again",

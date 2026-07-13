@@ -4,7 +4,6 @@ import {
   FOUNDERS_CIRCUIT_TEAM_IDS,
   foundersCircuitDiscipline,
   PLAYER_LEAGUE_TEAM_ID,
-  leagueCharacter,
 } from "./leagueCatalog";
 import {
   LEAGUE_SAVE_VERSION,
@@ -205,11 +204,6 @@ function recordStanding(
   }
 }
 
-function teamPower(season: LeagueSeasonState, teamId: LeagueTeamId): number {
-  const roster = season.teamRosters[teamId];
-  return roster.reduce((sum, id) => sum + leagueCharacter(id).rating, 0) / roster.length;
-}
-
 function teamForm(season: LeagueSeasonState, teamId: LeagueTeamId): number {
   const standing = season.standings[teamId];
   if (standing.played === 0) return 0;
@@ -254,9 +248,6 @@ export function simulateLeagueMatch(
   const discipline = foundersCircuitDiscipline(match.roundIndex);
   const homeTeam = LEAGUE_TEAMS.find((team) => team.id === match.homeTeamId)!;
   const awayTeam = LEAGUE_TEAMS.find((team) => team.id === match.awayTeamId)!;
-  const homePower = teamPower(season, match.homeTeamId);
-  const awayPower = teamPower(season, match.awayTeamId);
-  const powerEdge = homePower - awayPower;
   const formEdge = teamForm(season, match.homeTeamId) - teamForm(season, match.awayTeamId);
   const objectiveWeight = discipline.mode === "tdm" ? 0 : discipline.mode === "one-flag" ? 0.026 : 0.018;
   const combatWeight = discipline.mode === "tdm" ? 0.034 : 0.022;
@@ -271,9 +262,9 @@ export function simulateLeagueMatch(
   const scale = discipline.mode === "tdm" ? 2.1 : 1;
   const baseline = discipline.mode === "tdm" ? 6.8 : 1.15;
   const blueScore = Math.max(0, Math.min(discipline.scoreTarget,
-    Math.round(baseline + (powerEdge / 18 + formEdge * 0.16 + homeMatchup + 0.12 + homeVariance) * scale)));
+    Math.round(baseline + (formEdge * 0.16 + homeMatchup + 0.12 + homeVariance) * scale)));
   const redScore = Math.max(0, Math.min(discipline.scoreTarget,
-    Math.round(baseline + (-powerEdge / 18 - formEdge * 0.16 + awayMatchup + awayVariance) * scale)));
+    Math.round(baseline + (-formEdge * 0.16 + awayMatchup + awayVariance) * scale)));
   const result = {
     blueTeamId: match.homeTeamId,
     redTeamId: match.awayTeamId,
@@ -330,11 +321,12 @@ function openRecruitment(season: LeagueSeasonState): void {
       ? [fallbackOpponent]
       : [season.teamIds.find((teamId) => teamId !== season.playerTeamId)!];
   const candidateIds = sourceTeams
-    .map((teamId) =>
-      [...season.teamRosters[teamId]].sort(
-        (a, b) => leagueCharacter(b).rating - leagueCharacter(a).rating
-      )[0]
-    )
+    .map((teamId) => {
+      const roster = season.teamRosters[teamId];
+      if (roster.length === 0) return undefined;
+      const cosmeticIndex = hashText(`${season.seasonId}:${teamId}`) % roster.length;
+      return roster[cosmeticIndex];
+    })
     .filter((id): id is string => Boolean(id))
     .slice(0, 3);
   season.recruitment = {

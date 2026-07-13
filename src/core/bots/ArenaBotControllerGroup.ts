@@ -56,6 +56,7 @@ export function createArenaBotControllerGroup(
   modeId: GameModeId,
   map: WorldMapData,
   participants: readonly ArenaParticipant[],
+  humanActorIds: readonly string[] = [],
 ): ArenaBotControllerGroup {
   return new ArenaBotControllerGroup(participants.map((participant) => {
     if (modeId === "team-deathmatch") {
@@ -66,6 +67,7 @@ export function createArenaBotControllerGroup(
         undefined,
         undefined,
         participant.slot,
+        humanActorIds,
       );
     }
     if (modeId === "classic-ctf") {

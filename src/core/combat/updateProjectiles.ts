@@ -189,14 +189,18 @@ function explodeRocket(
       continue;
     }
     const falloff = clamp(1 - distance / splashRadius, .35, 1);
-    events.push(...applyDamage(
+    const damage = applyDamage(
       actor,
       projectile.damage * falloff,
       timeMs,
       lifecycleConfig,
       projectile.ownerActorId,
       projectile.weaponId,
-    ).events);
+    );
+    events.push(...damage.events);
+    if (damage.blockedBySpawnProtection) {
+      continue;
+    }
     const normal = distance || 1;
     actor.velocity.x += dx / normal * knockback * falloff;
     actor.velocity.y += dy / normal * knockback * falloff;

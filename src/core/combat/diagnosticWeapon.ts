@@ -1,4 +1,8 @@
-import type { ActorState, WorldPosition } from "../actors";
+import {
+  cancelSpawnProtection,
+  type ActorState,
+  type WorldPosition,
+} from "../actors";
 import type { GameEvent } from "../events";
 import type { DiagnosticWeaponConfig } from "./DiagnosticWeaponConfig";
 import type { ProjectileState } from "./projectile";
@@ -44,10 +48,13 @@ export function fireDiagnosticProjectile(
     lifeState: "active",
   };
   actor.primaryFireCooldownMs = config.cooldownMs;
+  const protectionEnded = cancelSpawnProtection(actor, timeMs, "attack");
 
   return {
     projectile,
-    events: [{
+    events: [
+      ...(protectionEnded ? [protectionEnded] : []),
+      {
       id: `projectile-spawned-${projectile.id}`,
       type: "projectile.spawned",
       timeMs,

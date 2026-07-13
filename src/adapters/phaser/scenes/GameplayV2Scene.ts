@@ -72,6 +72,7 @@ export class GameplayV2Scene extends Phaser.Scene {
         : "team-deathmatch",
       selectedMap,
       botParticipants,
+      humanActorIds,
     );
     this.sound.mute = route.sfx === "off";
     const runtime = new GameplayCoreRuntime({
@@ -85,6 +86,7 @@ export class GameplayV2Scene extends Phaser.Scene {
         : isOneFlag
         ? createOneFlagWorldState(selectedMap, { teamSize: route.teamSize })
         : createTeamDeathmatchWorldState(selectedMap, { teamSize: route.teamSize }),
+      humanActorIds,
     });
     const readBlueWeaponStatus = (weaponId: "rocket" | "rail" | "whip") => {
       const actor = (this.bridge?.snapshot ?? runtime.snapshot).actors.find(

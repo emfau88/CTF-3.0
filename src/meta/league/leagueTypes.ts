@@ -10,15 +10,12 @@ export type LeagueTeamId =
   | "solar-wardens"
   | "void-runners";
 
-export type LeagueCharacterRole = "attacker" | "defender" | "allrounder";
-
 export interface LeagueCharacterDefinition {
   readonly id: string;
   readonly name: string;
   readonly teamId: LeagueTeamId;
-  readonly role: LeagueCharacterRole;
-  readonly trait: string;
-  readonly rating: number;
+  readonly visualStyle: string;
+  readonly personality: string;
   readonly skinId: V2PlayerSkinId;
 }
 

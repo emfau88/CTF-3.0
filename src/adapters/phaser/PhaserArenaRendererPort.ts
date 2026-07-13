@@ -1,42 +1,22 @@
 import Phaser from "phaser";
 import type {
   ActorId,
-  ActorState,
-  PickupId,
-  PickupState,
   ProjectileId,
   ProjectileState,
   WorldMapData,
   WorldSnapshot,
 } from "../../core";
-import { V2_COLLISION_GROUNDWORK_CONFIG } from "../../core";
 import { renderArena } from "../../arenaRenderer";
 import type { LevelData } from "../../level";
 import type { RendererPort } from "../rendering";
 import type { V2PlayerSkinId } from "../../v2Route";
+import { PhaserArenaActorRenderer } from "./PhaserArenaActorRenderer";
+import { PhaserArenaCameraController } from "./PhaserArenaCameraController";
+import { PhaserArenaObjectiveRenderer } from "./PhaserArenaObjectiveRenderer";
 import {
-  V2_CHARACTER_DIRECTIONS,
-  V2_CHARACTER_SKINS,
-  legacyArenaCharacterFrame,
-  resolveV2CharacterPresentation,
-  v2CharacterAnimationKey,
-  v2CharacterAnimationState,
-  v2CharacterColumns,
-  v2CharacterDirection,
-  v2CharacterDirectionRow,
-  v2CharacterFrame,
-  type V2CharacterAnimationState,
-  type V2CharacterPresentation,
-  type V2CharacterSkinConfig,
-} from "./v2CharacterPresentation";
-
-interface ArenaActorView {
-  readonly shadow: Phaser.GameObjects.Ellipse;
-  readonly container: Phaser.GameObjects.Container;
-  readonly sprite: Phaser.GameObjects.Sprite;
-  readonly status: Phaser.GameObjects.Graphics;
-  readonly character: V2CharacterPresentation;
-}
+  PhaserArenaPickupRenderer,
+  pickupPadColor,
+} from "./PhaserArenaPickupRenderer";
 
 interface SpawnPadParticle {
   x: number;
@@ -45,6 +25,7 @@ interface SpawnPadParticle {
   lifeMs: number;
   maxLifeMs: number;
   size: number;
+  color: number;
 }
 
 interface LibraryDustParticle {
@@ -58,13 +39,12 @@ interface LibraryDustParticle {
 }
 
 export class PhaserArenaRendererPort implements RendererPort {
-  private readonly actorViews = new Map<ActorId, ArenaActorView>();
   private readonly projectileViews =
     new Map<ProjectileId, Phaser.GameObjects.Ellipse | Phaser.GameObjects.Image>();
-  private readonly pickupViews =
-    new Map<PickupId, Phaser.GameObjects.Container>();
-  private readonly objectiveViews =
-    new Map<string, Phaser.GameObjects.Image | Phaser.GameObjects.Container>();
+  private readonly actorRenderer: PhaserArenaActorRenderer;
+  private readonly cameraController: PhaserArenaCameraController;
+  private readonly pickupRenderer: PhaserArenaPickupRenderer;
+  private readonly objectiveRenderer: PhaserArenaObjectiveRenderer;
   private readonly spawnPadParticleGraphics: Phaser.GameObjects.Graphics;
   private readonly libraryDustGraphics?: Phaser.GameObjects.Graphics;
   private readonly libraryDust: LibraryDustParticle[] = [];
@@ -72,12 +52,6 @@ export class PhaserArenaRendererPort implements RendererPort {
   private spawnPadParticleTimerMs = 0;
   private lastRenderTimeMs = 0;
   private lastLibraryTimeMs = 0;
-  private cameraInitialized = false;
-  private manualCameraActive = false;
-  private lastCameraTimeMs = 0;
-  private readonly cameraCursorKeys?: Phaser.Types.Input.Keyboard.CursorKeys;
-  private readonly cameraResetKey?: Phaser.Input.Keyboard.Key;
-
   constructor(
     private readonly scene: Phaser.Scene,
     map: WorldMapData,
@@ -86,181 +60,54 @@ export class PhaserArenaRendererPort implements RendererPort {
     enableManualCamera = false,
     cameraZoom = 1,
   ) {
-    scene.cameras.main.setRoundPixels(false).setZoom(cameraZoom);
-    if (enableManualCamera && scene.input.keyboard) {
-      this.cameraCursorKeys = scene.input.keyboard.createCursorKeys();
-      this.cameraResetKey = scene.input.keyboard.addKey(
-        Phaser.Input.Keyboard.KeyCodes.C,
-      );
-    }
+    this.cameraController = new PhaserArenaCameraController(
+      scene,
+      followActorId,
+      enableManualCamera,
+      cameraZoom,
+    );
+    this.actorRenderer = new PhaserArenaActorRenderer(scene, playerSkinId);
+    this.pickupRenderer = new PhaserArenaPickupRenderer(scene);
+    this.objectiveRenderer = new PhaserArenaObjectiveRenderer(scene);
     const level = toPresentationLevel(map);
     ensureLibraryCandleAnimation(scene);
-    ensurePlayerSkinAnimations(scene);
     renderArena(scene, level, (x, y) => this.addLibraryCandles(x, y));
     if (map.presentation.theme === "library") {
       this.libraryDustGraphics = scene.add.graphics().setDepth(8);
       this.libraryDust.push(...createLibraryDust(map));
       this.addLibrarySpiders(map);
     }
-    ensureSpawnPadAnimation(scene);
     this.spawnPadParticleGraphics = scene.add.graphics().setDepth(19);
   }
 
   render(snapshot: WorldSnapshot): void {
-    this.updateCamera(snapshot);
-    this.removeMissingActors(snapshot);
-    for (const actor of snapshot.actors) {
-      this.renderActor(actor);
-    }
+    this.cameraController.update(snapshot);
+    this.actorRenderer.render(snapshot);
     this.renderProjectiles(snapshot);
-    this.renderPickups(snapshot);
-    this.renderObjectives(snapshot);
+    this.pickupRenderer.render(snapshot);
+    this.objectiveRenderer.render(snapshot);
     this.renderSpawnPadParticles(snapshot);
     this.renderLibraryAtmosphere(snapshot.timeMs);
   }
 
   reset(): void {
-    this.cameraInitialized = false;
-    this.manualCameraActive = false;
-    this.lastCameraTimeMs = 0;
+    this.cameraController.reset();
     this.lastLibraryTimeMs = 0;
-    this.destroyActorViews();
+    this.actorRenderer.reset();
     this.destroyProjectileViews();
-    this.destroyPickupViews();
-    this.destroyObjectiveViews();
+    this.pickupRenderer.reset();
+    this.objectiveRenderer.reset();
     this.resetSpawnPadParticles();
   }
 
   dispose(): void {
-    for (const key of Object.values(this.cameraCursorKeys ?? {})) {
-      key?.destroy();
-    }
-    this.cameraResetKey?.destroy();
-    this.destroyActorViews();
+    this.cameraController.dispose();
+    this.actorRenderer.dispose();
     this.destroyProjectileViews();
-    this.destroyPickupViews();
-    this.destroyObjectiveViews();
+    this.pickupRenderer.dispose();
+    this.objectiveRenderer.dispose();
     this.spawnPadParticleGraphics.destroy();
     this.libraryDustGraphics?.destroy();
-  }
-
-  private renderActor(actor: Readonly<ActorState>): void {
-    const view = this.actorViews.get(actor.id) ?? this.createActorView(actor);
-    const height = actor.jump.height;
-    const scale = 1 + height / 210;
-    const fallProgress = actor.lifeState === "falling"
-      ? Phaser.Math.Clamp(
-        1 - (actor.respawn?.remainingMs ?? 0) /
-          V2_COLLISION_GROUNDWORK_CONFIG.fallDurationMs,
-        0,
-        1,
-      )
-      : 0;
-    const fallScale = Math.max(.08, 1 - fallProgress * .92);
-
-    view.shadow
-      .setPosition(actor.position.x, actor.position.y + 8)
-      .setScale(1 + height / 160, Math.max(.35, 1 - height / 95))
-      .setAlpha(
-        actor.lifeState === "active"
-          ? Math.max(.1, .22 - height / 330)
-          : 0,
-      );
-    view.container
-      .setPosition(actor.position.x, actor.position.y - height)
-      .setScale(scale * fallScale)
-      .setRotation(actor.lifeState === "falling" ? fallProgress * 1.3 : 0)
-      .setAlpha(actor.lifeState === "active" ? 1 : Math.max(.05, 1 - fallProgress))
-      .setVisible(actor.lifeState !== "dead");
-    updateActorSprite(view.sprite, view.character, actor);
-    const idleMotion = resolveActorIdleMotion(
-      actor,
-      view.character,
-      this.scene.time.now,
-    );
-    view.sprite
-      .setPosition(0, idleMotion.y)
-      .setScale(
-        view.character.scale,
-        view.character.scale * idleMotion.scaleY,
-      )
-      .setTint(actor.lifeState === "falling" ? 0x555555 : 0xffffff);
-    this.drawActorStatus(view.status, actor);
-  }
-
-  private createActorView(actor: Readonly<ActorState>): ArenaActorView {
-    const shadow = this.scene.add.ellipse(
-      actor.position.x,
-      actor.position.y + 8,
-      34,
-      14,
-      0x000000,
-      .2,
-    ).setDepth(20);
-    const character = resolveV2CharacterPresentation(actor, this.playerSkinId);
-    const sprite = this.scene.add.sprite(
-      0,
-      0,
-      character.texture,
-      character.initialFrame,
-    ).setOrigin(character.origin.x, character.origin.y)
-      .setScale(character.scale);
-    const status = this.scene.add.graphics();
-    const container = this.scene.add.container(
-      actor.position.x,
-      actor.position.y,
-      [sprite, status],
-    ).setDepth(35);
-    const view = { shadow, container, sprite, status, character };
-    this.actorViews.set(actor.id, view);
-    return view;
-  }
-
-  private drawActorStatus(
-    graphics: Phaser.GameObjects.Graphics,
-    actor: Readonly<ActorState>,
-  ): void {
-    graphics.clear();
-    if (actor.lifeState !== "active") {
-      return;
-    }
-    const healthRatio = actor.maxHealth > 0
-      ? Phaser.Math.Clamp(actor.health / actor.maxHealth, 0, 1)
-      : 0;
-    const color = actor.teamId === "blue" ? 0x255ec8 : 0xb7272d;
-    graphics.fillStyle(0x10201d, .65).fillRoundedRect(-22, -38, 44, 6, 3);
-    graphics.fillStyle(color, 1).fillRoundedRect(
-      -22,
-      -38,
-      44 * healthRatio,
-      6,
-      3,
-    );
-    if (actor.armor > 0) {
-      graphics.lineStyle(4, 0x29c46a, .95)
-        .beginPath()
-        .arc(0, 0, actor.radius + 9, -2.55, -.6)
-        .strokePath();
-    }
-  }
-
-  private removeMissingActors(snapshot: WorldSnapshot): void {
-    const visibleIds = new Set(snapshot.actors.map((actor) => actor.id));
-    for (const [actorId, view] of this.actorViews) {
-      if (!visibleIds.has(actorId)) {
-        view.shadow.destroy();
-        view.container.destroy();
-        this.actorViews.delete(actorId);
-      }
-    }
-  }
-
-  private destroyActorViews(): void {
-    for (const view of this.actorViews.values()) {
-      view.shadow.destroy();
-      view.container.destroy();
-    }
-    this.actorViews.clear();
   }
 
   private renderProjectiles(snapshot: WorldSnapshot): void {
@@ -323,125 +170,6 @@ export class PhaserArenaRendererPort implements RendererPort {
     this.projectileViews.clear();
   }
 
-  private renderPickups(snapshot: WorldSnapshot): void {
-    const visibleIds = new Set(snapshot.pickups.map((pickup) => pickup.id));
-    for (const [pickupId, view] of this.pickupViews) {
-      if (!visibleIds.has(pickupId)) {
-        view.destroy(true);
-        this.pickupViews.delete(pickupId);
-      }
-    }
-    for (const pickup of snapshot.pickups) {
-      const view = this.pickupViews.get(pickup.id) ??
-        this.createPickupView(pickup);
-      view.setPosition(pickup.position.x, pickup.position.y);
-      const active = pickup.lifeState === "active";
-      const glow = view.getByName("pad-glow") as Phaser.GameObjects.Sprite;
-      const icon = view.getByName("icon") as Phaser.GameObjects.Image;
-      const pulse = Math.sin(this.scene.time.now * .003 + pickup.position.x) *
-        .008;
-      glow.setVisible(active);
-      icon
-        .setVisible(active)
-        .setScale(pickupIconScale(pickup.type) + pulse);
-    }
-  }
-
-  private createPickupView(
-    pickup: Readonly<PickupState>,
-  ): Phaser.GameObjects.Container {
-    const container = this.scene.add.container(
-      pickup.position.x,
-      pickup.position.y,
-    ).setDepth(18);
-    const pad = this.scene.add.image(0, 2, "spawnPadV2")
-      .setName("pad")
-      .setScale(.27)
-      .setAlpha(.9);
-    const glow = this.scene.add.sprite(0, 2, "spawnPadGlowV2")
-      .setName("pad-glow")
-      .setScale(.27)
-      .setAlpha(.72)
-      .play("spawn-pad-glow-v2");
-    const icon = this.scene.add.image(
-      0,
-      isWeaponPickup(pickup.type) ? -3 : -5,
-      pickupTexture(pickup.type),
-    ).setName("icon").setScale(pickupIconScale(pickup.type));
-    container.add([pad, glow, icon]);
-    this.pickupViews.set(pickup.id, container);
-    return container;
-  }
-
-  private destroyPickupViews(): void {
-    for (const view of this.pickupViews.values()) {
-      view.destroy(true);
-    }
-    this.pickupViews.clear();
-  }
-
-  private renderObjectives(snapshot: WorldSnapshot): void {
-    const visibleIds = new Set(snapshot.objectives.map((objective) =>
-      objective.id
-    ));
-    for (const [objectiveId, view] of this.objectiveViews) {
-      if (!visibleIds.has(objectiveId)) {
-        view.destroy();
-        this.objectiveViews.delete(objectiveId);
-      }
-    }
-    for (const objective of snapshot.objectives) {
-      const view = this.objectiveViews.get(objective.id) ??
-        this.createObjectiveView(objective);
-      if (!view) continue;
-      view
-        .setPosition(objective.position.x, objective.position.y - 18)
-        .setAlpha(objective.state.status === "carried" ? .94 : 1);
-      this.objectiveViews.set(objective.id, view);
-    }
-  }
-
-  private createObjectiveView(
-    objective: WorldSnapshot["objectives"][number],
-  ): Phaser.GameObjects.Image | Phaser.GameObjects.Container | null {
-    if (objective.kind === "neutral-flag") {
-      const graphics = this.scene.add.graphics();
-      graphics.lineStyle(3, 0x243431, 1)
-        .beginPath()
-        .moveTo(-7, 20)
-        .lineTo(-7, -25)
-        .strokePath();
-      graphics.fillStyle(0xfff4c4, 1)
-        .fillTriangle(-5, -23, 24, -14, -5, -5);
-      graphics.lineStyle(2, 0xd8a93d, 1)
-        .beginPath()
-        .moveTo(-5, -23)
-        .lineTo(24, -14)
-        .lineTo(-5, -5)
-        .closePath()
-        .strokePath();
-      graphics.fillStyle(0x243431, 1).fillCircle(-7, 21, 4);
-      return this.scene.add.container(
-        objective.position.x,
-        objective.position.y - 18,
-        [graphics],
-      ).setDepth(34);
-    }
-    if (objective.kind !== "team-flag") return null;
-    const teamId = objective.state.controllingTeamId;
-    if (teamId !== "red" && teamId !== "blue") return null;
-    return this.scene.add.image(
-      objective.position.x,
-      objective.position.y - 18,
-      teamId === "red" ? "flagRed" : "flagBlue",
-    ).setDepth(34).setScale(.25);
-  }
-
-  private destroyObjectiveViews(): void {
-    for (const view of this.objectiveViews.values()) view.destroy();
-    this.objectiveViews.clear();
-  }
-
   private renderSpawnPadParticles(snapshot: WorldSnapshot): void {
     const now = this.scene.time.now;
     const deltaMs = this.lastRenderTimeMs > 0
@@ -452,6 +180,7 @@ export class PhaserArenaRendererPort implements RendererPort {
     if (this.spawnPadParticleTimerMs <= 0) {
       this.spawnPadParticleTimerMs = 95;
       for (const pickup of snapshot.pickups) {
+        if (pickup.lifeState !== "active") continue;
         const lifeMs = Phaser.Math.Between(620, 920);
         this.spawnPadParticles.push({
           x: pickup.position.x + Phaser.Math.Between(-14, 14),
@@ -460,6 +189,7 @@ export class PhaserArenaRendererPort implements RendererPort {
           lifeMs,
           maxLifeMs: lifeMs,
           size: Phaser.Math.FloatBetween(2.2, 4.2),
+          color: pickupPadColor(pickup.type),
         });
       }
     }
@@ -479,7 +209,7 @@ export class PhaserArenaRendererPort implements RendererPort {
         0,
         1,
       ) * .45;
-      graphics.fillStyle(0x7dfcff, alpha).fillCircle(
+      graphics.fillStyle(particle.color, alpha).fillCircle(
         particle.x + particle.offsetX * progress,
         particle.y - progress * 34,
         particle.size * (1 - progress * .35),
@@ -586,78 +316,6 @@ export class PhaserArenaRendererPort implements RendererPort {
     }
   }
 
-  private updateCamera(snapshot: WorldSnapshot): void {
-    const bounds = snapshot.geometry.bounds;
-    const camera = this.scene.cameras.main;
-    camera.setBounds(
-      bounds.minX,
-      bounds.minY,
-      bounds.maxX - bounds.minX,
-      bounds.maxY - bounds.minY,
-    );
-    const cameraDeltaMs = this.lastCameraTimeMs > 0
-      ? Math.min(100, Math.max(0, snapshot.timeMs - this.lastCameraTimeMs))
-      : 0;
-    this.lastCameraTimeMs = snapshot.timeMs;
-    if (
-      this.cameraResetKey &&
-      Phaser.Input.Keyboard.JustDown(this.cameraResetKey)
-    ) {
-      this.manualCameraActive = false;
-      this.cameraInitialized = false;
-    }
-    const manualX = Number(this.cameraCursorKeys?.right?.isDown) -
-      Number(this.cameraCursorKeys?.left?.isDown);
-    const manualY = Number(this.cameraCursorKeys?.down?.isDown) -
-      Number(this.cameraCursorKeys?.up?.isDown);
-    if (manualX !== 0 || manualY !== 0) {
-      this.manualCameraActive = true;
-    }
-    if (this.manualCameraActive) {
-      const length = Math.hypot(manualX, manualY) || 1;
-      const distance = 650 * cameraDeltaMs / 1000;
-      camera.setScroll(
-        camera.scrollX + manualX / length * distance,
-        camera.scrollY + manualY / length * distance,
-      );
-      return;
-    }
-    const requested = this.followActorId
-      ? snapshot.actors.find((actor) =>
-        actor.id === this.followActorId && actor.lifeState === "active"
-      )
-      : undefined;
-    const activePlayers = snapshot.actors.filter((actor) =>
-      actor.kind === "player" && actor.lifeState === "active"
-    );
-    const followed = requested
-      ? [requested]
-      : activePlayers.length > 0
-      ? activePlayers
-      : snapshot.actors.slice(0, 1);
-    if (followed.length === 0) {
-      return;
-    }
-    const centerX = followed.reduce(
-      (sum, actor) => sum + actor.position.x,
-      0,
-    ) / followed.length;
-    const centerY = followed.reduce(
-      (sum, actor) => sum + actor.position.y,
-      0,
-    ) / followed.length;
-    const targetScrollX = centerX - camera.width / (2 * camera.zoom);
-    const targetScrollY = centerY - camera.height / (2 * camera.zoom);
-    if (!this.cameraInitialized) {
-      camera.centerOn(centerX, centerY);
-      this.cameraInitialized = true;
-      return;
-    }
-    camera.setScroll(
-      Phaser.Math.Linear(camera.scrollX, targetScrollX, .12),
-      Phaser.Math.Linear(camera.scrollY, targetScrollY, .12),
-    );
-  }
 }
 
 function toPresentationLevel(map: WorldMapData): LevelData {
@@ -730,137 +388,6 @@ function createLibraryDust(map: WorldMapData): LibraryDustParticle[] {
     size: Phaser.Math.FloatBetween(.8, 1.8),
     alpha: Phaser.Math.FloatBetween(.08, .2),
   }));
-}
-
-function pickupTexture(type: PickupState["type"]): string {
-  if (type === "health") return "pickupHealth";
-  if (type === "armor") return "pickupArmor";
-  if (type === "rocket") return "pickupRocket";
-  if (type === "rail") return "pickupRail";
-  return "pickupWhip";
-}
-
-function pickupIconScale(type: PickupState["type"]): number {
-  if (type === "rail") return .22;
-  if (type === "whip") return .34;
-  return .18;
-}
-
-function isWeaponPickup(type: PickupState["type"]): boolean {
-  return type === "rocket" || type === "rail" || type === "whip";
-}
-
-function updateActorSprite(
-  sprite: Phaser.GameObjects.Sprite,
-  character: V2CharacterPresentation,
-  actor: Readonly<ActorState>,
-): void {
-  if (character.kind === "animated-skin" && character.skin) {
-    updatePlayerSkinSprite(sprite, character.skin, actor);
-    return;
-  }
-
-  if (sprite.anims.isPlaying) {
-    sprite.stop();
-  }
-  sprite.setFrame(legacyArenaCharacterFrame(actor));
-}
-
-function updatePlayerSkinSprite(
-  sprite: Phaser.GameObjects.Sprite,
-  skin: V2CharacterSkinConfig,
-  actor: Readonly<ActorState>,
-): void {
-  const direction = v2CharacterDirection(actor);
-  const state = v2CharacterAnimationState(actor);
-  const columns = v2CharacterColumns(skin, state, direction);
-
-  if (columns.length > 1) {
-    sprite.play(v2CharacterAnimationKey(skin, direction, state), true);
-    return;
-  }
-
-  sprite.stop();
-  sprite.setFrame(v2CharacterFrame(skin, actor, state));
-}
-
-function resolveActorIdleMotion(
-  actor: Readonly<ActorState>,
-  character: V2CharacterPresentation,
-  timeMs: number,
-): { y: number; scaleY: number } {
-  if (
-    actor.lifeState !== "active" ||
-    character.kind !== "animated-skin" ||
-    !character.skin ||
-    !character.skin.syntheticIdleMotion ||
-    v2CharacterAnimationState(actor) !== "idle" ||
-    v2CharacterColumns(character.skin, "idle").length > 1
-  ) {
-    return { y: 0, scaleY: 1 };
-  }
-
-  const phase = timeMs * .0045 + actor.id.length * .37 + actor.lifeId * .11;
-  const wave = Math.sin(phase);
-  return {
-    y: wave * 1.35,
-    scaleY: 1 + wave * .012,
-  };
-}
-
-function ensurePlayerSkinAnimations(scene: Phaser.Scene): void {
-  for (const skin of Object.values(V2_CHARACTER_SKINS)) {
-    for (const direction of V2_CHARACTER_DIRECTIONS) {
-      for (const state of ["idle", "walk", "jump"] as const) {
-        if (v2CharacterColumns(skin, state, direction).length > 1) {
-          ensurePlayerSkinAnimation(scene, skin, direction, state);
-        }
-      }
-    }
-  }
-}
-
-function ensurePlayerSkinAnimation(
-  scene: Phaser.Scene,
-  skin: V2CharacterSkinConfig,
-  direction: (typeof V2_CHARACTER_DIRECTIONS)[number],
-  state: V2CharacterAnimationState,
-): void {
-  const key = v2CharacterAnimationKey(skin, direction, state);
-  if (scene.anims.exists(key)) {
-    return;
-  }
-  const row = v2CharacterDirectionRow(direction);
-  const columns = v2CharacterColumns(skin, state, direction);
-  scene.anims.create({
-    key,
-    frames: columns.map((column) => ({
-      key: skin.texture,
-      frame: row * skin.columns + column,
-    })),
-    frameRate: state === "idle"
-      ? skin.idleFrameRate
-      : state === "walk"
-      ? skin.walkFrameRate
-      : skin.jumpFrameRate,
-    repeat: -1,
-  });
-}
-
-function ensureSpawnPadAnimation(scene: Phaser.Scene): void {
-  if (scene.anims.exists("spawn-pad-glow-v2")) {
-    return;
-  }
-  scene.anims.create({
-    key: "spawn-pad-glow-v2",
-    frames: scene.anims.generateFrameNumbers("spawnPadGlowV2", {
-      start: 0,
-      end: 3,
-    }),
-    frameRate: 2.2,
-    repeat: -1,
-    yoyo: true,
-  });
 }
 
 function ensureLibraryCandleAnimation(scene: Phaser.Scene): void {

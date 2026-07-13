@@ -13,6 +13,8 @@ export interface V1WeaponConfig {
   readonly railDamageRatio: number;
   readonly whipAmmo: number;
   readonly whipCooldownMs: number;
+  readonly whipRechargeMs: number;
+  readonly whipMaxCharges: number;
   readonly whipRange: number;
   readonly whipHalfAngle: number;
   readonly whipDamage: number;
@@ -33,6 +35,8 @@ export const V2_V1_WEAPON_PARITY_CONFIG: V1WeaponConfig = {
   railDamageRatio: .95,
   whipAmmo: 8,
   whipCooldownMs: 800,
+  whipRechargeMs: 2_400,
+  whipMaxCharges: 3,
   whipRange: 120,
   whipHalfAngle: Math.PI * 35 / 180,
   whipDamage: 35,

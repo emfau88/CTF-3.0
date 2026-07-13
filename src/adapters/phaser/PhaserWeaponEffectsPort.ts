@@ -51,6 +51,7 @@ interface RailEffect {
 }
 
 interface WhipEffect extends Point {
+  readonly target: Point;
   readonly direction: Point;
   readonly range: number;
   readonly halfAngle: number;
@@ -96,6 +97,7 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
   private deathParticles: DeathParticle[] = [];
   private deathRings: DeathRing[] = [];
   private deathFlashes: DeathFlash[] = [];
+  private readonly feedbackTexts = new Set<Phaser.GameObjects.Text>();
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -127,10 +129,19 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
         this.addWhip(
           readPoint(event.payload, "origin"),
           readPoint(event.payload, "direction"),
+          readPoint(event.payload, "targetPosition"),
           readNumber(event.payload, "range"),
           readNumber(event.payload, "halfAngle"),
           readBoolean(event.payload, "hit"),
         );
+      } else if (
+        event.type === "weapon.whipTargetUnavailable" &&
+        event.sourceActorId === this.controlledActorId
+      ) {
+        const actor = snapshot.actors.find((candidate) =>
+          candidate.id === event.sourceActorId
+        );
+        if (actor) this.addNoTargetFeedback(actor);
       } else if (event.type === "weapon.rocketExploded") {
         this.addExplosion(
           readPoint(event.payload, "position"),
@@ -163,6 +174,8 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
     this.deathParticles = [];
     this.deathRings = [];
     this.deathFlashes = [];
+    for (const text of this.feedbackTexts) text.destroy();
+    this.feedbackTexts.clear();
     this.trailGraphics.clear();
     this.effectsGraphics.clear();
   }
@@ -403,32 +416,36 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
         1,
       );
       const progress = 1 - alpha;
-      const angle = Math.atan2(effect.direction.y, effect.direction.x);
-      const startAngle = angle - effect.halfAngle;
-      const endAngle = angle + effect.halfAngle;
-      const radius = effect.range * (.72 + progress * .28);
-      this.effectsGraphics.lineStyle(
-        13,
-        effect.hit ? 0xffd36c : 0x8d5a3a,
-        .12 * alpha,
-      ).beginPath().arc(
-        effect.x,
-        effect.y,
-        radius,
-        startAngle,
-        endAngle,
-      ).strokePath();
-      this.effectsGraphics.lineStyle(
-        5,
-        effect.hit ? 0xfff0b2 : 0xe2ad70,
-        .9 * alpha,
-      ).beginPath().arc(
-        effect.x,
-        effect.y,
-        radius,
-        startAngle,
-        endAngle,
-      ).strokePath();
+      const dx = effect.target.x - effect.x;
+      const dy = effect.target.y - effect.y;
+      const length = Math.hypot(dx, dy) || 1;
+      const px = -dy / length;
+      const py = dx / length;
+      const jitter = 9 * alpha;
+      for (const [strand, width, color, strandAlpha] of [
+        [0, 11, 0x29d9ff, .16],
+        [-1, 4, 0x46cfff, .82],
+        [1, 2, 0xf0ffff, .96],
+      ] as const) {
+        this.effectsGraphics.lineStyle(width, color, strandAlpha * alpha)
+          .beginPath()
+          .moveTo(effect.x, effect.y);
+        for (let segment = 1; segment < 6; segment += 1) {
+          const ratio = segment / 6;
+          const wave = Math.sin(
+            ratio * 17 + progress * 24 + strand * 1.7,
+          ) * jitter + strand * 3;
+          this.effectsGraphics.lineTo(
+            effect.x + dx * ratio + px * wave,
+            effect.y + dy * ratio + py * wave,
+          );
+        }
+        this.effectsGraphics.lineTo(effect.target.x, effect.target.y).strokePath();
+      }
+      this.effectsGraphics.fillStyle(0xefffff, .9 * alpha)
+        .fillCircle(effect.target.x, effect.target.y, 4 + progress * 5);
+      this.effectsGraphics.lineStyle(2, 0x55dcff, .75 * alpha)
+        .strokeCircle(effect.target.x, effect.target.y, 9 + progress * 8);
     }
   }
 
@@ -493,15 +510,17 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
   private addWhip(
     origin: Point | null,
     direction: Point | null,
+    target: Point | null,
     range: number,
     halfAngle: number,
     hit: boolean,
   ): void {
-    if (!origin || !direction || range <= 0) return;
+    if (!origin || !direction || !target || range <= 0) return;
     this.whipEffects.push({
       x: origin.x,
       y: origin.y,
       direction,
+      target,
       range,
       halfAngle,
       hit,
@@ -524,6 +543,34 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
         "rocketExplosion",
         0,
       ).setDepth(70).setScale(.38),
+    });
+  }
+
+  private addNoTargetFeedback(actor: Readonly<ActorState>): void {
+    const text = this.scene.add.text(
+      actor.position.x,
+      actor.position.y - actor.jump.height - 52,
+      "NO TARGET",
+      {
+        fontFamily: "Arial, sans-serif",
+        fontSize: "11px",
+        fontStyle: "bold",
+        color: "#9defff",
+        stroke: "#07131b",
+        strokeThickness: 4,
+      },
+    ).setOrigin(.5).setDepth(75);
+    this.feedbackTexts.add(text);
+    this.scene.tweens.add({
+      targets: text,
+      y: text.y - 16,
+      alpha: 0,
+      duration: 520,
+      ease: "Cubic.Out",
+      onComplete: () => {
+        this.feedbackTexts.delete(text);
+        text.destroy();
+      },
     });
   }
 

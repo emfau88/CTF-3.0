@@ -9,12 +9,14 @@ export function updatePickupWorld(
   mode: GameMode,
   deltaMs: number,
   events: GameEvent[],
+  humanActorIds: readonly string[] = [],
 ): void {
   const pickups = updatePickups(
     world.pickups,
     world.actors,
     deltaMs,
     world.timeMs,
+    humanActorIds,
   );
   dispatchModeEvents(mode, world, events, pickups.events);
 }

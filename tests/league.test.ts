@@ -17,12 +17,14 @@ import {
   LEAGUE_TEAMS,
   FOUNDERS_CIRCUIT_TEAM_IDS,
   buildLeagueMatchSearch,
+  acknowledgeLeagueProgression,
   completeLeagueRound,
   completeRecruitment,
   createLeagueRepository,
   createLeagueSeason,
   getCurrentPlayerMatch,
   getPlayerOpponent,
+  leagueCharacter,
   readLeagueMatchContext,
   simulateLeagueMatch,
 } from "../src/meta/league";
@@ -42,6 +44,28 @@ function completeCurrent(season: ReturnType<typeof createLeagueSeason>, blue = 3
       { actorId: "red-player-2", kills: 2, deaths: 5, flagPickups: 0, flagCaptures: 0, flagReturns: 1 },
     ],
   });
+}
+
+function leagueMenuFixture(): string {
+  return `
+    <div id="v2-league-hub" class="is-hidden">
+      <div id="league-header-kicker"></div><div id="league-header-title"></div>
+      <div id="league-empty"><button id="league-new-season"></button></div>
+      <div id="league-intro-route"></div>
+      <div id="league-dashboard" class="is-hidden">
+        <section id="league-next-match"></section>
+        <span id="league-team-record"></span>
+        <div id="league-player-roster"></div>
+        <div id="league-skin-preview"></div>
+        <select id="league-skin-select"></select>
+        <div id="league-standings"></div>
+        <div id="league-team-detail"></div>
+        <div id="league-pyramid"></div>
+      </div>
+      <button id="league-back"></button><button id="league-reset"></button>
+      <div id="league-progression" class="is-hidden"></div>
+      <div id="league-recruitment" class="is-hidden"></div>
+    </div>`;
 }
 
 test("opening circuit creates a complete three-match single round robin", () => {
@@ -123,6 +147,39 @@ test("opponent simulation is deterministic and uses stable team profiles", () =>
   )!;
   const objectiveResult = simulateLeagueMatch(first, objectiveAiMatch);
   assert.ok(objectiveResult.blueScore <= 3 && objectiveResult.redScore <= 3);
+});
+
+test("character recruitment is cosmetic and cannot alter simulated results", () => {
+  const baseline = createLeagueSeason(1818);
+  const swapped = createLeagueSeason(1818);
+  const match = baseline.rounds[0].matches.find((candidate) =>
+    candidate.homeTeamId !== baseline.playerTeamId &&
+    candidate.awayTeamId !== baseline.playerTeamId
+  )!;
+  const swappedMatch = swapped.rounds[0].matches.find((candidate) =>
+    candidate.id === match.id
+  )!;
+  const homeRoster = [...swapped.teamRosters[match.homeTeamId]];
+  swapped.teamRosters[match.homeTeamId] = [
+    ...swapped.teamRosters[match.awayTeamId],
+  ];
+  swapped.teamRosters[match.awayTeamId] = homeRoster;
+  assert.deepEqual(
+    simulateLeagueMatch(baseline, match),
+    simulateLeagueMatch(swapped, swappedMatch),
+  );
+});
+
+test("league character catalog exposes cosmetic identity without power ratings", () => {
+  for (const team of LEAGUE_TEAMS) {
+    for (const characterId of team.characterIds) {
+      const character = leagueCharacter(characterId);
+      assert.equal("rating" in character, false);
+      assert.equal("role" in character, false);
+      assert.ok(character.visualStyle.length > 0);
+      assert.ok(character.personality.length > 0);
+    }
+  }
 });
 
 test("league route carries the scheduled fixture context and cosmetic skin", () => {
@@ -255,25 +312,7 @@ test("quick play skin gallery renders and selects all playable fighters", () => 
 
 test("league menu starts a season and renders the actionable dashboard", () => {
   window.localStorage.clear();
-  document.body.innerHTML = `
-    <div id="v2-league-hub" class="is-hidden">
-      <div id="league-header-kicker"></div><div id="league-header-title"></div>
-      <div id="league-empty"><button id="league-new-season"></button></div>
-      <div id="league-intro-route"></div>
-      <div id="league-dashboard" class="is-hidden">
-        <section id="league-next-match"></section>
-        <span id="league-team-record"></span>
-        <div id="league-player-roster"></div>
-        <div id="league-skin-preview"></div>
-        <select id="league-skin-select"></select>
-        <div id="league-standings"></div>
-        <div id="league-team-detail"></div>
-        <div id="league-pyramid"></div>
-      </div>
-      <button id="league-back"></button><button id="league-reset"></button>
-      <div id="league-progression" class="is-hidden"></div>
-      <div id="league-recruitment" class="is-hidden"></div>
-    </div>`;
+  document.body.innerHTML = leagueMenuFixture();
   const controller = createLeagueMenuController({ onBack: () => {} });
   assert.equal(controller.hasSave, false);
   controller.open();
@@ -295,6 +334,8 @@ test("league menu starts a season and renders the actionable dashboard", () => {
   assert.equal(window.localStorage.getItem(PLAYER_SKIN_STORAGE_KEY), "ax9-mantis");
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /MATCH 1 OF 3/);
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /TEAM DEATHMATCH 2V2/);
+  assert.equal(document.querySelectorAll(".league-season-stop").length, 3);
+  assert.equal(document.querySelectorAll(".league-season-stop.is-current").length, 1);
   assert.match(document.getElementById("league-pyramid")!.textContent ?? "", /Challenger League/);
   assert.ok(window.localStorage.getItem(LEAGUE_STORAGE_KEY));
   const repository = createLeagueRepository(window.localStorage);
@@ -306,5 +347,62 @@ test("league menu starts a season and renders the actionable dashboard", () => {
   assert.match(document.getElementById("league-progression")!.textContent ?? "", /LEAGUE POINTS/);
   document.getElementById("league-progression-continue")!.click();
   assert.equal(document.getElementById("league-progression")!.classList.contains("is-hidden"), true);
+  window.localStorage.clear();
+});
+
+test("league progression separates match outcome from rival-driven table movement", () => {
+  window.localStorage.clear();
+  document.body.innerHTML = leagueMenuFixture();
+  const repository = createLeagueRepository(window.localStorage);
+  const season = createLeagueSeason(88);
+  season.lastProgression = {
+    id: "rival-shift",
+    roundIndex: 0,
+    opponentId: "crimson-jackals",
+    blueScore: 0,
+    redScore: 1,
+    previousPosition: 3,
+    newPosition: 2,
+    previousPoints: 0,
+    newPoints: 0,
+    promoted: false,
+    acknowledged: false,
+  };
+  repository.save(season);
+
+  createLeagueMenuController({ onBack: () => {} }).open();
+  const progression = document.getElementById("league-progression")!;
+  assert.match(progression.textContent ?? "", /The Climb Continues/);
+  assert.doesNotMatch(progression.textContent ?? "", /Up 1 Place/);
+  assert.match(progression.textContent ?? "", /other circuit result reshaped the table/);
+  assert.ok(progression.querySelector(".league-points-earned.is-zero"));
+  window.localStorage.clear();
+});
+
+test("recruitment UI compares cosmetic identities and uses explicit Recruit/Keep actions", () => {
+  window.localStorage.clear();
+  document.body.innerHTML = leagueMenuFixture();
+  const repository = createLeagueRepository(window.localStorage);
+  const season = createLeagueSeason(4242);
+  for (let round = 0; round < 3; round += 1) completeCurrent(season);
+  acknowledgeLeagueProgression(season);
+  repository.save(season);
+
+  const controller = createLeagueMenuController({ onBack: () => {} });
+  controller.open();
+  const recruitment = document.getElementById("league-recruitment")!;
+  assert.equal(recruitment.classList.contains("is-hidden"), false);
+  assert.match(recruitment.textContent ?? "", /Identical arena stats/);
+  assert.doesNotMatch(recruitment.textContent ?? "", /OVR|ATTACKER|DEFENDER/);
+  assert.equal(recruitment.querySelectorAll(".league-recruitment-side .league-character").length, 2);
+  assert.ok(recruitment.querySelector("#league-confirm-recruit"));
+  assert.ok(recruitment.querySelector("#league-keep-roster"));
+
+  const option = recruitment.querySelector<HTMLButtonElement>(".league-candidate")!;
+  option.click();
+  const confirm = recruitment.querySelector<HTMLButtonElement>("#league-confirm-recruit")!;
+  assert.match(confirm.textContent ?? "", /^Recruit /);
+  confirm.click();
+  assert.equal(repository.load()?.recruitment.status, "completed");
   window.localStorage.clear();
 });

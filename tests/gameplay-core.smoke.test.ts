@@ -39,6 +39,7 @@ import {
   validateWorldMapForMode,
   type BotCombatConfig,
   type ArenaTeamSize,
+  type CoreActionIntent,
   type GameEvent,
   type MatchStatEntry,
 } from "../src/core";
@@ -462,7 +463,7 @@ test("classic ctf bot holds combat standoff while chasing a flag carrier", () =>
   };
   const red = world.actors.find((actor) => actor.id === "red-player");
   const blue = world.actors.find((actor) => actor.id === "blue-player");
-  const redFlag = world.objectives.find((objective) => objective.id === "red-flag");
+  const redFlag = mutable(world.objectives.find((objective) => objective.id === "red-flag")!);
   assert.ok(red);
   assert.ok(blue);
   assert.ok(redFlag);
@@ -499,7 +500,7 @@ test("one flag bot still approaches the neutral flag directly", () => {
   };
   const red = world.actors.find((actor) => actor.id === "red-player");
   const blue = world.actors.find((actor) => actor.id === "blue-player");
-  const flag = world.objectives.find((objective) => objective.kind === "neutral-flag");
+  const flag = mutable(world.objectives.find((objective) => objective.kind === "neutral-flag")!);
   assert.ok(red);
   assert.ok(blue);
   assert.ok(flag);
@@ -533,7 +534,7 @@ test("one flag bot projects blocked carrier chase targets to a reachable point",
   new OneFlagMode(GRAND_ARCHIVE_V2).initialize(world);
   const red = world.actors.find((actor) => actor.id === "red-player");
   const blue = world.actors.find((actor) => actor.id === "blue-player");
-  const flag = world.objectives.find((objective) => objective.kind === "neutral-flag");
+  const flag = mutable(world.objectives.find((objective) => objective.kind === "neutral-flag")!);
   assert.ok(red);
   assert.ok(blue);
   assert.ok(flag);
@@ -576,7 +577,7 @@ test("one flag bot projects blocked escort targets to a reachable point", () => 
   new OneFlagMode(GRAND_ARCHIVE_V2).initialize(world);
   const escort = world.actors.find((actor) => actor.id === "red-player");
   const carrier = world.actors.find((actor) => actor.id === "red-player-2");
-  const flag = world.objectives.find((objective) => objective.kind === "neutral-flag");
+  const flag = mutable(world.objectives.find((objective) => objective.kind === "neutral-flag")!);
   assert.ok(escort);
   assert.ok(carrier);
   assert.ok(flag);
@@ -663,7 +664,7 @@ test("rail bot waits for target acquisition and applies deterministic spread", (
   assert.equal(combat.readAction(bot, target, snapshot, 319), null);
   const shot = combat.readAction(bot, target, snapshot, 1);
 
-  assert.equal(shot?.payload?.weaponId, "rail");
+  assert.equal(actionWeaponId(shot), "rail");
   assert.ok(shot?.direction);
   assert.ok(Math.abs(shot.direction.y) > .0001);
   assert.ok(Math.abs(Math.hypot(shot.direction.x, shot.direction.y) - 1) < .0001);
@@ -886,8 +887,8 @@ test("rail bot becomes less precise toward maximum range", () => {
   const mediumShot = createShot(500);
   const longShot = createShot(1100);
 
-  assert.equal(mediumShot?.payload?.weaponId, "rail");
-  assert.equal(longShot?.payload?.weaponId, "rail");
+  assert.equal(actionWeaponId(mediumShot), "rail");
+  assert.equal(actionWeaponId(longShot), "rail");
   assert.ok(mediumShot?.direction && longShot?.direction);
   assert.ok(Math.abs(longShot.direction.y) > Math.abs(mediumShot.direction.y));
 });
@@ -1064,9 +1065,9 @@ test("2v2 CTF defender joins a safe human flag return after midfield", () => {
   const defender = world.actors.find((actor) =>
     actor.id === "blue-player-2"
   )!;
-  const enemyFlag = world.objectives.find((objective) =>
+  const enemyFlag = mutable(world.objectives.find((objective) =>
     objective.id === "red-flag"
-  )!;
+  )!);
   const decision = new ClassicCtfBotDecisionController("defender", map);
 
   enemyFlag.state.status = "carried";
@@ -1079,7 +1080,7 @@ test("2v2 CTF defender joins a safe human flag return after midfield", () => {
   );
 });
 
-test("2v2 CTF defender stays home early and secures a nearby dropped flag", () => {
+test("2v2 CTF defender anchors briefly, then sweeps midfield and secures a useful drop", () => {
   const map = getWorldMap("flow-circuit-v2")!;
   const world = createClassicCtfWorldState(map, { teamSize: 2 });
   new ClassicCtfMode(map).initialize(world);
@@ -1087,17 +1088,23 @@ test("2v2 CTF defender stays home early and secures a nearby dropped flag", () =
   const defender = world.actors.find((actor) =>
     actor.id === "blue-player-2"
   )!;
-  const enemyFlag = world.objectives.find((objective) =>
+  const enemyFlag = mutable(world.objectives.find((objective) =>
     objective.id === "red-flag"
-  )!;
+  )!);
   const decision = new ClassicCtfBotDecisionController("defender", map);
 
-  enemyFlag.state.status = "carried";
-  enemyFlag.state.interactingActorId = human.id;
+  enemyFlag.state.status = "home";
+  enemyFlag.state.interactingActorId = null;
   human.position = { x: 1400, y: 410 };
   assert.equal(
     decision.chooseGoal(defender, createWorldSnapshot(world)).kind,
     "patrol-base",
+  );
+
+  world.timeMs = 1_700;
+  assert.equal(
+    decision.chooseGoal(defender, createWorldSnapshot(world)).kind,
+    "support-mid",
   );
 
   enemyFlag.state.status = "dropped";
@@ -1200,9 +1207,9 @@ test("arena HUD hides home flags and only reports active CTF events", () => {
     "",
   );
 
-  const redFlag = world.objectives.find((objective) =>
+  const redFlag = mutable(world.objectives.find((objective) =>
     objective.id === "red-flag"
-  )!;
+  )!);
   redFlag.state.status = "carried";
   redFlag.state.interactingActorId = "blue-player";
   assert.equal(
@@ -1220,9 +1227,9 @@ test("CTF team commands direct the teammate but preserve flag emergencies", () =
     actor.id === "blue-player-2"
   )!;
   const enemy = world.actors.find((actor) => actor.id === "red-player")!;
-  const ownFlag = world.objectives.find((objective) =>
+  const ownFlag = mutable(world.objectives.find((objective) =>
     objective.id === "blue-flag"
-  )!;
+  )!);
   const decision = new ClassicCtfBotDecisionController("defender", map);
 
   human.position = { x: 800, y: 410 };
@@ -1255,3 +1262,24 @@ test("CTF team commands direct the teammate but preserve flag emergencies", () =
     "recover-own-flag",
   );
 });
+
+type DeepMutable<T> = {
+  -readonly [Key in keyof T]: T[Key] extends object
+    ? DeepMutable<T[Key]>
+    : T[Key];
+};
+
+function mutable<T>(value: T): DeepMutable<T> {
+  return value as DeepMutable<T>;
+}
+
+function actionWeaponId(
+  action: CoreActionIntent | null | undefined,
+): string | null {
+  const payload = action?.payload;
+  if (!payload || typeof payload !== "object" || !("weaponId" in payload)) {
+    return null;
+  }
+  const weaponId = (payload as { weaponId?: unknown }).weaponId;
+  return typeof weaponId === "string" ? weaponId : null;
+}

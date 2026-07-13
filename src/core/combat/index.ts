@@ -1,4 +1,8 @@
 export {
+  resolveNearestValidEnemy,
+  type NearestValidEnemyResult,
+} from "./NearestValidEnemyResolver";
+export {
   V2_DIAGNOSTIC_BLASTER_CONFIG,
   type DiagnosticWeaponConfig,
 } from "./DiagnosticWeaponConfig";

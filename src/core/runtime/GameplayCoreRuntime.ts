@@ -33,6 +33,7 @@ export interface GameplayCoreRuntimeOptions {
   readonly manualBasicAttackActorIds?: readonly string[];
   readonly autoBasicAttackActorIds?: readonly string[];
   readonly allowManualPrimaryFire?: boolean;
+  readonly humanActorIds?: readonly string[];
 }
 
 export class GameplayCoreRuntime implements CoreRuntime {
@@ -42,6 +43,7 @@ export class GameplayCoreRuntime implements CoreRuntime {
   private readonly manualBasicAttackActorIds: ReadonlySet<string>;
   private readonly autoBasicAttackActorIds?: readonly string[];
   private readonly allowManualPrimaryFire: boolean;
+  private readonly humanActorIds: readonly string[];
   private world: WorldState;
   private currentSnapshot: WorldSnapshot;
   private currentEvents: readonly GameEvent[] = [];
@@ -55,6 +57,7 @@ export class GameplayCoreRuntime implements CoreRuntime {
     );
     this.autoBasicAttackActorIds = options.autoBasicAttackActorIds;
     this.allowManualPrimaryFire = options.allowManualPrimaryFire ?? true;
+    this.humanActorIds = [...(options.humanActorIds ?? [])];
     this.world = this.createWorld();
     this.world.matchStats = createMatchStatsState(this.world.actors);
     this.currentSnapshot = createWorldSnapshot(this.world);
@@ -87,7 +90,12 @@ export class GameplayCoreRuntime implements CoreRuntime {
 
     this.world.timeMs += deltaMs;
     const events: GameEvent[] = [];
-    events.push(...this.mode.update(this.world, deltaMs));
+    dispatchModeEvents(
+      this.mode,
+      this.world,
+      events,
+      this.mode.update(this.world, deltaMs),
+    );
     if (isMatchEnded(this.world)) {
       this.currentEvents = events;
       return this.createFrameResult();
@@ -113,7 +121,13 @@ export class GameplayCoreRuntime implements CoreRuntime {
     if (isMatchEnded(this.world)) {
       return this.finishFrame(events);
     }
-    updatePickupWorld(this.world, this.mode, deltaMs, events);
+    updatePickupWorld(
+      this.world,
+      this.mode,
+      deltaMs,
+      events,
+      this.humanActorIds,
+    );
 
     return this.finishFrame(events);
   }

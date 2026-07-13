@@ -507,7 +507,7 @@ export class ArenaScene extends Phaser.Scene {
   pickupIconScale(pickup: Pickup) {
     if (pickup.temporary) return .17;
     if (pickup.kind === "rail") return .22;
-    if (pickup.kind === "whip") return .34;
+    if (pickup.kind === "whip") return .12;
     return .18;
   }
 
@@ -793,7 +793,7 @@ export class ArenaScene extends Phaser.Scene {
     const buttonScale = compact ? .42 : .54;
     const badgeOffset = compact ? 24 : 31;
     if (!this.whipButtonView) {
-      this.whipButtonView = this.add.image(this.whipBtn.x, this.whipBtn.y, "uiWhipButton").setScrollFactor(0).setDepth(1001).setScale(.38);
+      this.whipButtonView = this.add.image(this.whipBtn.x, this.whipBtn.y, "uiWhipButton").setScrollFactor(0).setDepth(1001).setScale(.12);
     }
     if (!this.whipAmmoBadgeView) {
       this.whipAmmoBadgeView = this.add.image(this.whipBtn.x + 30, this.whipBtn.y + 30, "uiAmmoBadge").setScrollFactor(0).setDepth(1002).setScale(.16);

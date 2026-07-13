@@ -97,7 +97,6 @@ canvas { display: block; }
   font-weight: 800;
 }
 .v2-menu-card select:disabled { opacity: .58; }
-#v2-menu-play,
 #v2-menu-start,
 .v2-flow-actions button:first-child {
   height: 54px;
@@ -110,7 +109,6 @@ canvas { display: block; }
   cursor: pointer;
   box-shadow: 0 12px 28px rgb(183 39 45 / .3);
 }
-#v2-menu-play:active,
 #v2-menu-start:active,
 .v2-flow-actions button:first-child:active { transform: translateY(1px); }
 .v2-menu-actions,

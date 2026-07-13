@@ -2392,6 +2392,15 @@ function checkTeamDeathmatchSlice(): void {
   }
 
   let sequence = 1;
+  for (let wait = 0; wait < 60; wait++) {
+    sequence++;
+    runtime.advance({
+      sequence,
+      timeMs: sequence * 34,
+      deltaMs: 34,
+      actions: [],
+    });
+  }
   for (let kill = 0; kill < 3; kill++) {
     sequence = killActorWithProjectiles(
       runtime,
@@ -2406,7 +2415,7 @@ function checkTeamDeathmatchSlice(): void {
       throw new Error("Each TDM kill must award blue exactly one point.");
     }
     if (kill < 2) {
-      for (let wait = 0; wait < 120; wait++) {
+      for (let wait = 0; wait < 180; wait++) {
         sequence++;
         runtime.advance({
           sequence,
@@ -2865,9 +2874,11 @@ function createBotWeaponRuntime(
     red.position = { x: 100, y: 200 };
     red.spawnPosition = { ...red.position };
     red.lastSafePosition = { ...red.position };
+    red.spawnProtectionRemainingMs = 0;
     blue.position = { x: 100 + distance, y: 200 };
     blue.spawnPosition = { ...blue.position };
     blue.lastSafePosition = { ...blue.position };
+    blue.spawnProtectionRemainingMs = 0;
     if (weaponId === "rocket") red.weapons.rocketAmmo = 1;
     if (weaponId === "rail") red.weapons.railAmmo = 1;
     if (weaponId === "whip") red.weapons.whipAmmo = 1;

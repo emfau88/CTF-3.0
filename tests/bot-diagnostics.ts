@@ -56,6 +56,11 @@ export interface BotMovementMetric {
   basicShots: number;
   pickupCollections: number;
   specialWeaponShots: number;
+  allWeaponAmmoEmptyMs: number;
+  zeroAmmoMs: Record<"rocket" | "rail" | "whip", number>;
+  jumpStarts: number;
+  jumpLandings: number;
+  jumpFailures: number;
 }
 
 export interface SimulationSummary {
@@ -356,13 +361,11 @@ export function runSimulationScenario(
       basicShots: 0,
       pickupCollections: 0,
       specialWeaponShots: 0,
-      intentionalHoldMs: 0,
-      inactiveMs: 0,
-      longestMoveIntentStallMs: 0,
-      currentMoveIntentStallMs: 0,
-      basicShots: 0,
-      pickupCollections: 0,
-      specialWeaponShots: 0,
+      allWeaponAmmoEmptyMs: 0,
+      zeroAmmoMs: { rocket: 0, rail: 0, whip: 0 },
+      jumpStarts: 0,
+      jumpLandings: 0,
+      jumpFailures: 0,
     }]),
   );
 
@@ -453,6 +456,26 @@ export function runSimulationScenario(
           moveMagnitude: moveMagnitudeByActor.get(participant.actorId) ?? null,
         },
       );
+      if (current.lifeState === "active") {
+        if (current.weapons.rocketAmmo <= 0) metric.zeroAmmoMs.rocket += FRAME_DELTA_MS;
+        if (current.weapons.railAmmo <= 0) metric.zeroAmmoMs.rail += FRAME_DELTA_MS;
+        if (current.weapons.whipAmmo <= 0) metric.zeroAmmoMs.whip += FRAME_DELTA_MS;
+        if (
+          current.weapons.rocketAmmo <= 0 &&
+          current.weapons.railAmmo <= 0 &&
+          current.weapons.whipAmmo <= 0
+        ) {
+          metric.allWeaponAmmoEmptyMs += FRAME_DELTA_MS;
+        }
+      }
+      if (!previous.jump.active && current.jump.active) metric.jumpStarts += 1;
+      if (previous.jump.active && !current.jump.active) {
+        if (current.lifeState === "active" && !current.overGap) {
+          metric.jumpLandings += 1;
+        } else {
+          metric.jumpFailures += 1;
+        }
+      }
     }
     if (after.match?.phase === "ended") break;
   }
@@ -553,6 +576,11 @@ export function runOneFlagNavigatorDiagnostics(
       basicShots: 0,
       pickupCollections: 0,
       specialWeaponShots: 0,
+      allWeaponAmmoEmptyMs: 0,
+      zeroAmmoMs: { rocket: 0, rail: 0, whip: 0 },
+      jumpStarts: 0,
+      jumpLandings: 0,
+      jumpFailures: 0,
       repathCount: 0,
       pathMissCount: 0,
       blockedGoalFrames: 0,
@@ -1026,7 +1054,7 @@ function resetInactiveControllerMetrics(metric: OneFlagNavigatorMetric): void {
   metric.currentSameCellMs = 0;
   metric.currentNoProgressMs = 0;
   metric.lastCellKey = null;
-  metric.previousTargetKey = null;
+  metric.previousTargetKey = "";
   metric.previousTargetDistance = null;
 }
 
@@ -1963,8 +1991,11 @@ function configureTdmCombatStandoffWorld(world: WorldState): void {
     actor.weapons.whipAmmo = 0;
   }
   world.pickups = [];
-  world.geometry.solids = [];
-  world.geometry.gaps = [];
+  world.geometry = {
+    ...world.geometry,
+    solids: [],
+    gaps: [],
+  };
 }
 
 function createTdmCombatStandoffMetric(
@@ -2097,6 +2128,10 @@ export function groupProgressByTeam(
   basicShots: number;
   pickupCollections: number;
   specialWeaponShots: number;
+  allWeaponAmmoEmptyMs: number;
+  jumpStarts: number;
+  jumpLandings: number;
+  jumpFailures: number;
 }> {
   const grouped = {
     blue: {
@@ -2109,6 +2144,10 @@ export function groupProgressByTeam(
       basicShots: 0,
       pickupCollections: 0,
       specialWeaponShots: 0,
+      allWeaponAmmoEmptyMs: 0,
+      jumpStarts: 0,
+      jumpLandings: 0,
+      jumpFailures: 0,
     },
     red: {
       bestDistanceReduction: 0,
@@ -2120,6 +2159,10 @@ export function groupProgressByTeam(
       basicShots: 0,
       pickupCollections: 0,
       specialWeaponShots: 0,
+      allWeaponAmmoEmptyMs: 0,
+      jumpStarts: 0,
+      jumpLandings: 0,
+      jumpFailures: 0,
     },
   } satisfies Record<ArenaTeamId, {
     bestDistanceReduction: number;
@@ -2131,6 +2174,10 @@ export function groupProgressByTeam(
     basicShots: number;
     pickupCollections: number;
     specialWeaponShots: number;
+    allWeaponAmmoEmptyMs: number;
+    jumpStarts: number;
+    jumpLandings: number;
+    jumpFailures: number;
   }>;
 
   for (const metric of movementByActor.values()) {
@@ -2155,6 +2202,10 @@ export function groupProgressByTeam(
     target.basicShots += metric.basicShots;
     target.pickupCollections += metric.pickupCollections;
     target.specialWeaponShots += metric.specialWeaponShots;
+    target.allWeaponAmmoEmptyMs += metric.allWeaponAmmoEmptyMs;
+    target.jumpStarts += metric.jumpStarts;
+    target.jumpLandings += metric.jumpLandings;
+    target.jumpFailures += metric.jumpFailures;
     if (
       metric.minimumDistanceToObjective !== null &&
       metric.initialDistanceToObjective !== null
@@ -2174,7 +2225,7 @@ export function formatMatrixReport(
 ): string {
   const lines = [
     "Bot Simulation Matrix",
-    "scenario | durationMs | ended | scoreEvents | basicShots | pickups | specialShots | clusteredFrames | flagPickups | flagCaptures | invalidFrames | idleFrames | bestBlueProgress | bestRedProgress | blueTravel | redTravel | blueHoldMs | redHoldMs | blueMoveStallMs | redMoveStallMs",
+    "scenario | durationMs | ended | scoreEvents | basicShots | pickups | specialShots | allAmmoEmptyMs | jumpLandings/starts/failures | clusteredFrames | flagPickups | flagCaptures | invalidFrames | idleFrames | bestBlueProgress | bestRedProgress | blueTravel | redTravel | blueHoldMs | redHoldMs | blueMoveStallMs | redMoveStallMs",
   ];
   for (const summary of summaries) {
     const byTeam = groupProgressByTeam(summary.movementByActor);
@@ -2186,6 +2237,8 @@ export function formatMatrixReport(
       `${byTeam.blue.basicShots}/${byTeam.red.basicShots}`,
       `${byTeam.blue.pickupCollections}/${byTeam.red.pickupCollections}`,
       `${byTeam.blue.specialWeaponShots}/${byTeam.red.specialWeaponShots}`,
+      `${byTeam.blue.allWeaponAmmoEmptyMs}/${byTeam.red.allWeaponAmmoEmptyMs}`,
+      `${byTeam.blue.jumpLandings}/${byTeam.blue.jumpStarts}/${byTeam.blue.jumpFailures}:${byTeam.red.jumpLandings}/${byTeam.red.jumpStarts}/${byTeam.red.jumpFailures}`,
       `${summary.clusteredFrames.blue}/${summary.clusteredFrames.red}`,
       summary.flagPickups,
       summary.flagCaptures,

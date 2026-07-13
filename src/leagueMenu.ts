@@ -2,6 +2,7 @@ import {
   buildLeagueMatchSearch,
   acknowledgeLeagueProgression,
   CHALLENGER_PREVIEW_TEAM_IDS,
+  LEAGUE_TEAMS,
   foundersCircuitDiscipline,
   completeRecruitment,
   createLeagueRepository,
@@ -57,7 +58,10 @@ export function createLeagueMenuController(actions: {
 
   const startSeason = (): void => {
     season = createLeagueSeason();
-    selectedTeamId = season.playerTeamId;
+    selectedTeamId = getPlayerOpponent(
+      season,
+      getCurrentPlayerMatch(season),
+    ) ?? season.playerTeamId;
     saveAndRender();
   };
 
@@ -65,6 +69,7 @@ export function createLeagueMenuController(actions: {
     renderHeader(Boolean(season));
     empty.classList.toggle("is-hidden", Boolean(season));
     dashboard.classList.toggle("is-hidden", !season);
+    dashboard.classList.toggle("has-progress", Boolean(season?.currentRound));
     element("league-reset").classList.toggle("is-hidden", !season);
     if (!season) {
       recruitment.classList.add("is-hidden");
@@ -79,6 +84,32 @@ export function createLeagueMenuController(actions: {
     renderPyramid(season);
     renderProgression(season);
     renderRecruitment(season);
+  };
+
+  const renderSeasonTrack = (active: LeagueSeasonState): string => {
+    const stops = active.rounds.map((round) => {
+      const fixture = round.matches.find((match) =>
+        match.homeTeamId === active.playerTeamId ||
+        match.awayTeamId === active.playerTeamId
+      );
+      const result = fixture?.result;
+      let state = round.index === active.currentRound ? "is-current" : "is-open";
+      let resultLabel = round.index === active.currentRound ? "NEXT" : "OPEN";
+      if (result) {
+        const playerIsBlue = result.blueTeamId === active.playerTeamId;
+        const playerScore = playerIsBlue ? result.blueScore : result.redScore;
+        const rivalScore = playerIsBlue ? result.redScore : result.blueScore;
+        const outcome = playerScore > rivalScore
+          ? "W"
+          : playerScore === rivalScore ? "D" : "L";
+        state = outcome === "W"
+          ? "is-win"
+          : outcome === "D" ? "is-draw" : "is-loss";
+        resultLabel = `${outcome} ${playerScore}:${rivalScore}`;
+      }
+      return `<span class="league-season-stop ${state}"><i>0${round.index + 1}</i><b>${resultLabel}</b></span>`;
+    }).join("");
+    return `<div class="league-season-track" aria-label="Three match season progress"><small>SEASON RUN</small><div>${stops}</div></div>`;
   };
 
   const renderHeader = (hasSeason: boolean): void => {
@@ -143,7 +174,8 @@ export function createLeagueMenuController(actions: {
         <small>OPPONENT</small><h3>${opponent.name}</h3><p>${opponent.motto}</p>
         <div class="league-opponent-form"><span>#${sortedLeagueStandings(active).findIndex((row) => row.teamId === opponentId) + 1} TABLE</span><span>${opponentStanding.points} PTS</span><span>${opponentStanding.wins}-${opponentStanding.draws}-${opponentStanding.losses}</span></div>
       </div>
-      <button id="league-play-next" type="button"><small>${discipline.mapLabel.toUpperCase()} · ${discipline.modeLabel.toUpperCase()} 2V2</small><strong>Enter Arena</strong></button>`;
+      <button id="league-play-next" type="button"><small>${discipline.mapLabel.toUpperCase()} · ${discipline.modeLabel.toUpperCase()} 2V2</small><strong>Enter Arena</strong></button>
+      ${renderSeasonTrack(active)}`;
     requiredButton("league-play-next").onclick = () => {
       const route = readV2Route();
       window.location.search = buildLeagueMatchSearch(active, {
@@ -233,33 +265,79 @@ export function createLeagueMenuController(actions: {
       return;
     }
     recruitment.classList.remove("is-hidden");
+    const currentWingmateId = active.teamRosters[active.playerTeamId][1];
+    const initialCandidateId = active.recruitment.candidateIds[0] ?? null;
     recruitment.innerHTML = `
       <div class="league-recruitment-card">
-        <div class="v2-menu-kicker">CIRCUIT REWARD · ONE DECISION</div>
+        <div class="v2-menu-kicker">CIRCUIT REWARD &middot; COSMETIC CHOICE</div>
         <h2>Recruit or stay loyal?</h2>
-        <p>Replace your wingmate with one standout rival, or keep the squad together. This choice cannot be undone.</p>
-        <div id="league-candidates" class="league-candidates"></div>
-        <button id="league-keep-roster" class="league-keep-button" type="button">Keep Current Wingmate</button>
+        <p class="league-cosmetic-contract"><strong>Identical arena stats.</strong> Recruitment changes the fighter's look, name and personality only. It never changes health, speed, damage, AI skill or match simulation.</p>
+        <div id="league-recruitment-comparison" class="league-recruitment-comparison"></div>
+        <div><small class="league-choice-label">AVAILABLE LOOKS</small><div id="league-candidates" class="league-candidates"></div></div>
+        <div class="league-recruitment-actions">
+          <button id="league-confirm-recruit" type="button">Recruit Selected Fighter</button>
+          <button id="league-keep-roster" class="league-keep-button" type="button">Keep Current Wingmate</button>
+        </div>
       </div>`;
     const candidates = element("league-candidates");
+    let selectedCandidateId = initialCandidateId;
+    const comparison = element("league-recruitment-comparison");
+    const confirmButton = requiredButton("league-confirm-recruit");
+
+    const renderComparison = (): void => {
+      comparison.replaceChildren();
+      const current = document.createElement("section");
+      current.className = "league-recruitment-side is-current";
+      current.innerHTML = "<small>CURRENT WINGMATE</small>";
+      current.append(characterCard(active, currentWingmateId, "CURRENT LOOK", false));
+      const divider = document.createElement("span");
+      divider.className = "league-recruitment-swap";
+      divider.setAttribute("aria-hidden", "true");
+      divider.textContent = "OR";
+      const candidate = document.createElement("section");
+      candidate.className = "league-recruitment-side is-candidate";
+      candidate.innerHTML = "<small>SELECTED RECRUIT</small>";
+      if (selectedCandidateId) {
+        candidate.append(characterCard(active, selectedCandidateId, "COSMETIC OPTION", false));
+        confirmButton.disabled = false;
+        confirmButton.textContent = `Recruit ${leagueCharacter(selectedCandidateId).name}`;
+      } else {
+        candidate.append("No recruit available");
+        confirmButton.disabled = true;
+      }
+      comparison.append(current, divider, candidate);
+    };
+
     for (const characterId of active.recruitment.candidateIds) {
       const character = leagueCharacter(characterId);
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "league-candidate";
-      button.append(characterCard(active, characterId, `RECRUIT · ${character.rating} OVR`));
+      button.className = `league-candidate${characterId === selectedCandidateId ? " is-selected" : ""}`;
+      button.setAttribute("aria-pressed", String(characterId === selectedCandidateId));
+      button.append(characterCard(active, characterId, "SELECT LOOK", false));
       button.onclick = () => {
-        if (!window.confirm(`Recruit ${character.name} and release your current wingmate?`)) return;
-        season = completeRecruitment(active, characterId);
-        saveAndRender();
+        selectedCandidateId = characterId;
+        for (const option of Array.from(
+          candidates.querySelectorAll<HTMLButtonElement>(".league-candidate"),
+        )) {
+          const selected = option === button;
+          option.classList.toggle("is-selected", selected);
+          option.setAttribute("aria-pressed", String(selected));
+        }
+        renderComparison();
       };
       candidates.append(button);
     }
+    confirmButton.onclick = () => {
+      if (!selectedCandidateId) return;
+      season = completeRecruitment(active, selectedCandidateId);
+      saveAndRender();
+    };
     requiredButton("league-keep-roster").onclick = () => {
-      if (!window.confirm("Keep your current squad and close the only transfer window?")) return;
       season = completeRecruitment(active, null);
       saveAndRender();
     };
+    renderComparison();
   };
 
   const renderPyramid = (active: LeagueSeasonState): void => {
@@ -287,13 +365,14 @@ export function createLeagueMenuController(actions: {
     const drawn = event.blueScore === event.redScore;
     const positionDelta = event.previousPosition - event.newPosition;
     const pointsGained = event.newPoints - event.previousPoints;
+    const rivalResultsShiftedTable = !won && positionDelta !== 0;
     const finalRound = event.roundIndex === active.rounds.length - 1;
     const discipline = foundersCircuitDiscipline(event.roundIndex);
     const headline = event.promoted
       ? "Promotion Secured"
       : finalRound
         ? "Circuit Complete"
-        : positionDelta > 0
+        : won && positionDelta > 0
           ? `Up ${positionDelta} Place${positionDelta === 1 ? "" : "s"}`
           : won ? "Momentum Built" : drawn ? "Point Secured" : "The Climb Continues";
     progression.innerHTML = `
@@ -310,9 +389,9 @@ export function createLeagueMenuController(actions: {
           <div><small>BEFORE</small><strong>#${event.previousPosition}</strong></div>
           <span>→</span>
           <div class="is-new"><small>NOW</small><strong>#${event.newPosition}</strong></div>
-          <div class="league-points-earned"><small>LEAGUE POINTS</small><strong>+${pointsGained}</strong><span>${event.newPoints} TOTAL</span></div>
+          <div class="league-points-earned${pointsGained === 0 ? " is-zero" : ""}"><small>LEAGUE POINTS</small><strong>${pointsGained > 0 ? `+${pointsGained}` : "0"}</strong><span>${event.newPoints} TOTAL</span></div>
         </div>
-        <p>${event.promoted ? "The Challenger League is now within reach. Claim your circuit recruit and prepare for tougher rivals." : finalRound ? "Your first circuit is complete. Review the table, strengthen your squad and run it back." : `${active.rounds.length - active.currentRound} match${active.rounds.length - active.currentRound === 1 ? "" : "es"} remain. Every result can reshape the table.`}</p>
+        <p>${event.promoted ? "The Challenger League is now within reach. Claim your circuit recruit and prepare for tougher rivals." : finalRound ? "Your first circuit is complete. Review the table, strengthen your squad and run it back." : rivalResultsShiftedTable ? `The other circuit result reshaped the table and moved you to #${event.newPosition}. ${active.rounds.length - active.currentRound} match${active.rounds.length - active.currentRound === 1 ? "" : "es"} remain.` : `${active.rounds.length - active.currentRound} match${active.rounds.length - active.currentRound === 1 ? "" : "es"} remain. Every result can reshape the table.`}</p>
         <button id="league-progression-continue" type="button">${active.recruitment.status === "pending" ? "Claim Circuit Reward" : "Return to League HQ"}</button>
       </div>`;
     requiredButton("league-progression-continue").onclick = () => {
@@ -341,7 +420,9 @@ export function createLeagueMenuController(actions: {
     open(): void {
       root.classList.remove("is-hidden");
       season = repository.load();
-      selectedTeamId = season?.playerTeamId ?? "iron-vanguard";
+      selectedTeamId = season
+        ? getPlayerOpponent(season, getCurrentPlayerMatch(season)) ?? season.playerTeamId
+        : "iron-vanguard";
       render();
     },
   };
@@ -350,10 +431,14 @@ export function createLeagueMenuController(actions: {
 function characterCard(
   season: LeagueSeasonState,
   characterId: string,
-  badge?: string
+  badge?: string,
+  showStats = true,
 ): HTMLElement {
   const character = leagueCharacter(characterId);
   const stats = season.characterStats[characterId] ?? emptyStats(characterId);
+  const currentTeam = LEAGUE_TEAMS.find((team) =>
+    season.teamRosters[team.id].includes(characterId)
+  );
   const assetBase = import.meta.env?.BASE_URL ?? "/";
   const card = document.createElement("article");
   card.className = "league-character";
@@ -362,10 +447,11 @@ function characterCard(
   card.innerHTML = `
     <div class="league-character-portrait" style="--sprite:url('${assetBase}assets/${sheetAssetStem}-spritesheet-${sheetColumns}x4.png');--sprite-columns:${sheetColumns}"></div>
     <div class="league-character-info">
-      <small>${badge ?? `${character.rating} OVR · ${character.role.toUpperCase()}`}</small>
+      <small>${badge ?? `${currentTeam?.shortName ?? "ARENA"} &middot; COSMETIC FIGHTER`}</small>
       <strong>${character.name}</strong>
-      <span>${character.trait}</span>
-      <div class="league-character-stats"><b>${average(stats.kills, stats.matches)}<i>K/M</i></b><b>${average(stats.deaths, stats.matches)}<i>D/M</i></b><b>${stats.flagCaptures}<i>CAP</i></b></div>
+      <span>${character.personality}</span>
+      <em>${character.visualStyle}</em>
+      ${showStats ? `<div class="league-character-stats" aria-label="Recorded career performance"><b>${average(stats.kills, stats.matches)}<i>K/M</i></b><b>${average(stats.deaths, stats.matches)}<i>D/M</i></b><b>${stats.flagCaptures}<i>CAP</i></b></div>` : ""}
     </div>`;
   return card;
 }

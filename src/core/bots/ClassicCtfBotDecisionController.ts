@@ -44,6 +44,8 @@ export class ClassicCtfBotDecisionController {
   private patrolIndex = 0;
   private command: ClassicCtfTeamCommand = "auto";
   private commandTeamId: TeamId | null = null;
+  private defenderRoleInitialized = false;
+  private defenderAnchorUntilMs = 0;
 
   constructor(
     private readonly role: ClassicCtfBotRole,
@@ -112,9 +114,12 @@ export class ClassicCtfBotDecisionController {
       snapshot,
       enemyFlag?.state.interactingActorId,
     );
+    const adaptiveTwoActorDefense = this.role === "defender" &&
+      isTwoActorTeam(snapshot, actor.teamId);
     const defenderJoinsReturn = this.role === "defender" &&
       alliedCarrier?.teamId === actor.teamId &&
-      flagReturnProgress(this.map, actor.teamId, alliedCarrier.position) >= .45;
+      flagReturnProgress(this.map, actor.teamId, alliedCarrier.position) >=
+        (adaptiveTwoActorDefense ? .25 : .45);
     if (
       alliedCarrier?.teamId === actor.teamId &&
       (activeCommand === "attack" ||
@@ -157,7 +162,7 @@ export class ClassicCtfBotDecisionController {
     }
 
     if (this.role === "defender") {
-      return this.chooseDefenseGoal(actor, snapshot);
+      return this.chooseAdaptiveDefenderGoal(actor, snapshot);
     }
 
     return goal(
@@ -171,6 +176,8 @@ export class ClassicCtfBotDecisionController {
     this.patrolIndex = 0;
     this.command = "auto";
     this.commandTeamId = null;
+    this.defenderRoleInitialized = false;
+    this.defenderAnchorUntilMs = 0;
   }
 
   setTeamCommand(teamId: TeamId, command: ClassicCtfTeamCommand): void {
@@ -202,6 +209,51 @@ export class ClassicCtfBotDecisionController {
       "patrol-base",
       patrol.position ?? ownBase,
       `patrol:${this.patrolIndex}`,
+    );
+  }
+
+  private chooseAdaptiveDefenderGoal(
+    actor: Readonly<ActorState>,
+    snapshot: WorldSnapshot,
+  ): ClassicCtfBotGoal {
+    if (!isTwoActorTeam(snapshot, actor.teamId)) {
+      return this.chooseDefenseGoal(actor, snapshot);
+    }
+
+    const ownBase = centerOf(baseFor(this.map, actor.teamId));
+    const invader = nearestEnemy(snapshot, actor, ownBase, 460);
+    if (invader) {
+      this.defenderAnchorUntilMs = snapshot.timeMs + 2_500;
+      return goal(
+        "defend-base",
+        invader.position,
+        `defend:${invader.id}:${invader.lifeId}`,
+      );
+    }
+
+    if (!this.defenderRoleInitialized) {
+      this.defenderRoleInitialized = true;
+      this.defenderAnchorUntilMs = snapshot.timeMs + 1_600;
+    }
+    if (snapshot.timeMs < this.defenderAnchorUntilMs) {
+      return this.chooseDefenseGoal(actor, snapshot);
+    }
+
+    const teammate = snapshot.actors.find((candidate) =>
+      candidate.id !== actor.id && candidate.teamId === actor.teamId &&
+      candidate.lifeState === "active"
+    );
+    const midpoint = supportPoint(this.map, actor.teamId);
+    const sweepTarget = teammate
+      ? {
+        x: midpoint.x + (teammate.position.x - midpoint.x) * .32,
+        y: midpoint.y + (teammate.position.y - midpoint.y) * .32,
+      }
+      : midpoint;
+    return goal(
+      "support-mid",
+      sweepTarget,
+      `sweep:${actor.teamId}:${Math.round(sweepTarget.x / 80)}:${Math.round(sweepTarget.y / 80)}`,
     );
   }
 }
@@ -327,6 +379,13 @@ function escortPoint(
     x: carrier.x + (home.x - carrier.x) * .28,
     y: carrier.y + (home.y - carrier.y) * .28,
   };
+}
+
+function isTwoActorTeam(
+  snapshot: WorldSnapshot,
+  teamId: TeamId | null,
+): boolean {
+  return snapshot.actors.filter((actor) => actor.teamId === teamId).length === 2;
 }
 
 function followPoint(

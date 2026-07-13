@@ -24,7 +24,6 @@ export interface V2CharacterSkinConfig {
   readonly scale: number;
   readonly columns: number;
   readonly origin: V2CharacterOrigin;
-  readonly syntheticIdleMotion: boolean;
   readonly idleColumns: readonly number[];
   readonly walkColumns: readonly number[];
   readonly walkColumnsByDirection?: Partial<
@@ -48,56 +47,47 @@ export const V2_CHARACTER_SKINS: Record<V2PlayerSkinId, V2CharacterSkinConfig> =
     "briarhorn",
     "briarhornRunner",
     .55,
-    true,
   ),
   "ax9-mantis": sixColumnSkin(
     "ax9-mantis",
     "ax9MantisRunner",
     .56,
-    false,
   ),
   "null-courier": sixColumnSkin(
     "null-courier",
     "nullCourierRunner",
     .56,
-    true,
     { down: [1, 2, 3, 2] },
   ),
   "aegis-vanguard": sixColumnSkin(
     "aegis-vanguard",
     "aegisVanguardRunner",
     .55,
-    false,
   ),
   "alien-runner": sixColumnSkin(
     "alien-runner",
     "xenoRunner",
     .58,
-    true,
   ),
   "volt-hound": sixColumnSkin(
     "volt-hound",
     "voltHoundRunner",
     .55,
-    false,
   ),
   "mirejaw": sixColumnSkin(
     "mirejaw",
     "mirejawRunner",
     .52,
-    false,
   ),
   "scrapwing": sixColumnSkin(
     "scrapwing",
     "scrapwingRunner",
     .56,
-    true,
   ),
   "prism-bastion": sixColumnSkin(
     "prism-bastion",
     "prismBastionRunner",
     .52,
-    false,
   ),
 };
 
@@ -110,7 +100,6 @@ function sixColumnSkin(
   id: V2PlayerSkinId,
   texture: string,
   scale: number,
-  syntheticIdleMotion: boolean,
   walkColumnsByDirection?: Partial<
     Record<V2CharacterDirection, readonly number[]>
   >,
@@ -121,7 +110,6 @@ function sixColumnSkin(
     scale,
     columns: 6,
     origin: { x: .5, y: .5 },
-    syntheticIdleMotion,
     idleColumns: [0],
     walkColumns: [1, 2, 3, 4],
     walkColumnsByDirection,

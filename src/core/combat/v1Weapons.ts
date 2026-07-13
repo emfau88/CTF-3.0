@@ -1,5 +1,6 @@
 import {
   applyDamage,
+  cancelSpawnProtection,
   V2_ACTOR_LIFECYCLE_CONFIG,
   type ActorState,
   type WorldPosition,
@@ -12,6 +13,7 @@ import {
   V2_V1_WEAPON_PARITY_CONFIG,
   type V1WeaponConfig,
 } from "./V1WeaponConfig";
+import { resolveNearestValidEnemy } from "./NearestValidEnemyResolver";
 
 type V1WeaponId = "rocket" | "rail" | "whip";
 
@@ -27,19 +29,20 @@ export function fireV1Weapons(
     (!intent.actorId || intent.actorId === actor.id)
   );
   const weaponId = readWeaponId(request?.payload);
+  if (!weaponId || actor.lifeState !== "active") {
+    return [];
+  }
+  if (weaponId === "whip") {
+    return fireWhip(world, actor, config);
+  }
   const direction = normalizedDirection(
     request?.direction ?? readAimDirection(input) ?? actor.lastMoveDirection,
   );
-  if (!weaponId || !direction || actor.lifeState !== "active") {
-    return [];
-  }
+  if (!direction) return [];
   if (weaponId === "rocket") {
     return fireRocket(world, actor, direction, config);
   }
-  if (weaponId === "rail") {
-    return fireRail(world, actor, direction, config);
-  }
-  return fireWhip(world, actor, direction, config);
+  return fireRail(world, actor, direction, config);
 }
 
 function fireRocket(
@@ -56,6 +59,11 @@ function fireRocket(
   }
   actor.weapons.rocketAmmo--;
   actor.weapons.rocketCooldownMs = config.rocketCooldownMs;
+  const protectionEnded = cancelSpawnProtection(
+    actor,
+    world.timeMs,
+    "attack",
+  );
   const offset = actor.radius + config.rocketRadius + 3;
   const projectile: ProjectileState = {
     id: `rocket-${actor.id}-${actor.lifeId}-${world.timeMs}`,
@@ -79,7 +87,9 @@ function fireRocket(
     lifeState: "active",
   };
   world.projectiles.push(projectile);
-  return [{
+  return [
+    ...(protectionEnded ? [protectionEnded] : []),
+    {
     id: `weapon-rocket-fired-${projectile.id}`,
     type: "weapon.rocketFired",
     timeMs: world.timeMs,
@@ -152,7 +162,14 @@ function fireRail(
   };
   actor.weapons.railAmmo--;
   actor.weapons.railCooldownMs = config.railCooldownMs;
-  const events: GameEvent[] = [{
+  const protectionEnded = cancelSpawnProtection(
+    actor,
+    world.timeMs,
+    "attack",
+  );
+  const events: GameEvent[] = [
+    ...(protectionEnded ? [protectionEnded] : []),
+    {
     id: `weapon-rail-fired-${actor.id}-${world.timeMs}`,
     type: "weapon.railFired",
     timeMs: world.timeMs,
@@ -183,7 +200,6 @@ function fireRail(
 function fireWhip(
   world: WorldState,
   actor: ActorState,
-  direction: WorldPosition,
   config: V1WeaponConfig,
 ): readonly GameEvent[] {
   if (
@@ -192,58 +208,64 @@ function fireWhip(
   ) {
     return [];
   }
-  const minimumDot = Math.cos(config.whipHalfAngle);
-  let target: ActorState | null = null;
-  let bestDistance = Infinity;
-  for (const candidate of world.actors) {
-    if (!isEnemyTarget(actor, candidate)) {
-      continue;
-    }
-    const dx = candidate.position.x - actor.position.x;
-    const dy = candidate.position.y - actor.position.y;
-    const distance = Math.hypot(dx, dy);
-    if (
-      distance > config.whipRange + candidate.radius ||
-      distance >= bestDistance ||
-      (dx * direction.x + dy * direction.y) / (distance || 1) < minimumDot ||
-      world.geometry.solids.some((solid) =>
-        lineIntersectsRect(actor.position, candidate.position, solid)
-      )
-    ) {
-      continue;
-    }
-    target = candidate;
-    bestDistance = distance;
+  const resolved = resolveNearestValidEnemy(
+    actor,
+    world.actors,
+    world.geometry,
+    config.whipRange,
+  );
+  if (!resolved) {
+    return [{
+      id: `weapon-whip-target-unavailable-${actor.id}-${world.timeMs}`,
+      type: "weapon.whipTargetUnavailable",
+      timeMs: world.timeMs,
+      sourceActorId: actor.id,
+      teamId: actor.teamId ?? undefined,
+      payload: { range: config.whipRange },
+    }];
   }
+  const { target, direction } = resolved;
   actor.weapons.whipAmmo--;
   actor.weapons.whipCooldownMs = config.whipCooldownMs;
-  const events: GameEvent[] = [{
+  if (
+    actor.weapons.whipAmmo < config.whipMaxCharges &&
+    actor.weapons.whipRechargeMs <= 0
+  ) {
+    actor.weapons.whipRechargeMs = config.whipRechargeMs;
+  }
+  const protectionEnded = cancelSpawnProtection(
+    actor,
+    world.timeMs,
+    "attack",
+  );
+  const events: GameEvent[] = [
+    ...(protectionEnded ? [protectionEnded] : []),
+    {
     id: `weapon-whip-fired-${actor.id}-${world.timeMs}`,
     type: "weapon.whipFired",
     timeMs: world.timeMs,
     sourceActorId: actor.id,
-    targetActorId: target?.id,
+    targetActorId: target.id,
     teamId: actor.teamId ?? undefined,
     payload: {
       origin: { ...actor.position },
       direction,
       range: config.whipRange,
       halfAngle: config.whipHalfAngle,
-      hit: Boolean(target),
+      hit: true,
+      targetPosition: { ...target.position },
       remainingAmmo: actor.weapons.whipAmmo,
       cooldownMs: config.whipCooldownMs,
     },
   }];
-  if (target) {
-    events.push(...applyDamage(
-      target,
-      config.whipDamage,
-      world.timeMs,
-      V2_ACTOR_LIFECYCLE_CONFIG,
-      actor.id,
-      "whip",
-    ).events);
-  }
+  events.push(...applyDamage(
+    target,
+    config.whipDamage,
+    world.timeMs,
+    V2_ACTOR_LIFECYCLE_CONFIG,
+    actor.id,
+    "whip",
+  ).events);
   return events;
 }
 

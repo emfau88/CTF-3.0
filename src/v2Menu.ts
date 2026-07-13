@@ -8,8 +8,14 @@ import {
   type V2RouteConfig,
   type V2PlayersMode,
 } from "./v2Route";
-import type { MatchStatEntry } from "./core";
+import type { GameModeId, MatchStatEntry } from "./core";
 import { createLeagueMenuController } from "./leagueMenu";
+import {
+  calculateMatchImpact,
+  compareMatchImpact,
+  matchStatsColumns,
+} from "./matchStatsPresentation";
+export { calculateMatchImpact } from "./matchStatsPresentation";
 import {
   isPlayerSkinId,
   loadPlayerSkinPreference,
@@ -180,6 +186,7 @@ export function showGameplayV2Result(input: {
   readonly detail: string;
   readonly stats: readonly MatchStatEntry[];
   readonly humanActorIds: readonly string[];
+  readonly modeId: GameModeId;
   readonly onPlayAgain: () => void;
   readonly onMainMenu: () => void;
   readonly playAgainLabel?: string;
@@ -189,7 +196,7 @@ export function showGameplayV2Result(input: {
   const elements = readResultElements();
   elements.title.textContent = input.headline;
   elements.detail.textContent = input.detail;
-  renderStatsTable(elements.stats, input.stats, input.humanActorIds);
+  renderStatsTable(elements.stats, input.stats, input.humanActorIds, input.modeId);
   elements.playAgain.onclick = input.onPlayAgain;
   elements.mainMenu.onclick = input.onMainMenu;
   elements.playAgain.textContent = input.playAgainLabel ?? "Play Again";
@@ -201,10 +208,18 @@ export function showGameplayV2Stats(
   stats: readonly MatchStatEntry[],
   humanActorIds: readonly string[],
   onClose: () => void = () => {},
-  options: { readonly holdToView?: boolean } = {},
+  options: {
+    readonly holdToView?: boolean;
+    readonly modeId?: GameModeId;
+  } = {},
 ): void {
   const elements = readStatsElements();
-  renderStatsTable(elements.table, stats, humanActorIds);
+  renderStatsTable(
+    elements.table,
+    stats,
+    humanActorIds,
+    options.modeId ?? "team-deathmatch",
+  );
   elements.close.onclick = onClose;
   elements.root.classList.toggle(
     "is-held-scoreboard",
@@ -286,18 +301,19 @@ function renderStatsTable(
   root: HTMLElement,
   stats: readonly MatchStatEntry[],
   humanActorIds: readonly string[],
+  modeId: GameModeId,
 ): void {
   root.replaceChildren();
   const table = document.createElement("table");
   table.className = "v2-stats-table";
+  table.dataset.mode = modeId;
+  const columns = matchStatsColumns(modeId);
   const head = table.createTHead().insertRow();
-  for (const label of ["Player", "K", "D", "K/D", "Cap", "Ret", "Impact"]) {
+  for (const column of columns) {
     const cell = document.createElement("th");
     cell.scope = "col";
-    cell.textContent = label;
-    if (label === "Impact") {
-      cell.title = "Kills and objective contribution, reduced by deaths";
-    }
+    cell.textContent = column.label;
+    if (column.title) cell.title = column.title;
     head.append(cell);
   }
   const humans = new Set(humanActorIds);
@@ -312,7 +328,7 @@ function renderStatsTable(
     const teamRow = body.insertRow();
     teamRow.className = "v2-stats-team-header";
     const teamCell = teamRow.insertCell();
-    teamCell.colSpan = 7;
+    teamCell.colSpan = columns.length;
     teamCell.innerHTML = `<div class="v2-stats-team-header-content"><span>${
       teamLabel(teamId)
     }</span><strong>${
@@ -336,15 +352,9 @@ function renderStatsTable(
         badge.textContent = "MVP";
         playerCell.append(badge);
       }
-      for (const value of [
-        entry.kills,
-        entry.deaths,
-        formatKillDeathRatio(entry),
-        entry.flagCaptures,
-        entry.flagReturns,
-      ]) {
+      for (const column of columns.slice(1, -1)) {
         const cell = row.insertCell();
-        cell.textContent = String(value);
+        cell.textContent = column.value(entry);
       }
       const impactCell = row.insertCell();
       impactCell.className = "v2-stats-impact";
@@ -433,28 +443,6 @@ function applySkinSprite(element: HTMLElement, skinId: V2PlayerSkinId): void {
     "--skin-columns",
     String(playerSkinSheetColumns(skinId)),
   );
-}
-
-export function calculateMatchImpact(entry: MatchStatEntry): number {
-  return Math.max(
-    0,
-    entry.kills * 100 +
-      entry.flagCaptures * 350 +
-      entry.flagReturns * 150 +
-      entry.flagPickups * 25 -
-      entry.deaths * 30,
-  );
-}
-
-function compareMatchImpact(a: MatchStatEntry, b: MatchStatEntry): number {
-  return calculateMatchImpact(b) - calculateMatchImpact(a) ||
-    b.kills - a.kills || a.deaths - b.deaths ||
-    a.actorId.localeCompare(b.actorId);
-}
-
-function formatKillDeathRatio(entry: MatchStatEntry): string {
-  if (entry.deaths === 0) return entry.kills === 0 ? "0.0" : `${entry.kills}.0`;
-  return (entry.kills / entry.deaths).toFixed(1);
 }
 
 function orderedTeamIds(stats: readonly MatchStatEntry[]): string[] {

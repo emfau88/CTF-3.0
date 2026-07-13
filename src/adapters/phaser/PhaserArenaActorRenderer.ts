@@ -1,0 +1,279 @@
+import Phaser from "phaser";
+import type { ActorId, ActorState, WorldSnapshot } from "../../core";
+import {
+  V2_ACTOR_LIFECYCLE_CONFIG,
+  V2_COLLISION_GROUNDWORK_CONFIG,
+} from "../../core";
+import type { V2PlayerSkinId } from "../../v2Route";
+import { resolveCharacterIdlePose } from "./characterIdlePose";
+import {
+  V2_CHARACTER_DIRECTIONS,
+  V2_CHARACTER_SKINS,
+  legacyArenaCharacterFrame,
+  resolveV2CharacterPresentation,
+  v2CharacterAnimationKey,
+  v2CharacterAnimationState,
+  v2CharacterColumns,
+  v2CharacterDirection,
+  v2CharacterDirectionRow,
+  v2CharacterFrame,
+  type V2CharacterAnimationState,
+  type V2CharacterPresentation,
+  type V2CharacterSkinConfig,
+} from "./v2CharacterPresentation";
+
+interface ArenaActorView {
+  readonly shadow: Phaser.GameObjects.Ellipse;
+  readonly container: Phaser.GameObjects.Container;
+  readonly shield: Phaser.GameObjects.Graphics;
+  readonly sprite: Phaser.GameObjects.Sprite;
+  readonly status: Phaser.GameObjects.Graphics;
+  readonly shieldLabel: Phaser.GameObjects.Text;
+  readonly character: V2CharacterPresentation;
+  idleStartedAtMs: number;
+}
+
+export class PhaserArenaActorRenderer {
+  private readonly views = new Map<ActorId, ArenaActorView>();
+
+  constructor(
+    private readonly scene: Phaser.Scene,
+    private readonly playerSkinId: V2PlayerSkinId,
+  ) {
+    ensurePlayerSkinAnimations(scene);
+  }
+
+  render(snapshot: WorldSnapshot): void {
+    const visibleIds = new Set(snapshot.actors.map((actor) => actor.id));
+    for (const [actorId, view] of this.views) {
+      if (!visibleIds.has(actorId)) {
+        view.shadow.destroy();
+        view.container.destroy();
+        this.views.delete(actorId);
+      }
+    }
+    for (const actor of snapshot.actors) this.renderActor(actor);
+  }
+
+  reset(): void {
+    for (const view of this.views.values()) {
+      view.shadow.destroy();
+      view.container.destroy();
+    }
+    this.views.clear();
+  }
+
+  dispose(): void {
+    this.reset();
+  }
+
+  private renderActor(actor: Readonly<ActorState>): void {
+    const view = this.views.get(actor.id) ?? this.createActorView(actor);
+    const height = actor.jump.height;
+    const scale = 1 + height / 210;
+    const fallProgress = actor.lifeState === "falling"
+      ? Phaser.Math.Clamp(
+        1 - (actor.respawn?.remainingMs ?? 0) /
+          V2_COLLISION_GROUNDWORK_CONFIG.fallDurationMs,
+        0,
+        1,
+      )
+      : 0;
+    const fallScale = Math.max(.08, 1 - fallProgress * .92);
+
+    view.shadow
+      .setPosition(actor.position.x, actor.position.y + 8)
+      .setScale(1 + height / 160, Math.max(.35, 1 - height / 95))
+      .setAlpha(actor.lifeState === "active" ? Math.max(.1, .22 - height / 330) : 0);
+    view.container
+      .setPosition(actor.position.x, actor.position.y - height)
+      .setScale(scale * fallScale)
+      .setRotation(actor.lifeState === "falling" ? fallProgress * 1.3 : 0)
+      .setAlpha(actor.lifeState === "active" ? 1 : Math.max(.05, 1 - fallProgress))
+      .setVisible(actor.lifeState !== "dead");
+    updateActorSprite(view.sprite, view.character, actor);
+    const isIdle = v2CharacterAnimationState(actor) === "idle";
+    if (!isIdle) view.idleStartedAtMs = this.scene.time.now;
+    const idleMotion = isIdle && view.character.skin
+      ? resolveCharacterIdlePose(
+        view.character.skin.id,
+        this.scene.time.now - view.idleStartedAtMs,
+        actor.id.length * 97 + actor.lifeId * 31,
+      )
+      : { active: false, x: 0, y: 0, rotation: 0, scaleX: 1, scaleY: 1 };
+    view.sprite
+      .setPosition(idleMotion.x, idleMotion.y)
+      .setRotation(idleMotion.rotation)
+      .setScale(
+        view.character.scale * idleMotion.scaleX,
+        view.character.scale * idleMotion.scaleY,
+      )
+      .setTint(actor.lifeState === "falling" ? 0x555555 : 0xffffff);
+    this.drawActorStatus(view.status, actor);
+    this.drawSpawnProtection(view, actor);
+  }
+
+  private createActorView(actor: Readonly<ActorState>): ArenaActorView {
+    const shadow = this.scene.add.ellipse(
+      actor.position.x,
+      actor.position.y + 8,
+      34,
+      14,
+      0x000000,
+      .2,
+    ).setDepth(20);
+    const character = resolveV2CharacterPresentation(actor, this.playerSkinId);
+    const sprite = this.scene.add.sprite(0, 0, character.texture, character.initialFrame)
+      .setOrigin(character.origin.x, character.origin.y)
+      .setScale(character.scale);
+    const status = this.scene.add.graphics();
+    const shield = this.scene.add.graphics();
+    const shieldLabel = this.scene.add.text(0, -54, "", {
+      fontFamily: "Arial, sans-serif",
+      fontSize: "9px",
+      fontStyle: "bold",
+      color: "#dffcff",
+      stroke: "#07131b",
+      strokeThickness: 4,
+    }).setOrigin(.5).setVisible(false);
+    const container = this.scene.add.container(
+      actor.position.x,
+      actor.position.y,
+      [shield, sprite, status, shieldLabel],
+    ).setDepth(35);
+    const view = {
+      shadow,
+      container,
+      shield,
+      sprite,
+      status,
+      shieldLabel,
+      character,
+      idleStartedAtMs: this.scene.time.now,
+    };
+    this.views.set(actor.id, view);
+    return view;
+  }
+
+  private drawActorStatus(
+    graphics: Phaser.GameObjects.Graphics,
+    actor: Readonly<ActorState>,
+  ): void {
+    graphics.clear();
+    if (actor.lifeState !== "active") return;
+    const healthRatio = actor.maxHealth > 0
+      ? Phaser.Math.Clamp(actor.health / actor.maxHealth, 0, 1)
+      : 0;
+    const color = actor.teamId === "blue" ? 0x255ec8 : 0xb7272d;
+    graphics.fillStyle(0x10201d, .65).fillRoundedRect(-22, -38, 44, 6, 3);
+    graphics.fillStyle(color, 1).fillRoundedRect(-22, -38, 44 * healthRatio, 6, 3);
+    if (actor.armor > 0) {
+      graphics.lineStyle(4, 0x29c46a, .95)
+        .beginPath()
+        .arc(0, 0, actor.radius + 9, -2.55, -.6)
+        .strokePath();
+    }
+  }
+
+  private drawSpawnProtection(
+    view: ArenaActorView,
+    actor: Readonly<ActorState>,
+  ): void {
+    const remainingMs = actor.spawnProtectionRemainingMs;
+    const active = actor.lifeState === "active" && remainingMs > 0;
+    view.shield.clear().setVisible(active);
+    view.shieldLabel.setVisible(active && actor.id === "blue-player");
+    if (!active) return;
+    const radius = actor.radius + 15;
+    const teamColor = actor.teamId === "red" ? 0xff6f78 : 0x7fdcff;
+    const ratio = Phaser.Math.Clamp(
+      remainingMs / V2_ACTOR_LIFECYCLE_CONFIG.spawnProtectionMs,
+      0,
+      1,
+    );
+    view.shield.fillStyle(teamColor, .09).fillCircle(0, 0, radius);
+    view.shield.lineStyle(2, teamColor, .58 + ratio * .32).strokeCircle(0, 0, radius);
+    view.shield.lineStyle(3, 0xffffff, .72)
+      .beginPath()
+      .arc(0, 0, radius + 4, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio)
+      .strokePath();
+    view.shield.lineStyle(1, teamColor, .34);
+    for (let index = 0; index < 6; index += 1) {
+      const angle = Math.PI * 2 * index / 6;
+      const next = Math.PI * 2 * (index + 1) / 6;
+      view.shield.beginPath()
+        .moveTo(Math.cos(angle) * radius, Math.sin(angle) * radius)
+        .lineTo(Math.cos(next) * radius, Math.sin(next) * radius)
+        .strokePath();
+    }
+    view.shieldLabel.setText(
+      `SPAWN SHIELD ${(Math.ceil(remainingMs / 100) / 10).toFixed(1)}s`,
+    );
+  }
+}
+
+function updateActorSprite(
+  sprite: Phaser.GameObjects.Sprite,
+  character: V2CharacterPresentation,
+  actor: Readonly<ActorState>,
+): void {
+  if (character.kind === "animated-skin" && character.skin) {
+    updatePlayerSkinSprite(sprite, character.skin, actor);
+    return;
+  }
+  if (sprite.anims.isPlaying) sprite.stop();
+  sprite.setFrame(legacyArenaCharacterFrame(actor));
+}
+
+function updatePlayerSkinSprite(
+  sprite: Phaser.GameObjects.Sprite,
+  skin: V2CharacterSkinConfig,
+  actor: Readonly<ActorState>,
+): void {
+  const direction = v2CharacterDirection(actor);
+  const state = v2CharacterAnimationState(actor);
+  const columns = v2CharacterColumns(skin, state, direction);
+  if (columns.length > 1) {
+    sprite.play(v2CharacterAnimationKey(skin, direction, state), true);
+    return;
+  }
+  sprite.stop();
+  sprite.setFrame(v2CharacterFrame(skin, actor, state));
+}
+
+function ensurePlayerSkinAnimations(scene: Phaser.Scene): void {
+  for (const skin of Object.values(V2_CHARACTER_SKINS)) {
+    for (const direction of V2_CHARACTER_DIRECTIONS) {
+      for (const state of ["idle", "walk", "jump"] as const) {
+        if (v2CharacterColumns(skin, state, direction).length > 1) {
+          ensurePlayerSkinAnimation(scene, skin, direction, state);
+        }
+      }
+    }
+  }
+}
+
+function ensurePlayerSkinAnimation(
+  scene: Phaser.Scene,
+  skin: V2CharacterSkinConfig,
+  direction: (typeof V2_CHARACTER_DIRECTIONS)[number],
+  state: V2CharacterAnimationState,
+): void {
+  const key = v2CharacterAnimationKey(skin, direction, state);
+  if (scene.anims.exists(key)) return;
+  const row = v2CharacterDirectionRow(direction);
+  const columns = v2CharacterColumns(skin, state, direction);
+  scene.anims.create({
+    key,
+    frames: columns.map((column) => ({
+      key: skin.texture,
+      frame: row * skin.columns + column,
+    })),
+    frameRate: state === "idle"
+      ? skin.idleFrameRate
+      : state === "walk"
+      ? skin.walkFrameRate
+      : skin.jumpFrameRate,
+    repeat: -1,
+  });
+}

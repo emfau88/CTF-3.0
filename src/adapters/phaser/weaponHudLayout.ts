@@ -27,7 +27,7 @@ export function weaponIconScale(
   weaponId: WeaponHudId,
   radius: number,
 ): number {
-  const sourceSize = weaponId === "whip" ? 160 : 256;
+  const sourceSize = weaponId === "whip" ? 512 : 256;
   return radius * 2.15 / sourceSize;
 }
 

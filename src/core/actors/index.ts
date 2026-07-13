@@ -19,6 +19,7 @@ export {
 } from "./ActorLifecycleConfig";
 export {
   applyDamage,
+  cancelSpawnProtection,
   updateActorLifecycle,
   type ActorDamageResult,
   type ActorLifecycleResult,
