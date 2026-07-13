@@ -1,6 +1,8 @@
 import {
   LEAGUE_CHARACTERS,
   LEAGUE_TEAMS,
+  FOUNDERS_CIRCUIT_TEAM_IDS,
+  foundersCircuitDiscipline,
   PLAYER_LEAGUE_TEAM_ID,
   leagueCharacter,
 } from "./leagueCatalog";
@@ -14,8 +16,6 @@ import {
   type LeagueStanding,
   type LeagueTeamId,
 } from "./leagueTypes";
-
-const RECRUITMENT_ROUND = 5;
 
 function hashText(value: string): number {
   let hash = 2166136261;
@@ -34,8 +34,8 @@ function random01(seed: number): number {
   return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
 }
 
-function createSchedule(): LeagueSeasonState["rounds"] {
-  const ids = LEAGUE_TEAMS.map((team) => team.id);
+function createSchedule(teamIds: readonly LeagueTeamId[]): LeagueSeasonState["rounds"] {
+  const ids = [...teamIds];
   const fixed = ids[0];
   let rotating = ids.slice(1);
   const firstLeg: LeagueSeasonState["rounds"] = [];
@@ -59,17 +59,7 @@ function createSchedule(): LeagueSeasonState["rounds"] {
     rotating = [rotating.at(-1)!, ...rotating.slice(0, -1)];
   }
 
-  const secondLeg = firstLeg.map((round, index) => ({
-    index: index + firstLeg.length,
-    matches: round.matches.map((match, matchIndex) => ({
-      id: `r${index + firstLeg.length + 1}-m${matchIndex + 1}`,
-      roundIndex: index + firstLeg.length,
-      homeTeamId: match.awayTeamId,
-      awayTeamId: match.homeTeamId,
-      result: null,
-    })),
-  }));
-  return [...firstLeg, ...secondLeg];
+  return firstLeg;
 }
 
 function initialStanding(teamId: LeagueTeamId): LeagueStanding {
@@ -119,16 +109,18 @@ export function createLeagueSeason(seed = Date.now()): LeagueSeasonState {
     status: "active",
     currentRound: 0,
     playerTeamId: PLAYER_LEAGUE_TEAM_ID,
+    teamIds: [...FOUNDERS_CIRCUIT_TEAM_IDS],
     teamRosters,
     standings,
     characterStats,
-    rounds: createSchedule(),
+    rounds: createSchedule(FOUNDERS_CIRCUIT_TEAM_IDS),
     defeatedTeamIds: [],
     recruitment: {
       status: "locked",
       candidateIds: [],
       selectedCharacterId: null,
     },
+    lastProgression: null,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -159,13 +151,30 @@ export function getPlayerOpponent(
 export function sortedLeagueStandings(
   season: LeagueSeasonState
 ): LeagueStanding[] {
-  return Object.values(season.standings).sort(
+  return season.teamIds.map((teamId) => season.standings[teamId]).sort(
     (a, b) =>
       b.points - a.points ||
-      b.capturesFor - b.capturesAgainst - (a.capturesFor - a.capturesAgainst) ||
-      b.capturesFor - a.capturesFor ||
+      normalizedPerformance(season, b.teamId) - normalizedPerformance(season, a.teamId) ||
+      b.wins - a.wins ||
+      a.losses - b.losses ||
       a.teamId.localeCompare(b.teamId)
   );
+}
+
+function normalizedPerformance(season: LeagueSeasonState, teamId: LeagueTeamId): number {
+  return season.rounds.reduce((total, round) => {
+    const match = round.matches.find((fixture) =>
+      fixture.result && (fixture.homeTeamId === teamId || fixture.awayTeamId === teamId)
+    );
+    if (!match?.result) return total;
+    const forScore = match.result.blueTeamId === teamId
+      ? match.result.blueScore
+      : match.result.redScore;
+    const againstScore = match.result.blueTeamId === teamId
+      ? match.result.redScore
+      : match.result.blueScore;
+    return total + (forScore - againstScore) / foundersCircuitDiscipline(round.index).scoreTarget;
+  }, 0);
 }
 
 function recordStanding(
@@ -201,51 +210,78 @@ function teamPower(season: LeagueSeasonState, teamId: LeagueTeamId): number {
   return roster.reduce((sum, id) => sum + leagueCharacter(id).rating, 0) / roster.length;
 }
 
+function teamForm(season: LeagueSeasonState, teamId: LeagueTeamId): number {
+  const standing = season.standings[teamId];
+  if (standing.played === 0) return 0;
+  const pointsPerMatch = standing.points / standing.played;
+  const captureDifference = (standing.capturesFor - standing.capturesAgainst) / standing.played;
+  return (pointsPerMatch - 1.5) * 1.4 + Math.max(-1.5, Math.min(1.5, captureDifference)) * 0.55;
+}
+
 function addSimulatedCharacterStats(
   season: LeagueSeasonState,
   teamId: LeagueTeamId,
   goals: number,
   goalsAgainst: number,
-  seed: number
+  seed: number,
+  roundIndex: number,
 ): void {
+  const discipline = foundersCircuitDiscipline(roundIndex);
   season.teamRosters[teamId].forEach((characterId, index) => {
     const stats = season.characterStats[characterId] ?? initialCharacterStats(characterId);
     const roll = random01(seed + index * 73);
     stats.matches += 1;
-    stats.kills += Math.max(1, Math.round(3 + goals * 2 + roll * 5 - index));
-    stats.deaths += Math.max(1, Math.round(3 + goalsAgainst * 2 + (1 - roll) * 4));
-    stats.flagPickups += Math.max(goals, Math.round(goals + roll * 2));
-    stats.flagCaptures += index === 0 ? Math.ceil(goals / 2) : Math.floor(goals / 2);
-    stats.flagReturns += Math.round((1 - roll) * 2 + goalsAgainst * 0.5);
+    stats.kills += discipline.mode === "tdm"
+      ? Math.max(1, Math.round(goals * (index === 0 ? 0.58 : 0.42) + roll * 2))
+      : Math.max(1, Math.round(3 + goals * 2 + roll * 5 - index));
+    stats.deaths += discipline.mode === "tdm"
+      ? Math.max(1, Math.round(goalsAgainst * (index === 0 ? 0.52 : 0.48) + (1 - roll) * 2))
+      : Math.max(1, Math.round(3 + goalsAgainst * 2 + (1 - roll) * 4));
+    if (discipline.mode !== "tdm") {
+      stats.flagPickups += Math.max(goals, Math.round(goals + roll * 2));
+      stats.flagCaptures += index === 0 ? Math.ceil(goals / 2) : Math.floor(goals / 2);
+      stats.flagReturns += Math.round((1 - roll) * 2 + goalsAgainst * 0.5);
+    }
     season.characterStats[characterId] = stats;
   });
 }
 
-function simulateMatch(
+export function simulateLeagueMatch(
   season: LeagueSeasonState,
   match: LeagueScheduledMatch
 ): LeagueMatchResultRecord {
   const seed = season.simulationSeed + hashText(match.id);
+  const discipline = foundersCircuitDiscipline(match.roundIndex);
+  const homeTeam = LEAGUE_TEAMS.find((team) => team.id === match.homeTeamId)!;
+  const awayTeam = LEAGUE_TEAMS.find((team) => team.id === match.awayTeamId)!;
   const homePower = teamPower(season, match.homeTeamId);
   const awayPower = teamPower(season, match.awayTeamId);
-  const homeRoll = random01(seed);
-  const awayRoll = random01(seed + 991);
-  const blueScore = Math.max(
-    0,
-    Math.min(3, Math.round(1.1 + (homePower - awayPower) / 13 + homeRoll * 1.8))
-  );
-  const redScore = Math.max(
-    0,
-    Math.min(3, Math.round(1.1 + (awayPower - homePower) / 13 + awayRoll * 1.8))
-  );
+  const powerEdge = homePower - awayPower;
+  const formEdge = teamForm(season, match.homeTeamId) - teamForm(season, match.awayTeamId);
+  const objectiveWeight = discipline.mode === "tdm" ? 0 : discipline.mode === "one-flag" ? 0.026 : 0.018;
+  const combatWeight = discipline.mode === "tdm" ? 0.034 : 0.022;
+  const homeMatchup =
+    (homeTeam.simulationProfile.attack - awayTeam.simulationProfile.defense) * combatWeight +
+    (homeTeam.simulationProfile.objective - awayTeam.simulationProfile.objective) * objectiveWeight;
+  const awayMatchup =
+    (awayTeam.simulationProfile.attack - homeTeam.simulationProfile.defense) * combatWeight +
+    (awayTeam.simulationProfile.objective - homeTeam.simulationProfile.objective) * objectiveWeight;
+  const homeVariance = (random01(seed) - 0.5) * (1.35 - homeTeam.simulationProfile.consistency / 100);
+  const awayVariance = (random01(seed + 991) - 0.5) * (1.35 - awayTeam.simulationProfile.consistency / 100);
+  const scale = discipline.mode === "tdm" ? 2.1 : 1;
+  const baseline = discipline.mode === "tdm" ? 6.8 : 1.15;
+  const blueScore = Math.max(0, Math.min(discipline.scoreTarget,
+    Math.round(baseline + (powerEdge / 18 + formEdge * 0.16 + homeMatchup + 0.12 + homeVariance) * scale)));
+  const redScore = Math.max(0, Math.min(discipline.scoreTarget,
+    Math.round(baseline + (-powerEdge / 18 - formEdge * 0.16 + awayMatchup + awayVariance) * scale)));
   const result = {
     blueTeamId: match.homeTeamId,
     redTeamId: match.awayTeamId,
     blueScore,
     redScore,
   };
-  addSimulatedCharacterStats(season, match.homeTeamId, blueScore, redScore, seed);
-  addSimulatedCharacterStats(season, match.awayTeamId, redScore, blueScore, seed + 313);
+  addSimulatedCharacterStats(season, match.homeTeamId, blueScore, redScore, seed, match.roundIndex);
+  addSimulatedCharacterStats(season, match.awayTeamId, redScore, blueScore, seed + 313, match.roundIndex);
   return result;
 }
 
@@ -292,7 +328,7 @@ function openRecruitment(season: LeagueSeasonState): void {
     ? defeated
     : fallbackOpponent
       ? [fallbackOpponent]
-      : [LEAGUE_TEAMS.find((team) => team.id !== season.playerTeamId)!.id];
+      : [season.teamIds.find((teamId) => teamId !== season.playerTeamId)!];
   const candidateIds = sourceTeams
     .map((teamId) =>
       [...season.teamRosters[teamId]].sort(
@@ -330,6 +366,9 @@ export function completeLeagueRound(
   }
   if (playerMatch.result) return season;
 
+  const previousTable = sortedLeagueStandings(season);
+  const previousPosition = previousTable.findIndex((row) => row.teamId === season.playerTeamId) + 1;
+  const previousPoints = season.standings[season.playerTeamId].points;
   const opponentId = getPlayerOpponent(season, playerMatch)!;
   const playerResult: LeagueMatchResultRecord = {
     blueTeamId: season.playerTeamId,
@@ -349,13 +388,36 @@ export function completeLeagueRound(
 
   for (const match of round.matches) {
     if (match.id === playerMatch.id || match.result) continue;
-    match.result = simulateMatch(season, match);
+    match.result = simulateLeagueMatch(season, match);
     recordStanding(season, match.result);
   }
 
   season.currentRound += 1;
-  if (season.currentRound === RECRUITMENT_ROUND) openRecruitment(season);
-  if (season.currentRound >= season.rounds.length) season.status = "completed";
+  if (season.currentRound >= season.rounds.length) {
+    season.status = "completed";
+    openRecruitment(season);
+  }
+  const currentTable = sortedLeagueStandings(season);
+  const newPosition = currentTable.findIndex((row) => row.teamId === season.playerTeamId) + 1;
+  season.lastProgression = {
+    id: `${season.seasonId}-${input.matchId}`,
+    roundIndex: input.roundIndex,
+    opponentId,
+    blueScore: playerResult.blueScore,
+    redScore: playerResult.redScore,
+    previousPosition,
+    newPosition,
+    previousPoints,
+    newPoints: season.standings[season.playerTeamId].points,
+    promoted: season.status === "completed" && newPosition <= 2,
+    acknowledged: false,
+  };
+  season.updatedAt = new Date().toISOString();
+  return season;
+}
+
+export function acknowledgeLeagueProgression(season: LeagueSeasonState): LeagueSeasonState {
+  if (season.lastProgression) season.lastProgression.acknowledged = true;
   season.updatedAt = new Date().toISOString();
   return season;
 }

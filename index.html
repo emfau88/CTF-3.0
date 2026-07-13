@@ -24,20 +24,20 @@
             <img class="v2-home-league-mark" src="assets/league/arena-league-emblem.png" alt="" aria-hidden="true" />
             <div class="v2-menu-kicker">THE OFFICIAL ARENA LEAGUE</div>
             <h1>CORE<br><span>ARENA</span></h1>
-            <p class="v2-menu-intro">Build a two-fighter squad. Climb the league. Own the arena.</p>
+            <p class="v2-menu-intro">Build a two-fighter squad. Master every arena. Climb the league.</p>
           </div>
           <div class="v2-home-actions">
             <button id="v2-menu-league" class="v2-home-action v2-home-action-primary" type="button">
               <span class="v2-home-action-tag">CAREER</span>
               <strong id="v2-menu-league-label">Start League</strong>
-              <small>10 matches · standings · one decisive transfer</small>
+              <small id="v2-menu-league-meta">A short opening circuit · squad growth · promotion</small>
             </button>
             <button id="v2-menu-play" class="v2-home-action" type="button">
               <span class="v2-home-action-tag">CUSTOM</span>
               <strong>Quick Play</strong>
               <small>CTF, One Flag or TDM with your own setup</small>
             </button>
-            <a class="v2-home-classic" href="?scene=v1">V1 Classic build</a>
+            <a class="v2-home-classic" href="?scene=v1">Legacy Arena</a>
           </div>
         </div>
         <div id="v2-menu-setup" class="v2-menu-view v2-setup-view is-hidden">
@@ -124,8 +124,8 @@
             <div class="v2-subpage-title league-header-title">
               <img class="league-header-mark" src="assets/league/arena-league-emblem.png" alt="" aria-hidden="true" />
               <div>
-                <div class="v2-menu-kicker">CAREER &middot; FOUNDERS SEASON</div>
-                <h2>League HQ</h2>
+                <div id="league-header-kicker" class="v2-menu-kicker">CAREER &middot; FOUNDERS SEASON</div>
+                <h2 id="league-header-title">League HQ</h2>
               </div>
             </div>
             <div class="v2-subpage-header-actions league-header-actions">
@@ -136,7 +136,8 @@
             <div class="league-empty-copy">
               <span class="league-eyebrow">YOUR FIRST CONTRACT</span>
               <h3>Lead Iron Vanguard</h3>
-              <p>Ten CTF fixtures. Six teams. One transfer opportunity after match five. Every result shapes the table.</p>
+              <p>Three arena trials introduce the full circuit. Master combat, secure the neutral objective, then face the CTF final.</p>
+              <div id="league-intro-route" class="league-intro-route"></div>
               <button id="league-new-season" type="button">Begin Season</button>
             </div>
             <div class="league-empty-badge"><img src="assets/league/teams/iron-vanguard-emblem.png" alt="Iron Vanguard emblem" /><small>IRON VANGUARD</small></div>
@@ -155,11 +156,16 @@
               </div>
             </section>
             <section class="league-panel league-table-panel">
-              <div class="league-panel-heading"><span>Standings</span><small>PTS · capture difference</small></div>
+              <div class="league-panel-heading"><span>Founders Standings</span><small>Universal league points</small></div>
               <div id="league-standings" class="league-standings"></div>
             </section>
             <section id="league-team-detail" class="league-panel league-detail-panel"></section>
+            <section class="league-panel league-pyramid-panel">
+              <div class="league-panel-heading"><span>Arena Path</span><small>Your climb beyond this circuit</small></div>
+              <div id="league-pyramid" class="league-pyramid"></div>
+            </section>
           </div>
+          <div id="league-progression" class="league-progression is-hidden" role="dialog" aria-modal="true"></div>
           <div id="league-recruitment" class="league-recruitment is-hidden" role="dialog" aria-modal="true"></div>
         </div>
       </div>

@@ -5,6 +5,7 @@ import {
   type V2SfxMode,
 } from "../../v2Route";
 import { LEAGUE_TEAMS } from "./leagueCatalog";
+import { foundersCircuitDiscipline } from "./leagueCatalog";
 import { getCurrentPlayerMatch, getPlayerOpponent } from "./leagueSeason";
 import type { LeagueSeasonState, LeagueTeamId } from "./leagueTypes";
 
@@ -43,9 +44,10 @@ export function buildLeagueMatchSearch(
   const match = getCurrentPlayerMatch(season);
   const opponentId = getPlayerOpponent(season, match);
   if (!match || !opponentId) throw new Error("No league fixture is ready to play.");
+  const discipline = foundersCircuitDiscipline(season.currentRound);
   const params = new URLSearchParams(buildV2MatchSearch({
-    mode: "ctf",
-    map: "flow-circuit-v2",
+    mode: discipline.mode,
+    map: discipline.mapId,
     players: "bot",
     teamSize: 2,
     controls: preferences.controls ?? "auto",

@@ -3,8 +3,61 @@ import type {
   LeagueTeamDefinition,
   LeagueTeamId,
 } from "./leagueTypes";
+import type { V2ModeId } from "../../v2Route";
 
 export const PLAYER_LEAGUE_TEAM_ID: LeagueTeamId = "iron-vanguard";
+export const FOUNDERS_CIRCUIT_TEAM_IDS: readonly LeagueTeamId[] = [
+  "iron-vanguard",
+  "crimson-jackals",
+  "neon-phantoms",
+  "grave-circuit",
+];
+export const CHALLENGER_PREVIEW_TEAM_IDS: readonly LeagueTeamId[] = [
+  "solar-wardens",
+  "void-runners",
+];
+
+export interface LeagueDiscipline {
+  readonly mode: V2ModeId;
+  readonly modeLabel: string;
+  readonly trialLabel: string;
+  readonly mapId: string;
+  readonly mapLabel: string;
+  readonly scoreTarget: number;
+}
+
+export const FOUNDERS_CIRCUIT_DISCIPLINES: readonly LeagueDiscipline[] = [
+  {
+    mode: "tdm",
+    modeLabel: "Team Deathmatch",
+    trialLabel: "Combat Trial",
+    mapId: "training-crossing-v2",
+    mapLabel: "Training Crossing",
+    scoreTarget: 10,
+  },
+  {
+    mode: "one-flag",
+    modeLabel: "One Flag",
+    trialLabel: "Objective Clash",
+    mapId: "grand-archive-v2",
+    mapLabel: "Grand Archive",
+    scoreTarget: 3,
+  },
+  {
+    mode: "ctf",
+    modeLabel: "Classic CTF",
+    trialLabel: "Circuit Final",
+    mapId: "flow-circuit-v2",
+    mapLabel: "Foundry Circuit",
+    scoreTarget: 3,
+  },
+];
+
+export function foundersCircuitDiscipline(roundIndex: number): LeagueDiscipline {
+  return FOUNDERS_CIRCUIT_DISCIPLINES[
+    Math.max(0, Math.min(FOUNDERS_CIRCUIT_DISCIPLINES.length - 1, roundIndex))
+  ];
+}
 
 export const LEAGUE_TEAMS: readonly LeagueTeamDefinition[] = [
   {
@@ -15,6 +68,7 @@ export const LEAGUE_TEAMS: readonly LeagueTeamDefinition[] = [
     primaryColor: "#3c86d9",
     accentColor: "#90c8ff",
     characterIds: ["nova-vale", "atlas-rho"],
+    simulationProfile: { attack: 70, defense: 72, objective: 71, consistency: 80 },
   },
   {
     id: "crimson-jackals",
@@ -24,6 +78,7 @@ export const LEAGUE_TEAMS: readonly LeagueTeamDefinition[] = [
     primaryColor: "#c23c48",
     accentColor: "#ff9b8f",
     characterIds: ["kael-voss", "mara-hex"],
+    simulationProfile: { attack: 76, defense: 64, objective: 68, consistency: 65 },
   },
   {
     id: "neon-phantoms",
@@ -33,6 +88,7 @@ export const LEAGUE_TEAMS: readonly LeagueTeamDefinition[] = [
     primaryColor: "#8d5bd6",
     accentColor: "#d6a7ff",
     characterIds: ["nyx-echo", "vektor-nine"],
+    simulationProfile: { attack: 72, defense: 63, objective: 78, consistency: 61 },
   },
   {
     id: "grave-circuit",
@@ -42,6 +98,7 @@ export const LEAGUE_TEAMS: readonly LeagueTeamDefinition[] = [
     primaryColor: "#4f6f69",
     accentColor: "#a1c4b8",
     characterIds: ["rook-13", "sable-kern"],
+    simulationProfile: { attack: 65, defense: 78, objective: 70, consistency: 83 },
   },
   {
     id: "solar-wardens",
@@ -51,6 +108,7 @@ export const LEAGUE_TEAMS: readonly LeagueTeamDefinition[] = [
     primaryColor: "#c88b32",
     accentColor: "#ffd276",
     characterIds: ["orion-flare", "senna-ray"],
+    simulationProfile: { attack: 79, defense: 74, objective: 78, consistency: 81 },
   },
   {
     id: "void-runners",
@@ -60,6 +118,7 @@ export const LEAGUE_TEAMS: readonly LeagueTeamDefinition[] = [
     primaryColor: "#2ba8a0",
     accentColor: "#78f0df",
     characterIds: ["kestrel-void", "ion-drift"],
+    simulationProfile: { attack: 77, defense: 66, objective: 81, consistency: 67 },
   },
 ];
 

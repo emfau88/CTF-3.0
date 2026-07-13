@@ -1,5 +1,8 @@
 import {
   buildLeagueMatchSearch,
+  acknowledgeLeagueProgression,
+  CHALLENGER_PREVIEW_TEAM_IDS,
+  foundersCircuitDiscipline,
   completeRecruitment,
   createLeagueRepository,
   createLeagueSeason,
@@ -27,6 +30,7 @@ import {
 
 interface LeagueMenuController {
   readonly hasSave: boolean;
+  readonly homeMeta: string;
   open(): void;
 }
 
@@ -42,6 +46,7 @@ export function createLeagueMenuController(actions: {
   const empty = element("league-empty");
   const dashboard = element("league-dashboard");
   const recruitment = element("league-recruitment");
+  const progression = element("league-progression");
   let season = repository.load();
   let selectedTeamId: LeagueTeamId = season?.playerTeamId ?? "iron-vanguard";
 
@@ -57,18 +62,51 @@ export function createLeagueMenuController(actions: {
   };
 
   const render = (): void => {
+    renderHeader(Boolean(season));
     empty.classList.toggle("is-hidden", Boolean(season));
     dashboard.classList.toggle("is-hidden", !season);
     element("league-reset").classList.toggle("is-hidden", !season);
     if (!season) {
       recruitment.classList.add("is-hidden");
+      progression.classList.add("is-hidden");
+      renderLeagueIntro();
       return;
     }
     renderNextMatch(season);
     renderRoster(season);
     renderStandings(season);
     renderTeamDetail(season, selectedTeamId);
+    renderPyramid(season);
+    renderProgression(season);
     renderRecruitment(season);
+  };
+
+  const renderHeader = (hasSeason: boolean): void => {
+    element("league-header-kicker").textContent = hasSeason
+      ? "CAREER · FOUNDERS SEASON"
+      : "CAREER · CONTRACT BRIEFING";
+    element("league-header-title").textContent = hasSeason
+      ? "League HQ"
+      : "Founders Circuit";
+  };
+
+  const renderLeagueIntro = (): void => {
+    const preview = createLeagueSeason(1);
+    element("league-intro-route").innerHTML = preview.rounds.map((round) => {
+      const match = round.matches.find((fixture) =>
+        fixture.homeTeamId === preview.playerTeamId || fixture.awayTeamId === preview.playerTeamId
+      )!;
+      const opponentId = match.homeTeamId === preview.playerTeamId
+        ? match.awayTeamId
+        : match.homeTeamId;
+      const opponent = leagueTeam(opponentId);
+      const discipline = foundersCircuitDiscipline(round.index);
+      return `<article class="league-intro-stop">
+        <span>0${round.index + 1}</span>
+        <img src="${leagueTeamEmblemUrl(opponent.id)}" alt="${opponent.name}">
+        <div><small>${discipline.trialLabel}</small><strong>${discipline.modeLabel}</strong><i>${discipline.mapLabel} · vs ${opponent.name}</i></div>
+      </article>`;
+    }).join("");
   };
 
   const renderNextMatch = (active: LeagueSeasonState): void => {
@@ -93,18 +131,19 @@ export function createLeagueMenuController(actions: {
     }
     const opponent = leagueTeam(opponentId);
     const ownTeam = leagueTeam(active.playerTeamId);
+    const discipline = foundersCircuitDiscipline(active.currentRound);
     const opponentStanding = active.standings[opponentId];
     target.style.setProperty("--opponent-color", opponent.primaryColor);
     target.innerHTML = `
       <div class="league-fixture-meta">
-        <span class="league-eyebrow">NEXT FIXTURE · MATCH ${active.currentRound + 1} OF ${active.rounds.length}</span>
+        <span class="league-eyebrow">${discipline.trialLabel.toUpperCase()} · MATCH ${active.currentRound + 1} OF ${active.rounds.length}</span>
         <div class="league-fixture-title"><img class="league-mini-emblem" src="${leagueTeamEmblemUrl(ownTeam.id)}" alt="${ownTeam.name} emblem"><b>VS</b><img class="league-mini-emblem is-rival" src="${leagueTeamEmblemUrl(opponent.id)}" alt="${opponent.name} emblem"></div>
       </div>
       <div class="league-opponent-copy">
         <small>OPPONENT</small><h3>${opponent.name}</h3><p>${opponent.motto}</p>
         <div class="league-opponent-form"><span>#${sortedLeagueStandings(active).findIndex((row) => row.teamId === opponentId) + 1} TABLE</span><span>${opponentStanding.points} PTS</span><span>${opponentStanding.wins}-${opponentStanding.draws}-${opponentStanding.losses}</span></div>
       </div>
-      <button id="league-play-next" type="button"><small>FOUNDRY CIRCUIT · CTF 2V2</small><strong>Enter Arena</strong></button>`;
+      <button id="league-play-next" type="button"><small>${discipline.mapLabel.toUpperCase()} · ${discipline.modeLabel.toUpperCase()} 2V2</small><strong>Enter Arena</strong></button>`;
     requiredButton("league-play-next").onclick = () => {
       const route = readV2Route();
       window.location.search = buildLeagueMatchSearch(active, {
@@ -160,15 +199,14 @@ export function createLeagueMenuController(actions: {
 
   const renderStandings = (active: LeagueSeasonState): void => {
     const target = element("league-standings");
-    target.innerHTML = `<div class="league-table-row league-table-head"><span>#</span><span>TEAM</span><span>P</span><span>W</span><span>DIFF</span><strong>PTS</strong></div>`;
+    target.innerHTML = `<div class="league-table-row league-table-head"><span>#</span><span>TEAM</span><span>P</span><span>W</span><span>D</span><span>L</span><strong>PTS</strong></div>`;
     sortedLeagueStandings(active).forEach((standing, index) => {
       const team = leagueTeam(standing.teamId);
       const row = document.createElement("button");
       row.type = "button";
       row.className = `league-table-row${standing.teamId === active.playerTeamId ? " is-player-team" : ""}${standing.teamId === selectedTeamId ? " is-selected" : ""}`;
       row.style.setProperty("--team-color", team.primaryColor);
-      const difference = standing.capturesFor - standing.capturesAgainst;
-      row.innerHTML = `<span>${index + 1}</span><span><img class="league-table-emblem" src="${leagueTeamEmblemUrl(team.id)}" alt="">${team.name}</span><span>${standing.played}</span><span>${standing.wins}</span><span>${difference > 0 ? "+" : ""}${difference}</span><strong>${standing.points}</strong>`;
+      row.innerHTML = `<span>${index + 1}</span><span><img class="league-table-emblem" src="${leagueTeamEmblemUrl(team.id)}" alt="">${team.name}</span><span>${standing.played}</span><span>${standing.wins}</span><span>${standing.draws}</span><span>${standing.losses}</span><strong>${standing.points}</strong>`;
       row.onclick = () => {
         selectedTeamId = standing.teamId;
         renderStandings(active);
@@ -190,14 +228,14 @@ export function createLeagueMenuController(actions: {
   };
 
   const renderRecruitment = (active: LeagueSeasonState): void => {
-    if (active.recruitment.status !== "pending") {
+    if (active.recruitment.status !== "pending" || active.lastProgression?.acknowledged === false) {
       recruitment.classList.add("is-hidden");
       return;
     }
     recruitment.classList.remove("is-hidden");
     recruitment.innerHTML = `
       <div class="league-recruitment-card">
-        <div class="v2-menu-kicker">MID-SEASON WINDOW · ONE DECISION</div>
+        <div class="v2-menu-kicker">CIRCUIT REWARD · ONE DECISION</div>
         <h2>Recruit or stay loyal?</h2>
         <p>Replace your wingmate with one standout rival, or keep the squad together. This choice cannot be undone.</p>
         <div id="league-candidates" class="league-candidates"></div>
@@ -224,6 +262,66 @@ export function createLeagueMenuController(actions: {
     };
   };
 
+  const renderPyramid = (active: LeagueSeasonState): void => {
+    const ownPosition = sortedLeagueStandings(active).findIndex(
+      (row) => row.teamId === active.playerTeamId
+    ) + 1;
+    const futureTeams = CHALLENGER_PREVIEW_TEAM_IDS.map((teamId) => {
+      const team = leagueTeam(teamId);
+      return `<img src="${leagueTeamEmblemUrl(team.id)}" alt="${team.name}" title="${team.name}">`;
+    }).join("");
+    element("league-pyramid").innerHTML = `
+      <div class="league-tier is-locked is-elite"><span>03</span><div><small>ULTIMATE GOAL</small><strong>Core League</strong><p>The elite arena. Championship rivals and the final title.</p></div><b>LOCKED</b></div>
+      <div class="league-tier is-locked"><span>02</span><div><small>NEXT CIRCUIT</small><strong>Challenger League</strong><p>Six rival teams and a longer season await.</p><div class="league-tier-rivals">${futureTeams}<i>+4</i></div></div><b>NEXT</b></div>
+      <div class="league-tier is-current"><span>01</span><div><small>CURRENT CONTRACT</small><strong>Founders Circuit</strong><p>Three matches. Top two earn promotion.</p></div><b>#${ownPosition}</b></div>`;
+  };
+
+  const renderProgression = (active: LeagueSeasonState): void => {
+    const event = active.lastProgression;
+    if (!event || event.acknowledged) {
+      progression.classList.add("is-hidden");
+      return;
+    }
+    const opponent = leagueTeam(event.opponentId);
+    const won = event.blueScore > event.redScore;
+    const drawn = event.blueScore === event.redScore;
+    const positionDelta = event.previousPosition - event.newPosition;
+    const pointsGained = event.newPoints - event.previousPoints;
+    const finalRound = event.roundIndex === active.rounds.length - 1;
+    const discipline = foundersCircuitDiscipline(event.roundIndex);
+    const headline = event.promoted
+      ? "Promotion Secured"
+      : finalRound
+        ? "Circuit Complete"
+        : positionDelta > 0
+          ? `Up ${positionDelta} Place${positionDelta === 1 ? "" : "s"}`
+          : won ? "Momentum Built" : drawn ? "Point Secured" : "The Climb Continues";
+    progression.innerHTML = `
+      <div class="league-progression-card ${won ? "is-win" : drawn ? "is-draw" : "is-loss"}">
+        <div class="league-progression-glow"></div>
+        <span class="league-eyebrow">${discipline.modeLabel.toUpperCase()} COMPLETE · MATCH ${event.roundIndex + 1} OF ${active.rounds.length}</span>
+        <h2>${headline}</h2>
+        <div class="league-result-lockup">
+          <div><img src="${leagueTeamEmblemUrl(active.playerTeamId)}" alt="Iron Vanguard"><small>IRON VANGUARD</small></div>
+          <strong>${event.blueScore}<i>:</i>${event.redScore}</strong>
+          <div><img src="${leagueTeamEmblemUrl(opponent.id)}" alt="${opponent.name}"><small>${opponent.name}</small></div>
+        </div>
+        <div class="league-rank-shift">
+          <div><small>BEFORE</small><strong>#${event.previousPosition}</strong></div>
+          <span>→</span>
+          <div class="is-new"><small>NOW</small><strong>#${event.newPosition}</strong></div>
+          <div class="league-points-earned"><small>LEAGUE POINTS</small><strong>+${pointsGained}</strong><span>${event.newPoints} TOTAL</span></div>
+        </div>
+        <p>${event.promoted ? "The Challenger League is now within reach. Claim your circuit recruit and prepare for tougher rivals." : finalRound ? "Your first circuit is complete. Review the table, strengthen your squad and run it back." : `${active.rounds.length - active.currentRound} match${active.rounds.length - active.currentRound === 1 ? "" : "es"} remain. Every result can reshape the table.`}</p>
+        <button id="league-progression-continue" type="button">${active.recruitment.status === "pending" ? "Claim Circuit Reward" : "Return to League HQ"}</button>
+      </div>`;
+    requiredButton("league-progression-continue").onclick = () => {
+      season = acknowledgeLeagueProgression(active);
+      saveAndRender();
+    };
+    progression.classList.remove("is-hidden");
+  };
+
   requiredButton("league-new-season").onclick = startSeason;
   requiredButton("league-back").onclick = actions.onBack;
   requiredButton("league-reset").onclick = () => {
@@ -235,6 +333,11 @@ export function createLeagueMenuController(actions: {
 
   return {
     get hasSave() { return Boolean(season); },
+    get homeMeta() {
+      if (!season) return "TDM · One Flag · CTF · promotion awaits";
+      if (season.status === "completed") return "Founders Circuit complete · review your run";
+      return `Founders Circuit · Match ${season.currentRound + 1} of ${season.rounds.length}`;
+    },
     open(): void {
       root.classList.remove("is-hidden");
       season = repository.load();

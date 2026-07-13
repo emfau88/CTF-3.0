@@ -28,6 +28,7 @@ interface V2MenuElements {
   readonly enterSetup: HTMLButtonElement;
   readonly enterLeague: HTMLButtonElement;
   readonly leagueLabel: HTMLElement;
+  readonly leagueMeta: HTMLElement;
   readonly back: HTMLButtonElement;
   readonly mode: HTMLSelectElement;
   readonly map: HTMLSelectElement;
@@ -105,10 +106,19 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     elements.league.classList.add("is-hidden");
     elements.status.classList.add("is-hidden");
   };
-  const leagueController = createLeagueMenuController({ onBack: showHome });
-  elements.leagueLabel.textContent = leagueController.hasSave
-    ? "Continue League"
-    : "Start League";
+  const syncLeagueHome = (): void => {
+    elements.leagueLabel.textContent = leagueController.hasSave
+      ? "Continue League"
+      : "Start League";
+    elements.leagueMeta.textContent = leagueController.homeMeta;
+  };
+  const leagueController = createLeagueMenuController({
+    onBack: () => {
+      showHome();
+      syncLeagueHome();
+    },
+  });
+  syncLeagueHome();
   elements.home.classList.toggle("is-hidden", Boolean(statusMessage));
   elements.setup.classList.toggle("is-hidden", !statusMessage);
   elements.league.classList.add("is-hidden");
@@ -228,6 +238,7 @@ function readMenuElements(): V2MenuElements {
     enterSetup: requiredElement<HTMLButtonElement>("v2-menu-play"),
     enterLeague: requiredElement<HTMLButtonElement>("v2-menu-league"),
     leagueLabel: requiredElement<HTMLElement>("v2-menu-league-label"),
+    leagueMeta: requiredElement<HTMLElement>("v2-menu-league-meta"),
     back: requiredElement<HTMLButtonElement>("v2-menu-back"),
     mode: requiredElement<HTMLSelectElement>("v2-menu-mode"),
     map: requiredElement<HTMLSelectElement>("v2-menu-map"),

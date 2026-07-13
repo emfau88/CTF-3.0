@@ -33,7 +33,17 @@ historische Architektur- und Verhaltensreferenz erhalten.
   die beiden anderen Begegnungen werden deterministisch simuliert
 - genau ein Transferfenster nach Spiel fuenf: Rivalen rekrutieren oder Kader
   behalten; keine Waehrung und kein Goldsystem
-- versionierter lokaler Spielstand unter `core-arena.league.v1`
+- versionierter lokaler Spielstand unter `core-arena.league.v2`
+- kompakter Founders Circuit mit drei Matches gegen drei Rivalen
+- kuratierter Einstiegsbogen ueber TDM, One Flag und Classic CTF mit jeweils
+  passender Arena statt drei identischer CTF-Partien
+- einmaliges Contract Briefing zeigt vor Saisonstart Modi, Arenen und Rivalen;
+  danach fuehrt der Career-Einstieg direkt ins League HQ
+- League HQ nutzt die Vierer-Tabelle kompakt und zeigt den Arena-Pfad direkt
+  neben der ausgewaehlten Teamakte
+- Arena-Pyramide als sichtbarer Karrierepfad; Solar Wardens und Void Runners bleiben fuer die naechste Liga vorgemerkt
+- deterministische Gegnerergebnisse aus Teamstaerke, Stilprofil, Form und Matchup statt reinem Zufall oder versteckter Vollsimulation
+- eigener Post-Match-Fortschrittsmoment mit Ergebnis, Tabellenbewegung, Ligapunkten und Aufstieg
 - unbekannte oder beschaedigte Saves werden nicht geladen
 - neue League-Logik liegt getrennt vom Gameplay-Core in `src/meta/league/`
 - neues Menue-Key-Art: `public/assets/league-menu-arena-v1.png`

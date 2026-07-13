@@ -474,12 +474,24 @@ Phase 0 ist technisch abgeschlossen. Der aktuelle Phase-1-Slice umfasst:
 - [x] Sunken Court, Grand Archive und Flank Switch als profiliertes
       Drei-Map-Set mit echten Skill-Shortcuts und umkaempfter Rail-Kontrolle
       haerten
-- [x] 56 Tests, Produktions-Build und Bot-Diagnostik nach Map-Aenderungen
+- [x] Founders Circuit auf vier Teams und drei entscheidende Matches verdichten
+- [x] ersten Circuit als feste Lernkurve aus TDM, One Flag und Classic CTF
+      mit drei passenden Arenen strukturieren
+- [x] einmaliges Contract Briefing um sichtbare Match-, Modus-, Arena- und
+      Rivalenvorschau erweitern
+- [x] League-HQ-Raster fuer die kurze Vierer-Saison verdichten und den
+      langfristigen Arena-Pfad ohne Scroll-Pflicht sichtbar machen
+- [x] Arena-Pyramide mit sichtbarer Challenger- und Core-League-Perspektive
+      ergaenzen, ohne eine falsche globale Rangzahl vorzutäuschen
+- [x] reproduzierbare Rivalenergebnisse aus Rosterstaerke, Teamprofil, Form,
+      Matchup und begrenzter Varianz berechnen
+- [x] Post-Match-Moment fuer Resultat, Tabellenbewegung, Ligapunkte und
+      Aufstieg vor die Rekrutierungsentscheidung schalten
+- [x] 57 Tests, Produktions-Build und Bot-Diagnostik nach Map-Aenderungen
       erfolgreich ausfuehren
 
 Die autoritativen Matchregeln blieben unveraendert; Arena-Daten und
 Praesentation wurden ueber ihre bestehenden Grenzen erweitert. Die Liga liegt
 als getrenntes Meta-System unter `src/meta/league/`. Der naechste Schritt ist
-eine manuelle Komplettsaison,
-um Tabellenfluss, Matchuebergang und Transferentscheidung spielerisch
-abzunehmen.
+eine manuelle Drei-Match-Komplettsaison, um Tabellenfluss, Matchuebergang,
+Aufstiegsmoment und Transferentscheidung spielerisch abzunehmen.

@@ -1,7 +1,7 @@
 import { LEAGUE_CHARACTERS, LEAGUE_TEAMS } from "./leagueCatalog";
 import { LEAGUE_SAVE_VERSION, type LeagueSeasonState } from "./leagueTypes";
 
-export const LEAGUE_STORAGE_KEY = "core-arena.league.v1";
+export const LEAGUE_STORAGE_KEY = "core-arena.league.v2";
 
 export interface LeagueStoragePort {
   getItem(key: string): string | null;
@@ -18,10 +18,12 @@ function isValidSeason(value: unknown): value is LeagueSeasonState {
     typeof season.simulationSeed !== "number" ||
     !Number.isInteger(season.currentRound) ||
     season.currentRound! < 0 ||
-    season.currentRound! > 10 ||
+    season.currentRound! > 3 ||
     (season.status !== "active" && season.status !== "completed") ||
     !Array.isArray(season.rounds) ||
-    season.rounds.length !== 10 ||
+    season.rounds.length !== 3 ||
+    !Array.isArray(season.teamIds) ||
+    season.teamIds.length !== 4 ||
     !season.standings ||
     !season.teamRosters ||
     !season.characterStats ||
@@ -44,15 +46,21 @@ function isValidSeason(value: unknown): value is LeagueSeasonState {
   const validRounds = season.rounds.every((round, index) =>
     round.index === index &&
     Array.isArray(round.matches) &&
-    round.matches.length === 3 &&
+    round.matches.length === 2 &&
     round.matches.every((match) =>
       match.roundIndex === index &&
       teamIds.has(match.homeTeamId) &&
       teamIds.has(match.awayTeamId) &&
+      season.teamIds!.includes(match.homeTeamId) &&
+      season.teamIds!.includes(match.awayTeamId) &&
       match.homeTeamId !== match.awayTeamId
     )
   );
-  return validTeams && validRounds;
+  const validProgression = season.lastProgression === null || (
+    typeof season.lastProgression === "object" &&
+    typeof season.lastProgression.acknowledged === "boolean"
+  );
+  return validTeams && validRounds && validProgression;
 }
 
 export function createLeagueRepository(storage: LeagueStoragePort) {

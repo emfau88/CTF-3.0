@@ -15,6 +15,7 @@ import {
 import {
   LEAGUE_STORAGE_KEY,
   LEAGUE_TEAMS,
+  FOUNDERS_CIRCUIT_TEAM_IDS,
   buildLeagueMatchSearch,
   completeLeagueRound,
   completeRecruitment,
@@ -23,6 +24,7 @@ import {
   getCurrentPlayerMatch,
   getPlayerOpponent,
   readLeagueMatchContext,
+  simulateLeagueMatch,
 } from "../src/meta/league";
 
 function completeCurrent(season: ReturnType<typeof createLeagueSeason>, blue = 3, red = 1) {
@@ -42,15 +44,16 @@ function completeCurrent(season: ReturnType<typeof createLeagueSeason>, blue = 3
   });
 }
 
-test("league creates a complete ten-round double round robin", () => {
+test("opening circuit creates a complete three-match single round robin", () => {
   const season = createLeagueSeason(1234);
-  assert.equal(season.rounds.length, 10);
-  assert.ok(season.rounds.every((round) => round.matches.length === 3));
-  for (const team of LEAGUE_TEAMS) {
+  assert.deepEqual(season.teamIds, FOUNDERS_CIRCUIT_TEAM_IDS);
+  assert.equal(season.rounds.length, 3);
+  assert.ok(season.rounds.every((round) => round.matches.length === 2));
+  for (const teamId of FOUNDERS_CIRCUIT_TEAM_IDS) {
     const fixtures = season.rounds.flatMap((round) => round.matches).filter(
-      (match) => match.homeTeamId === team.id || match.awayTeamId === team.id
+      (match) => match.homeTeamId === teamId || match.awayTeamId === teamId
     );
-    assert.equal(fixtures.length, 10);
+    assert.equal(fixtures.length, 3);
   }
   const opponents = season.rounds.map((round) => {
     const match = round.matches.find((item) =>
@@ -58,9 +61,11 @@ test("league creates a complete ten-round double round robin", () => {
     )!;
     return match.homeTeamId === season.playerTeamId ? match.awayTeamId : match.homeTeamId;
   });
-  for (const rival of LEAGUE_TEAMS.filter((team) => team.id !== season.playerTeamId)) {
-    assert.equal(opponents.filter((id) => id === rival.id).length, 2);
+  for (const rival of FOUNDERS_CIRCUIT_TEAM_IDS.filter((teamId) => teamId !== season.playerTeamId)) {
+    assert.equal(opponents.filter((id) => id === rival).length, 1);
   }
+  assert.ok(season.teamRosters["solar-wardens"]);
+  assert.ok(season.teamRosters["void-runners"]);
 });
 
 test("played result advances one round, updates points, and is idempotent", () => {
@@ -77,16 +82,18 @@ test("played result advances one round, updates points, and is idempotent", () =
   completeLeagueRound(season, input);
   assert.equal(season.currentRound, 1);
   assert.equal(season.standings[season.playerTeamId].points, 3);
-  assert.equal(Object.values(season.standings).reduce((sum, row) => sum + row.played, 0), 6);
+  assert.equal(Object.values(season.standings).reduce((sum, row) => sum + row.played, 0), 4);
+  assert.equal(season.lastProgression?.newPoints, 3);
   completeLeagueRound(season, input);
   assert.equal(season.currentRound, 1);
   assert.equal(season.standings[season.playerTeamId].played, 1);
 });
 
-test("one recruitment choice opens after match five and swaps exactly one wingmate", () => {
+test("one recruitment choice opens after the three-match circuit and swaps one wingmate", () => {
   const season = createLeagueSeason(42);
-  for (let round = 0; round < 5; round += 1) completeCurrent(season);
-  assert.equal(season.currentRound, 5);
+  for (let round = 0; round < 3; round += 1) completeCurrent(season);
+  assert.equal(season.currentRound, 3);
+  assert.equal(season.status, "completed");
   assert.equal(season.recruitment.status, "pending");
   assert.ok(season.recruitment.candidateIds.length >= 1);
   const oldWingmate = season.teamRosters[season.playerTeamId][1];
@@ -99,6 +106,23 @@ test("one recruitment choice opens after match five and swaps exactly one wingma
   const snapshot = JSON.stringify(season.teamRosters);
   completeRecruitment(season, null);
   assert.equal(JSON.stringify(season.teamRosters), snapshot);
+});
+
+test("opponent simulation is deterministic and uses stable team profiles", () => {
+  const first = createLeagueSeason(818);
+  const second = createLeagueSeason(818);
+  const firstAiMatch = first.rounds[0].matches.find((match) =>
+    match.homeTeamId !== first.playerTeamId && match.awayTeamId !== first.playerTeamId
+  )!;
+  const secondAiMatch = second.rounds[0].matches.find((match) => match.id === firstAiMatch.id)!;
+  const firstResult = simulateLeagueMatch(first, firstAiMatch);
+  assert.deepEqual(firstResult, simulateLeagueMatch(second, secondAiMatch));
+  assert.ok(firstResult.blueScore <= 10 && firstResult.redScore <= 10);
+  const objectiveAiMatch = first.rounds[1].matches.find((match) =>
+    match.homeTeamId !== first.playerTeamId && match.awayTeamId !== first.playerTeamId
+  )!;
+  const objectiveResult = simulateLeagueMatch(first, objectiveAiMatch);
+  assert.ok(objectiveResult.blueScore <= 3 && objectiveResult.redScore <= 3);
 });
 
 test("league route carries the scheduled fixture context and cosmetic skin", () => {
@@ -115,9 +139,18 @@ test("league route carries the scheduled fixture context and cosmetic skin", () 
     matchId: getCurrentPlayerMatch(season)!.id,
     opponentId: getPlayerOpponent(season),
   });
-  assert.match(search, /mode=ctf/);
+  assert.equal(new URLSearchParams(search).get("mode"), "tdm");
+  assert.equal(new URLSearchParams(search).get("map"), "training-crossing-v2");
   assert.match(search, /teamSize=2/);
   assert.equal(new URLSearchParams(search).get("skin"), "briarhorn");
+  completeCurrent(season);
+  const secondSearch = new URLSearchParams(buildLeagueMatchSearch(season));
+  assert.equal(secondSearch.get("mode"), "one-flag");
+  assert.equal(secondSearch.get("map"), "grand-archive-v2");
+  completeCurrent(season);
+  const finalSearch = new URLSearchParams(buildLeagueMatchSearch(season));
+  assert.equal(finalSearch.get("mode"), "ctf");
+  assert.equal(finalSearch.get("map"), "flow-circuit-v2");
 });
 
 test("cosmetic skin preference accepts new skins and rejects invalid values", () => {
@@ -164,6 +197,8 @@ test("career and custom menus share the same primary navigation shell", () => {
   assert.match(html, /id="v2-menu-back" class="v2-subpage-back"/);
   assert.match(html, /id="league-back" class="v2-subpage-back"/);
   assert.match(html, /assets\/league\/arena-league-emblem\.png/);
+  assert.match(html, /Master every arena/);
+  assert.match(html, /id="league-intro-route"/);
 });
 
 test("result screen and league portraits use the current dark square presentation", () => {
@@ -222,7 +257,9 @@ test("league menu starts a season and renders the actionable dashboard", () => {
   window.localStorage.clear();
   document.body.innerHTML = `
     <div id="v2-league-hub" class="is-hidden">
+      <div id="league-header-kicker"></div><div id="league-header-title"></div>
       <div id="league-empty"><button id="league-new-season"></button></div>
+      <div id="league-intro-route"></div>
       <div id="league-dashboard" class="is-hidden">
         <section id="league-next-match"></section>
         <span id="league-team-record"></span>
@@ -231,17 +268,22 @@ test("league menu starts a season and renders the actionable dashboard", () => {
         <select id="league-skin-select"></select>
         <div id="league-standings"></div>
         <div id="league-team-detail"></div>
+        <div id="league-pyramid"></div>
       </div>
       <button id="league-back"></button><button id="league-reset"></button>
+      <div id="league-progression" class="is-hidden"></div>
       <div id="league-recruitment" class="is-hidden"></div>
     </div>`;
   const controller = createLeagueMenuController({ onBack: () => {} });
   assert.equal(controller.hasSave, false);
   controller.open();
+  assert.equal(document.querySelectorAll(".league-intro-stop").length, 3);
+  assert.equal(document.getElementById("league-header-title")!.textContent, "Founders Circuit");
   document.getElementById("league-new-season")!.click();
+  assert.equal(document.getElementById("league-header-title")!.textContent, "League HQ");
   assert.equal(document.getElementById("league-dashboard")!.classList.contains("is-hidden"), false);
-  assert.equal(document.querySelectorAll(".league-table-row").length, 7);
-  assert.equal(document.querySelectorAll(".league-table-emblem").length, 6);
+  assert.equal(document.querySelectorAll(".league-table-row").length, 5);
+  assert.equal(document.querySelectorAll(".league-table-emblem").length, 4);
   assert.equal(document.querySelectorAll(".league-mini-emblem").length, 2);
   assert.ok(document.querySelector(".league-large-emblem"));
   assert.match(leagueTeamEmblemUrl("crimson-jackals"), /league\/teams\/crimson-jackals-emblem\.png$/);
@@ -251,7 +293,18 @@ test("league menu starts a season and renders the actionable dashboard", () => {
   skinSelect.value = "ax9-mantis";
   skinSelect.dispatchEvent(new Event("change"));
   assert.equal(window.localStorage.getItem(PLAYER_SKIN_STORAGE_KEY), "ax9-mantis");
-  assert.match(document.getElementById("league-next-match")!.textContent ?? "", /MATCH 1 OF 10/);
+  assert.match(document.getElementById("league-next-match")!.textContent ?? "", /MATCH 1 OF 3/);
+  assert.match(document.getElementById("league-next-match")!.textContent ?? "", /TEAM DEATHMATCH 2V2/);
+  assert.match(document.getElementById("league-pyramid")!.textContent ?? "", /Challenger League/);
   assert.ok(window.localStorage.getItem(LEAGUE_STORAGE_KEY));
+  const repository = createLeagueRepository(window.localStorage);
+  const savedSeason = repository.load()!;
+  completeCurrent(savedSeason);
+  repository.save(savedSeason);
+  controller.open();
+  assert.equal(document.getElementById("league-progression")!.classList.contains("is-hidden"), false);
+  assert.match(document.getElementById("league-progression")!.textContent ?? "", /LEAGUE POINTS/);
+  document.getElementById("league-progression-continue")!.click();
+  assert.equal(document.getElementById("league-progression")!.classList.contains("is-hidden"), true);
   window.localStorage.clear();
 });

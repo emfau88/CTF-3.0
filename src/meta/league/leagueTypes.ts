@@ -1,6 +1,6 @@
 import type { V2PlayerSkinId } from "../../v2Route";
 
-export const LEAGUE_SAVE_VERSION = 1 as const;
+export const LEAGUE_SAVE_VERSION = 2 as const;
 
 export type LeagueTeamId =
   | "iron-vanguard"
@@ -30,6 +30,26 @@ export interface LeagueTeamDefinition {
   readonly primaryColor: string;
   readonly accentColor: string;
   readonly characterIds: readonly [string, string];
+  readonly simulationProfile: {
+    readonly attack: number;
+    readonly defense: number;
+    readonly objective: number;
+    readonly consistency: number;
+  };
+}
+
+export interface LeagueProgressionEvent {
+  readonly id: string;
+  readonly roundIndex: number;
+  readonly opponentId: LeagueTeamId;
+  readonly blueScore: number;
+  readonly redScore: number;
+  readonly previousPosition: number;
+  readonly newPosition: number;
+  readonly previousPoints: number;
+  readonly newPoints: number;
+  readonly promoted: boolean;
+  acknowledged: boolean;
 }
 
 export interface LeagueStanding {
@@ -86,12 +106,14 @@ export interface LeagueSeasonState {
   status: "active" | "completed";
   currentRound: number;
   readonly playerTeamId: LeagueTeamId;
+  readonly teamIds: LeagueTeamId[];
   teamRosters: Record<LeagueTeamId, string[]>;
   standings: Record<LeagueTeamId, LeagueStanding>;
   characterStats: Record<string, LeagueCharacterStats>;
   rounds: LeagueRound[];
   defeatedTeamIds: LeagueTeamId[];
   recruitment: LeagueRecruitmentState;
+  lastProgression: LeagueProgressionEvent | null;
   updatedAt: string;
 }
 
