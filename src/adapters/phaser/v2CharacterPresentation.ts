@@ -27,6 +27,9 @@ export interface V2CharacterSkinConfig {
   readonly syntheticIdleMotion: boolean;
   readonly idleColumns: readonly number[];
   readonly walkColumns: readonly number[];
+  readonly walkColumnsByDirection?: Partial<
+    Record<V2CharacterDirection, readonly number[]>
+  >;
   readonly jumpColumns: readonly number[];
   readonly idleFrameRate: number;
   readonly walkFrameRate: number;
@@ -41,65 +44,60 @@ export const V2_CHARACTER_DIRECTIONS: readonly V2CharacterDirection[] = [
 ];
 
 export const V2_CHARACTER_SKINS: Record<V2PlayerSkinId, V2CharacterSkinConfig> = {
-  "alien-runner": {
-    id: "alien-runner",
-    texture: "alienRunner",
-    scale: .64,
-    columns: 4,
-    origin: { x: .5, y: .5 },
-    syntheticIdleMotion: true,
-    idleColumns: [0],
-    walkColumns: [1, 2, 3],
-    jumpColumns: [0],
-    idleFrameRate: 1,
-    walkFrameRate: 9,
-    jumpFrameRate: 1,
-  },
-  "riot-droid": {
-    id: "riot-droid",
-    texture: "riotDroidRunner",
-    scale: .64,
-    columns: 6,
-    origin: { x: .5, y: .5 },
-    syntheticIdleMotion: false,
-    idleColumns: [0, 1, 2],
-    walkColumns: [3, 4, 5],
-    jumpColumns: [0],
-    idleFrameRate: 3,
-    walkFrameRate: 9,
-    jumpFrameRate: 1,
-  },
-  "space-marine-red-rifle": marineSkin(
-    "space-marine-red-rifle",
-    "spaceMarineRedRifle",
+  "briarhorn": sixColumnSkin(
+    "briarhorn",
+    "briarhornRunner",
+    .55,
+    true,
   ),
-  "space-marine-red-heavy": marineSkin(
-    "space-marine-red-heavy",
-    "spaceMarineRedHeavy",
+  "ax9-mantis": sixColumnSkin(
+    "ax9-mantis",
+    "ax9MantisRunner",
+    .56,
+    false,
   ),
-  "space-marine-red-scout": marineSkin(
-    "space-marine-red-scout",
-    "spaceMarineRedScout",
+  "null-courier": sixColumnSkin(
+    "null-courier",
+    "nullCourierRunner",
+    .56,
+    true,
+    { down: [1, 2, 3, 2] },
   ),
-  "space-marine-red-medic": marineSkin(
-    "space-marine-red-medic",
-    "spaceMarineRedMedic",
+  "aegis-vanguard": sixColumnSkin(
+    "aegis-vanguard",
+    "aegisVanguardRunner",
+    .55,
+    false,
   ),
-  "space-marine-blue-rifle": marineSkin(
-    "space-marine-blue-rifle",
-    "spaceMarineBlueRifle",
+  "alien-runner": sixColumnSkin(
+    "alien-runner",
+    "xenoRunner",
+    .58,
+    true,
   ),
-  "space-marine-blue-heavy": marineSkin(
-    "space-marine-blue-heavy",
-    "spaceMarineBlueHeavy",
+  "volt-hound": sixColumnSkin(
+    "volt-hound",
+    "voltHoundRunner",
+    .55,
+    false,
   ),
-  "space-marine-blue-scout": marineSkin(
-    "space-marine-blue-scout",
-    "spaceMarineBlueScout",
+  "mirejaw": sixColumnSkin(
+    "mirejaw",
+    "mirejawRunner",
+    .52,
+    false,
   ),
-  "space-marine-blue-medic": marineSkin(
-    "space-marine-blue-medic",
-    "spaceMarineBlueMedic",
+  "scrapwing": sixColumnSkin(
+    "scrapwing",
+    "scrapwingRunner",
+    .56,
+    true,
+  ),
+  "prism-bastion": sixColumnSkin(
+    "prism-bastion",
+    "prismBastionRunner",
+    .52,
+    false,
   ),
 };
 
@@ -108,22 +106,28 @@ export const V2_LEGACY_ARENA_CHARACTER_ORIGIN: V2CharacterOrigin = {
   y: .5,
 };
 
-function marineSkin(
+function sixColumnSkin(
   id: V2PlayerSkinId,
   texture: string,
+  scale: number,
+  syntheticIdleMotion: boolean,
+  walkColumnsByDirection?: Partial<
+    Record<V2CharacterDirection, readonly number[]>
+  >,
 ): V2CharacterSkinConfig {
   return {
     id,
     texture,
-    scale: .42,
-    columns: 4,
+    scale,
+    columns: 6,
     origin: { x: .5, y: .5 },
-    syntheticIdleMotion: false,
+    syntheticIdleMotion,
     idleColumns: [0],
-    walkColumns: [0, 1, 2, 3],
-    jumpColumns: [0],
+    walkColumns: [1, 2, 3, 4],
+    walkColumnsByDirection,
+    jumpColumns: [5],
     idleFrameRate: 1,
-    walkFrameRate: 7,
+    walkFrameRate: 9,
     jumpFrameRate: 1,
   };
 }
@@ -162,12 +166,28 @@ function resolveV2CharacterSkinId(
     return playerSkinId;
   }
   if (actor.teamId === "blue") {
-    return "alien-runner";
+    const blueRoster: readonly V2PlayerSkinId[] = [
+      "prism-bastion",
+      "briarhorn",
+      "null-courier",
+    ];
+    return blueRoster[Math.max(0, actorRosterSlot(actor.id) - 2) % blueRoster.length];
   }
   if (actor.teamId === "red") {
-    return "riot-droid";
+    const redRoster: readonly V2PlayerSkinId[] = [
+      "mirejaw",
+      "scrapwing",
+      "volt-hound",
+      "ax9-mantis",
+    ];
+    return redRoster[(actorRosterSlot(actor.id) - 1) % redRoster.length];
   }
   return null;
+}
+
+function actorRosterSlot(actorId: string): number {
+  const match = actorId.match(/-(\d+)$/);
+  return match ? Math.max(1, Number(match[1])) : 1;
 }
 
 export function v2CharacterAnimationState(
@@ -187,8 +207,9 @@ export function v2CharacterFrame(
   actor: Readonly<ActorState>,
   state: V2CharacterAnimationState,
 ): number {
-  const columns = v2CharacterColumns(skin, state);
-  return v2CharacterDirectionRow(v2CharacterDirection(actor)) * skin.columns +
+  const direction = v2CharacterDirection(actor);
+  const columns = v2CharacterColumns(skin, state, direction);
+  return v2CharacterDirectionRow(direction) * skin.columns +
     (columns[0] ?? 0);
 }
 
@@ -203,8 +224,13 @@ export function v2CharacterAnimationKey(
 export function v2CharacterColumns(
   skin: V2CharacterSkinConfig,
   state: V2CharacterAnimationState,
+  direction?: V2CharacterDirection,
 ): readonly number[] {
-  if (state === "walk") return skin.walkColumns;
+  if (state === "walk") {
+    return direction
+      ? skin.walkColumnsByDirection?.[direction] ?? skin.walkColumns
+      : skin.walkColumns;
+  }
   if (state === "jump") return skin.jumpColumns;
   return skin.idleColumns;
 }
@@ -212,9 +238,10 @@ export function v2CharacterColumns(
 export function v2CharacterDirection(
   actor: Readonly<ActorState>,
 ): V2CharacterDirection {
-  return Math.abs(actor.facing.x) > Math.abs(actor.facing.y)
-    ? actor.facing.x >= 0 ? "right" : "left"
-    : actor.facing.y >= 0 ? "down" : "up";
+  const direction = actor.lastMoveDirection;
+  return Math.abs(direction.x) >= Math.abs(direction.y)
+    ? direction.x >= 0 ? "right" : "left"
+    : direction.y >= 0 ? "down" : "up";
 }
 
 export function v2CharacterDirectionRow(

@@ -261,13 +261,17 @@ Minimaler Loop:
 
 Erster Scope:
 
-- eine Saison mit etwa 10 bis 12 Matches
-- wenige Divisionen
-- kleines Roster
-- Angreifer-, Verteidiger- und Allrounder-Tendenzen
-- wenige gut lesbare Eigenschaften
-- ein Rekrutierungsangebot an festgelegten Saisonpunkten
-- keine komplexe Transferwirtschaft
+- [x] eine Saison mit zehn Matches als Doppelrunde zwischen sechs Teams
+- [x] eine gemeinsame, schnell lesbare Tabelle mit drei Punkten pro Sieg
+- [x] Zwei-Personen-Kader mit Angreifer-, Verteidiger- und
+      Allrounder-Tendenzen
+- [x] Teamakten mit Kills, Deaths und Captures pro Charakter
+- [x] ein einziges Rekrutierungsfenster nach Match fuenf
+- [x] direkter Tausch des Wingmates; keine Gold- oder Transferwirtschaft
+- [x] Fullscreen-Hauptmenue mit getrenntem League- und Quick-Play-Pfad
+- [x] Gegneruebersicht und direkter Start des naechsten 2v2-CTF-Matches
+- [x] versionierter LocalStorage-Spielstand mit sauberem Fallback bei
+      unbekannter oder beschaedigter Version
 
 Architektur:
 
@@ -284,11 +288,18 @@ den Spieler nicht durch extreme Stat-Vorteile vom eigenen Skill entkoppeln.
 
 Abnahme:
 
-- Eine Saison kann begonnen, gespeichert, fortgesetzt und beendet werden.
-- Save-Migration oder sauberer Fallback bei unbekannter Version ist vorhanden.
-- Rekrutierungsentscheidungen sind in weniger als 20 Sekunden verstaendlich.
-- Nach dem Ergebnis ist der naechste sinnvolle Schritt immer klar.
+- [x] Eine Saison kann begonnen, gespeichert, fortgesetzt und beendet werden.
+- [x] Sauberer Fallback bei unbekannter oder beschaedigter Save-Version ist
+      vorhanden.
+- [x] Die Rekrutierung ist eine einzelne Auswahl oder die Entscheidung, den
+      aktuellen Wingmate zu behalten.
+- [x] Nach dem Ergebnis fuehrt `Continue League` direkt zur League HQ.
 - Mindestens ein Testspieler will freiwillig ein weiteres Match beginnen.
+
+Status 2026-07-13: Der technische und visuelle V1-Scope ist implementiert und
+durch automatisierte Domain-, Routing-, Save-, Build- und HTTP-Smokes
+abgesichert. Die echte visuelle und spielerische Browserabnahme bleibt offen,
+weil in der Ausfuehrungsumgebung kein steuerbarer Browser verfuegbar ist.
 
 ## Phase 6 - Mobile als eigene Control-Variante
 
@@ -456,5 +467,19 @@ Phase 0 ist technisch abgeschlossen. Der aktuelle Phase-1-Slice umfasst:
       implementieren
 - [x] klickbare Bot-Taktiken, Impact-Scoreboard und ursachenbasierter Killfeed
       implementieren
+- [x] hellen Match-Endscreen an dunkle Arena-/Scoreboard-Sprache angleichen
+- [x] verzerrte League-Squad-Portraits auf quadratische Sprite-Zellen umstellen
+- [x] Bewegungs-/Sprungrichtung fuer Null Courier, Volt Hound und Xeno Runner
+      korrigieren; Xeno-Sheet mit streng kardinalen Ansichten revidieren
+- [x] Sunken Court, Grand Archive und Flank Switch als profiliertes
+      Drei-Map-Set mit echten Skill-Shortcuts und umkaempfter Rail-Kontrolle
+      haerten
+- [x] 56 Tests, Produktions-Build und Bot-Diagnostik nach Map-Aenderungen
+      erfolgreich ausfuehren
 
-Der Core bleibt bis zur manuellen Abnahme frei von Liga- und Content-Ausbau.
+Die autoritativen Matchregeln blieben unveraendert; Arena-Daten und
+Praesentation wurden ueber ihre bestehenden Grenzen erweitert. Die Liga liegt
+als getrenntes Meta-System unter `src/meta/league/`. Der naechste Schritt ist
+eine manuelle Komplettsaison,
+um Tabellenfluss, Matchuebergang und Transferentscheidung spielerisch
+abzunehmen.

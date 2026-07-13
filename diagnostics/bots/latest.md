@@ -1,7 +1,7 @@
 # Bot Diagnostics Baseline
 
-Timestamp: 2026-07-13T11:56:55.041Z
-Git: branch=main, commit=e575194, dirty=true
+Timestamp: 2026-07-13T15:31:12.615Z
+Git: branch=main, commit=8ed8fdf, dirty=true
 
 ## Kurzurteil
 
@@ -16,13 +16,13 @@ Die Diagnose lief durch, markiert aber 4 Hotzone-Hinweis(e).
 | TDM Training Crossing 3v3 | team-deathmatch | training-crossing-v2 | 3v3 | 18020ms | 2 | 4/8 | 3/7 | 0 | 0 |
 | TDM Training Crossing 4v4 | team-deathmatch | training-crossing-v2 | 4v4 | 18020ms | 0 | 7/7 | 4/4 | 0 | 0 |
 | Classic CTF Flank Switch 1v1 | classic-ctf | flank-switch-v2 | 1v1 | 22032ms | 2 | 4/3 | 2/2 | 0 | 0 |
-| Classic CTF Flank Switch 2v2 | classic-ctf | flank-switch-v2 | 2v2 | 22032ms | 1 | 8/7 | 8/10 | 0 | 0 |
-| Classic CTF Flank Switch 3v3 | classic-ctf | flank-switch-v2 | 3v3 | 22032ms | 1 | 9/7 | 10/11 | 0 | 0 |
-| Classic CTF Flank Switch 4v4 | classic-ctf | flank-switch-v2 | 4v4 | 22032ms | 1 | 9/7 | 11/12 | 0 | 0 |
-| One Flag Grand Archive 1v1 | one-flag | grand-archive-v2 | 1v1 | 18020ms | 1 | 3/2 | 5/2 | 0 | 0 |
-| One Flag Grand Archive 2v2 | one-flag | grand-archive-v2 | 2v2 | 18020ms | 1 | 2/5 | 4/8 | 0 | 0 |
-| One Flag Grand Archive 3v3 | one-flag | grand-archive-v2 | 3v3 | 18020ms | 1 | 2/5 | 7/5 | 0 | 0 |
-| One Flag Grand Archive 4v4 | one-flag | grand-archive-v2 | 4v4 | 18020ms | 1 | 2/5 | 7/4 | 0 | 0 |
+| Classic CTF Flank Switch 2v2 | classic-ctf | flank-switch-v2 | 2v2 | 22032ms | 2 | 7/6 | 8/8 | 0 | 0 |
+| Classic CTF Flank Switch 3v3 | classic-ctf | flank-switch-v2 | 3v3 | 22032ms | 2 | 7/6 | 8/8 | 0 | 0 |
+| Classic CTF Flank Switch 4v4 | classic-ctf | flank-switch-v2 | 4v4 | 22032ms | 2 | 7/6 | 9/9 | 0 | 0 |
+| One Flag Grand Archive 1v1 | one-flag | grand-archive-v2 | 1v1 | 18020ms | 1 | 1/3 | 0/2 | 0 | 0 |
+| One Flag Grand Archive 2v2 | one-flag | grand-archive-v2 | 2v2 | 18020ms | 1 | 1/4 | 0/3 | 0 | 0 |
+| One Flag Grand Archive 3v3 | one-flag | grand-archive-v2 | 3v3 | 18020ms | 1 | 1/5 | 0/8 | 0 | 0 |
+| One Flag Grand Archive 4v4 | one-flag | grand-archive-v2 | 4v4 | 18020ms | 1 | 1/5 | 3/9 | 0 | 0 |
 
 ## Full Smoke Matrix
 
@@ -38,23 +38,23 @@ Diese Matrix prueft Startbarkeit, gueltige Positionen, Bot-Aktionen und Mindestb
 ## Auffaellige Hotzones
 
 - TDM Training Crossing 4v4: clusteredFrames near/above 40% threshold (55/372)
-- One Flag Grand Archive: chase-enemy-carrier blocked frames=8
-- One Flag Grand Archive: blocked escort-carrier frames=62
-- One Flag Grand Archive: blocked chase-enemy-carrier frames=8
+- One Flag Grand Archive: chase-enemy-carrier blocked frames=19
+- One Flag Grand Archive: blocked escort-carrier frames=121
+- One Flag Grand Archive: blocked chase-enemy-carrier frames=19
 
 ## Wichtigste Metriken
 
 - Frame-Delta: 34ms
 - Matrix-Szenarien: 12
 - One-Flag Detail: grand-archive-v2, 2v2
-- One-Flag chaseBlockedFrames: 8
+- One-Flag chaseBlockedFrames: 19
 - One-Flag takeCenterBlockedFrames: 0
 
 ## Szenario-Baselines
 
 | Scenario | Mode | Map | Duration | Primary intent | Primary check | Path misses | Progress | Result |
 |---|---|---|---:|---|---|---:|---:|---|
-| One Flag Grand Archive Escort/Carrier Hotzone | one-flag | grand-archive-v2 | 3400ms | escort=escort-carrier, chaser=chase-enemy-carrier | escort/chaser progress | 0/0 | 661.6/517.4 | escort_path_found, chaser_path_found, escort_progress, chaser_progress |
+| One Flag Grand Archive Escort/Carrier Hotzone | one-flag | grand-archive-v2 | 3400ms | escort=escort-carrier, chaser=chase-enemy-carrier | escort/chaser progress | 0/0 | 661.6/255.3 | escort_path_found, chaser_path_found, escort_progress, chaser_progress |
 | Classic CTF Flank Switch Own Flag Stolen | classic-ctf | flank-switch-v2 | 1360ms | recover-own-flag | recover own flag | 0 | 160.0 | path_found, recovery_goal_selected, carrier_distance_reduced, no_attack_flag_drift |
 | TDM Training Crossing Low Health vs Enemy | team-deathmatch | training-crossing-v2 | 1700ms | seek-health | seek health before fight | 0 | 145.8 | path_found, pickup_prioritized, health_distance_reduced, pickup_collected, health_restored |
 | TDM Training Crossing Armor/Weapon Pickup Intents | team-deathmatch | training-crossing-v2 | 1700ms | armor=seek-armor, weapon=seek-weapon | seek armor/weapon pickups | armor:0, weapon:0 | armor:147.6, weapon:146.6 | paths_found, expected_intents_seen, pickups_collected |

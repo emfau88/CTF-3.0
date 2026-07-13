@@ -773,7 +773,7 @@ function updatePlayerSkinSprite(
 ): void {
   const direction = v2CharacterDirection(actor);
   const state = v2CharacterAnimationState(actor);
-  const columns = v2CharacterColumns(skin, state);
+  const columns = v2CharacterColumns(skin, state, direction);
 
   if (columns.length > 1) {
     sprite.play(v2CharacterAnimationKey(skin, direction, state), true);
@@ -812,7 +812,7 @@ function ensurePlayerSkinAnimations(scene: Phaser.Scene): void {
   for (const skin of Object.values(V2_CHARACTER_SKINS)) {
     for (const direction of V2_CHARACTER_DIRECTIONS) {
       for (const state of ["idle", "walk", "jump"] as const) {
-        if (v2CharacterColumns(skin, state).length > 1) {
+        if (v2CharacterColumns(skin, state, direction).length > 1) {
           ensurePlayerSkinAnimation(scene, skin, direction, state);
         }
       }
@@ -831,7 +831,7 @@ function ensurePlayerSkinAnimation(
     return;
   }
   const row = v2CharacterDirectionRow(direction);
-  const columns = v2CharacterColumns(skin, state);
+  const columns = v2CharacterColumns(skin, state, direction);
   scene.anims.create({
     key,
     frames: columns.map((column) => ({

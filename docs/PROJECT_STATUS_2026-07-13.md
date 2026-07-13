@@ -3,9 +3,10 @@
 ## Kurzurteil
 
 Phase 0 ist technisch abgeschlossen. Der erste Hero-Map-/Combat-/CTF-KI-Slice
-ist implementiert. Tests, Build, Bot-Diagnostik und HTTP-Smoke sind gruen. Die
-visuelle Browserabnahme bleibt offen, weil auch der erneute Verbindungsversuch
-keinen steuerbaren Browser in der Ausfuehrungsumgebung gefunden hat.
+und die Arena-League V1 sind implementiert. Tests, Build, Bot-Diagnostik und
+HTTP-Smoke sind gruen. Die visuelle Browserabnahme bleibt offen, weil auch der
+erneute Verbindungsversuch keinen steuerbaren Browser in der
+Ausfuehrungsumgebung gefunden hat.
 
 Dieses Dokument ist zusammen mit `ARENA_LEAGUE_IMPLEMENTATION_PLAN.md` die
 aktuelle Einstiegssicht fuer CTF-3.0. Die aelteren V2-Dokumente bleiben als
@@ -17,7 +18,57 @@ historische Architektur- und Verhaltensreferenz erhalten.
 - Classic CTF als erster Hero-Modus
 - Mobile spaeter als eigenes vereinfachtes Control-Profil
 - vorhandenen Gameplay-Core weiterverwenden, kein Total-Rewrite
-- keine neuen Waffen, Charaktere oder Maps vor dem Nachweis des Core Loops
+- das produktnahe Arenen-Set bleibt vorerst auf vier klar profilierten Maps;
+  weitere Waffen, Charaktere und Maps erst nach dem Nachweis des Core Loops
+
+## Arena-League V1
+
+- Fullscreen-Hauptmenue mit `League` und `Quick Play`
+- sechs Teams und zwoelf benannte Charaktere mit Rolle, Eigenschaft und Rating
+- zehn Spieltage als vollstaendige Doppelrunde
+- Tabelle mit Siegen, Capture-Differenz und Ligapunkten
+- eigene Zwei-Personen-Mannschaft, Gegnerakte und Charakter-Statistiken
+- direkter 2v2-CTF-Spielstart auf Foundry Circuit
+- Matchresultat und echte Spielerstatistiken fliessen in den Saisonstand ein;
+  die beiden anderen Begegnungen werden deterministisch simuliert
+- genau ein Transferfenster nach Spiel fuenf: Rivalen rekrutieren oder Kader
+  behalten; keine Waehrung und kein Goldsystem
+- versionierter lokaler Spielstand unter `core-arena.league.v1`
+- unbekannte oder beschaedigte Saves werden nicht geladen
+- neue League-Logik liegt getrennt vom Gameplay-Core in `src/meta/league/`
+- neues Menue-Key-Art: `public/assets/league-menu-arena-v1.png`
+- Career und Quick Play verwenden denselben Subpage-Header mit identisch
+  positioniertem `Main Menu`-Button links und kontextspezifischen Aktionen rechts
+- das Hauptmenue verwendet kein vollflaechiges Glass-Panel mehr; lokale Scrims
+  halten Text lesbar und lassen den groessten Teil des Arena-Key-Arts sichtbar
+- sechs individuelle Teamembleme ersetzen die bisherigen Buchstabenkuerzel in
+  Tabelle, Matchkarte, Teamakte, Saisonstart und Saisonabschluss
+- ein zentrales Core-Arena-League-Emblem verbindet Hauptmenue, Career-Header
+  und den visuellen League-Auftritt
+
+## Character Skin Batch
+
+- Neun aktive hochwertige Skins: Briarhorn, AX-9 Mantis, Null Courier,
+  Aegis Vanguard, Xeno Runner, Volt Hound, Mirejaw, Scrapwing und Prism Bastion
+- je Skin ein transparentes 6-x-4-Spritesheet mit 24 Frames bei 128 x 128 Pixeln
+- vier Richtungen, vierteiliger Laufzyklus und eigener Jump-Frame
+- in Quick Play ueber eine klickbare Galerie mit neun Portraits und grosser
+  Vorschau direkt auswaehlbar; das reine Namens-Dropdown ist ersetzt
+- globale kosmetische Skinpraeferenz wird lokal gespeichert
+- Skin kann auch in der League HQ jederzeit gewechselt werden und wird in das
+  naechste Ligamatch uebernommen
+- alte Marines, Riot Droid und das alte Alien-Sheet werden nicht mehr geladen
+  oder in Menues angeboten; vorhandene Einstellungen werden kompatibel auf
+  Aegis Vanguard, AX-9 Mantis beziehungsweise Xeno Runner migriert
+- League-Charakterkarten und Match-Bots verwenden nur noch die neue Neuner-
+  Auswahl; alte Dateien bleiben vorerst als Rollback-Material unangetastet
+- Skins sind vorerst frei verfuegbar; ein spaeteres Unlock-System kann auf
+  Profilebene ergaenzt werden, ohne Saison-Saves zu veraendern
+- Animationsrichtung verwendet die letzte echte Bewegungsrichtung. Diagonale
+  Spruenge priorisieren die horizontale Blickrichtung, Null Couriers Down-Zyklus
+  verwendet eine ruhigere Schrittfolge und Xeno Runner besitzt ein neu
+  normalisiertes Sheet mit gerader Vorder-/Rueckenansicht sowie
+  richtungskorrekten Jump-Frames
 
 ## Phase-0-Aenderungen
 
@@ -157,6 +208,23 @@ historische Architektur- und Verhaltensreferenz erhalten.
   damit der Killfeed die Ursache nicht aus zeitlich benachbarten Events raten
   muss.
 
+### Ergebnisflow, League-Portraits und Arenen-Set
+
+- Der Match-Endscreen verwendet nun dieselbe dunkle Arena-Sprache wie das
+  TAB-Scoreboard und die neuen Hauptmenues. Das alte fast weisse Kartenpanel
+  ist entfernt; Tabelle, Typografie und Aktionen bleiben kompakt erfassbar.
+- League-Charakterportraits sind echte quadratische Sprite-Zellen. Sie werden
+  nicht mehr von 128-x-128 auf ein hochformatiges Feld gestreckt.
+- `flow-lab-v2` ist als `Sunken Court` produktisiert: Ruineninszenierung,
+  drei lesbare Routen, ein echter Chasm-Shortcut und sichere Umwege.
+- Grand Archive besitzt wieder vier sichtbare Collapsed-Floor-Shortcuts.
+  Base-Railguns wurden entfernt; Rail-Kontrolle entsteht in der umkaempften
+  oberen Galerie.
+- Flank Switch besitzt wieder vier echte Wartungsgruben samt Switch-Gates.
+  Auch dort liegt Rail nur noch umkaempft und nicht sicher in beiden Bases.
+- Alle drei Arenen behalten gespiegelte Geometrie, blockierte Spawn-Sichtlinien,
+  authored Jump-Links und mindestens einen sicheren Weg um riskante Gaps.
+
 ### Pickup-Diagnostik
 
 - Die semantische No-Progress-Erkennung verwendet nun eine kleine
@@ -170,10 +238,10 @@ historische Architektur- und Verhaltensreferenz erhalten.
 Ausgefuehrt am 2026-07-13:
 
 - `npm.cmd test`
-  - Ergebnis: `43/43` Tests bestanden
+  - Ergebnis: `56/56` Tests bestanden
 - `npm.cmd run build`
   - Ergebnis: erfolgreich
-  - Hauptchunk: `1,471.89 kB`, gzip `402.34 kB`
+  - Hauptchunk: `1,494.12 kB`, gzip `409.88 kB`
   - bekannte Vite-Warnung fuer Chunks ueber `500 kB`
 - `npm.cmd run bot:diagnostics`
   - Ergebnis: erfolgreich
@@ -189,7 +257,7 @@ Aktuelle Diagnoseartefakte:
 
 - `diagnostics/bots/latest.md`
 - `diagnostics/bots/latest.json`
-- `diagnostics/bots/history/2026-07-13T11-56-55-041Z.json`
+- `diagnostics/bots/history/2026-07-13T15-31-12-615Z.json`
 
 ## Nur aus Code und Headless-Diagnostik abgeleitet
 
@@ -212,6 +280,10 @@ Diese Punkte sind noch kein Beweis fuer gutes subjektives Spielgefuehl.
 - HUD und Trefferfeedback im 2v2-CTF
 - Foundry-Circuit-Routen, Wartungsschacht-Spruenge und Pickup-Rhythmus im
   kompletten 2v2-Match
+- dunkler Endscreen, quadratische League-Portraits und Animationswirkung von
+  Null Courier, Volt Hound sowie dem revidierten Xeno Runner
+- Sunken Court, Grand Archive und Flank Switch in kompletten menschlichen
+  CTF-/TDM-Matches; Headless-Navigation und Bot-Fortschritt sind gruen
 - Touch-Layout nach Wiederherstellung des schnelleren Core-Tempos
 - Mobile Landscape auf realen Android-/iOS-Geraeten
 - Konsolenfreiheit waehrend eines kompletten Matches
@@ -228,6 +300,25 @@ Diese Punkte sind noch kein Beweis fuer gutes subjektives Spielgefuehl.
 4. Der grosse JavaScript-Chunk ist fuer CrazyGames noch zu optimieren.
 5. Browser- und reale Geraeteabnahme fehlen noch.
 
+## Roadmap-Einordnung
+
+- Phase 0 - Baseline: technisch abgeschlossen.
+- Phase 1 - Desktop Movement/Aim: implementiert; subjektive Langzeitabnahme
+  fuer Tempo, Jumps und Richtungslesbarkeit bleibt offen.
+- Phase 2 - Combat/Waffenrollen: funktionaler Drei-Waffen-Slice steht;
+  menschliche Match-Balance und Langzeit-Ressourcenkontrolle bleiben offen.
+- Phase 3 - Classic-CTF-Hero-Slice: funktional komplett mit 2v2-Team-KI,
+  Kommandos, Killfeed, Ergebnisflow und vier profilierten Arenen; zehn
+  fehlerfreie manuelle Komplettmatches sind noch das Produktgate.
+- Phase 4 - Ingame-Onboarding: noch nicht umgesetzt.
+- Phase 5 - Liga/Team/Rekrutierung: V1 implementiert; komplette Saison und
+  Transferentscheidung muessen manuell abgenommen werden.
+- Phase 6 - Mobile-Control-Variante: bewusst verschoben.
+- Phase 7 - Produktpolitur: UI-/Branding-/Character-Slice teilweise begonnen,
+  aber Audio, Trefferfeedback, Accessibility und Content-Abnahme sind offen.
+- Phase 8 - CrazyGames: noch nicht begonnen; Chunking, SDK, Ladezeit,
+  Telemetrie und Portal-QA fehlen.
+
 ## Verbindliche Gates ab jetzt
 
 Jeder Gameplay-Slice muss mindestens bestehen:
@@ -241,8 +332,11 @@ Jeder Gameplay-Slice muss mindestens bestehen:
 
 ## Naechster Schritt
 
-Als Naechstes muss Foundry Circuit in mehreren kompletten Desktop-2v2-Matches
-abgenommen werden: Laufzeiten, Jump-Shortcuts, waffenlose Zeit, Rail-Kontrolle,
-Carrier-Eskorte und Ergebnisfluss. Trefferfeedback bleibt bewusst spaetere
-Politur; Eingabepuffer sind als Produktentscheidung ausgeschlossen. Liga oder
-neuer Content gehoeren noch nicht in den naechsten Slice.
+Als Naechstes sollte kein weiterer Content entstehen. Das wichtigste Gate ist
+eine strukturierte menschliche Desktop-Abnahme: je mehrere 2v2-Matches auf
+Foundry Circuit, Sunken Court, Grand Archive und Flank Switch sowie eine
+komplette Liga-Saison. Geprueft werden Laufzeiten, Jump-Shortcuts, waffenlose
+Zeit, Rail-Kontrolle, Carrier-Eskorte, Ergebnisfluss und Transferentscheidung.
+Danach folgt Phase 4 mit kurzem Ingame-Onboarding; erst anschliessend lohnen
+sich weitere Waffen oder Arenen. Trefferfeedback bleibt spaetere Politur und
+Eingabepuffer sind als Produktentscheidung ausgeschlossen.

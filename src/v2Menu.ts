@@ -2,19 +2,32 @@ import {
   buildV2MatchSearch,
   buildV2MenuSearch,
   readV2Route,
+  V2_PLAYER_SKINS,
   type V2ControlsMode,
   type V2PlayerSkinId,
   type V2RouteConfig,
   type V2PlayersMode,
 } from "./v2Route";
 import type { MatchStatEntry } from "./core";
+import { createLeagueMenuController } from "./leagueMenu";
+import {
+  isPlayerSkinId,
+  loadPlayerSkinPreference,
+  playerSkinLabel,
+  playerSkinSheetAssetStem,
+  playerSkinSheetColumns,
+  savePlayerSkinPreference,
+} from "./playerSkinPreference";
 
 interface V2MenuElements {
   readonly root: HTMLElement;
   readonly home: HTMLElement;
   readonly setup: HTMLElement;
+  readonly league: HTMLElement;
   readonly status: HTMLElement;
   readonly enterSetup: HTMLButtonElement;
+  readonly enterLeague: HTMLButtonElement;
+  readonly leagueLabel: HTMLElement;
   readonly back: HTMLButtonElement;
   readonly mode: HTMLSelectElement;
   readonly map: HTMLSelectElement;
@@ -22,6 +35,9 @@ interface V2MenuElements {
   readonly teamSize: HTMLSelectElement;
   readonly controls: HTMLSelectElement;
   readonly skin: HTMLSelectElement;
+  readonly skinPicker: HTMLElement;
+  readonly skinPreview: HTMLElement;
+  readonly skinName: HTMLElement;
   readonly sfx: HTMLSelectElement;
   readonly start: HTMLButtonElement;
 }
@@ -52,15 +68,23 @@ export function showGameplayV2Menu(statusMessage?: string): void {
   const elements = readMenuElements();
   const route = readV2Route();
   document.documentElement.style.setProperty(
-    "--v2-menu-floor",
-    `url("${import.meta.env.BASE_URL}assets/ruins/floor-stone.png")`,
+    "--v2-menu-background",
+    `url("${import.meta.env.BASE_URL}assets/league-menu-arena-v1.png")`,
   );
   elements.mode.value = route.mode;
   elements.map.value = route.map;
   elements.players.value = route.players;
   elements.teamSize.value = String(route.teamSize);
   elements.controls.value = route.controls;
-  elements.skin.value = route.skin;
+  const preferredSkin = new URLSearchParams(window.location.search).has("skin")
+    ? route.skin
+    : loadPlayerSkinPreference();
+  setupQuickPlaySkinPicker({
+    select: elements.skin,
+    picker: elements.skinPicker,
+    preview: elements.skinPreview,
+    name: elements.skinName,
+  }, preferredSkin);
   elements.sfx.value = route.sfx;
   elements.status.textContent = statusMessage ?? "";
   elements.status.classList.toggle("is-hidden", !statusMessage);
@@ -75,20 +99,35 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     }
     elements.controls.disabled = localMatch;
   };
+  const showHome = (): void => {
+    elements.home.classList.remove("is-hidden");
+    elements.setup.classList.add("is-hidden");
+    elements.league.classList.add("is-hidden");
+    elements.status.classList.add("is-hidden");
+  };
+  const leagueController = createLeagueMenuController({ onBack: showHome });
+  elements.leagueLabel.textContent = leagueController.hasSave
+    ? "Continue League"
+    : "Start League";
   elements.home.classList.toggle("is-hidden", Boolean(statusMessage));
   elements.setup.classList.toggle("is-hidden", !statusMessage);
+  elements.league.classList.add("is-hidden");
   syncControls();
   elements.players.onchange = syncControls;
   elements.enterSetup.onclick = () => {
     elements.home.classList.add("is-hidden");
     elements.setup.classList.remove("is-hidden");
   };
-  elements.back.onclick = () => {
+  elements.enterLeague.onclick = () => {
+    elements.home.classList.add("is-hidden");
     elements.setup.classList.add("is-hidden");
-    elements.home.classList.remove("is-hidden");
-    elements.status.classList.add("is-hidden");
+    leagueController.open();
+  };
+  elements.back.onclick = () => {
+    showHome();
   };
   elements.start.onclick = () => {
+    savePlayerSkinPreference(elements.skin.value as V2PlayerSkinId);
     window.location.search = buildV2MatchSearch({
       mode: elements.mode.value as typeof route.mode,
       map: elements.map.value,
@@ -99,6 +138,9 @@ export function showGameplayV2Menu(statusMessage?: string): void {
       sfx: elements.sfx.value === "off" ? "off" : "on",
     });
   };
+  if (new URLSearchParams(window.location.search).get("leagueHub") === "1") {
+    elements.enterLeague.click();
+  }
 }
 
 export function hideGameplayV2Menu(): void {
@@ -130,6 +172,8 @@ export function showGameplayV2Result(input: {
   readonly humanActorIds: readonly string[];
   readonly onPlayAgain: () => void;
   readonly onMainMenu: () => void;
+  readonly playAgainLabel?: string;
+  readonly mainMenuLabel?: string;
 }): void {
   hideGameplayV2Pause();
   const elements = readResultElements();
@@ -138,6 +182,8 @@ export function showGameplayV2Result(input: {
   renderStatsTable(elements.stats, input.stats, input.humanActorIds);
   elements.playAgain.onclick = input.onPlayAgain;
   elements.mainMenu.onclick = input.onMainMenu;
+  elements.playAgain.textContent = input.playAgainLabel ?? "Play Again";
+  elements.mainMenu.textContent = input.mainMenuLabel ?? "Main Menu";
   elements.root.classList.remove("is-hidden");
 }
 
@@ -177,8 +223,11 @@ function readMenuElements(): V2MenuElements {
     root,
     home: requiredElement<HTMLElement>("v2-menu-home"),
     setup: requiredElement<HTMLElement>("v2-menu-setup"),
+    league: requiredElement<HTMLElement>("v2-league-hub"),
     status: requiredElement<HTMLElement>("v2-menu-status"),
     enterSetup: requiredElement<HTMLButtonElement>("v2-menu-play"),
+    enterLeague: requiredElement<HTMLButtonElement>("v2-menu-league"),
+    leagueLabel: requiredElement<HTMLElement>("v2-menu-league-label"),
     back: requiredElement<HTMLButtonElement>("v2-menu-back"),
     mode: requiredElement<HTMLSelectElement>("v2-menu-mode"),
     map: requiredElement<HTMLSelectElement>("v2-menu-map"),
@@ -186,6 +235,9 @@ function readMenuElements(): V2MenuElements {
     teamSize: requiredElement<HTMLSelectElement>("v2-menu-team-size"),
     controls: requiredElement<HTMLSelectElement>("v2-menu-controls"),
     skin: requiredElement<HTMLSelectElement>("v2-menu-skin"),
+    skinPicker: requiredElement<HTMLElement>("v2-menu-skin-picker"),
+    skinPreview: requiredElement<HTMLElement>("v2-menu-skin-preview"),
+    skinName: requiredElement<HTMLElement>("v2-menu-skin-name"),
     sfx: requiredElement<HTMLSelectElement>("v2-menu-sfx"),
     start: requiredElement<HTMLButtonElement>("v2-menu-start"),
   };
@@ -294,6 +346,82 @@ function renderStatsTable(
     }
   }
   root.append(table);
+}
+
+export interface QuickPlaySkinPickerElements {
+  readonly select: HTMLSelectElement;
+  readonly picker: HTMLElement;
+  readonly preview: HTMLElement;
+  readonly name: HTMLElement;
+}
+
+export function setupQuickPlaySkinPicker(
+  elements: QuickPlaySkinPickerElements,
+  initialSkin: V2PlayerSkinId,
+  onSelected: (skinId: V2PlayerSkinId) => void = savePlayerSkinPreference,
+): void {
+  elements.select.replaceChildren(
+    ...V2_PLAYER_SKINS.map((skinId) => {
+      const option = document.createElement("option");
+      option.value = skinId;
+      option.textContent = playerSkinLabel(skinId);
+      return option;
+    }),
+  );
+
+  const buttons = V2_PLAYER_SKINS.map((skinId) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "v2-quick-skin-option";
+    button.dataset.skinId = skinId;
+    button.setAttribute("role", "option");
+    button.setAttribute("aria-label", playerSkinLabel(skinId));
+    const portrait = document.createElement("span");
+    portrait.className = "v2-quick-skin-thumb";
+    applySkinSprite(portrait, skinId);
+    const label = document.createElement("strong");
+    label.textContent = playerSkinLabel(skinId);
+    button.append(portrait, label);
+    return button;
+  });
+
+  const selectSkin = (skinId: V2PlayerSkinId, notify: boolean): void => {
+    elements.select.value = skinId;
+    elements.name.textContent = playerSkinLabel(skinId);
+    applySkinSprite(elements.preview, skinId);
+    for (const button of buttons) {
+      const selected = button.dataset.skinId === skinId;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-selected", String(selected));
+    }
+    if (notify) onSelected(skinId);
+  };
+
+  for (const button of buttons) {
+    button.onclick = () => {
+      const skinId = button.dataset.skinId ?? null;
+      if (isPlayerSkinId(skinId)) selectSkin(skinId, true);
+    };
+  }
+  elements.picker.replaceChildren(...buttons);
+  elements.select.onchange = () => {
+    if (isPlayerSkinId(elements.select.value)) {
+      selectSkin(elements.select.value, true);
+    }
+  };
+  selectSkin(initialSkin, false);
+}
+
+function applySkinSprite(element: HTMLElement, skinId: V2PlayerSkinId): void {
+  const assetBase = import.meta.env?.BASE_URL ?? "/";
+  element.style.setProperty(
+    "--skin-sprite",
+    `url('${assetBase}assets/${playerSkinSheetAssetStem(skinId)}-spritesheet-${playerSkinSheetColumns(skinId)}x4.png')`,
+  );
+  element.style.setProperty(
+    "--skin-columns",
+    String(playerSkinSheetColumns(skinId)),
+  );
 }
 
 export function calculateMatchImpact(entry: MatchStatEntry): number {

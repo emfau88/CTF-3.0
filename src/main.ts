@@ -10,6 +10,13 @@ import {
 } from "./core";
 import { ArenaScene } from "./scenes/ArenaScene";
 import {
+  buildLeagueHubSearch,
+  completeLeagueRound,
+  createLeagueRepository,
+  leagueTeam,
+  readLeagueMatchContext,
+} from "./meta/league";
+import {
   goToGameplayV2Menu,
   hideGameplayV2Pause,
   hideGameplayV2Result,
@@ -20,11 +27,11 @@ import {
   showGameplayV2Stats,
 } from "./v2Menu";
 import {
-  buildV2MatchSearch,
   readV2RouteState,
 } from "./v2Route";
 
 const search = new URLSearchParams(window.location.search);
+const leagueMatchContext = readLeagueMatchContext(search);
 const useGameplayV2Shell = shouldUseGameplayV2Shell(
   window.location,
   import.meta.env.BASE_URL,
@@ -73,6 +80,10 @@ if (showV2Menu) {
     const usesTouchControls = activeRoute?.controls === "touch";
     let latestStats: readonly MatchStatEntry[] = [];
     let matchEnded = false;
+    let leagueResultRecorded = false;
+    const leagueOpponentName = leagueMatchContext
+      ? leagueTeam(leagueMatchContext.opponentId).name
+      : null;
     let heldScoreboardVisible = false;
     const humanActorIds = activeRoute?.players === "local"
       ? ["blue-player", "red-player"]
@@ -101,7 +112,9 @@ if (showV2Menu) {
       hideGameplayV2Result();
       hideGameplayV2Stats();
       releaseOverlayPause();
-      if (activeRoute) {
+      if (leagueMatchContext) {
+        window.location.search = buildLeagueHubSearch();
+      } else if (activeRoute) {
         goToGameplayV2Menu(activeRoute);
       }
     };
@@ -111,9 +124,7 @@ if (showV2Menu) {
       hideGameplayV2Result();
       hideGameplayV2Stats();
       releaseOverlayPause();
-      if (activeRoute) {
-        window.location.search = buildV2MatchSearch(activeRoute);
-      }
+      window.location.reload();
     };
     const closePauseOverlay = (): void => {
       closeHeldScoreboard();
@@ -197,11 +208,9 @@ if (showV2Menu) {
         currentSfx = currentSfx === "off" ? "on" : "off";
         activeRoute.sfx = currentSfx;
         syncAudioButton();
-        window.history.replaceState(
-          null,
-          "",
-          `?${buildV2MatchSearch(activeRoute)}`,
-        );
+        const currentParams = new URLSearchParams(window.location.search);
+        currentParams.set("sfx", currentSfx);
+        window.history.replaceState(null, "", `?${currentParams.toString()}`);
         window.dispatchEvent(
           new CustomEvent("v2-sfx-changed", {
             detail: { enabled: currentSfx === "on" },
@@ -234,6 +243,31 @@ if (showV2Menu) {
       if (detail.phase !== "ended" || !detail.result || !activeRoute) {
         return;
       }
+      if (leagueMatchContext && !leagueResultRecorded) {
+        leagueResultRecorded = true;
+        const repository = createLeagueRepository(window.localStorage);
+        const season = repository.load();
+        if (season && season.seasonId === leagueMatchContext.seasonId) {
+          const blueScore = detail.scores?.find((entry) => entry.teamId === "blue")?.score ?? 0;
+          const redScore = detail.scores?.find((entry) => entry.teamId === "red")?.score ?? 0;
+          completeLeagueRound(season, {
+            seasonId: leagueMatchContext.seasonId,
+            matchId: leagueMatchContext.matchId,
+            roundIndex: leagueMatchContext.roundIndex,
+            blueScore,
+            redScore,
+            stats: latestStats.map((entry) => ({
+              actorId: entry.actorId,
+              kills: entry.kills,
+              deaths: entry.deaths,
+              flagPickups: entry.flagPickups,
+              flagCaptures: entry.flagCaptures,
+              flagReturns: entry.flagReturns,
+            })),
+          });
+          repository.save(season);
+        }
+      }
       closeHeldScoreboard();
       setIngameButtonsVisible(false);
       hideGameplayV2Pause();
@@ -241,12 +275,20 @@ if (showV2Menu) {
       showGameplayV2Result({
         headline: detail.result.kind === "draw"
           ? "Draw"
-          : `${detail.result.winnerEntryId.toUpperCase()} Wins`,
-        detail: formatResultScores(detail.scores ?? []),
+          : leagueMatchContext
+            ? detail.result.winnerEntryId === "blue"
+              ? "Iron Vanguard Win"
+              : `${leagueOpponentName ?? "Rivals"} Win`
+            : `${detail.result.winnerEntryId.toUpperCase()} Wins`,
+        detail: leagueMatchContext
+          ? `LEAGUE MATCH ${leagueMatchContext.roundIndex + 1} · ${formatResultScores(detail.scores ?? [])}`
+          : formatResultScores(detail.scores ?? []),
         stats: latestStats,
         humanActorIds,
-        onPlayAgain: restartCurrentMatch,
+        onPlayAgain: leagueMatchContext ? showMenuRoute : restartCurrentMatch,
         onMainMenu: showMenuRoute,
+        playAgainLabel: leagueMatchContext ? "Continue League" : "Play Again",
+        mainMenuLabel: leagueMatchContext ? "League HQ" : "Main Menu",
       });
     });
   }

@@ -8,18 +8,29 @@ export type V2PlayersMode = "bot" | "local";
 export type V2ControlsMode = "auto" | "touch" | "keyboard";
 export type V2SfxMode = "on" | "off";
 export const V2_PLAYER_SKINS = [
+  "briarhorn",
+  "ax9-mantis",
+  "null-courier",
+  "aegis-vanguard",
   "alien-runner",
-  "riot-droid",
-  "space-marine-red-rifle",
-  "space-marine-red-heavy",
-  "space-marine-red-scout",
-  "space-marine-red-medic",
-  "space-marine-blue-rifle",
-  "space-marine-blue-heavy",
-  "space-marine-blue-scout",
-  "space-marine-blue-medic",
+  "volt-hound",
+  "mirejaw",
+  "scrapwing",
+  "prism-bastion",
 ] as const;
 export type V2PlayerSkinId = (typeof V2_PLAYER_SKINS)[number];
+
+const LEGACY_PLAYER_SKIN_MIGRATIONS: Readonly<Record<string, V2PlayerSkinId>> = {
+  "riot-droid": "ax9-mantis",
+  "space-marine-red-rifle": "aegis-vanguard",
+  "space-marine-red-heavy": "aegis-vanguard",
+  "space-marine-red-scout": "aegis-vanguard",
+  "space-marine-red-medic": "aegis-vanguard",
+  "space-marine-blue-rifle": "aegis-vanguard",
+  "space-marine-blue-heavy": "aegis-vanguard",
+  "space-marine-blue-scout": "aegis-vanguard",
+  "space-marine-blue-medic": "aegis-vanguard",
+};
 
 export interface V2RouteConfig {
   readonly scene: "v2";
@@ -88,7 +99,7 @@ export function readV2RouteState(
   if (hasMode && !isControlsMode(controlsValue)) {
     issues.push(`Unsupported V2 controls mode: ${controlsValue ?? "missing"}.`);
   }
-  if (hasMode && skinValue !== null && !isPlayerSkin(skinValue)) {
+  if (hasMode && skinValue !== null && migrateV2PlayerSkinId(skinValue) === null) {
     issues.push(`Unsupported V2 player skin: ${skinValue ?? "missing"}.`);
   }
   return {
@@ -157,7 +168,7 @@ function readControls(value: string | null): V2ControlsMode {
 }
 
 function readSkin(value: string | null): V2PlayerSkinId {
-  return isPlayerSkin(value) ? value : DEFAULT_ROUTE.skin;
+  return migrateV2PlayerSkinId(value) ?? DEFAULT_ROUTE.skin;
 }
 
 function readSfx(value: string | null): V2SfxMode {
@@ -182,4 +193,11 @@ function isControlsMode(value: string | null): value is V2ControlsMode {
 
 function isPlayerSkin(value: string | null): value is V2PlayerSkinId {
   return V2_PLAYER_SKINS.includes(value as V2PlayerSkinId);
+}
+
+export function migrateV2PlayerSkinId(
+  value: string | null,
+): V2PlayerSkinId | null {
+  if (isPlayerSkin(value)) return value;
+  return value === null ? null : LEGACY_PLAYER_SKIN_MIGRATIONS[value] ?? null;
 }

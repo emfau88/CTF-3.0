@@ -386,7 +386,7 @@ function checkWorldMapRegistry(): void {
     getWorldMap("training-crossing-v2")?.displayName !== "Training Crossing" ||
     getWorldMap("grand-archive-v2") !== GRAND_ARCHIVE_V2 ||
     getWorldMap("flank-switch-v2") !== FLANK_SWITCH_V2 ||
-    flowLab?.displayName !== "Flow Lab" ||
+    flowLab?.displayName !== "Sunken Court" ||
     flowCircuit?.displayName !== "Foundry Circuit" ||
     getWorldMap("missing-map") !== undefined ||
     resolveWorldMap("missing-map").id !== "training-crossing-v2"
@@ -394,7 +394,7 @@ function checkWorldMapRegistry(): void {
     throw new Error("V2 map registry must resolve known maps and fallback safely.");
   }
   if (!flowLab) {
-    throw new Error("Flow Lab must be registered as a V2 map.");
+    throw new Error("Sunken Court must be registered as a V2 map.");
   }
   if (!flowCircuit) {
     throw new Error("Flow Circuit must be registered as a V2 map.");
@@ -405,7 +405,7 @@ function checkWorldMapRegistry(): void {
     "one-flag",
   ] as const) {
     if (validateWorldMapForMode(flowLab, modeId, 4).length !== 0) {
-      throw new Error(`Flow Lab must support ${modeId} in 4v4.`);
+      throw new Error(`Sunken Court must support ${modeId} in 4v4.`);
     }
   }
   const flowWorlds = [
@@ -427,12 +427,12 @@ function checkWorldMapRegistry(): void {
     if (
       world.actors.length !== 8 ||
       world.geometry.solids.length !== 19 ||
-      world.geometry.gaps.length !== 0 ||
+      world.geometry.gaps.length !== 1 ||
       world.pickups.length !== 15 ||
       world.navigation.jumpLinks.length !== 4 ||
       world.match?.phase !== "running"
     ) {
-      throw new Error(`Flow Lab ${mode.id} must initialize complete 4v4 content.`);
+      throw new Error(`Sunken Court ${mode.id} must initialize complete 4v4 content.`);
     }
   }
   const blueSpawn = flowLab.spawnPoints.find((spawn) =>
@@ -457,7 +457,7 @@ function checkWorldMapRegistry(): void {
       redSpawn.position.y <= solid.y + solid.height
     )
   ) {
-    throw new Error("Flow Lab must block direct spawn-to-spawn sightlines.");
+    throw new Error("Sunken Court must block direct spawn-to-spawn sightlines.");
   }
   for (const modeId of [
     "team-deathmatch",
@@ -547,8 +547,8 @@ function checkWorldMapRegistry(): void {
     world.geometry.bounds.maxX !== 2500 ||
     world.geometry.bounds.maxY !== 820 ||
     world.geometry.solids.length !== 20 ||
-    world.geometry.gaps.length !== 0 ||
-    world.pickups.length !== 15 ||
+    world.geometry.gaps.length !== 4 ||
+    world.pickups.length !== 13 ||
     world.actors.find((actor) => actor.id === "red-player")
         ?.spawnPosition.x !== 145 ||
     world.actors.find((actor) => actor.id === "blue-player")
@@ -563,8 +563,8 @@ function checkWorldMapRegistry(): void {
     flankWorld.geometry.bounds.maxX !== 2500 ||
     flankWorld.geometry.bounds.maxY !== 820 ||
     flankWorld.geometry.solids.length !== 14 ||
-    flankWorld.geometry.gaps.length !== 0 ||
-    flankWorld.pickups.length !== 15 ||
+    flankWorld.geometry.gaps.length !== 4 ||
+    flankWorld.pickups.length !== 13 ||
     flankWorld.actors.find((actor) => actor.id === "red-player")
         ?.spawnPosition.x !== 150 ||
     flankWorld.actors.find((actor) => actor.id === "blue-player")

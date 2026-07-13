@@ -42,43 +42,39 @@ export function preloadArenaAssets(scene: Phaser.Scene) {
     frameWidth: 128,
     frameHeight: 128,
   });
-  scene.load.spritesheet("alienRunner", assetUrl("alien-runner-spritesheet-4x4.png"), {
+  scene.load.spritesheet("briarhornRunner", assetUrl("briarhorn-spritesheet-6x4.png"), {
     frameWidth: 128,
     frameHeight: 128,
   });
-  scene.load.spritesheet("riotDroidRunner", assetUrl("riot-droid-spritesheet-6x4.png"), {
+  scene.load.spritesheet("ax9MantisRunner", assetUrl("ax9-mantis-spritesheet-6x4.png"), {
     frameWidth: 128,
     frameHeight: 128,
   });
-  scene.load.spritesheet("spaceMarineRedRifle", assetUrl("space-marine-red-rifle-spritesheet-4x4.png"), {
+  scene.load.spritesheet("nullCourierRunner", assetUrl("null-courier-spritesheet-6x4.png"), {
     frameWidth: 128,
     frameHeight: 128,
   });
-  scene.load.spritesheet("spaceMarineRedHeavy", assetUrl("space-marine-red-heavy-spritesheet-4x4.png"), {
+  scene.load.spritesheet("aegisVanguardRunner", assetUrl("aegis-vanguard-spritesheet-6x4.png"), {
     frameWidth: 128,
     frameHeight: 128,
   });
-  scene.load.spritesheet("spaceMarineRedScout", assetUrl("space-marine-red-scout-spritesheet-4x4.png"), {
+  scene.load.spritesheet("xenoRunner", assetUrl("xeno-runner-spritesheet-6x4.png"), {
     frameWidth: 128,
     frameHeight: 128,
   });
-  scene.load.spritesheet("spaceMarineRedMedic", assetUrl("space-marine-red-medic-spritesheet-4x4.png"), {
+  scene.load.spritesheet("voltHoundRunner", assetUrl("volt-hound-spritesheet-6x4.png"), {
     frameWidth: 128,
     frameHeight: 128,
   });
-  scene.load.spritesheet("spaceMarineBlueRifle", assetUrl("space-marine-blue-rifle-spritesheet-4x4.png"), {
+  scene.load.spritesheet("mirejawRunner", assetUrl("mirejaw-spritesheet-6x4.png"), {
     frameWidth: 128,
     frameHeight: 128,
   });
-  scene.load.spritesheet("spaceMarineBlueHeavy", assetUrl("space-marine-blue-heavy-spritesheet-4x4.png"), {
+  scene.load.spritesheet("scrapwingRunner", assetUrl("scrapwing-spritesheet-6x4.png"), {
     frameWidth: 128,
     frameHeight: 128,
   });
-  scene.load.spritesheet("spaceMarineBlueScout", assetUrl("space-marine-blue-scout-spritesheet-4x4.png"), {
-    frameWidth: 128,
-    frameHeight: 128,
-  });
-  scene.load.spritesheet("spaceMarineBlueMedic", assetUrl("space-marine-blue-medic-spritesheet-4x4.png"), {
+  scene.load.spritesheet("prismBastionRunner", assetUrl("prism-bastion-spritesheet-6x4.png"), {
     frameWidth: 128,
     frameHeight: 128,
   });

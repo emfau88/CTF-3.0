@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { runPhaserGameBridgeSmokeCheck } from "../src/adapters/phaser/PhaserGameBridge.smoke";
 import {
@@ -54,9 +55,12 @@ import {
   formatCooldownSeconds,
 } from "../src/adapters/phaser/weaponHudLayout";
 import {
+  V2_CHARACTER_SKINS,
   legacyArenaCharacterFrame,
   resolveV2CharacterPresentation,
   v2CharacterAnimationState,
+  v2CharacterColumns,
+  v2CharacterDirection,
   v2CharacterFrame,
 } from "../src/adapters/phaser/v2CharacterPresentation";
 
@@ -103,7 +107,7 @@ test("v2 routes preserve and validate arena team size", () => {
   ));
   assert.equal(legacy.canStartMatch, true);
   assert.equal(legacy.route.teamSize, 2);
-  assert.equal(legacy.route.skin, "space-marine-blue-rifle");
+  assert.equal(legacy.route.skin, "aegis-vanguard");
 
   const invalid = readV2RouteState(new URLSearchParams(
     "scene=v2&mode=one-flag&map=flank-switch-v2&players=bot&controls=touch&teamSize=5",
@@ -142,6 +146,35 @@ test("v2 menu defaults to the 2v2 Foundry Circuit CTF hero slice", () => {
   assert.equal(state.route.menu, true);
 });
 
+test("competitive arena set keeps skill shortcuts and contested rail control", () => {
+  const arenas = [
+    { id: "flow-lab-v2", name: "Sunken Court", gaps: 1 },
+    { id: "grand-archive-v2", name: "Grand Archive", gaps: 4 },
+    { id: "flank-switch-v2", name: "Flank Switch", gaps: 4 },
+  ] as const;
+
+  for (const expected of arenas) {
+    const map = getWorldMap(expected.id)!;
+    assert.equal(map.displayName, expected.name);
+    assert.equal(map.geometry.gaps.length, expected.gaps);
+    assert.ok(map.navigation.jumpLinks.length >= 4);
+    const rails = map.pickupSpawns.filter((pickup) => pickup.type === "rail");
+    assert.ok(rails.length >= 1);
+    for (const rail of rails) {
+      for (const base of [map.gameplay.blueBase, map.gameplay.redBase]) {
+        assert.equal(
+          rail.position.x >= base.x &&
+            rail.position.x <= base.x + base.width &&
+            rail.position.y >= base.y &&
+            rail.position.y <= base.y + base.height,
+          false,
+          `${map.displayName} rail pickup must be contested outside a base`,
+        );
+      }
+    }
+  }
+});
+
 test("desktop aim uses the actor and pointer world positions", () => {
   const direction = resolveDesktopAimDirection(
     { x: 120, y: 240 },
@@ -178,26 +211,26 @@ test("v2 character presentation animates team actors and keeps a legacy fallback
 
   const blueSkin = resolveV2CharacterPresentation(blue, "alien-runner");
   assert.equal(blueSkin.kind, "animated-skin");
-  assert.equal(blueSkin.texture, "alienRunner");
-  assert.equal(blueSkin.initialFrame, 4);
+  assert.equal(blueSkin.texture, "xenoRunner");
+  assert.equal(blueSkin.initialFrame, 6);
   assert.deepEqual(blueSkin.origin, { x: .5, y: .5 });
 
   const redSkin = resolveV2CharacterPresentation(red, "alien-runner");
   assert.equal(redSkin.kind, "animated-skin");
-  assert.equal(redSkin.texture, "riotDroidRunner");
+  assert.equal(redSkin.texture, "mirejawRunner");
   assert.equal(redSkin.initialFrame, 0);
   assert.deepEqual(redSkin.origin, { x: .5, y: .5 });
 
-  const marineSkin = resolveV2CharacterPresentation(
+  const vanguardSkin = resolveV2CharacterPresentation(
     blue,
-    "space-marine-blue-rifle",
+    "aegis-vanguard",
   );
-  assert.equal(marineSkin.kind, "animated-skin");
-  assert.equal(marineSkin.texture, "spaceMarineBlueRifle");
-  assert.equal(marineSkin.initialFrame, 4);
-  assert.deepEqual(marineSkin.origin, { x: .5, y: .5 });
+  assert.equal(vanguardSkin.kind, "animated-skin");
+  assert.equal(vanguardSkin.texture, "aegisVanguardRunner");
+  assert.equal(vanguardSkin.initialFrame, 6);
+  assert.deepEqual(vanguardSkin.origin, { x: .5, y: .5 });
 
-  const fallback = resolveV2CharacterPresentation(neutral, "riot-droid");
+  const fallback = resolveV2CharacterPresentation(neutral, "volt-hound");
   assert.equal(fallback.kind, "legacy-arena-character");
   assert.equal(fallback.texture, "arenaCharacters");
   assert.equal(fallback.initialFrame, legacyArenaCharacterFrame(neutral));
@@ -208,7 +241,59 @@ test("v2 character presentation animates team actors and keeps a legacy fallback
   assert.equal(v2CharacterAnimationState(blue), "walk");
   blue.jump.height = 18;
   assert.equal(v2CharacterAnimationState(blue), "jump");
-  assert.equal(v2CharacterFrame(blueSkin.skin!, blue, "jump"), 4);
+  assert.equal(v2CharacterFrame(blueSkin.skin!, blue, "jump"), 11);
+
+  for (const skinId of [
+    "briarhorn",
+    "ax9-mantis",
+    "null-courier",
+    "aegis-vanguard",
+    "alien-runner",
+    "volt-hound",
+    "mirejaw",
+    "scrapwing",
+    "prism-bastion",
+  ] as const) {
+    const presentation = resolveV2CharacterPresentation(blue, skinId);
+    assert.equal(presentation.kind, "animated-skin");
+    assert.equal(presentation.skin?.columns, 6);
+    assert.deepEqual(presentation.skin?.walkColumns, [1, 2, 3, 4]);
+    assert.deepEqual(presentation.skin?.jumpColumns, [5]);
+    assert.equal(v2CharacterFrame(V2_CHARACTER_SKINS[skinId], blue, "jump"), 11);
+  }
+
+  blue.lastMoveDirection = { x: -1, y: 1 };
+  assert.equal(v2CharacterDirection(blue), "left");
+  assert.equal(v2CharacterFrame(V2_CHARACTER_SKINS["volt-hound"], blue, "jump"), 23);
+  assert.equal(v2CharacterFrame(V2_CHARACTER_SKINS["alien-runner"], blue, "jump"), 23);
+
+  blue.lastMoveDirection = { x: 0, y: -1 };
+  assert.equal(v2CharacterDirection(blue), "up");
+  assert.equal(v2CharacterFrame(V2_CHARACTER_SKINS["alien-runner"], blue, "walk"), 13);
+  assert.deepEqual(
+    v2CharacterColumns(V2_CHARACTER_SKINS["null-courier"], "walk", "down"),
+    [1, 2, 3, 2],
+  );
+});
+
+test("new character sheets expose an exact transparent 6x4 frame grid", () => {
+  for (const filename of [
+    "briarhorn-spritesheet-6x4.png",
+    "ax9-mantis-spritesheet-6x4.png",
+    "null-courier-spritesheet-6x4.png",
+    "aegis-vanguard-spritesheet-6x4.png",
+    "xeno-runner-spritesheet-6x4.png",
+    "volt-hound-spritesheet-6x4.png",
+    "mirejaw-spritesheet-6x4.png",
+    "scrapwing-spritesheet-6x4.png",
+    "prism-bastion-spritesheet-6x4.png",
+  ]) {
+    const png = readFileSync(new URL(`../public/assets/${filename}`, import.meta.url));
+    assert.equal(png.toString("ascii", 1, 4), "PNG");
+    assert.equal(png.readUInt32BE(16), 768);
+    assert.equal(png.readUInt32BE(20), 512);
+    assert.equal(png[25], 6, `${filename} must use RGBA color type`);
+  }
 });
 
 test("production arena modes do not emit diagnostic movement events", () => {

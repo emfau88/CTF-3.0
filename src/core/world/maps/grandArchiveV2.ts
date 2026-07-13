@@ -24,7 +24,12 @@ const walls = [
   { x: 1452, y: 430, width: 76, height: 76, visual: "reading-table" },
 ] as const;
 
-const gaps: readonly WorldMapGapPresentation[] = [];
+const gaps: readonly WorldMapGapPresentation[] = [
+  { x: 1010, y: 190, width: 124, height: 66, visual: "collapsed-floor" },
+  { x: 1366, y: 190, width: 124, height: 66, visual: "collapsed-floor" },
+  { x: 1010, y: 564, width: 124, height: 66, visual: "collapsed-floor" },
+  { x: 1366, y: 564, width: 124, height: 66, visual: "collapsed-floor" },
+];
 
 export const GRAND_ARCHIVE_V2: WorldMapData = {
   id: "grand-archive-v2",
@@ -116,11 +121,9 @@ export const GRAND_ARCHIVE_V2: WorldMapData = {
     { id: "health-red", type: "health", position: { x: 112, y: 325 } },
     { id: "armor-red", type: "armor", position: { x: 215, y: 325 } },
     { id: "rocket-red", type: "rocket", position: { x: 125, y: 500 } },
-    { id: "rail-red", type: "rail", position: { x: 215, y: 500 } },
     { id: "health-blue", type: "health", position: { x: 2285, y: 325 } },
     { id: "armor-blue", type: "armor", position: { x: 2388, y: 325 } },
     { id: "rocket-blue", type: "rocket", position: { x: 2375, y: 500 } },
-    { id: "rail-blue", type: "rail", position: { x: 2285, y: 500 } },
     { id: "whip-red", type: "whip", position: { x: 285, y: 410 } },
     { id: "whip-blue", type: "whip", position: { x: 2215, y: 410 } },
     { id: "health-left", type: "health", position: { x: 760, y: 410 } },
@@ -136,7 +139,7 @@ export const GRAND_ARCHIVE_V2: WorldMapData = {
   },
   presentation: {
     theme: "library",
-    plan: "A wide library arena with long gallery lanes, an open central reading hall, and simple collapsed-floor shortcuts.",
+    plan: "Wide tactical library arena with protected base exits, long but interruptible galleries, a four-entry reading hall, and collapsed-floor shortcuts that reward committed movement.",
     walls,
     gaps,
     decorations: [
@@ -149,6 +152,10 @@ export const GRAND_ARCHIVE_V2: WorldMapData = {
       { kind: "book-pile", x: 2032, y: 458, width: 38, height: 38 },
       { kind: "cobweb-spider", x: 392, y: 96, width: 72, height: 58 },
       { kind: "cobweb-spider", x: 2036, y: 666, width: 72, height: 58 },
+      { kind: "reading-lamp", x: 1070, y: 334, width: 20, height: 20 },
+      { kind: "reading-lamp", x: 1204, y: 450, width: 20, height: 20 },
+      { kind: "reading-lamp", x: 1338, y: 334, width: 20, height: 20 },
+      { kind: "reading-lamp", x: 1472, y: 450, width: 20, height: 20 },
     ],
     botRoutes: {
       attacker: [

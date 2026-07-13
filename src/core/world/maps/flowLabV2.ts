@@ -32,11 +32,21 @@ const walls = [
   { x: 1160, y: 620, width: 60, height: 90, visual: "stone-wall" },
 ] as const;
 
-const gaps: readonly WorldMapGapPresentation[] = [];
+const gaps: readonly WorldMapGapPresentation[] = [
+  // The lower route stays fastest, but only players who preserve momentum can
+  // take the direct chasm line. A safe rotation remains open around both ends.
+  {
+    x: 1045,
+    y: 718,
+    width: 110,
+    height: 104,
+    visual: "chasm",
+  },
+];
 
 export const FLOW_LAB_V2: WorldMapData = {
   id: "flow-lab-v2",
-  displayName: "Flow Lab",
+  displayName: "Sunken Court",
   geometry: {
     bounds: { minX: 0, minY: 0, maxX: 2200, maxY: 900 },
     solids: walls.map((wall, index) => ({
@@ -87,13 +97,13 @@ export const FLOW_LAB_V2: WorldMapData = {
       teamId: "blue",
       position: { x: 150, y: 450 },
       facing: { x: 1, y: 0 },
-      tags: ["player", "tdm", "greybox"],
+      tags: ["player", "tdm", "featured"],
     }),
     ...createTeamSpawnPoints({
       teamId: "red",
       position: { x: 2050, y: 450 },
       facing: { x: -1, y: 0 },
-      tags: ["player", "tdm", "greybox"],
+      tags: ["player", "tdm", "featured"],
     }),
   ],
   pickupSpawns: [
@@ -120,9 +130,21 @@ export const FLOW_LAB_V2: WorldMapData = {
   },
   presentation: {
     theme: "ruins",
-    plan: "Symmetric greybox with three readable routes, broad cross-lane rotations, bounded sightlines, and weapon-specific combat pockets.",
+    plan: "Compact competitive ruins arena with three readable routes: a vaultable precision lane, a broken central court, and a fast chasm shortcut with safe recovery rotations.",
     walls,
     gaps,
+    decorations: [
+      { kind: "ruins-banner-blue", x: 8, y: 398, width: 66, height: 104 },
+      { kind: "ruins-banner-red", x: 2126, y: 398, width: 66, height: 104 },
+      { kind: "ruins-column", x: 18, y: 18, width: 118, height: 118 },
+      { kind: "ruins-column", x: 2064, y: 764, width: 118, height: 118 },
+      { kind: "ruins-column", x: 2064, y: 18, width: 118, height: 118 },
+      { kind: "ruins-column", x: 18, y: 764, width: 118, height: 118 },
+      { kind: "ruins-overgrowth", x: 390, y: 0, width: 220, height: 76 },
+      { kind: "ruins-overgrowth", x: 1590, y: 824, width: 220, height: 76 },
+      { kind: "ruins-overgrowth", x: 390, y: 824, width: 220, height: 76 },
+      { kind: "ruins-overgrowth", x: 1590, y: 0, width: 220, height: 76 },
+    ],
     botRoutes: {
       attacker: [
         { x: 2020, y: 175 }, { x: 1700, y: 175 },

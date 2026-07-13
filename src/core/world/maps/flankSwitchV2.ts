@@ -18,7 +18,12 @@ const walls = [
   { x: 1270, y: 444, width: 150, height: 42, visual: "industrial-barrier" },
 ] as const;
 
-const gaps: readonly WorldMapGapPresentation[] = [];
+const gaps: readonly WorldMapGapPresentation[] = [
+  { x: 1015, y: 150, width: 130, height: 68, visual: "maintenance-pit" },
+  { x: 1355, y: 150, width: 130, height: 68, visual: "maintenance-pit" },
+  { x: 1015, y: 602, width: 130, height: 68, visual: "maintenance-pit" },
+  { x: 1355, y: 602, width: 130, height: 68, visual: "maintenance-pit" },
+];
 
 export const FLANK_SWITCH_V2: WorldMapData = {
   id: "flank-switch-v2",
@@ -110,11 +115,9 @@ export const FLANK_SWITCH_V2: WorldMapData = {
     { id: "health-red", type: "health", position: { x: 125, y: 315 } },
     { id: "armor-red", type: "armor", position: { x: 220, y: 315 } },
     { id: "rocket-red", type: "rocket", position: { x: 125, y: 505 } },
-    { id: "rail-red", type: "rail", position: { x: 215, y: 505 } },
     { id: "health-blue", type: "health", position: { x: 2280, y: 315 } },
     { id: "armor-blue", type: "armor", position: { x: 2375, y: 315 } },
     { id: "rocket-blue", type: "rocket", position: { x: 2375, y: 505 } },
-    { id: "rail-blue", type: "rail", position: { x: 2285, y: 505 } },
     { id: "whip-red", type: "whip", position: { x: 285, y: 410 } },
     { id: "whip-blue", type: "whip", position: { x: 2215, y: 410 } },
     { id: "health-left", type: "health", position: { x: 820, y: 410 } },
@@ -130,7 +133,7 @@ export const FLANK_SWITCH_V2: WorldMapData = {
   },
   presentation: {
     theme: "industrial",
-    plan: "A wide industrial switchyard with three distinct routes, cross-lane switches, and longer flag runs.",
+    plan: "Fast rotation-focused switchyard with three distinct routes, protected spawn exits, cross-lane switches, and four exposed maintenance-pit shortcuts for high-momentum flag runs.",
     walls,
     gaps,
     decorations: [
@@ -142,6 +145,10 @@ export const FLANK_SWITCH_V2: WorldMapData = {
       { kind: "industrial-edge-tank", x: 2312, y: 694, width: 128, height: 160 },
       { kind: "industrial-edge-turbine", x: 1168, y: -42, width: 164, height: 164 },
       { kind: "industrial-edge-turbine", x: 1168, y: 698, width: 164, height: 164 },
+      { kind: "industrial-switch-gate", x: 930, y: 104, width: 34, height: 126 },
+      { kind: "industrial-switch-gate", x: 1536, y: 104, width: 34, height: 126 },
+      { kind: "industrial-switch-gate", x: 930, y: 590, width: 34, height: 126 },
+      { kind: "industrial-switch-gate", x: 1536, y: 590, width: 34, height: 126 },
     ],
     botRoutes: {
       attacker: [

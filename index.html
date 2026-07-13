@@ -9,7 +9,7 @@
   <body>
     <div id="game"></div>
     <div id="v2-main-menu" class="v2-main-menu is-hidden">
-      <div class="v2-menu-card">
+      <div class="v2-menu-card v2-menu-shell">
         <div id="v2-menu-status" class="v2-menu-status is-hidden" role="status" aria-live="polite"></div>
         <div class="v2-menu-rotate" aria-live="polite">
           <div class="v2-menu-kicker">MOBILE LAYOUT</div>
@@ -19,21 +19,36 @@
           </p>
           <a class="v2-menu-v1-link" href="?scene=v1">Play frozen V1 Classic CTF</a>
         </div>
-        <div id="v2-menu-home" class="v2-menu-view">
-          <div class="v2-menu-kicker">ARENA PROTOCOL</div>
-          <h1>CORE ARENA</h1>
-          <p class="v2-menu-intro">
-            Mobile-first arena shell for Team Deathmatch, Classic CTF and One Flag.
-          </p>
-          <button id="v2-menu-play" type="button">Play</button>
-          <div class="v2-menu-help">
-            V2 is now the default. V1 remains available as the frozen classic build.
+        <div id="v2-menu-home" class="v2-menu-view v2-home-view">
+          <div class="v2-home-brand">
+            <img class="v2-home-league-mark" src="assets/league/arena-league-emblem.png" alt="" aria-hidden="true" />
+            <div class="v2-menu-kicker">THE OFFICIAL ARENA LEAGUE</div>
+            <h1>CORE<br><span>ARENA</span></h1>
+            <p class="v2-menu-intro">Build a two-fighter squad. Climb the league. Own the arena.</p>
           </div>
-          <a class="v2-menu-v1-link" href="?scene=v1">Play frozen V1 Classic CTF</a>
+          <div class="v2-home-actions">
+            <button id="v2-menu-league" class="v2-home-action v2-home-action-primary" type="button">
+              <span class="v2-home-action-tag">CAREER</span>
+              <strong id="v2-menu-league-label">Start League</strong>
+              <small>10 matches · standings · one decisive transfer</small>
+            </button>
+            <button id="v2-menu-play" class="v2-home-action" type="button">
+              <span class="v2-home-action-tag">CUSTOM</span>
+              <strong>Quick Play</strong>
+              <small>CTF, One Flag or TDM with your own setup</small>
+            </button>
+            <a class="v2-home-classic" href="?scene=v1">V1 Classic build</a>
+          </div>
         </div>
-        <div id="v2-menu-setup" class="v2-menu-view is-hidden">
-          <div class="v2-menu-kicker">MATCH SETUP</div>
-          <h2>Choose Mode</h2>
+        <div id="v2-menu-setup" class="v2-menu-view v2-setup-view is-hidden">
+          <header class="v2-subpage-header">
+            <button id="v2-menu-back" class="v2-subpage-back" type="button">&larr; Main Menu</button>
+            <div class="v2-subpage-title">
+              <div class="v2-menu-kicker">CUSTOM ARENA</div>
+              <h2>Quick Play</h2>
+            </div>
+            <div class="v2-subpage-header-actions" aria-hidden="true"></div>
+          </header>
           <p class="v2-menu-intro">
             Pick a mode and start with the current V2 arena rules.
           </p>
@@ -51,7 +66,7 @@
                 <option value="training-crossing-v2">Training Crossing</option>
                 <option value="grand-archive-v2">Grand Archive</option>
                 <option value="flank-switch-v2">Flank Switch</option>
-                <option value="flow-lab-v2">Flow Lab</option>
+                <option value="flow-lab-v2">Sunken Court</option>
               </select>
             </label>
             <label>Match
@@ -75,20 +90,19 @@
                 <option value="keyboard">Keyboard only</option>
               </select>
             </label>
-            <label>Skin
-              <select id="v2-menu-skin">
-                <option value="alien-runner">Alien Runner</option>
-                <option value="riot-droid">Riot Droid</option>
-                <option value="space-marine-blue-rifle">Space Marine Blue Rifle</option>
-                <option value="space-marine-blue-heavy">Space Marine Blue Heavy</option>
-                <option value="space-marine-blue-scout">Space Marine Blue Scout</option>
-                <option value="space-marine-blue-medic">Space Marine Blue Medic</option>
-                <option value="space-marine-red-rifle">Space Marine Red Rifle</option>
-                <option value="space-marine-red-heavy">Space Marine Red Heavy</option>
-                <option value="space-marine-red-scout">Space Marine Red Scout</option>
-                <option value="space-marine-red-medic">Space Marine Red Medic</option>
-              </select>
-            </label>
+            <fieldset class="v2-quick-skin-field">
+              <legend>Choose Your Fighter</legend>
+              <div class="v2-quick-skin-selected">
+                <div id="v2-menu-skin-preview" class="v2-quick-skin-preview" aria-hidden="true"></div>
+                <div>
+                  <small>Selected Skin</small>
+                  <strong id="v2-menu-skin-name"></strong>
+                  <span>Cosmetic only · available in Quick Play and League</span>
+                </div>
+              </div>
+              <div id="v2-menu-skin-picker" class="v2-quick-skin-picker" role="listbox" aria-label="Playable character skins"></div>
+              <select id="v2-menu-skin" class="v2-quick-skin-native" tabindex="-1" aria-hidden="true"></select>
+            </fieldset>
             <label>SFX
               <select id="v2-menu-sfx">
                 <option value="on">On</option>
@@ -97,13 +111,56 @@
             </label>
           </div>
           <div class="v2-menu-actions">
-            <button id="v2-menu-back" class="v2-menu-secondary" type="button">Back</button>
             <button id="v2-menu-start" type="button">Start Match</button>
           </div>
           <div class="v2-menu-help">
             P1: WASD + Space &nbsp; | &nbsp; Aim: Mouse &nbsp; | &nbsp; Weapons: Q Rocket · E Rail · F Whip<br>
             Team: 1 Defend · 2 Follow · 3 Attack &nbsp; | &nbsp; Repeat command: Auto
           </div>
+        </div>
+        <div id="v2-league-hub" class="v2-menu-view v2-league-hub is-hidden">
+          <header class="v2-subpage-header league-header">
+            <button id="league-back" class="v2-subpage-back" type="button">&larr; Main Menu</button>
+            <div class="v2-subpage-title league-header-title">
+              <img class="league-header-mark" src="assets/league/arena-league-emblem.png" alt="" aria-hidden="true" />
+              <div>
+                <div class="v2-menu-kicker">CAREER &middot; FOUNDERS SEASON</div>
+                <h2>League HQ</h2>
+              </div>
+            </div>
+            <div class="v2-subpage-header-actions league-header-actions">
+              <button id="league-reset" class="league-text-button league-danger-button" type="button">Reset Season</button>
+            </div>
+          </header>
+          <div id="league-empty" class="league-empty is-hidden">
+            <div class="league-empty-copy">
+              <span class="league-eyebrow">YOUR FIRST CONTRACT</span>
+              <h3>Lead Iron Vanguard</h3>
+              <p>Ten CTF fixtures. Six teams. One transfer opportunity after match five. Every result shapes the table.</p>
+              <button id="league-new-season" type="button">Begin Season</button>
+            </div>
+            <div class="league-empty-badge"><img src="assets/league/teams/iron-vanguard-emblem.png" alt="Iron Vanguard emblem" /><small>IRON VANGUARD</small></div>
+          </div>
+          <div id="league-dashboard" class="league-dashboard is-hidden">
+            <section id="league-next-match" class="league-next-match"></section>
+            <section class="league-panel league-squad-panel">
+              <div class="league-panel-heading"><span>Your Squad</span><small id="league-team-record"></small></div>
+              <div id="league-player-roster" class="league-roster"></div>
+              <div class="league-skin-control">
+                <div id="league-skin-preview" class="league-skin-preview" aria-hidden="true"></div>
+                <label for="league-skin-select"><span>Arena Skin</span>
+                  <select id="league-skin-select"></select>
+                </label>
+                <small>Cosmetic profile · change anytime</small>
+              </div>
+            </section>
+            <section class="league-panel league-table-panel">
+              <div class="league-panel-heading"><span>Standings</span><small>PTS · capture difference</small></div>
+              <div id="league-standings" class="league-standings"></div>
+            </section>
+            <section id="league-team-detail" class="league-panel league-detail-panel"></section>
+          </div>
+          <div id="league-recruitment" class="league-recruitment is-hidden" role="dialog" aria-modal="true"></div>
         </div>
       </div>
     </div>
@@ -120,7 +177,7 @@
       </div>
     </div>
     <div id="v2-result-overlay" class="v2-flow-overlay is-hidden">
-      <div class="v2-flow-card v2-stats-card">
+      <div class="v2-flow-card v2-stats-card v2-result-card">
         <div class="v2-menu-kicker">RESULT</div>
         <h2 id="v2-result-title">Blue Wins</h2>
         <p id="v2-result-detail" class="v2-menu-intro">BLUE 3 : RED 2</p>
