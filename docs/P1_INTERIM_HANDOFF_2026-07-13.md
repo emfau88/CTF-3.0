@@ -4,7 +4,68 @@ Stand: 2026-07-14
 Projekt: `C:\Users\madde\Documents\CTF-3.0`
 Branch: `main`
 Basis vor P1-B2: `1e56fb3` (`Complete P1 jump-link diagnostics`)
-Arbeitsbaum: P1-B2 ist umgesetzt und verifiziert, aber noch nicht committed.
+P1-B2-Abschluss: `6d498ba` (`Complete P1 authored traversal smoke`), nach
+`origin/main` gepusht.
+P1-C-Abschlussstand: Der Banner-Pilot ist umgesetzt; der Character-Special-
+Idle-Pilot wurde nach menschlicher Sichtabnahme deaktiviert und wird nicht auf
+weitere Charaktere ausgerollt.
+
+## Fortsetzungsstand 2026-07-14: Banner-Pilot umgesetzt, Special Idle verworfen
+
+Der kleine P1-C-Banner-Pilot ist implementiert. Es wurde bewusst kein
+Charakter-Batch erzeugt und kein Godfile-Refactor begonnen.
+
+### Core Relay Banner
+
+- Neuer separater Mast/Core-Layer: `core-relay-mast-pilot.png`.
+- Echtes transparentes 6x2-Cloth-Sheet mit je sechs Links-/Rechts-Frames:
+  `core-relay-cloth-pilot-spritesheet-6x2.png`.
+- Carrier-Richtung waehlt die Zeile; die Frame-Rate skaliert mit der
+  Geschwindigkeit. Im Stand beruhigt sich das Cloth auf Frame 0 und behaelt
+  die letzte Richtung.
+- Ein 140-ms-Richtungskandidat verhindert hektisches Links-/Rechts-Flattern.
+- Die hochwertige Weiss-/Gold-/Cyan-Richtung bleibt erhalten; keine einfache
+  Linienring- oder Platzhalteroptik.
+
+### Entscheidung zum AX-9 Special Idle
+
+- Der AX-9-Pilot wurde generiert, technisch integriert und im Spiel getestet.
+- Die menschliche Sichtabnahme am 2026-07-14 bewertete den kurzen Ablauf als
+  unklar und eher buggy. Damit ist das visuelle Stop-Gate nicht bestanden.
+- Die Spritesheet-Laufzeitintegration wurde deshalb vollstaendig deaktiviert.
+  AX-9 bleibt im Stillstand neutral; fuer die anderen Charaktere werden
+  vorerst ebenfalls keine neuen Special-Idle-Spritesheets erstellt.
+- Das verworfene AX-9-PNG und sein Timing-Helfer bleiben als geschuetzte,
+  untracked lokale Arbeitsreste erhalten. Sie gehoeren nicht in den
+  Produktcommit und werden nicht geladen.
+
+### Verifizierte Gates
+
+- `npm.cmd run test:typecheck`: gruen.
+- `npm.cmd test`: 75/75 gruen. Die Reduktion von 76 auf 75 entfernt nur den
+  Test des verworfenen Special-Idle-Timings.
+- `npm.cmd run build`: gruen; nur die bekannte Chunk-Warnung.
+- Asset-Raster: 512x512 Mast und 1536x512 Cloth, jeweils RGBA.
+- Desktop-Browser: Bannerassets laden und rendern in TDM und One Flag. AX-9
+  blieb im TDM-Smoke auch nach mehr als sieben Sekunden ohne Special-Idle;
+  keine Console-Warnung und kein Console-Fehler.
+
+### Offenes Stop-Gate
+
+Bei eng getakteten zweiten Canvas-Screenshots lieferte der eingebaute Browser
+erneut teilweise schwarze oder fragmentierte Frames. Stabile Vollframes zeigen
+den Banner in korrekter Groesse, beweisen aber nicht jede Cloth-Phase und den
+Richtungswechsel. Fuer den Banner bleibt deshalb eine kurze menschliche
+Sichtabnahme offen:
+
+1. Relay flattert getragen in beide Richtungen und beruhigt sich im Stand.
+2. Zwischen Mast und Cloth entsteht kein sichtbarer Sprung.
+
+Ein Character-Special-Idle-Rollout ist nicht mehr Teil dieses P1-Abschlusses.
+
+Die generierten Chroma-/Alpha-Zwischenquellen liegen aktuell unter dem
+untracked Pfad `tmp/imagegen/`. Sie sind keine Runtime-Assets und duerfen nicht
+versehentlich in einen Produktcommit aufgenommen werden.
 
 ## Fortsetzungsstand 2026-07-14: P1-B2 abgeschlossen
 
@@ -148,11 +209,11 @@ Sprungverhalten wurde nicht geändert.
 
 ## Aktuell offen und nächster sinnvoller Einstieg
 
-1. **P1-C:** Pilotentscheidung für ein echtes Links-/Rechts-Cloth-Sheet des Core
-   Relay Banners und genau einen Special-Idle-Spritesheet-Charakter. Kein
-   Neuner-Batch ohne Pilotabnahme.
-2. **P1-D:** Nur Dateien splitten, die für B2/C tatsächlich berührt werden. Kein
-   Big-Bang-Refactor.
+1. **P1-C-Sichtgate:** Cloth-Bewegung in beide Richtungen und ruhigen
+   Stillstand in einem stabilen Desktop-Browser menschlich bestaetigen. Kein
+   Character-Special-Idle-Rollout geplant.
+2. **P1-D:** Aktuell kein weiterer Split notwendig. Nur bei einem konkreten
+   P1-E-Bedarf klein und inkrementell aufteilen; kein Big-Bang-Refactor.
 3. **P1-E:** Exakte 1024x768-Desktop-Abnahme mit geeignetem Browser, TAB- und
    Result-Matrix für alle drei Modi sowie kompletter manueller Drei-Match-League-
    Run.
@@ -179,5 +240,7 @@ Beim nächsten Einstieg zuerst lesen:
 3. `VERIFIED_UI_GAMEPLAY_ARCHITECTURE_ROADMAP_2026-07-13.md`,
 4. `git status --short` und nur die relevanten Diffs.
 
-Danach mit P1-C als eigenem Stop-Gate fortsetzen. P0, P1-B1 und P1-B2 nicht neu
-bauen.
+Danach zuerst das offene Banner-Sichtgate abnehmen. P0, P1-B1, P1-B2 und die
+bereits implementierten P1-C-Bannerassets nicht neu bauen. Die verworfene
+Character-Special-Idle-Richtung nicht ohne neue ausdrueckliche
+Produktentscheidung wieder aufnehmen; anschliessend P1-E abschliessen.

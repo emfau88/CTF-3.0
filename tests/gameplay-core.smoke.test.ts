@@ -262,7 +262,6 @@ test("v2 character presentation animates team actors and keeps a legacy fallback
     assert.deepEqual(presentation.skin?.jumpColumns, [5]);
     assert.equal(v2CharacterFrame(V2_CHARACTER_SKINS[skinId], blue, "jump"), 11);
   }
-
   blue.lastMoveDirection = { x: -1, y: 1 };
   assert.equal(v2CharacterDirection(blue), "left");
   assert.equal(v2CharacterFrame(V2_CHARACTER_SKINS["volt-hound"], blue, "jump"), 23);
@@ -293,6 +292,19 @@ test("new character sheets expose an exact transparent 6x4 frame grid", () => {
     assert.equal(png.toString("ascii", 1, 4), "PNG");
     assert.equal(png.readUInt32BE(16), 768);
     assert.equal(png.readUInt32BE(20), 512);
+    assert.equal(png[25], 6, `${filename} must use RGBA color type`);
+  }
+});
+
+test("P1-C banner pilot assets expose exact transparent sprite grids", () => {
+  for (const [filename, width, height] of [
+    ["core-relay-cloth-pilot-spritesheet-6x2.png", 1_536, 512],
+    ["core-relay-mast-pilot.png", 512, 512],
+  ] as const) {
+    const png = readFileSync(new URL(`../public/assets/${filename}`, import.meta.url));
+    assert.equal(png.toString("ascii", 1, 4), "PNG");
+    assert.equal(png.readUInt32BE(16), width, `${filename} width`);
+    assert.equal(png.readUInt32BE(20), height, `${filename} height`);
     assert.equal(png[25], 6, `${filename} must use RGBA color type`);
   }
 });

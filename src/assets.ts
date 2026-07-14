@@ -33,6 +33,15 @@ export function preloadArenaAssets(scene: Phaser.Scene) {
   scene.load.image("flagRed", assetUrl("flag-red.png"));
   scene.load.image("flagBlue", assetUrl("flag-blue.png"));
   scene.load.image("coreRelayBanner", assetUrl("core-relay-banner.png"));
+  scene.load.image("coreRelayMastPilot", assetUrl("core-relay-mast-pilot.png"));
+  scene.load.spritesheet(
+    "coreRelayClothPilot",
+    assetUrl("core-relay-cloth-pilot-spritesheet-6x2.png"),
+    {
+      frameWidth: 256,
+      frameHeight: 256,
+    },
+  );
   scene.load.image("spawnPadLegacy", assetUrl("spawn-pad.png"));
   scene.load.image("spawnPadV2", assetUrl("spawn-pad-v2.png"));
   scene.load.spritesheet("spawnPadGlowV2", assetUrl("spawn-pad-glow-v2.png"), {

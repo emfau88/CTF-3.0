@@ -58,3 +58,48 @@ Die sechs Teamembleme unter `public/assets/league/teams/` und das zentrale
 eingebauten OpenAI-ImageGen-Modus erzeugt. Alle Prompts, Abmessungen und
 Nachbearbeitungsschritte stehen in
 `LEAGUE_BRANDING_ASSET_BATCH_2026-07-13.md`.
+
+## P1-C Banner-Pilotassets
+
+Die folgenden Pilotassets wurden am 2026-07-14 mit dem eingebauten
+OpenAI-ImageGen-Modus erzeugt und nicht aus externen Spielen uebernommen:
+
+- `public/assets/core-relay-mast-pilot.png` (512x512 RGBA),
+- `public/assets/core-relay-cloth-pilot-spritesheet-6x2.png`
+  (1536x512 RGBA, 6x2 Zellen mit 256x256).
+
+Referenzbilder waren ausschliesslich die bereits im Projekt vorhandenen
+`core-relay-banner.png`.
+
+Promptset:
+
+> Core Relay Mast: Remove only the hanging white-and-gold cloth from the
+> existing premium Core Relay banner. Reconstruct the hidden dark metal mast,
+> gold brackets and cyan energy core. Keep the original top-down rendering,
+> proportions and palette. Single centered sprite on a perfectly flat solid
+> #ff00ff chroma-key background. No cloth, shadow, particles, text or watermark.
+
+> Core Relay Cloth: Create exactly twelve cloth-only animation frames in a
+> regular 6-column by 2-row grid, matching the existing white fabric, gold
+> edging and centered cyan relay emblem. Row 1 trails left; row 2 trails right.
+> Each row moves from calm through a restrained flutter and back. Identical
+> scale and attachment anchor in every cell, flat #ff00ff background, no mast,
+> shadows, labels, separators, particles or alternate designs.
+
+Nachbearbeitung:
+
+1. Chroma-Key-Entfernung mit dem offiziellen Imagegen-Helfer
+   `remove_chroma_key.py`, Border-Autokey, Soft Matte und Despill.
+2. Exakte Rasterung mit `scripts/normalize-generated-spritesheet.py`.
+3. Mast mit `scripts/optimize-transparent-asset.py` auf 512x512 normalisiert.
+4. Beide finalen PNGs wurden visuell und automatisiert auf Raster, RGBA-Typ und
+   vollstaendige Zellen geprueft.
+
+### Verworfener AX-9-Versuch
+
+Ein AX-9-Special-Idle wurde ebenfalls mit ImageGen erzeugt und technisch
+erprobt. Die menschliche Live-Abnahme am 2026-07-14 bewertete die Animation als
+unklar und eher buggy. Das PNG wird nicht geladen, nicht staged und nicht als
+Produktasset committed; ein Rollout auf weitere Charaktere findet nicht statt.
+Die lokale untracked Quelle sowie Chroma-/Alpha-Zwischenquellen unter
+`tmp/imagegen/` bleiben geschuetztes Arbeitsmaterial und keine Runtime-Dateien.

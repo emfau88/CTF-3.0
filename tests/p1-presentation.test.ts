@@ -8,9 +8,12 @@ import { V2_CHARACTER_SKINS } from "../src/adapters/phaser/v2CharacterPresentati
 import { matchStatsColumns } from "../src/matchStatsPresentation";
 import { V2_PLAYER_SKINS } from "../src/v2Route";
 
-test("all nine fighters have an episodic non-breathing idle personality", () => {
-  assert.deepEqual(Object.keys(V2_IDLE_PROFILES).sort(), [...V2_PLAYER_SKINS].sort());
-  for (const skinId of V2_PLAYER_SKINS) {
+test("legacy idle poses remain episodic while AX-9 stays neutral", () => {
+  const legacyPoseSkins = V2_PLAYER_SKINS.filter((skinId) =>
+    skinId !== "ax9-mantis"
+  );
+  assert.deepEqual(Object.keys(V2_IDLE_PROFILES).sort(), [...legacyPoseSkins].sort());
+  for (const skinId of legacyPoseSkins) {
     const neutral = resolveCharacterIdlePose(skinId, 500, 0);
     assert.equal(neutral.active, false, `${skinId} should rest before its gag`);
     const gag = resolveCharacterIdlePose(skinId, 3_900, 0);
@@ -21,6 +24,8 @@ test("all nine fighters have an episodic non-breathing idle personality", () => 
       `${skinId} idle must visibly differ from a static breath`,
     );
   }
+  assert.equal(resolveCharacterIdlePose("ax9-mantis", 3_900, 0).active, false);
+  assert.equal(V2_CHARACTER_SKINS["ax9-mantis"].id, "ax9-mantis");
 });
 
 test("scoreboard columns only show objective stats in objective modes", () => {

@@ -24,20 +24,13 @@ const NEUTRAL_POSE: CharacterIdlePose = {
   scaleY: 1,
 };
 
-export const V2_IDLE_PROFILES: Readonly<Record<V2PlayerSkinId, IdleProfile>> = {
+export const V2_IDLE_PROFILES: Readonly<Partial<Record<V2PlayerSkinId, IdleProfile>>> = {
   briarhorn: profile("brief sit-down", 1_500, (energy) => ({
     x: -1.5 * energy,
     y: 5 * energy,
     rotation: -.055 * energy,
     scaleX: 1 + .04 * energy,
     scaleY: 1 - .15 * energy,
-  })),
-  "ax9-mantis": profile("precision scan", 1_350, (energy, time) => ({
-    x: Math.sin(time * .02) * 1.5 * energy,
-    y: 0,
-    rotation: Math.sin(time * .013) * .08 * energy,
-    scaleX: 1,
-    scaleY: 1,
   })),
   "null-courier": profile("signal glitch", 900, (energy, time) => ({
     x: Math.sin(time * .075) * 2.2 * energy,
@@ -100,6 +93,7 @@ export function resolveCharacterIdlePose(
   const warmupMs = 3_500 + Math.abs(seed % 2_500);
   if (idleElapsedMs < warmupMs) return NEUTRAL_POSE;
   const profile = V2_IDLE_PROFILES[skinId];
+  if (!profile) return NEUTRAL_POSE;
   const restMs = 5_600 + Math.abs(seed % 2_100);
   const cycleMs = profile.durationMs + restMs;
   const cycleTime = (idleElapsedMs - warmupMs) % cycleMs;
