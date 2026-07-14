@@ -5,6 +5,7 @@ import {
   V2_COLLISION_GROUNDWORK_CONFIG,
 } from "../../core";
 import type { V2PlayerSkinId } from "../../v2Route";
+import { UI_FONT_FAMILY } from "../../uiTypography";
 import { resolveCharacterIdlePose } from "./characterIdlePose";
 import {
   V2_CHARACTER_DIRECTIONS,
@@ -129,7 +130,7 @@ export class PhaserArenaActorRenderer {
     const status = this.scene.add.graphics();
     const shield = this.scene.add.graphics();
     const shieldLabel = this.scene.add.text(0, -54, "", {
-      fontFamily: "Arial, sans-serif",
+      fontFamily: UI_FONT_FAMILY,
       fontSize: "9px",
       fontStyle: "bold",
       color: "#dffcff",

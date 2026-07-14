@@ -27,6 +27,7 @@ import { Player } from "../player";
 import { AutoAttack, Bot, CollisionSystem, FlagSystem, Pickup, PickupSystem, Projectile } from "../systems";
 import { findNearestVisibleEnemy } from "../targeting";
 import { calculateTouchLayout } from "../touchLayout";
+import { UI_FONT_FAMILY } from "../uiTypography";
 
 export class ArenaScene extends Phaser.Scene {
   player!: Player;
@@ -494,7 +495,7 @@ export class ArenaScene extends Phaser.Scene {
     container.add(icon);
     if (pickup.temporary) {
       container.add(this.add.text(16, 12, String(pickup.amount), {
-        fontFamily: "Arial",
+        fontFamily: UI_FONT_FAMILY,
         fontSize: "13px",
         color: "#ffffff",
         stroke: "#17211f",
@@ -701,7 +702,7 @@ export class ArenaScene extends Phaser.Scene {
     }
     if (!this.ammoText) {
       this.ammoText = this.add.text(this.rocketBtn.x + 30, this.rocketBtn.y + 30, "0", {
-        fontFamily: "Arial",
+        fontFamily: UI_FONT_FAMILY,
         fontSize: "17px",
         color: "#ffffff",
         stroke: "#17211f",
@@ -748,7 +749,7 @@ export class ArenaScene extends Phaser.Scene {
     }
     if (!this.railAmmoText) {
       this.railAmmoText = this.add.text(this.railBtn.x + 30, this.railBtn.y + 30, "0", {
-        fontFamily: "Arial",
+        fontFamily: UI_FONT_FAMILY,
         fontSize: "17px",
         color: "#ffffff",
         stroke: "#10281a",
@@ -800,7 +801,7 @@ export class ArenaScene extends Phaser.Scene {
     }
     if (!this.whipAmmoText) {
       this.whipAmmoText = this.add.text(this.whipBtn.x + 30, this.whipBtn.y + 30, "0", {
-        fontFamily: "Arial",
+        fontFamily: UI_FONT_FAMILY,
         fontSize: "17px",
         color: "#ffffff",
         stroke: "#2b1c36",

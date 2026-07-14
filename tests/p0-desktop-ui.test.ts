@@ -42,3 +42,54 @@ test("desktop P0 UI contract keeps Career primary and Quick Play CTA pinned", ()
   assert.match(polishCss, /\.v2-quick-mode-picker/);
   assert.match(polishCss, /\.v2-quick-mode-option\.is-selected/);
 });
+
+test("project typography uses central UI, display, and diagnostic font tokens", () => {
+  const baseCss = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  const polishCss = readFileSync(
+    new URL("../src/styles/p1-visual-polish.css", import.meta.url),
+    "utf8",
+  );
+  const typography = readFileSync(
+    new URL("../src/uiTypography.ts", import.meta.url),
+    "utf8",
+  );
+  const phaserTypographySources = [
+    "../src/scenes/ArenaScene.ts",
+    "../src/adapters/phaser/PhaserArenaActorRenderer.ts",
+    "../src/adapters/phaser/PhaserArenaPickupRenderer.ts",
+    "../src/adapters/phaser/PhaserArenaHudPort.ts",
+    "../src/adapters/phaser/PhaserDiagnosticInputAdapter.ts",
+    "../src/adapters/phaser/PhaserDiagnosticRendererPort.ts",
+    "../src/adapters/phaser/PhaserBotTraversalSmokeOverlay.ts",
+    "../src/adapters/phaser/PhaserMobileInputAdapter.ts",
+    "../src/adapters/phaser/PhaserWeaponEffectsPort.ts",
+  ].map((path) => readFileSync(new URL(path, import.meta.url), "utf8"));
+
+  assert.match(baseCss, /--font-ui:/);
+  assert.match(baseCss, /--font-display:/);
+  assert.match(baseCss, /--font-mono:/);
+  assert.match(baseCss, /font-family: var\(--font-ui\)/);
+  assert.doesNotMatch(polishCss, /--font-ui:/);
+  assert.match(typography, /export const UI_FONT_FAMILY/);
+  assert.match(typography, /export const DISPLAY_FONT_FAMILY/);
+  assert.match(typography, /export const MONO_FONT_FAMILY/);
+  for (const source of phaserTypographySources) {
+    assert.doesNotMatch(source, /fontFamily:\s*"Arial/);
+    assert.doesNotMatch(source, /fontFamily:\s*"Consolas/);
+  }
+});
+
+test("P1 motion remains short, one-shot, and reduced-motion safe", () => {
+  const polishCss = readFileSync(
+    new URL("../src/styles/p1-visual-polish.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(polishCss, /\.v2-quick-mode-option\.is-selected \.v2-quick-mode-icon[\s\S]*p1-selection-confirm/);
+  assert.match(polishCss, /\.v2-result-card\.is-revealing \.v2-result-score[\s\S]*p1-score-reveal/);
+  assert.match(polishCss, /\.league-rank-shift \.is-new strong,[\s\S]*p1-progress-pop/);
+  assert.doesNotMatch(polishCss, /animation[^;]*(?:infinite|alternate)/i);
+  assert.match(polishCss, /prefers-reduced-motion:[\s\S]*animation-duration: \.01ms !important/);
+  assert.match(polishCss, /prefers-reduced-motion:[\s\S]*animation-delay: 0ms !important/);
+  assert.match(polishCss, /prefers-reduced-motion:[\s\S]*animation-iteration-count: 1 !important/);
+});

@@ -1,17 +1,6 @@
 /* P1 visual polish: local typography, dedicated UI portraits, responsive desktop
    hierarchy and restrained one-shot motion. Gameplay rendering stays separate. */
 
-:root {
-  --font-ui: "Inter Variable", Inter, system-ui, sans-serif;
-  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
-}
-
-html,
-body,
-#game {
-  font-family: var(--font-ui);
-}
-
 .v2-home-brand h1,
 .v2-home-action strong,
 .v2-subpage-title h2,

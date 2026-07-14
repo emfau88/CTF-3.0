@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import type { PickupId, PickupState, WorldSnapshot } from "../../core";
+import { UI_FONT_FAMILY } from "../../uiTypography";
 
 export class PhaserArenaPickupRenderer {
   private readonly views = new Map<PickupId, Phaser.GameObjects.Container>();
@@ -83,7 +84,7 @@ export class PhaserArenaPickupRenderer {
     ).setName("icon").setScale(pickupIconScale(pickup.type));
     const stateRing = this.scene.add.graphics().setName("state-ring");
     const respawnLabel = this.scene.add.text(0, -1, "", {
-      fontFamily: "Arial, sans-serif",
+      fontFamily: UI_FONT_FAMILY,
       fontSize: "10px",
       fontStyle: "bold",
       color: "#b9c8ce",

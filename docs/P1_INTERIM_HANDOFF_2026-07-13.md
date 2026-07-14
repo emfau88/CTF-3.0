@@ -10,6 +10,51 @@ P1-C-Abschlussstand: Der Banner-Pilot ist umgesetzt; der Character-Special-
 Idle-Pilot wurde nach menschlicher Sichtabnahme deaktiviert und wird nicht auf
 weitere Charaktere ausgerollt.
 
+## Fortsetzungsstand 2026-07-14: Font-Token- und Motion-Abschluss
+
+Der kleine projektweite Typografie-Pass ist umgesetzt. Die drei Schriftketten
+fuer UI, Display-Hierarchie und Diagnostik liegen zentral in `src/styles.css`
+und als Phaser-kompatible Konstanten in `src/uiTypography.ts`. Direkte
+Arial-/Consolas-Deklarationen in Menue, HUD, Pickups, Effekten, Diagnostik und
+Legacy-Canvas wurden mechanisch auf diese Tokens umgestellt. Schriftgroessen,
+Abstaende, Rendering-Logik und Gameplay blieben unveraendert.
+
+Die fuer Mode-Auswahl, Result und League-Fortschritt vorhandene Motion-Sprache
+wurde nicht erweitert: Sie bleibt kurz, zustandsgebunden und einmalig. Ein
+neuer Vertragstest verhindert `infinite`-/`alternate`-Animationen und sichert
+die bestehende `prefers-reduced-motion`-Reduktion ab.
+
+### Verifizierte Gates dieses Abschlusses
+
+- `npm.cmd run test:typecheck`: gruen.
+- `npm.cmd test`: 80/80 gruen.
+- `npm.cmd run build`: gruen; nur die bekannte Chunk-Warnung.
+- Echte Browserabnahme bei 1366x768 und 1024x768: Startscreen, Quick Play und
+  League HQ ohne horizontalen oder aeusseren vertikalen Seitenueberlauf.
+- Quick Play zeigt 3/3 Mode-Karten und 9/9 Fighter-Portraets; League HQ bleibt
+  in beiden Desktopbreiten lesbar und scrollt nur innerhalb seines Dashboards.
+- Inter Variable und das tatsaechlich verwendete Barlow-Condensed-900-Gewicht
+  wurden als geladen bestaetigt. Das laufende Canvas/HUD rendert mit geladener
+  Inter-Schrift, ohne Console-Warnung oder Console-Fehler.
+- Die aktuellen Squad-Portraets im League HQ erscheinen quadratisch und nicht
+  vertikal gestreckt.
+
+### Bewusste Verschiebung: Arena-Vorschauen
+
+Arena-Vorschauen werden vorerst nicht umgesetzt. Die bestehenden Maps sollen
+zuerst als zusammenhaengendes Map-/Modus-/Waffen-/Bot-System auditiert und
+gestalterisch weiterentwickelt werden. Erst nach Freigabe hochwertiger finaler
+Map-Richtungen koennen Vorschaubilder belastbar aus echten Arenen abgeleitet
+werden. Das ist kein Blocker fuer diesen Font-/Motion-Abschluss und kein
+offener Bestandteil des aktuellen UI-Pakets.
+
+Geschuetzte untracked Arbeitsreste bleiben unveraendert bestehen:
+`public/assets/ax9-mantis-idle-special-pilot-spritesheet-6x4.png`,
+`public/assets/ui/portraits/xeno-runner-portrait.png`,
+`src/adapters/phaser/characterSpecialIdle.ts` und `tmp/`. Sie duerfen nicht
+versehentlich gestaged, geloescht oder in einen Produktcommit aufgenommen
+werden.
+
 ## Fortsetzungsstand 2026-07-14: fuenf Designhebel umgesetzt
 
 Der priorisierte visuelle P1-Pass ist implementiert und sichtbar abgenommen:

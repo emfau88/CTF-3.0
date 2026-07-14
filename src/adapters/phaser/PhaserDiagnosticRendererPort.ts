@@ -8,6 +8,7 @@ import type {
   PickupState,
   WorldSnapshot,
 } from "../../core";
+import { MONO_FONT_FAMILY } from "../../uiTypography";
 import type { RendererPort } from "../rendering";
 
 interface DiagnosticActorView {
@@ -130,7 +131,7 @@ export class PhaserDiagnosticRendererPort implements RendererPort {
       .setOrigin(0)
       .setLineWidth(4);
     const label = this.scene.add.text(0, actor.radius + 10, actor.id, {
-      fontFamily: "Consolas, monospace",
+      fontFamily: MONO_FONT_FAMILY,
       fontSize: this.compactActorLabels ? "12px" : "14px",
       color: "#17302d",
       align: "center",
@@ -222,14 +223,14 @@ export class PhaserDiagnosticRendererPort implements RendererPort {
       0,
       pickup.type === "health" ? "+" : "A",
       {
-        fontFamily: "Consolas, monospace",
+        fontFamily: MONO_FONT_FAMILY,
         fontSize: "18px",
         color: "#ffffff",
         fontStyle: "bold",
       },
     ).setOrigin(.5);
     const label = this.scene.add.text(0, pickup.radius + 5, pickup.type, {
-      fontFamily: "Consolas, monospace",
+      fontFamily: MONO_FONT_FAMILY,
       fontSize: "12px",
       color: "#17302d",
     }).setOrigin(.5, 0);

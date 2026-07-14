@@ -11,6 +11,7 @@ import {
   V2_V1_WEAPON_PARITY_CONFIG,
 } from "../../core";
 import { lineIntersectsRect, type Rect } from "../../math";
+import { UI_FONT_FAMILY } from "../../uiTypography";
 import type { InputAdapterPort } from "../input";
 import { drawRadialCooldownWipe } from "./PhaserRadialCooldown";
 import { calculateV2TouchLayout } from "./v2TouchLayout";
@@ -157,7 +158,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       .setScrollFactor(0)
       .setDepth(1102);
     const labelStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontFamily: "Arial, sans-serif",
+      fontFamily: UI_FONT_FAMILY,
       fontSize: "12px",
       fontStyle: "bold",
       color: "#17302d",
@@ -703,7 +704,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       .setDepth(1103)
       .setVisible(false);
     const text = this.scene.add.text(0, 0, "0", {
-      fontFamily: "Arial",
+      fontFamily: UI_FONT_FAMILY,
       fontSize: "17px",
       color: "#ffffff",
       stroke,
@@ -714,7 +715,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
 
   private createCooldownLabel(): Phaser.GameObjects.Text {
     return this.scene.add.text(0, 0, "", {
-      fontFamily: "Arial, sans-serif",
+      fontFamily: UI_FONT_FAMILY,
       fontSize: "14px",
       fontStyle: "bold",
       color: "#ffffff",

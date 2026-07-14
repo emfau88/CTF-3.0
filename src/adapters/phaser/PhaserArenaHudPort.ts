@@ -7,6 +7,7 @@ import type {
   ModeHudState,
   WorldSnapshot,
 } from "../../core";
+import { UI_FONT_FAMILY } from "../../uiTypography";
 import type { FrameDiagnosticsPort } from "../debugging";
 import type { HudPort } from "../hud";
 import {
@@ -440,7 +441,7 @@ function createText(
   fontStyle = "normal",
 ): Phaser.GameObjects.Text {
   const text = scene.add.text(0, 0, "", {
-    fontFamily: "Arial, sans-serif",
+    fontFamily: UI_FONT_FAMILY,
     fontSize,
     fontStyle,
     color,

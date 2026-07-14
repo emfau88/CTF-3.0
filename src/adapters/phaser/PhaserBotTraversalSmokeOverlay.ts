@@ -2,6 +2,7 @@ import type {
   WorldPosition,
   WorldSnapshot,
 } from "../../core";
+import { UI_FONT_FAMILY } from "../../uiTypography";
 import type { BotTraversalSmokeSetup } from "./BotTraversalSmoke";
 
 export type BotTraversalSmokeStatus =
@@ -33,7 +34,7 @@ export class PhaserBotTraversalSmokeOverlay {
       background: "rgba(5, 18, 26, .9)",
       boxShadow: "0 5px 18px rgba(0, 0, 0, .45)",
       color: "#eaffff",
-      font: "700 13px/1.35 Arial, sans-serif",
+      font: `700 13px/1.35 ${UI_FONT_FAMILY}`,
       letterSpacing: ".03em",
       pointerEvents: "none",
       whiteSpace: "pre-line",

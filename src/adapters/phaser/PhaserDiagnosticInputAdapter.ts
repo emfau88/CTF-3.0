@@ -8,6 +8,7 @@ import type {
   WorldPosition,
   WorldSnapshot,
 } from "../../core";
+import { UI_FONT_FAMILY } from "../../uiTypography";
 import {
   V2_V1_WEAPON_PARITY_CONFIG,
 } from "../../core";
@@ -499,7 +500,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       .setDepth(1103)
       .setVisible(false);
     const text = this.scene.add.text(0, 0, "0", {
-      fontFamily: "Arial",
+      fontFamily: UI_FONT_FAMILY,
       fontSize: "17px",
       color: "#ffffff",
       stroke,
@@ -510,7 +511,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
 
   private createCooldownLabel(): Phaser.GameObjects.Text {
     return this.scene.add.text(0, 0, "", {
-      fontFamily: "Arial, sans-serif",
+      fontFamily: UI_FONT_FAMILY,
       fontSize: "14px",
       fontStyle: "bold",
       color: "#ffffff",
@@ -521,7 +522,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
 
   private createKeyLabel(key: string): Phaser.GameObjects.Text {
     return this.scene.add.text(0, 0, key, {
-      fontFamily: "Arial, sans-serif",
+      fontFamily: UI_FONT_FAMILY,
       fontSize: "11px",
       fontStyle: "bold",
       color: "#eaf7ff",

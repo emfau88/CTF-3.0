@@ -6,6 +6,7 @@ import type {
   ProjectileState,
   WorldSnapshot,
 } from "../../core";
+import { UI_FONT_FAMILY } from "../../uiTypography";
 import type { EffectsPort } from "../effects";
 
 const TEAM_COLORS: Record<string, { color: number; dark: number }> = {
@@ -552,7 +553,7 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
       actor.position.y - actor.jump.height - 52,
       "NO TARGET",
       {
-        fontFamily: "Arial, sans-serif",
+        fontFamily: UI_FONT_FAMILY,
         fontSize: "11px",
         fontStyle: "bold",
         color: "#9defff",
