@@ -1,3 +1,7 @@
+import "@fontsource-variable/inter";
+import "@fontsource/barlow-condensed/latin-700.css";
+import "@fontsource/barlow-condensed/latin-800.css";
+import "@fontsource/barlow-condensed/latin-900.css";
 import Phaser from "phaser";
 import { GameplayV2Scene } from "./adapters/phaser";
 import { shouldUseGameplayV2Shell } from "./bootSceneSelection";
@@ -84,9 +88,10 @@ if (showV2Menu) {
     let latestStats: readonly MatchStatEntry[] = [];
     let matchEnded = false;
     let leagueResultRecorded = false;
-    const leagueOpponentName = leagueMatchContext
-      ? leagueTeam(leagueMatchContext.opponentId).name
+    const leagueOpponent = leagueMatchContext
+      ? leagueTeam(leagueMatchContext.opponentId)
       : null;
+    const leagueOpponentName = leagueOpponent?.name ?? null;
     let heldScoreboardVisible = false;
     const humanActorIds = activeRoute?.players === "local"
       ? ["blue-player", "red-player"]
@@ -274,6 +279,7 @@ if (showV2Menu) {
       }
       closeHeldScoreboard();
       setIngameButtonsVisible(false);
+      respawnStatus?.classList.add("is-hidden");
       hideGameplayV2Pause();
       releaseOverlayPause();
       showGameplayV2Result({
@@ -285,8 +291,24 @@ if (showV2Menu) {
               : `${leagueOpponentName ?? "Rivals"} Win`
             : `${detail.result.winnerEntryId.toUpperCase()} Wins`,
         detail: leagueMatchContext
-          ? `LEAGUE MATCH ${leagueMatchContext.roundIndex + 1} · ${formatResultScores(detail.scores ?? [])}`
-          : formatResultScores(detail.scores ?? []),
+          ? `LEAGUE MATCH ${leagueMatchContext.roundIndex + 1} · ${resultModeLabel(activeModeId)}`
+          : `${resultModeLabel(activeModeId)} · FINAL SCORE`,
+        winnerEntryId: detail.result.kind === "winner"
+          ? detail.result.winnerEntryId
+          : null,
+        scores: detail.scores ?? [],
+        teams: leagueMatchContext && leagueOpponent
+          ? {
+              blue: {
+                name: "Iron Vanguard",
+                emblemUrl: `${import.meta.env.BASE_URL}assets/league/teams/iron-vanguard-emblem.png`,
+              },
+              red: {
+                name: leagueOpponent.name,
+                emblemUrl: `${import.meta.env.BASE_URL}assets/league/teams/${leagueOpponent.id}-emblem.png`,
+              },
+            }
+          : undefined,
         stats: latestStats,
         humanActorIds,
         modeId: activeModeId,
@@ -320,8 +342,10 @@ function modeIdForRoute(mode: "tdm" | "ctf" | "one-flag") {
     : "one-flag";
 }
 
-function formatResultScores(scores: readonly ScoreEntry[]): string {
-  const blue = scores.find((entry) => entry.teamId === "blue")?.score ?? 0;
-  const red = scores.find((entry) => entry.teamId === "red")?.score ?? 0;
-  return `BLUE ${blue} : RED ${red}`;
+function resultModeLabel(modeId: ReturnType<typeof modeIdForRoute>): string {
+  return modeId === "team-deathmatch"
+    ? "TEAM DEATHMATCH"
+    : modeId === "classic-ctf"
+      ? "CLASSIC CTF"
+      : "ONE FLAG";
 }

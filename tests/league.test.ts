@@ -5,13 +5,19 @@ import {
   createLeagueMenuController,
   leagueTeamEmblemUrl,
 } from "../src/leagueMenu";
-import { setupQuickPlaySkinPicker } from "../src/v2Menu";
+import {
+  showGameplayV2Result,
+  setupQuickPlayModePicker,
+  setupQuickPlaySkinPicker,
+} from "../src/v2Menu";
 import {
   PLAYER_SKIN_STORAGE_KEY,
   loadPlayerSkinPreference,
+  playerSkinPortraitAssetStem,
   playerSkinSheetAssetStem,
   savePlayerSkinPreference,
 } from "../src/playerSkinPreference";
+import { V2_PLAYER_SKINS } from "../src/v2Route";
 import {
   LEAGUE_STORAGE_KEY,
   LEAGUE_TEAMS,
@@ -258,13 +264,74 @@ test("career and custom menus share the same primary navigation shell", () => {
   assert.match(html, /id="league-intro-route"/);
 });
 
-test("result screen and league portraits use the current dark square presentation", () => {
+test("result screen exposes the emblem score lockup and restrained reveal motion", () => {
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  const polishCss = readFileSync(
+    new URL("../src/styles/p1-visual-polish.css", import.meta.url),
+    "utf8",
+  );
   assert.match(html, /v2-flow-card v2-stats-card v2-result-card/);
+  assert.match(html, /id="v2-result-lockup"/);
+  assert.match(html, /id="v2-result-blue-emblem"/);
+  assert.match(html, /id="v2-result-red-emblem"/);
   assert.match(css, /\.v2-result-card\s*\{/);
+  assert.match(polishCss, /#v2-result-overlay\.is-blue-win/);
+  assert.match(polishCss, /@keyframes p1-score-reveal/);
+  assert.match(polishCss, /\.league-progression-card\.is-draw/);
   assert.match(css, /--portrait-size:\s*112px/);
   assert.match(css, /height:\s*var\(--portrait-size\)/);
+});
+
+test("result presentation syncs winner color, score, names and league emblems", () => {
+  document.body.innerHTML = `
+    <div id="v2-pause-overlay" class="is-hidden">
+      <button id="v2-pause-resume"></button>
+      <button id="v2-pause-restart"></button>
+      <button id="v2-pause-main-menu"></button>
+    </div>
+    <div id="v2-result-overlay" class="is-hidden">
+      <div id="v2-result-card">
+        <h2 id="v2-result-title"></h2>
+        <p id="v2-result-detail"></p>
+        <div id="v2-result-lockup">
+          <div id="v2-result-blue-team"><span id="v2-result-blue-emblem"><img id="v2-result-blue-emblem-image" /></span><small id="v2-result-blue-name"></small></div>
+          <span id="v2-result-blue-score"></span>
+          <span id="v2-result-red-score"></span>
+          <div id="v2-result-red-team"><span id="v2-result-red-emblem"><img id="v2-result-red-emblem-image" /></span><small id="v2-result-red-name"></small></div>
+        </div>
+        <div id="v2-result-stats"></div>
+        <button id="v2-result-play-again"></button>
+        <button id="v2-result-main-menu"></button>
+      </div>
+    </div>`;
+  showGameplayV2Result({
+    headline: "Crimson Jackals Win",
+    detail: "LEAGUE MATCH 1 · TEAM DEATHMATCH",
+    winnerEntryId: "red",
+    scores: [
+      { id: "blue", teamId: "blue", score: 7 },
+      { id: "red", teamId: "red", score: 10 },
+    ],
+    teams: {
+      blue: { name: "Iron Vanguard", emblemUrl: "/iron.png" },
+      red: { name: "Crimson Jackals", emblemUrl: "/jackals.png" },
+    },
+    stats: [],
+    humanActorIds: ["blue-player"],
+    modeId: "team-deathmatch",
+    onPlayAgain: () => {},
+    onMainMenu: () => {},
+  });
+  assert.equal(document.getElementById("v2-result-overlay")?.classList.contains("is-red-win"), true);
+  assert.equal(document.getElementById("v2-result-red-team")?.classList.contains("is-winner"), true);
+  assert.equal(document.getElementById("v2-result-blue-score")?.textContent, "7");
+  assert.equal(document.getElementById("v2-result-red-score")?.textContent, "10");
+  assert.equal(document.getElementById("v2-result-blue-name")?.textContent, "Iron Vanguard");
+  assert.equal(document.getElementById("v2-result-red-name")?.textContent, "Crimson Jackals");
+  assert.equal(document.getElementById("v2-result-lockup")?.getAttribute("aria-label"), "Iron Vanguard 7 to Crimson Jackals 10");
+  assert.equal(document.getElementById("v2-result-card")?.classList.contains("is-revealing"), true);
+  assert.match((document.getElementById("v2-result-red-emblem-image") as HTMLImageElement).src, /jackals\.png$/);
 });
 
 test("league branding assets expose normalized transparent square emblems", () => {
@@ -278,6 +345,19 @@ test("league branding assets expose normalized transparent square emblems", () =
     "arena-league-emblem.png",
   ]) {
     const png = readFileSync(new URL(`../public/assets/league/${filename}`, import.meta.url));
+    assert.equal(png.toString("ascii", 1, 4), "PNG");
+    assert.equal(png.readUInt32BE(16), 512, `${filename} width`);
+    assert.equal(png.readUInt32BE(20), 512, `${filename} height`);
+    assert.equal(png[25], 6, `${filename} must use RGBA color type`);
+  }
+});
+
+test("all playable fighters expose normalized transparent UI portraits", () => {
+  for (const skinId of V2_PLAYER_SKINS) {
+    const filename = `${playerSkinPortraitAssetStem(skinId)}.png`;
+    const png = readFileSync(
+      new URL(`../public/assets/ui/portraits/${filename}`, import.meta.url),
+    );
     assert.equal(png.toString("ascii", 1, 4), "PNG");
     assert.equal(png.readUInt32BE(16), 512, `${filename} width`);
     assert.equal(png.readUInt32BE(20), 512, `${filename} height`);
@@ -307,7 +387,40 @@ test("quick play skin gallery renders and selects all playable fighters", () => 
   assert.equal(select.value, "prism-bastion");
   assert.equal(document.getElementById("skin-name")!.textContent, "Prism Bastion");
   assert.deepEqual(selected, ["prism-bastion"]);
-  assert.match(document.getElementById("skin-preview")!.style.getPropertyValue("--skin-sprite"), /prism-bastion-spritesheet-6x4\.png/);
+  assert.match(
+    document.getElementById("skin-preview")!.style.getPropertyValue("--skin-portrait"),
+    /assets\/ui\/portraits\/prism-bastion-ui-portrait\.png/,
+  );
+});
+
+test("quick play mode cards sync the route select and support arrow navigation", () => {
+  document.body.innerHTML = `
+    <select id="mode-source">
+      <option value="tdm">TDM</option>
+      <option value="ctf">CTF</option>
+      <option value="one-flag">One Flag</option>
+    </select>
+    <div id="mode-picker" role="radiogroup">
+      <button data-mode="tdm" role="radio"></button>
+      <button data-mode="ctf" role="radio"></button>
+      <button data-mode="one-flag" role="radio"></button>
+    </div>`;
+  const selected: string[] = [];
+  const select = document.getElementById("mode-source") as HTMLSelectElement;
+  const picker = document.getElementById("mode-picker")!;
+  setupQuickPlayModePicker({ select, picker }, "ctf", (modeId) => {
+    selected.push(modeId);
+  });
+  const ctf = picker.querySelector<HTMLButtonElement>('[data-mode="ctf"]')!;
+  assert.equal(select.value, "ctf");
+  assert.equal(ctf.getAttribute("aria-checked"), "true");
+  assert.equal(ctf.tabIndex, 0);
+  ctf.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+  const oneFlag = picker.querySelector<HTMLButtonElement>('[data-mode="one-flag"]')!;
+  assert.equal(select.value, "one-flag");
+  assert.equal(oneFlag.getAttribute("aria-checked"), "true");
+  assert.equal(oneFlag.tabIndex, 0);
+  assert.deepEqual(selected, ["one-flag"]);
 });
 
 test("league menu starts a season and renders the actionable dashboard", () => {

@@ -65,3 +65,7 @@ export function playerSkinSheetColumns(skinId: V2PlayerSkinId): number {
 export function playerSkinSheetAssetStem(skinId: V2PlayerSkinId): string {
   return skinId === "alien-runner" ? "xeno-runner" : skinId;
 }
+
+export function playerSkinPortraitAssetStem(skinId: V2PlayerSkinId): string {
+  return `${playerSkinSheetAssetStem(skinId)}-ui-portrait`;
+}

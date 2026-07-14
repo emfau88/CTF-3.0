@@ -6,6 +6,7 @@
     <title>CTF Movement Prototype</title>
     <link rel="stylesheet" href="/src/styles.css" />
     <link rel="stylesheet" href="/src/styles/p0-desktop.css" />
+    <link rel="stylesheet" href="/src/styles/p1-visual-polish.css" />
   </head>
   <body>
     <div id="game"></div>
@@ -54,13 +55,50 @@
             Pick a mode and start with the current V2 arena rules.
           </p>
           <div class="v2-menu-section">
-            <label>Mode
-              <select id="v2-menu-mode">
+            <fieldset class="v2-quick-mode-field">
+              <legend>Choose Game Mode</legend>
+              <div id="v2-menu-mode-picker" class="v2-quick-mode-picker" role="radiogroup" aria-label="Game mode">
+                <button class="v2-quick-mode-option" type="button" role="radio" data-mode="tdm" style="--mode-accent:#e5525b">
+                  <span class="v2-quick-mode-icon" aria-hidden="true">
+                    <svg viewBox="0 0 48 48" focusable="false">
+                      <path d="M17 8 8 17v14l9 9M31 8l9 9v14l-9 9" />
+                      <circle cx="24" cy="24" r="9" />
+                      <path d="M24 14v6m0 8v6m-10-10h6m8 0h6" />
+                    </svg>
+                  </span>
+                  <span class="v2-quick-mode-copy"><strong>Team Deathmatch</strong><small>First team to 10 eliminations</small></span>
+                  <b>TDM</b>
+                </button>
+                <button class="v2-quick-mode-option" type="button" role="radio" data-mode="ctf" style="--mode-accent:#5cb5d1">
+                  <span class="v2-quick-mode-icon" aria-hidden="true">
+                    <svg viewBox="0 0 48 48" focusable="false">
+                      <path d="M14 40V9m20 31V9" />
+                      <path d="M14 11h13l-4 6 4 6H14M34 11H21l4 6-4 6h13" />
+                      <path d="M8 40h32" />
+                    </svg>
+                  </span>
+                  <span class="v2-quick-mode-copy"><strong>Classic CTF</strong><small>Steal and secure the enemy flag</small></span>
+                  <b>CTF</b>
+                </button>
+                <button class="v2-quick-mode-option" type="button" role="radio" data-mode="one-flag" style="--mode-accent:#d4ae62">
+                  <span class="v2-quick-mode-icon" aria-hidden="true">
+                    <svg viewBox="0 0 48 48" focusable="false">
+                      <path d="M24 7v34" />
+                      <path d="M24 10h14l-5 7 5 7H24" />
+                      <path d="M11 17 5 24l6 7m26-14 6 7-6 7" />
+                      <circle cx="24" cy="41" r="2" />
+                    </svg>
+                  </span>
+                  <span class="v2-quick-mode-copy"><strong>One Flag</strong><small>Control the neutral objective</small></span>
+                  <b>1F</b>
+                </button>
+              </div>
+              <select id="v2-menu-mode" class="v2-quick-mode-native" tabindex="-1" aria-hidden="true">
                 <option value="tdm">Team Deathmatch</option>
                 <option value="ctf">Classic CTF</option>
                 <option value="one-flag">One Flag</option>
               </select>
-            </label>
+            </fieldset>
             <label>Arena
               <select id="v2-menu-map">
                 <option value="flow-circuit-v2">Foundry Circuit</option>
@@ -184,10 +222,27 @@
       </div>
     </div>
     <div id="v2-result-overlay" class="v2-flow-overlay is-hidden">
-      <div class="v2-flow-card v2-stats-card v2-result-card">
-        <div class="v2-menu-kicker">RESULT</div>
+      <div id="v2-result-card" class="v2-flow-card v2-stats-card v2-result-card">
+        <div class="v2-menu-kicker">ARENA RESULT</div>
         <h2 id="v2-result-title">Blue Wins</h2>
-        <p id="v2-result-detail" class="v2-menu-intro">BLUE 3 : RED 2</p>
+        <p id="v2-result-detail" class="v2-menu-intro">FINAL SCORE</p>
+        <div id="v2-result-lockup" class="v2-result-lockup" aria-label="Blue Team 3 to Red Team 2">
+          <div id="v2-result-blue-team" class="v2-result-team is-blue">
+            <span id="v2-result-blue-emblem" class="v2-result-emblem" aria-hidden="true">
+              <svg viewBox="0 0 64 64"><path d="M32 5 53 13v17c0 13-8 23-21 29C19 53 11 43 11 30V13Z"/><path d="m22 30 7 7 14-16"/></svg>
+              <img id="v2-result-blue-emblem-image" class="is-hidden" alt="" />
+            </span>
+            <small id="v2-result-blue-name">Blue Team</small>
+          </div>
+          <strong class="v2-result-score" aria-hidden="true"><span id="v2-result-blue-score">3</span><i>:</i><span id="v2-result-red-score">2</span></strong>
+          <div id="v2-result-red-team" class="v2-result-team is-red">
+            <span id="v2-result-red-emblem" class="v2-result-emblem" aria-hidden="true">
+              <svg viewBox="0 0 64 64"><path d="M32 5 53 13v17c0 13-8 23-21 29C19 53 11 43 11 30V13Z"/><path d="M22 22 42 42M42 22 22 42"/></svg>
+              <img id="v2-result-red-emblem-image" class="is-hidden" alt="" />
+            </span>
+            <small id="v2-result-red-name">Red Team</small>
+          </div>
+        </div>
         <div id="v2-result-stats" class="v2-stats-table-wrap"></div>
         <div class="v2-flow-actions">
           <button id="v2-result-play-again" type="button">Play Again</button>

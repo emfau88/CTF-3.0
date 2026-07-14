@@ -7,6 +7,8 @@
     "bot:diagnostics": "node --import tsx ./scripts/run-bot-diagnostics.ts"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource/barlow-condensed": "^5.2.8",
     "phaser": "^3.90.0",
     "typescript": "^5.8.0",
     "vite": "^7.0.0"

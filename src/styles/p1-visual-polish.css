@@ -1,0 +1,658 @@
+/* P1 visual polish: local typography, dedicated UI portraits, responsive desktop
+   hierarchy and restrained one-shot motion. Gameplay rendering stays separate. */
+
+:root {
+  --font-ui: "Inter Variable", Inter, system-ui, sans-serif;
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+}
+
+html,
+body,
+#game {
+  font-family: var(--font-ui);
+}
+
+.v2-home-brand h1,
+.v2-home-action strong,
+.v2-subpage-title h2,
+.v2-quick-skin-selected strong,
+.league-empty h3,
+.league-next-match h3,
+.league-detail-panel h3,
+.league-tier strong,
+.league-progression-card h2,
+.league-result-lockup > strong,
+.v2-flow-card h2 {
+  font-family: var(--font-display);
+}
+
+.v2-menu-kicker,
+.v2-home-action-tag,
+.v2-menu-section-title,
+.league-panel-heading,
+.league-character-info small {
+  letter-spacing: .12em;
+}
+
+/* Roster art is intentionally independent from the gameplay animation sheets. */
+.v2-quick-skin-preview,
+.v2-quick-skin-thumb,
+.league-skin-preview {
+  background-image:
+    radial-gradient(circle at 50% 42%, rgb(78 167 194 / .22), transparent 66%),
+    linear-gradient(180deg, rgb(18 47 59 / .32), rgb(4 14 20 / .18)),
+    var(--skin-portrait);
+  background-repeat: no-repeat;
+  background-size: 100% 100%, 100% 100%, contain;
+  background-position: center, center, center bottom;
+}
+
+.league-character-portrait {
+  background-image:
+    linear-gradient(0deg, rgb(5 16 22 / .88), transparent 58%),
+    radial-gradient(circle at 52% 42%, rgb(69 155 184 / .2), transparent 65%),
+    var(--skin-portrait);
+  background-repeat: no-repeat;
+  background-size: 100% 100%, 100% 100%, contain;
+  background-position: center, center, center bottom;
+  filter: drop-shadow(0 8px 12px rgb(0 0 0 / .34));
+}
+
+.v2-quick-skin-option.is-selected .v2-quick-skin-thumb {
+  filter: drop-shadow(0 5px 9px rgb(95 201 229 / .28));
+}
+
+.league-character-info > strong {
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: .01em;
+}
+
+.league-character-info > span,
+.league-detail-heading p {
+  font-size: 10px;
+}
+
+.v2-quick-mode-field {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.v2-quick-mode-field legend {
+  margin-bottom: 7px;
+  color: #aebdc2;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.v2-quick-mode-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.v2-quick-mode-option {
+  position: relative;
+  min-width: 0;
+  min-height: 88px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  overflow: hidden;
+  border: 1px solid rgb(104 153 168 / .25);
+  border-radius: 2px;
+  background: linear-gradient(120deg, rgb(13 34 43 / .96), rgb(7 22 29 / .82));
+  color: #8da4ac;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px transparent;
+  transition: border-color .16s, background .16s, color .16s, transform .16s;
+}
+
+.v2-quick-mode-option::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--mode-accent);
+  opacity: .34;
+  transition: opacity .16s, width .16s;
+}
+
+.v2-quick-mode-option:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--mode-accent) 62%, #698b96);
+  color: #e2eef1;
+  background: linear-gradient(120deg, rgb(20 47 58 / .98), rgb(9 26 34 / .9));
+}
+
+.v2-quick-mode-option.is-selected {
+  border-color: var(--mode-accent);
+  color: #f2f8f9;
+  background:
+    radial-gradient(circle at 8% 50%, color-mix(in srgb, var(--mode-accent) 18%, transparent), transparent 42%),
+    linear-gradient(120deg, rgb(21 46 56 / .98), rgb(8 24 32 / .92));
+  box-shadow: inset 0 -3px var(--mode-accent), 0 8px 22px rgb(0 0 0 / .2);
+}
+
+.v2-quick-mode-option.is-selected::before {
+  width: 5px;
+  opacity: 1;
+}
+
+.v2-quick-mode-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--mode-accent) 38%, #45616b);
+  background: rgb(4 16 22 / .64);
+  color: var(--mode-accent);
+  clip-path: polygon(18% 0, 82% 0, 100% 18%, 100% 82%, 82% 100%, 18% 100%, 0 82%, 0 18%);
+}
+
+.v2-quick-mode-icon svg {
+  width: 31px;
+  height: 31px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.v2-quick-mode-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.v2-quick-mode-copy strong {
+  color: inherit;
+  font: 800 19px/1 var(--font-display);
+  letter-spacing: .015em;
+  text-transform: uppercase;
+}
+
+.v2-quick-mode-copy small {
+  overflow: hidden;
+  color: #789098;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v2-quick-mode-option > b {
+  align-self: start;
+  padding: 3px 5px;
+  border: 1px solid color-mix(in srgb, var(--mode-accent) 28%, transparent);
+  color: color-mix(in srgb, var(--mode-accent) 72%, #d9e6e9);
+  font-size: 8px;
+  letter-spacing: .1em;
+}
+
+.v2-quick-mode-native {
+  position: absolute;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.league-next-match:has(.league-season-track) {
+  min-height: 202px;
+}
+
+@media (min-width: 901px) {
+  .v2-league-hub {
+    height: calc(100vh - 72px);
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+  }
+}
+
+/* Quick Play remains fully operable at the desktop floor of 1024 x 768. */
+@media (min-width: 901px) and (max-height: 800px) {
+  .v2-menu-card.v2-menu-shell {
+    min-height: calc(100vh - 36px);
+    padding: 18px;
+  }
+
+  .v2-setup-view {
+    height: calc(100vh - 72px);
+    gap: 8px;
+    padding: 13px 22px 15px;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+  }
+
+  .v2-setup-view > .v2-menu-section {
+    gap: 8px 12px;
+    padding-right: 8px;
+  }
+
+  .v2-setup-view .v2-subpage-header {
+    min-height: 50px;
+    padding-bottom: 8px;
+  }
+
+  .v2-setup-view .v2-subpage-title h2 {
+    margin-top: 2px;
+    font-size: 32px;
+  }
+
+  .v2-setup-view select {
+    height: 39px;
+  }
+
+  .v2-quick-mode-field legend {
+    margin-bottom: 5px;
+    font-size: 10px;
+  }
+
+  .v2-quick-mode-option {
+    min-height: 70px;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 7px 9px;
+  }
+
+  .v2-quick-mode-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .v2-quick-mode-icon svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .v2-quick-mode-copy strong {
+    font-size: 16px;
+  }
+
+  .v2-quick-mode-copy small {
+    font-size: 8px;
+  }
+
+  .v2-quick-skin-field {
+    grid-template-columns: 116px minmax(0, 1fr);
+    gap: 8px 12px;
+    padding: 8px;
+  }
+
+  .v2-quick-skin-preview {
+    width: 98px;
+    height: 98px;
+  }
+
+  .v2-quick-skin-picker {
+    gap: 5px;
+  }
+
+  .v2-quick-skin-option {
+    min-height: 66px;
+    gap: 2px;
+  }
+
+  .v2-quick-skin-thumb {
+    width: 43px;
+    height: 43px;
+  }
+
+  .v2-quick-skin-option strong,
+  .v2-quick-skin-selected small,
+  .v2-quick-skin-selected span {
+    font-size: 9px;
+  }
+
+  .v2-setup-view .v2-menu-actions {
+    padding-top: 6px;
+  }
+
+  .v2-setup-view #v2-menu-start {
+    height: 50px;
+  }
+
+  .v2-setup-view .v2-menu-help {
+    font-size: 10px;
+    line-height: 1.35;
+  }
+}
+
+/* Mid-size desktop HQ: prioritize next match, squad and standings, then depth. */
+@media (min-width: 721px) and (max-width: 1180px) {
+  .v2-league-hub {
+    gap: 12px;
+    padding: 14px 16px 16px;
+  }
+
+  .league-dashboard {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "next"
+      "squad"
+      "table"
+      "pyramid"
+      "detail";
+    gap: 10px;
+    scrollbar-color: #456a78 #071820;
+  }
+
+  .league-next-match {
+    grid-template-columns: 200px minmax(0, 1fr) 200px;
+    min-height: 126px;
+  }
+
+  .league-fixture-meta,
+  .league-opponent-copy {
+    padding: 14px 18px;
+  }
+
+  .league-roster,
+  .league-detail-roster {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .league-character {
+    --portrait-size: 104px;
+    min-height: 120px;
+  }
+
+  .league-squad-panel {
+    box-shadow: inset 0 3px rgb(79 170 201 / .18);
+  }
+
+  .league-table-row {
+    grid-template-columns: 32px minmax(170px, 1fr) repeat(4, 34px) 48px;
+  }
+
+  .league-detail-roster .league-character {
+    --portrait-size: 96px;
+  }
+}
+
+/* Match results now share the League's emblem-and-score presentation. */
+#v2-result-overlay {
+  --result-accent: #d4ae62;
+  --result-accent-rgb: 212 174 98;
+}
+
+#v2-result-overlay.is-blue-win {
+  --result-accent: #66b9e6;
+  --result-accent-rgb: 102 185 230;
+}
+
+#v2-result-overlay.is-red-win {
+  --result-accent: #ec646c;
+  --result-accent-rgb: 236 100 108;
+}
+
+.v2-result-card {
+  width: min(760px, calc(100vw - 32px));
+  gap: 8px;
+  border-top-color: var(--result-accent);
+  background:
+    radial-gradient(circle at 50% 6%, rgb(var(--result-accent-rgb) / .13), transparent 36%),
+    linear-gradient(180deg, rgb(13 33 41 / .99), rgb(5 16 22 / .99));
+}
+
+.v2-result-card::before {
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle at 100% 0, rgb(var(--result-accent-rgb) / .16), transparent 68%);
+}
+
+.v2-result-card .v2-menu-kicker { color: var(--result-accent); }
+.v2-result-card h2 { line-height: .92; }
+.v2-result-card .v2-menu-intro { margin: -1px 0 2px; }
+
+.v2-result-lockup {
+  position: relative;
+  width: min(590px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin: 3px auto 5px;
+  padding: 10px 16px;
+  border-block: 1px solid rgb(var(--result-accent-rgb) / .17);
+  background: linear-gradient(90deg, transparent, rgb(4 13 18 / .5), transparent);
+}
+
+.v2-result-team {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  color: #738c96;
+  opacity: .64;
+  transition: opacity .18s, filter .18s;
+}
+
+.v2-result-team.is-blue { color: #67b9e8; }
+.v2-result-team.is-red { color: #ef6a72; }
+.v2-result-team.is-winner,
+#v2-result-overlay.is-draw .v2-result-team { opacity: 1; }
+.v2-result-team.is-winner { filter: drop-shadow(0 9px 18px rgb(var(--result-accent-rgb) / .22)); }
+
+.v2-result-emblem {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+}
+
+.v2-result-emblem svg,
+.v2-result-emblem img {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+}
+
+.v2-result-emblem svg {
+  fill: rgb(5 18 24 / .78);
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.v2-result-emblem img {
+  object-fit: contain;
+  filter: drop-shadow(0 10px 14px rgb(0 0 0 / .48));
+}
+
+.v2-result-emblem.has-image svg { display: none; }
+
+.v2-result-team small {
+  max-width: 100%;
+  overflow: hidden;
+  color: currentColor;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.v2-result-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f3f9fa;
+  font: 900 64px/.86 var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.04em;
+  text-shadow: 0 10px 26px rgb(var(--result-accent-rgb) / .2);
+}
+
+.v2-result-score i {
+  padding: 0 10px;
+  color: #506b75;
+  font-size: .7em;
+  font-style: normal;
+}
+
+/* League already had the right structure; these states improve its hierarchy. */
+.league-progression-card.is-draw { border-top-color: #d4ae62; }
+.league-progression-card.is-win .league-progression-glow {
+  background: radial-gradient(circle, rgb(85 214 139 / .2), transparent 70%);
+}
+.league-progression-card.is-draw .league-progression-glow {
+  background: radial-gradient(circle, rgb(212 174 98 / .18), transparent 70%);
+}
+.league-progression-card.is-loss .league-progression-glow {
+  background: radial-gradient(circle, rgb(217 76 86 / .18), transparent 70%);
+}
+.league-progression-card.is-win .league-result-lockup > div:last-child,
+.league-progression-card.is-loss .league-result-lockup > div:first-child {
+  opacity: .58;
+  filter: saturate(.58);
+}
+.league-progression-card.is-win .league-result-lockup > div:first-child {
+  filter: drop-shadow(0 10px 20px rgb(95 211 151 / .16));
+}
+.league-progression-card.is-loss .league-result-lockup > div:last-child {
+  filter: drop-shadow(0 10px 20px rgb(222 85 96 / .18));
+}
+
+@media (min-width: 721px) and (max-height: 800px) {
+  .v2-result-card {
+    width: min(720px, calc(100vw - 32px));
+    gap: 6px;
+    padding: 18px 24px 20px;
+  }
+
+  .v2-result-card h2 { font-size: 44px; }
+  .v2-result-lockup { padding-block: 6px; }
+  .v2-result-emblem { width: 62px; height: 62px; }
+  .v2-result-score { font-size: 50px; }
+}
+
+@media (max-width: 720px) {
+  .v2-result-lockup {
+    grid-template-columns: minmax(0, 1fr) 82px minmax(0, 1fr);
+    gap: 5px;
+    padding-inline: 4px;
+  }
+
+  .v2-result-emblem { width: 54px; height: 54px; }
+  .v2-result-score { font-size: 42px; }
+  .v2-result-score i { padding-inline: 4px; }
+}
+
+/* Deliberate one-shot feedback only; no ambient loops competing with gameplay. */
+@keyframes p1-surface-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes p1-card-enter {
+  from { opacity: 0; transform: translateY(12px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes p1-selection-confirm {
+  0% { opacity: .68; transform: scale(.94); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes p1-score-reveal {
+  0% { opacity: 0; transform: translateY(8px) scale(.9); }
+  72% { opacity: 1; transform: translateY(-1px) scale(1.035); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes p1-emblem-settle {
+  0% { opacity: 0; transform: translateY(6px) scale(.92); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes p1-progress-pop {
+  0% { opacity: .2; transform: scale(.82); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.v2-menu-view:not(.is-hidden) {
+  animation: p1-surface-enter .22s cubic-bezier(.2, .75, .25, 1) both;
+}
+
+.v2-home-actions > * {
+  animation: p1-card-enter .24s cubic-bezier(.2, .75, .25, 1) both;
+}
+
+.v2-home-actions > :nth-child(2) { animation-delay: 45ms; }
+.v2-home-actions > :nth-child(3) { animation-delay: 80ms; }
+
+.v2-quick-skin-option.is-selected .v2-quick-skin-thumb {
+  animation: p1-selection-confirm .18s ease-out both;
+}
+
+.v2-quick-mode-option.is-selected .v2-quick-mode-icon {
+  animation: p1-selection-confirm .18s ease-out both;
+}
+
+@media (max-width: 720px) {
+  .v2-quick-mode-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-quick-mode-option {
+    min-height: 64px;
+  }
+}
+
+.v2-flow-overlay:not(.is-hidden) .v2-flow-card,
+.league-progression:not(.is-hidden) .league-progression-card,
+.league-recruitment:not(.is-hidden) .league-recruitment-card {
+  animation: p1-card-enter .2s cubic-bezier(.2, .75, .25, 1) both;
+}
+
+.v2-result-card h2,
+.league-progression-card h2 {
+  animation: p1-surface-enter .28s .06s ease-out both;
+}
+
+.v2-result-card.is-revealing .v2-result-score,
+.league-progression:not(.is-hidden) .league-result-lockup > strong {
+  animation: p1-score-reveal .42s .12s cubic-bezier(.2, .8, .25, 1) both;
+}
+
+.v2-result-card.is-revealing .v2-result-team,
+.league-progression:not(.is-hidden) .league-result-lockup > div {
+  animation: p1-emblem-settle .34s .08s ease-out both;
+}
+
+.v2-result-card.is-revealing .v2-result-team:last-child,
+.league-progression:not(.is-hidden) .league-result-lockup > div:last-child {
+  animation-delay: .16s;
+}
+
+.league-progression:not(.is-hidden) .league-rank-shift .is-new strong,
+.league-progression:not(.is-hidden) .league-points-earned strong {
+  animation: p1-progress-pop .3s .3s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

@@ -103,3 +103,12 @@ unklar und eher buggy. Das PNG wird nicht geladen, nicht staged und nicht als
 Produktasset committed; ein Rollout auf weitere Charaktere findet nicht statt.
 Die lokale untracked Quelle sowie Chroma-/Alpha-Zwischenquellen unter
 `tmp/imagegen/` bleiben geschuetztes Arbeitsmaterial und keine Runtime-Dateien.
+
+## P1 UI-Portraets
+
+Am 2026-07-14 wurden fuer alle neun Fighter eigenstaendige 512x512-RGBA-
+Roster-Portraets mit dem eingebauten OpenAI-ImageGen-Modus erzeugt. Als
+Identitaetsreferenzen dienten ausschliesslich die vorhandenen Gameplay-
+Spritesheets dieses Projekts. Vollstaendige Prompt-Spezifikation,
+figurenspezifische Leitplanken, Dateiliste und Nachbearbeitung stehen in
+`CHARACTER_UI_PORTRAIT_BATCH_2026-07-14.md`.

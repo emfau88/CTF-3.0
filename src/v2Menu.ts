@@ -4,11 +4,12 @@ import {
   readV2Route,
   V2_PLAYER_SKINS,
   type V2ControlsMode,
+  type V2ModeId,
   type V2PlayerSkinId,
   type V2RouteConfig,
   type V2PlayersMode,
 } from "./v2Route";
-import type { GameModeId, MatchStatEntry } from "./core";
+import type { GameModeId, MatchStatEntry, ScoreEntry } from "./core";
 import { createLeagueMenuController } from "./leagueMenu";
 import {
   calculateMatchImpact,
@@ -20,8 +21,7 @@ import {
   isPlayerSkinId,
   loadPlayerSkinPreference,
   playerSkinLabel,
-  playerSkinSheetAssetStem,
-  playerSkinSheetColumns,
+  playerSkinPortraitAssetStem,
   savePlayerSkinPreference,
 } from "./playerSkinPreference";
 
@@ -37,6 +37,7 @@ interface V2MenuElements {
   readonly leagueMeta: HTMLElement;
   readonly back: HTMLButtonElement;
   readonly mode: HTMLSelectElement;
+  readonly modePicker: HTMLElement;
   readonly map: HTMLSelectElement;
   readonly players: HTMLSelectElement;
   readonly teamSize: HTMLSelectElement;
@@ -58,11 +59,28 @@ interface V2PauseElements {
 
 interface V2ResultElements {
   readonly root: HTMLElement;
+  readonly card: HTMLElement;
   readonly title: HTMLElement;
   readonly detail: HTMLElement;
+  readonly lockup: HTMLElement;
+  readonly blueTeam: HTMLElement;
+  readonly blueEmblem: HTMLElement;
+  readonly blueEmblemImage: HTMLImageElement;
+  readonly blueName: HTMLElement;
+  readonly blueScore: HTMLElement;
+  readonly redTeam: HTMLElement;
+  readonly redEmblem: HTMLElement;
+  readonly redEmblemImage: HTMLImageElement;
+  readonly redName: HTMLElement;
+  readonly redScore: HTMLElement;
   readonly stats: HTMLElement;
   readonly playAgain: HTMLButtonElement;
   readonly mainMenu: HTMLButtonElement;
+}
+
+export interface V2ResultTeamPresentation {
+  readonly name: string;
+  readonly emblemUrl?: string;
 }
 
 interface V2StatsElements {
@@ -78,7 +96,10 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     "--v2-menu-background",
     `url("${import.meta.env.BASE_URL}assets/league-menu-arena-v1.png")`,
   );
-  elements.mode.value = route.mode;
+  setupQuickPlayModePicker({
+    select: elements.mode,
+    picker: elements.modePicker,
+  }, route.mode);
   elements.map.value = route.map;
   elements.players.value = route.players;
   elements.teamSize.value = String(route.teamSize);
@@ -184,6 +205,12 @@ export function hideGameplayV2Pause(): void {
 export function showGameplayV2Result(input: {
   readonly headline: string;
   readonly detail: string;
+  readonly winnerEntryId: string | null;
+  readonly scores: readonly ScoreEntry[];
+  readonly teams?: {
+    readonly blue: V2ResultTeamPresentation;
+    readonly red: V2ResultTeamPresentation;
+  };
   readonly stats: readonly MatchStatEntry[];
   readonly humanActorIds: readonly string[];
   readonly modeId: GameModeId;
@@ -194,14 +221,57 @@ export function showGameplayV2Result(input: {
 }): void {
   hideGameplayV2Pause();
   const elements = readResultElements();
+  const blueTeam = input.teams?.blue ?? { name: "Blue Team" };
+  const redTeam = input.teams?.red ?? { name: "Red Team" };
+  const blueScore = input.scores.find((entry) => entry.teamId === "blue")?.score ?? 0;
+  const redScore = input.scores.find((entry) => entry.teamId === "red")?.score ?? 0;
+  const outcomeClass = input.winnerEntryId === "blue"
+    ? "is-blue-win"
+    : input.winnerEntryId === "red"
+      ? "is-red-win"
+      : "is-draw";
+  elements.root.classList.remove("is-blue-win", "is-red-win", "is-draw");
+  elements.root.classList.add(outcomeClass);
   elements.title.textContent = input.headline;
   elements.detail.textContent = input.detail;
+  elements.blueName.textContent = blueTeam.name;
+  elements.redName.textContent = redTeam.name;
+  elements.blueScore.textContent = String(blueScore);
+  elements.redScore.textContent = String(redScore);
+  syncResultEmblem(elements.blueEmblem, elements.blueEmblemImage, blueTeam);
+  syncResultEmblem(elements.redEmblem, elements.redEmblemImage, redTeam);
+  elements.blueTeam.classList.toggle("is-winner", input.winnerEntryId === "blue");
+  elements.redTeam.classList.toggle("is-winner", input.winnerEntryId === "red");
+  elements.lockup.setAttribute(
+    "aria-label",
+    `${blueTeam.name} ${blueScore} to ${redTeam.name} ${redScore}`,
+  );
   renderStatsTable(elements.stats, input.stats, input.humanActorIds, input.modeId);
   elements.playAgain.onclick = input.onPlayAgain;
   elements.mainMenu.onclick = input.onMainMenu;
   elements.playAgain.textContent = input.playAgainLabel ?? "Play Again";
   elements.mainMenu.textContent = input.mainMenuLabel ?? "Main Menu";
+  elements.card.classList.remove("is-revealing");
+  void elements.card.offsetWidth;
+  elements.card.classList.add("is-revealing");
   elements.root.classList.remove("is-hidden");
+}
+
+function syncResultEmblem(
+  root: HTMLElement,
+  image: HTMLImageElement,
+  team: V2ResultTeamPresentation,
+): void {
+  const hasImage = Boolean(team.emblemUrl);
+  root.classList.toggle("has-image", hasImage);
+  image.classList.toggle("is-hidden", !hasImage);
+  if (team.emblemUrl) {
+    image.src = team.emblemUrl;
+    image.alt = `${team.name} emblem`;
+  } else {
+    image.removeAttribute("src");
+    image.alt = "";
+  }
 }
 
 export function showGameplayV2Stats(
@@ -256,6 +326,7 @@ function readMenuElements(): V2MenuElements {
     leagueMeta: requiredElement<HTMLElement>("v2-menu-league-meta"),
     back: requiredElement<HTMLButtonElement>("v2-menu-back"),
     mode: requiredElement<HTMLSelectElement>("v2-menu-mode"),
+    modePicker: requiredElement<HTMLElement>("v2-menu-mode-picker"),
     map: requiredElement<HTMLSelectElement>("v2-menu-map"),
     players: requiredElement<HTMLSelectElement>("v2-menu-players"),
     teamSize: requiredElement<HTMLSelectElement>("v2-menu-team-size"),
@@ -281,8 +352,20 @@ function readPauseElements(): V2PauseElements {
 function readResultElements(): V2ResultElements {
   return {
     root: requiredElement<HTMLElement>("v2-result-overlay"),
+    card: requiredElement<HTMLElement>("v2-result-card"),
     title: requiredElement<HTMLElement>("v2-result-title"),
     detail: requiredElement<HTMLElement>("v2-result-detail"),
+    lockup: requiredElement<HTMLElement>("v2-result-lockup"),
+    blueTeam: requiredElement<HTMLElement>("v2-result-blue-team"),
+    blueEmblem: requiredElement<HTMLElement>("v2-result-blue-emblem"),
+    blueEmblemImage: requiredElement<HTMLImageElement>("v2-result-blue-emblem-image"),
+    blueName: requiredElement<HTMLElement>("v2-result-blue-name"),
+    blueScore: requiredElement<HTMLElement>("v2-result-blue-score"),
+    redTeam: requiredElement<HTMLElement>("v2-result-red-team"),
+    redEmblem: requiredElement<HTMLElement>("v2-result-red-emblem"),
+    redEmblemImage: requiredElement<HTMLImageElement>("v2-result-red-emblem-image"),
+    redName: requiredElement<HTMLElement>("v2-result-red-name"),
+    redScore: requiredElement<HTMLElement>("v2-result-red-score"),
     stats: requiredElement<HTMLElement>("v2-result-stats"),
     playAgain: requiredElement<HTMLButtonElement>("v2-result-play-again"),
     mainMenu: requiredElement<HTMLButtonElement>("v2-result-main-menu"),
@@ -376,6 +459,68 @@ export interface QuickPlaySkinPickerElements {
   readonly name: HTMLElement;
 }
 
+export interface QuickPlayModePickerElements {
+  readonly select: HTMLSelectElement;
+  readonly picker: HTMLElement;
+}
+
+export function setupQuickPlayModePicker(
+  elements: QuickPlayModePickerElements,
+  initialMode: V2ModeId,
+  onSelected: (modeId: V2ModeId) => void = () => {},
+): void {
+  const buttons = Array.from(
+    elements.picker.querySelectorAll<HTMLButtonElement>("[data-mode]"),
+  );
+  const modeOrder: readonly V2ModeId[] = ["tdm", "ctf", "one-flag"];
+
+  const selectMode = (modeId: V2ModeId, notify: boolean): void => {
+    elements.select.value = modeId;
+    for (const button of buttons) {
+      const selected = button.dataset.mode === modeId;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-checked", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    }
+    if (notify) onSelected(modeId);
+  };
+
+  const isModeId = (value: string | undefined): value is V2ModeId =>
+    modeOrder.includes(value as V2ModeId);
+
+  for (const button of buttons) {
+    button.onclick = () => {
+      if (isModeId(button.dataset.mode)) selectMode(button.dataset.mode, true);
+    };
+    button.onkeydown = (event) => {
+      const current = modeOrder.indexOf(elements.select.value as V2ModeId);
+      let next = current;
+      if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+        next = (current + 1) % modeOrder.length;
+      } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        next = (current - 1 + modeOrder.length) % modeOrder.length;
+      } else if (event.key === "Home") {
+        next = 0;
+      } else if (event.key === "End") {
+        next = modeOrder.length - 1;
+      } else {
+        return;
+      }
+      event.preventDefault();
+      const modeId = modeOrder[next];
+      selectMode(modeId, true);
+      buttons.find((candidate) => candidate.dataset.mode === modeId)?.focus();
+    };
+  }
+
+  elements.select.onchange = () => {
+    if (isModeId(elements.select.value)) {
+      selectMode(elements.select.value, true);
+    }
+  };
+  selectMode(initialMode, false);
+}
+
 export function setupQuickPlaySkinPicker(
   elements: QuickPlaySkinPickerElements,
   initialSkin: V2PlayerSkinId,
@@ -436,12 +581,8 @@ export function setupQuickPlaySkinPicker(
 function applySkinSprite(element: HTMLElement, skinId: V2PlayerSkinId): void {
   const assetBase = import.meta.env?.BASE_URL ?? "/";
   element.style.setProperty(
-    "--skin-sprite",
-    `url('${assetBase}assets/${playerSkinSheetAssetStem(skinId)}-spritesheet-${playerSkinSheetColumns(skinId)}x4.png')`,
-  );
-  element.style.setProperty(
-    "--skin-columns",
-    String(playerSkinSheetColumns(skinId)),
+    "--skin-portrait",
+    `url('${assetBase}assets/ui/portraits/${playerSkinPortraitAssetStem(skinId)}.png')`,
   );
 }
 

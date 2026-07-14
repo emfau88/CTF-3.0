@@ -10,6 +10,135 @@ P1-C-Abschlussstand: Der Banner-Pilot ist umgesetzt; der Character-Special-
 Idle-Pilot wurde nach menschlicher Sichtabnahme deaktiviert und wird nicht auf
 weitere Charaktere ausgerollt.
 
+## Fortsetzungsstand 2026-07-14: fuenf Designhebel umgesetzt
+
+Der priorisierte visuelle P1-Pass ist implementiert und sichtbar abgenommen:
+
+1. Alle neun Fighter besitzen eigenstaendige 512x512-RGBA-UI-Portraets.
+   Quick Play und League HQ verwenden keine ausgeschnittenen Gameplay-Frames
+   mehr. Gameplay-Sheets und Spielregeln blieben unangetastet.
+2. Quick Play passt bei exakt 1024x768 vollstaendig in den Viewport. Auswahl,
+   Start-CTA und Hilfetext bleiben gleichzeitig erreichbar.
+3. League HQ priorisiert bei 1024 Breite Next Match, Your Squad und Standings
+   in einer klaren vertikalen Reihenfolge. Bei 1366 bleibt die breite
+   Zwei-Spalten-Hierarchie erhalten. Der HQ-Rahmen bleibt in beiden Faellen im
+   Viewport; nur das Dashboard scrollt intern.
+4. Inter Variable und Barlow Condensed 700/800/900 werden lokal und
+   versionsgebunden ausgeliefert. Inter traegt die UI, Barlow Condensed die
+   Display-Hierarchie.
+5. Menues, Auswahl, Pause/Result und League-Dialoge verwenden kurze einmalige
+   Einblendungen. Es gibt keine dauernden Ambient-Loops; `prefers-reduced-motion`
+   reduziert die Animationen auf praktisch null.
+
+### Verifizierte Gates dieses Passes
+
+- `npm.cmd run test:typecheck`: gruen.
+- `npm.cmd test`: 76/76 gruen.
+- `npm.cmd run build`: gruen; nur die bekannte Chunk-Warnung.
+- Exakte Browserabnahme: 1024x768 und 1366x768 in Microsoft Edge/Chromium.
+- Kein horizontaler Ueberlauf; Quick-Play-CTA sichtbar; HQ-Header bleibt fest;
+  alle unteren HQ-Bereiche sind per internem Scroll erreichbar.
+- Alle sichtbaren Quick-Play- und League-Portraets laden die neuen dedizierten
+  Assets. Squad-Bilder sind quadratisch und nicht gestreckt.
+- Inter und Barlow Condensed wurden als aktive berechnete Fonts bestaetigt.
+- Sauberer Reload bei beiden Desktopgroessen ohne Console- oder Netzwerkfehler.
+- Reduced-Motion-Kontext: neue Animationen einmalig mit 0.01 ms Dauer.
+
+## Fortsetzungsstand 2026-07-14: Quick-Play-Modus-Icons umgesetzt
+
+Der erste noch offene Designhebel ist als kleiner, eigenstaendig verifizierter
+Pass abgeschlossen. Quick Play zeigt fuer TDM, Classic CTF und One Flag jetzt
+drei klar unterscheidbare Auswahlkarten mit eigenen inline SVG-Symbolen,
+Kurzbeschreibung und Moduskuerzel. Es wurden bewusst keine externen Bildassets
+und keine Imagegen-Erzeugnisse verwendet: Die geometrischen UI-Symbole bleiben
+so scharf, klein, farblich steuerbar und barrierearm. Arena-Vorschauen gehoeren
+weiterhin nicht zu diesem Pass.
+
+Der bestehende Modus-Select bleibt unsichtbar als Quelle fuer die Match-URL
+erhalten. Mausauswahl, `aria-checked`, roving Fokus und Pfeil-/Home-/End-Tasten
+werden mit ihm synchronisiert. Gameplay-Modi und Matchregeln blieben
+unangetastet.
+
+### Verifizierte Gates des Modus-Icon-Passes
+
+- `npm.cmd run test:typecheck`: gruen.
+- `npm.cmd test`: 77/77 gruen.
+- `npm.cmd run build`: gruen; nur die bekannte Chunk-Warnung.
+- Exakte Browserabnahme bei 1024x768 und 1366x768: alle drei Karten und der
+  Start-CTA sichtbar, kein horizontaler Seitenueberlauf.
+- Klick auf CTF und anschliessende Pfeilnavigation zu One Flag synchronisierten
+  sichtbare Auswahl, Fokus, ARIA-Status und den unsichtbaren Select.
+- Der Start-CTA oeffnete danach nachweislich die bestehende
+  `mode=one-flag`-Route.
+- Inter und Barlow Condensed waren geladen; keine Console-Warnung und kein
+  Console-Fehler.
+
+## Fortsetzungsstand 2026-07-14: Result und League-Fortschritt aufgewertet
+
+Der normale Result-Screen verwendet jetzt dieselbe hochwertige
+Wettbewerbsgrammatik wie League: klarer Gewinnerfarbton, Team-Lockup,
+grosser Endstand und einmalige kurze Score-/Emblem-Enthuellung. Quick Play
+verwendet eigene vektorbasierte Blue-/Red-Schilde; League-Matches setzen die
+bereits vorhandenen echten Teamembleme und Teamnamen ein. Es wurden keine neuen
+Rasterassets benoetigt.
+
+Der League-Fortschritt besass bereits Embleme, Score, Rangwechsel und
+Punktegewinn und wurde deshalb nicht neu gebaut. Der inkrementelle Pass gibt
+Sieg, Remis und Niederlage eigene Glow-/Top-Rail-Farben, nimmt das unterlegene
+Team visuell zurueck und betont Score, neue Tabellenposition und Punktegewinn
+mit einmaligen kurzen Animationen. Die globale Reduced-Motion-Regel bleibt
+wirksam. Wertung, League-Simulation und Fortschrittslogik blieben unveraendert.
+
+Der Result-Abschluss blendet ausserdem einen eventuell noch aktiven
+Respawn-Status aus, damit hinter dem Endscreen kein veralteter Live-Status im
+Accessibility-Baum stehen bleibt.
+
+### Verifizierte Gates dieses Passes
+
+- `npm.cmd run test:typecheck`: gruen.
+- `npm.cmd test`: 78/78 gruen.
+- Echter 4v4-TDM-Browserlauf: Red gewann 10:9; Gewinnerfarbe, beide
+  Vektorembleme, Score-Lockup, Statistik und beide CTAs renderten korrekt.
+- Exakte Result-Abnahme bei 1024x768 und 1366x768: Karte und CTAs im Viewport,
+  kein horizontaler oder vertikaler Seitenueberlauf, keine Console-Fehler.
+- Der DOM-Test bestaetigt fuer League-Kontext Gewinnerzustand, Teamnamen,
+  Endstand, ARIA-Label und echte Emblem-URLs.
+- Der League-Progression-Dialog wurde zusaetzlich isoliert mit dem gebauten
+  Produktions-CSS, echten 512x512-Teamemblemen und realistischen
+  Fortschrittsdaten bei 1024x768 und 1366x768 sichtbar abgenommen. Karte,
+  Embleme, Score, Rang-/Punktezeile und CTA blieben vollstaendig im Viewport;
+  es gab keinen Ueberlauf und keinen Console-Fehler. Die aktive lokale
+  Barlow-Condensed-Schrift ist durch die zuvor ausgefuehrte echte App-Abnahme
+  gedeckt; der isolierte Lauf schliesst gezielt das Dialog-Layout-Gate.
+- Zwei vorherige 2v2-/4v4-Canvas-Testtabs verloren zwar waehrend des laufenden
+  Matches ihre Browserverbindung. Das visuelle Dialog-Gate ist durch den
+  stabilen isolierten Produktionsrender jetzt trotzdem geschlossen. Der
+  vollstaendige manuelle Drei-Match-League-Run bleibt separat offen.
+
+### Verbleibende drei Designhebel aus dem Audit
+
+Diese Punkte waren bewusst nicht Teil dieses Pakets:
+
+1. Startscreen-Key-Art staerker in Vorder-, Mittel- und Hintergrund staffeln.
+2. Menue- und Ingame-Art-Direction durch gemeinsame Formen/Materialien enger
+   verbinden.
+3. Design-Tokens fuer Radien, Scrollbars, Abstaende und Akzentregeln breiter
+   vereinheitlichen.
+
+Optionale Arena-Vorschauen bleiben als spaetere Erweiterung notiert, sind aber
+kein offener Bestandteil dieses abgeschlossenen Modus-Icon-Passes.
+
+### Weiterhin offene P1-Abschlussgates
+
+- Menschliche Cloth-Sichtabnahme in beide Richtungen und im Stillstand.
+- Vollstaendige TAB-/Result-Matrix fuer alle drei Modi und manueller
+  Drei-Match-League-Run.
+- Den bereits dokumentierten kurzzeitig fragmentierten/schwarzen
+  Screenshotzustand weiter vom tatsaechlichen Laufzeitfehler unterscheiden.
+- Quellen unter `tmp/ui-portraits/`, das unreferenzierte rohe
+  `xeno-runner-portrait.png` und das verworfene AX-9-WIP bleiben untracked und
+  duerfen nicht versehentlich in einen Produktcommit gelangen.
+
 ## Fortsetzungsstand 2026-07-14: Banner-Pilot umgesetzt, Special Idle verworfen
 
 Der kleine P1-C-Banner-Pilot ist implementiert. Es wurde bewusst kein

@@ -19,8 +19,7 @@ import {
 import {
   loadPlayerSkinPreference,
   playerSkinLabel,
-  playerSkinSheetAssetStem,
-  playerSkinSheetColumns,
+  playerSkinPortraitAssetStem,
   savePlayerSkinPreference,
 } from "./playerSkinPreference";
 import {
@@ -213,12 +212,10 @@ export function createLeagueMenuController(actions: {
     }
     const syncPreview = (skinId: V2PlayerSkinId): void => {
       const preview = element("league-skin-preview");
-      const columns = playerSkinSheetColumns(skinId);
       preview.style.setProperty(
-        "--skin-sprite",
-        `url('${import.meta.env?.BASE_URL ?? "/"}assets/${playerSkinSheetAssetStem(skinId)}-spritesheet-${columns}x4.png')`,
+        "--skin-portrait",
+        `url('${import.meta.env?.BASE_URL ?? "/"}assets/ui/portraits/${playerSkinPortraitAssetStem(skinId)}.png')`,
       );
-      preview.style.setProperty("--skin-columns", String(columns));
     };
     select.value = loadPlayerSkinPreference();
     syncPreview(select.value as V2PlayerSkinId);
@@ -442,10 +439,9 @@ function characterCard(
   const assetBase = import.meta.env?.BASE_URL ?? "/";
   const card = document.createElement("article");
   card.className = "league-character";
-  const sheetColumns = playerSkinSheetColumns(character.skinId);
-  const sheetAssetStem = playerSkinSheetAssetStem(character.skinId);
+  const portraitAssetStem = playerSkinPortraitAssetStem(character.skinId);
   card.innerHTML = `
-    <div class="league-character-portrait" style="--sprite:url('${assetBase}assets/${sheetAssetStem}-spritesheet-${sheetColumns}x4.png');--sprite-columns:${sheetColumns}"></div>
+    <div class="league-character-portrait" style="--skin-portrait:url('${assetBase}assets/ui/portraits/${portraitAssetStem}.png')"></div>
     <div class="league-character-info">
       <small>${badge ?? `${currentTeam?.shortName ?? "ARENA"} &middot; COSMETIC FIGHTER`}</small>
       <strong>${character.name}</strong>
