@@ -34,8 +34,8 @@ const walls = [
 ] as const;
 
 const gaps: readonly WorldMapGapPresentation[] = [
-  // Optional movement shortcuts: the safer route bends toward the courtyard,
-  // while a clean jump preserves momentum on the exposed outer circuit.
+  // Optional movement shortcuts connect the exposed outer strip with the
+  // safer inner circuit without opening a direct horizontal sightline.
   {
     x: 945,
     y: 62,
@@ -75,27 +75,27 @@ export const FLOW_CIRCUIT_V2: WorldMapData = {
   navigation: {
     jumpLinks: [
       {
-        id: "upper-gap-west-east",
-        from: { x: 918, y: 118 },
-        to: { x: 1082, y: 118 },
+        id: "upper-gap-south-north",
+        from: { x: 1000, y: 168 },
+        to: { x: 1000, y: 68 },
         activationRadius: 44,
       },
       {
-        id: "upper-gap-east-west",
-        from: { x: 1082, y: 118 },
-        to: { x: 918, y: 118 },
+        id: "upper-gap-north-south",
+        from: { x: 1000, y: 68 },
+        to: { x: 1000, y: 168 },
         activationRadius: 44,
       },
       {
-        id: "lower-gap-west-east",
-        from: { x: 918, y: 702 },
-        to: { x: 1082, y: 702 },
+        id: "lower-gap-north-south",
+        from: { x: 1000, y: 652 },
+        to: { x: 1000, y: 752 },
         activationRadius: 44,
       },
       {
-        id: "lower-gap-east-west",
-        from: { x: 1082, y: 702 },
-        to: { x: 918, y: 702 },
+        id: "lower-gap-south-north",
+        from: { x: 1000, y: 752 },
+        to: { x: 1000, y: 652 },
         activationRadius: 44,
       },
     ],
@@ -138,7 +138,7 @@ export const FLOW_CIRCUIT_V2: WorldMapData = {
   },
   presentation: {
     theme: "industrial",
-    plan: "Featured competitive CTF arena with three readable routes: a precision lane with exposed jump shortcuts, a fast four-entry objective court, and a covered splash lane with short recovery rotations.",
+    plan: "Featured competitive CTF arena with three readable routes: a precision outer lane with pit shortcuts into the inner circuit, a fast four-entry objective court, and a covered splash lane with short recovery rotations.",
     walls,
     gaps,
     decorations: [

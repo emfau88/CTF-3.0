@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { preloadArenaAssets } from "../../../assets";
 import { readV2Route } from "../../../v2Route";
 import {
+  ArenaBotControllerGroup,
   ClassicCtfMode,
   createArenaBotControllerGroup,
   createArenaRoster,
@@ -31,6 +32,12 @@ import { PhaserGameBridge } from "../PhaserGameBridge";
 import { PhaserMobileInputAdapter } from "../PhaserMobileInputAdapter";
 import { PhaserArenaHudPort } from "../PhaserArenaHudPort";
 import { PhaserWeaponEffectsPort } from "../PhaserWeaponEffectsPort";
+import {
+  BotTraversalSmokeController,
+  configureBotTraversalSmokeWorld,
+  createBotTraversalSmokeSetup,
+} from "../BotTraversalSmoke";
+import { PhaserBotTraversalSmokeOverlay } from "../PhaserBotTraversalSmokeOverlay";
 
 export class GameplayV2Scene extends Phaser.Scene {
   private bridge?: PhaserGameBridge;
@@ -40,6 +47,7 @@ export class GameplayV2Scene extends Phaser.Scene {
   private pauseForOverlay = false;
   private skipNextFrame = false;
   private lastReportedMatchSignature = "";
+  private traversalSmokeOverlay?: PhaserBotTraversalSmokeOverlay;
 
   constructor() {
     super("GameplayV2Scene");
@@ -50,11 +58,19 @@ export class GameplayV2Scene extends Phaser.Scene {
   }
 
   create(): void {
-    const route = readV2Route(new URLSearchParams(window.location.search));
+    const search = new URLSearchParams(window.location.search);
+    const route = readV2Route(search);
     const isTeamDeathmatch = route.mode === "tdm";
     const isClassicCtf = route.mode === "ctf";
     const isOneFlag = route.mode === "one-flag";
     const selectedMap = resolveWorldMap(route.map);
+    const traversalSmokeSetup =
+      search.get("traversalSmoke") === "1" &&
+      isTeamDeathmatch &&
+      route.players === "bot" &&
+      route.teamSize === 1
+        ? createBotTraversalSmokeSetup(selectedMap)
+        : null;
     // Product V2 routes only resolve arena modes via readV2Route().
     const useMobileControls = prefersMobileControls(route);
     const useBotOpponent = prefersBotOpponent(route.players, useMobileControls);
@@ -64,16 +80,20 @@ export class GameplayV2Scene extends Phaser.Scene {
     const botParticipants = createArenaRoster(route.teamSize).filter(
       (participant) => !humanActorIds.includes(participant.actorId),
     );
-    const botControllers = createArenaBotControllerGroup(
-      isClassicCtf
-        ? "classic-ctf"
-        : isOneFlag
-        ? "one-flag"
-        : "team-deathmatch",
-      selectedMap,
-      botParticipants,
-      humanActorIds,
-    );
+    const botControllers = traversalSmokeSetup
+      ? new ArenaBotControllerGroup([
+          new BotTraversalSmokeController(traversalSmokeSetup),
+        ])
+      : createArenaBotControllerGroup(
+        isClassicCtf
+          ? "classic-ctf"
+          : isOneFlag
+          ? "one-flag"
+          : "team-deathmatch",
+        selectedMap,
+        botParticipants,
+        humanActorIds,
+      );
     this.sound.mute = route.sfx === "off";
     const runtime = new GameplayCoreRuntime({
       mode: isClassicCtf
@@ -81,11 +101,18 @@ export class GameplayV2Scene extends Phaser.Scene {
         : isOneFlag
         ? new OneFlagMode(selectedMap)
         : new TeamDeathmatchMode(),
-      createWorld: () => isClassicCtf
-        ? createClassicCtfWorldState(selectedMap, { teamSize: route.teamSize })
-        : isOneFlag
-        ? createOneFlagWorldState(selectedMap, { teamSize: route.teamSize })
-        : createTeamDeathmatchWorldState(selectedMap, { teamSize: route.teamSize }),
+      createWorld: () => {
+        const world = isClassicCtf
+          ? createClassicCtfWorldState(selectedMap, { teamSize: route.teamSize })
+          : isOneFlag
+          ? createOneFlagWorldState(selectedMap, { teamSize: route.teamSize })
+          : createTeamDeathmatchWorldState(selectedMap, {
+            teamSize: route.teamSize,
+          });
+        return traversalSmokeSetup
+          ? configureBotTraversalSmokeWorld(world, traversalSmokeSetup)
+          : world;
+      },
       humanActorIds,
     });
     const readBlueWeaponStatus = (weaponId: "rocket" | "rail" | "whip") => {
@@ -169,6 +196,12 @@ export class GameplayV2Scene extends Phaser.Scene {
       hud,
     });
     this.bridge.initialize();
+    if (traversalSmokeSetup) {
+      this.traversalSmokeOverlay = new PhaserBotTraversalSmokeOverlay(
+        traversalSmokeSetup,
+      );
+      this.traversalSmokeOverlay.render(this.bridge.snapshot);
+    }
     this.publishMatchState();
     window.addEventListener("v2-sfx-changed", this.handleSfxChanged);
     window.addEventListener("v2-overlay-state", this.handleOverlayState);
@@ -202,6 +235,7 @@ export class GameplayV2Scene extends Phaser.Scene {
       return;
     }
     this.bridge.advance(this.inputAdapter.readFrame(delta));
+    this.traversalSmokeOverlay?.render(this.bridge.snapshot);
     this.publishMatchState();
   }
 
@@ -213,11 +247,13 @@ export class GameplayV2Scene extends Phaser.Scene {
       this.handleVisibilityChange,
     );
     this.bridge?.dispose();
+    this.traversalSmokeOverlay?.dispose();
     this.inputAdapter?.dispose();
     this.menuKey?.destroy();
     this.bridge = undefined;
     this.inputAdapter = undefined;
     this.menuKey = undefined;
+    this.traversalSmokeOverlay = undefined;
     this.pauseForVisibility = false;
     this.pauseForOverlay = false;
     this.skipNextFrame = false;

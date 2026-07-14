@@ -1,12 +1,12 @@
 {
   "schemaVersion": 2,
-  "runId": "2026-07-14T13-44-37-211Z",
-  "timestamp": "2026-07-14T13:44:37.211Z",
+  "runId": "2026-07-14T13-38-31-409Z",
+  "timestamp": "2026-07-14T13:38:31.409Z",
   "git": {
     "branch": "main",
     "commit": "1e56fb3",
     "dirty": true,
-    "statusShort": "M diagnostics/bots/latest.json\n M diagnostics/bots/latest.md\n M docs/P1_INTERIM_HANDOFF_2026-07-13.md\n M src/adapters/phaser/scenes/GameplayV2Scene.ts\n M src/core/world/maps/flowCircuitV2.ts\n?? diagnostics/bots/history/2026-07-14T13-38-31-409Z.json\n?? src/adapters/phaser/BotTraversalSmoke.ts\n?? src/adapters/phaser/PhaserBotTraversalSmokeOverlay.ts\n?? tests/bot-traversal-smoke.test.ts"
+    "statusShort": "M src/adapters/phaser/scenes/GameplayV2Scene.ts\n M src/core/world/maps/flowCircuitV2.ts\n?? src/adapters/phaser/BotTraversalSmoke.ts\n?? src/adapters/phaser/PhaserBotTraversalSmokeOverlay.ts\n?? tests/bot-traversal-smoke.test.ts"
   },
   "diagnosticsConfig": {
     "command": "npm.cmd run bot:diagnostics",
