@@ -35,7 +35,7 @@ test("headless bot simulation matrix keeps bots active across arena modes", () =
 
 test("all arena modes start on every v2 map from 1v1 through 4v4", () => {
   const scenarios = createAllModeMapTeamSizeSmokeScenarios();
-  assert.equal(scenarios.length, 60);
+  assert.equal(scenarios.length, 72);
 
   for (const scenario of scenarios) {
     const summary = runSimulationScenario(scenario);

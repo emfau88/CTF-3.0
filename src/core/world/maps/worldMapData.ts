@@ -4,17 +4,33 @@ import type { SpawnPoint } from "../../spawning";
 import type { WorldGeometry } from "../worldGeometry";
 import type { WorldNavigation } from "../worldNavigation";
 
-export type WorldMapTheme = "ruins" | "library" | "industrial";
+export type WorldMapTheme =
+  | "ruins"
+  | "library"
+  | "industrial"
+  | "jungle-temple";
 export type WorldMapWallVisual =
   | "stone-wall"
   | "bookshelf"
   | "bookshelf-damaged"
   | "reading-table"
-  | "industrial-barrier";
+  | "industrial-barrier"
+  | "temple-basalt"
+  | "temple-basalt-pilot-horizontal"
+  | "temple-basalt-pilot-vertical"
+  | "temple-wall-divider"
+  | "temple-cover-pylon"
+  | "temple-court-corner-north-west"
+  | "temple-court-corner-north-east"
+  | "temple-court-corner-south-west"
+  | "temple-court-corner-south-east"
+  | "temple-jaguar-root-pilot";
 export type WorldMapGapVisual =
   | "chasm"
   | "collapsed-floor"
-  | "maintenance-pit";
+  | "maintenance-pit"
+  | "cenote"
+  | "cenote-pilot";
 export type WorldMapDecorationKind =
   | "rug"
   | "book-pile"
@@ -30,7 +46,13 @@ export type WorldMapDecorationKind =
   | "industrial-switch-gate"
   | "industrial-edge-pipes"
   | "industrial-edge-tank"
-  | "industrial-edge-turbine";
+  | "industrial-edge-turbine"
+  | "temple-roots-border"
+  | "temple-vegetation"
+  | "temple-glyph-inlay"
+  | "temple-jaguar-sculpture"
+  | "temple-canopy-edge"
+  | "temple-water-light";
 
 export interface WorldMapPresentationRect {
   readonly x: number;

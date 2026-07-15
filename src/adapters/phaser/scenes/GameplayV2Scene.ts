@@ -54,7 +54,11 @@ export class GameplayV2Scene extends Phaser.Scene {
   }
 
   preload(): void {
-    preloadArenaAssets(this);
+    const route = readV2Route(new URLSearchParams(window.location.search));
+    const map = resolveWorldMap(route.map);
+    preloadArenaAssets(this, {
+      includeJungleTemple: map.presentation.theme === "jungle-temple",
+    });
   }
 
   create(): void {
@@ -69,7 +73,10 @@ export class GameplayV2Scene extends Phaser.Scene {
       isTeamDeathmatch &&
       route.players === "bot" &&
       route.teamSize === 1
-        ? createBotTraversalSmokeSetup(selectedMap)
+        ? createBotTraversalSmokeSetup(
+          selectedMap,
+          search.get("traversalLink") ?? undefined,
+        )
         : null;
     // Product V2 routes only resolve arena modes via readV2Route().
     const useMobileControls = prefersMobileControls(route);

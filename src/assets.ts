@@ -2,7 +2,14 @@ import type Phaser from "phaser";
 
 const assetUrl = (file: string) => `${import.meta.env.BASE_URL}assets/${file}`;
 
-export function preloadArenaAssets(scene: Phaser.Scene) {
+export interface ArenaAssetPreloadOptions {
+  readonly includeJungleTemple?: boolean;
+}
+
+export function preloadArenaAssets(
+  scene: Phaser.Scene,
+  options: ArenaAssetPreloadOptions = {},
+) {
   scene.load.spritesheet("arenaTiles", assetUrl("arena-tileset.png"), {
     frameWidth: 313,
     frameHeight: 313,
@@ -144,6 +151,7 @@ export function preloadArenaAssets(scene: Phaser.Scene) {
   scene.load.image("industrialEdgePipes", assetUrl("industrial/edge-pipe-manifold.png"));
   scene.load.image("industrialEdgeTank", assetUrl("industrial/edge-tank-valve.png"));
   scene.load.image("industrialEdgeTurbine", assetUrl("industrial/edge-turbine.png"));
+  if (options.includeJungleTemple) preloadJungleTempleAssets(scene);
   scene.load.audio("step1", assetUrl("sounds/step1.wav"));
   scene.load.audio("step2", assetUrl("sounds/step2.wav"));
   scene.load.audio("step3", assetUrl("sounds/step3.wav"));
@@ -161,4 +169,29 @@ export function preloadArenaAssets(scene: Phaser.Scene) {
   scene.load.audio("railHitConfirm", assetUrl("sounds/CrowdPlay_ControllerPress.wav"));
   scene.load.audio("whipSwing", assetUrl("sounds/slap_swing.wav"));
   scene.load.audio("whipHit", assetUrl("sounds/slap_hit4.wav"));
+}
+
+function preloadJungleTempleAssets(scene: Phaser.Scene) {
+  scene.load.image("templeFloorBasaltPilot", assetUrl("jungle-temple/floor-basalt-pilot.png"));
+  scene.load.image("templeWallHorizontalPilot", assetUrl("jungle-temple/wall-horizontal-pilot.png"));
+  scene.load.image("templeWallVerticalPilot", assetUrl("jungle-temple/wall-vertical-pilot.png"));
+  scene.load.image("templeSunCourtPilot", assetUrl("jungle-temple/sun-court-pilot.png"));
+  scene.load.image("templeCenotePilot", assetUrl("jungle-temple/cenote-pilot.png"));
+  scene.load.image("templeJaguarRootPilot", assetUrl("jungle-temple/jaguar-root-relief-pilot.png"));
+  scene.load.image("templeFloorGallery", assetUrl("jungle-temple/floor-gallery.png"));
+  scene.load.image("templeFloorRootwater", assetUrl("jungle-temple/floor-rootwater.png"));
+  scene.load.image("templeBaseBlue", assetUrl("jungle-temple/base-blue.png"));
+  scene.load.image("templeBaseRed", assetUrl("jungle-temple/base-red.png"));
+  scene.load.image("templeWallDivider", assetUrl("jungle-temple/wall-divider.png"));
+  scene.load.image("templeWallCap", assetUrl("jungle-temple/wall-cap.png"));
+  scene.load.image("templeCoverPylon", assetUrl("jungle-temple/cover-pylon.png"));
+  scene.load.image("templeCourtCorner", assetUrl("jungle-temple/court-corner.png"));
+  scene.load.image("templeCenoteTraversalRim", assetUrl("jungle-temple/cenote-traversal-rim.png"));
+  scene.load.image("templeCore", assetUrl("jungle-temple/temple-core.png"));
+  scene.load.image("templeRootsBorder", assetUrl("jungle-temple/roots-border.png"));
+  scene.load.image("templeVegetationCluster", assetUrl("jungle-temple/vegetation-cluster.png"));
+  scene.load.image("templeGlyphInlay", assetUrl("jungle-temple/glyph-inlay.png"));
+  scene.load.image("templeJaguarSculpture", assetUrl("jungle-temple/jaguar-sculpture.png"));
+  scene.load.image("templeCanopyEdge", assetUrl("jungle-temple/canopy-edge.png"));
+  scene.load.image("templeWaterLight", assetUrl("jungle-temple/water-light.png"));
 }

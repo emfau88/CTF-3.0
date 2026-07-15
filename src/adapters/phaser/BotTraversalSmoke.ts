@@ -12,7 +12,10 @@ import {
 } from "../../core";
 
 const CAMERA_TARGET_OFFSET = 96;
-const BOT_APPROACH_DISTANCE = 96;
+const BOT_APPROACH_DISTANCE = 20;
+const MAX_GAP_LAUNCH_DISTANCE = 8;
+const MAX_WALL_LAUNCH_DISTANCE = 18;
+const GAP_EDGE_CLEARANCE = 24;
 
 export interface BotTraversalSmokeSetup {
   readonly mapId: string;
@@ -20,13 +23,22 @@ export interface BotTraversalSmokeSetup {
   readonly botActorId: string;
   readonly cameraActorId: string;
   readonly jumpLink: WorldJumpLink;
+  readonly launchPosition: WorldPosition;
+  readonly landingPosition: WorldPosition;
 }
 
 export function createBotTraversalSmokeSetup(
   map: WorldMapData,
+  jumpLinkId?: string,
 ): BotTraversalSmokeSetup | null {
-  const jumpLink = map.navigation.jumpLinks[0];
+  const jumpLink = jumpLinkId
+    ? map.navigation.jumpLinks.find((link) => link.id === jumpLinkId)
+    : map.navigation.jumpLinks[0];
   if (!jumpLink) return null;
+  const traversalPositions = resolveTraversalPositions(
+    jumpLink,
+    map.geometry.gaps,
+  );
   return {
     mapId: map.id,
     mapName: map.displayName,
@@ -37,6 +49,7 @@ export function createBotTraversalSmokeSetup(
       from: { ...jumpLink.from },
       to: { ...jumpLink.to },
     },
+    ...traversalPositions,
   };
 }
 
@@ -62,7 +75,7 @@ export function configureBotTraversalSmokeWorld(
     bot,
     clampToBounds(
       offsetPosition(
-        setup.jumpLink.from,
+        setup.launchPosition,
         direction,
         -BOT_APPROACH_DISTANCE,
       ),
@@ -75,7 +88,7 @@ export function configureBotTraversalSmokeWorld(
     cameraActor,
     clampToBounds(
       offsetPosition(
-        setup.jumpLink.to,
+        setup.landingPosition,
         direction,
         CAMERA_TARGET_OFFSET,
       ),
@@ -90,6 +103,8 @@ export function configureBotTraversalSmokeWorld(
 
 export class BotTraversalSmokeController implements BotActionSource {
   private jumpHeld = false;
+  private traversalStarted = false;
+  private completed = false;
 
   constructor(
     readonly setup: BotTraversalSmokeSetup,
@@ -111,28 +126,49 @@ export class BotTraversalSmokeController implements BotActionSource {
       this.jumpHeld = false;
       return [this.stopIntent()];
     }
-    const navigation = this.navigator.navigate(
+    if (this.completed) {
+      return [this.stopIntent()];
+    }
+    if (this.traversalStarted && this.jumpHeld && !actor.jump.active) {
+      this.jumpHeld = false;
+      this.completed = true;
+      return [this.stopIntent(), {
+        action: "jump",
+        phase: "released",
+        actorId: actor.id,
+      }];
+    }
+    const distanceToLaunch = distance(
       actor.position,
-      this.setup.jumpLink.to,
-      `traversal-smoke:${this.setup.jumpLink.id}`,
-      snapshot,
-      deltaMs,
+      this.setup.launchPosition,
     );
-    const actions: CoreActionIntent[] = [{
-      action: "move",
-      phase: "held",
-      actorId: actor.id,
-      direction: navigation.direction,
-      magnitude: 1,
-    }];
-    const shouldHoldAuthoredJump = navigation.jump ||
-      (this.jumpHeld && actor.jump.active);
-    if (shouldHoldAuthoredJump) {
-      if (
-        !this.jumpHeld &&
-        actor.jump.grounded &&
-        actor.jump.cooldownRemainingMs <= 0
-      ) {
+    const maximumLaunchDistance = snapshot.geometry.gaps.some((gap) =>
+        segmentIntersectsRect(
+          this.setup.jumpLink.from,
+          this.setup.jumpLink.to,
+          gap,
+        )
+      )
+      ? MAX_GAP_LAUNCH_DISTANCE
+      : MAX_WALL_LAUNCH_DISTANCE;
+    const committed = this.traversalStarted ||
+      distanceToLaunch <= Math.min(
+        this.setup.jumpLink.activationRadius,
+        maximumLaunchDistance,
+      );
+    if (committed) {
+      this.traversalStarted = true;
+      const actions: CoreActionIntent[] = [{
+        action: "move",
+        phase: "held",
+        actorId: actor.id,
+        direction: normalizedDirection(
+          actor.position,
+          this.setup.landingPosition,
+        ),
+        magnitude: 1,
+      }];
+      if (!this.jumpHeld) {
         actions.push({
           action: "jump",
           phase: "pressed",
@@ -145,19 +181,38 @@ export class BotTraversalSmokeController implements BotActionSource {
         actorId: actor.id,
       });
       this.jumpHeld = true;
-    } else if (this.jumpHeld) {
-      actions.push({
-        action: "jump",
-        phase: "released",
-        actorId: actor.id,
-      });
-      this.jumpHeld = false;
+      return actions;
     }
+    const closeToLaunch = distanceToLaunch <=
+      this.setup.jumpLink.activationRadius + BOT_APPROACH_DISTANCE;
+    const navigation = closeToLaunch
+      ? {
+        direction: normalizedDirection(
+          actor.position,
+          this.setup.launchPosition,
+        ),
+      }
+      : this.navigator.navigate(
+        actor.position,
+        this.setup.launchPosition,
+        `traversal-smoke-approach:${this.setup.jumpLink.id}`,
+        snapshot,
+        deltaMs,
+      );
+    const actions: CoreActionIntent[] = [{
+      action: "move",
+      phase: "held",
+      actorId: actor.id,
+      direction: navigation.direction,
+      magnitude: 1,
+    }];
     return actions;
   }
 
   reset(): void {
     this.jumpHeld = false;
+    this.traversalStarted = false;
+    this.completed = false;
     this.navigator.reset();
   }
 
@@ -170,6 +225,52 @@ export class BotTraversalSmokeController implements BotActionSource {
       magnitude: 0,
     };
   }
+}
+
+function resolveTraversalPositions(
+  jumpLink: WorldJumpLink,
+  gaps: WorldMapData["geometry"]["gaps"],
+): Pick<BotTraversalSmokeSetup, "launchPosition" | "landingPosition"> {
+  const direction = normalizedDirection(jumpLink.from, jumpLink.to);
+  let launchDistance = 0;
+  let landingDistance = distance(jumpLink.from, jumpLink.to);
+  let hasGapBounds = false;
+
+  for (const gap of gaps) {
+    if (!segmentIntersectsRect(jumpLink.from, jumpLink.to, gap)) continue;
+    const projections = [
+      { x: gap.x, y: gap.y },
+      { x: gap.x + gap.width, y: gap.y },
+      { x: gap.x, y: gap.y + gap.height },
+      { x: gap.x + gap.width, y: gap.y + gap.height },
+    ].map((corner) =>
+      (corner.x - jumpLink.from.x) * direction.x +
+      (corner.y - jumpLink.from.y) * direction.y
+    );
+    const gapLaunchDistance = Math.min(...projections) - GAP_EDGE_CLEARANCE;
+    const gapLandingDistance = Math.max(...projections) + GAP_EDGE_CLEARANCE;
+    if (!hasGapBounds) {
+      launchDistance = gapLaunchDistance;
+      landingDistance = gapLandingDistance;
+      hasGapBounds = true;
+    } else {
+      launchDistance = Math.min(launchDistance, gapLaunchDistance);
+      landingDistance = Math.max(landingDistance, gapLandingDistance);
+    }
+  }
+
+  return {
+    launchPosition: offsetPosition(
+      jumpLink.from,
+      direction,
+      launchDistance,
+    ),
+    landingPosition: offsetPosition(
+      jumpLink.from,
+      direction,
+      landingDistance,
+    ),
+  };
 }
 
 function positionActor(
@@ -208,6 +309,39 @@ function normalizedDirection(
   const length = Math.hypot(deltaX, deltaY);
   if (length <= Number.EPSILON) return { x: 1, y: 0 };
   return { x: deltaX / length, y: deltaY / length };
+}
+
+function distance(
+  from: WorldPosition,
+  to: WorldPosition,
+): number {
+  return Math.hypot(to.x - from.x, to.y - from.y);
+}
+
+function segmentIntersectsRect(
+  from: WorldPosition,
+  to: WorldPosition,
+  rect: { readonly x: number; readonly y: number; readonly width: number; readonly height: number },
+): boolean {
+  const deltaX = to.x - from.x;
+  const deltaY = to.y - from.y;
+  let entry = 0;
+  let exit = 1;
+  for (const [start, delta, min, max] of [
+    [from.x, deltaX, rect.x, rect.x + rect.width],
+    [from.y, deltaY, rect.y, rect.y + rect.height],
+  ] as const) {
+    if (Math.abs(delta) < .000001) {
+      if (start < min || start > max) return false;
+      continue;
+    }
+    const first = (min - start) / delta;
+    const second = (max - start) / delta;
+    entry = Math.max(entry, Math.min(first, second));
+    exit = Math.min(exit, Math.max(first, second));
+    if (entry > exit) return false;
+  }
+  return true;
 }
 
 function offsetPosition(

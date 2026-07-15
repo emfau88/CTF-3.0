@@ -2,9 +2,33 @@ import type { Rect } from "./math";
 
 export type PickupKind = "health" | "armor" | "rocket" | "rail" | "whip";
 export type PickupSpawn = { kind: PickupKind; x: number; y: number };
-export type LevelTheme = "ruins" | "library" | "industrial";
-export type WallVisual = "stone-wall" | "bookshelf" | "bookshelf-damaged" | "reading-table" | "industrial-barrier";
-export type GapVisual = "chasm" | "collapsed-floor" | "maintenance-pit";
+export type LevelTheme =
+  | "ruins"
+  | "library"
+  | "industrial"
+  | "jungle-temple";
+export type WallVisual =
+  | "stone-wall"
+  | "bookshelf"
+  | "bookshelf-damaged"
+  | "reading-table"
+  | "industrial-barrier"
+  | "temple-basalt"
+  | "temple-basalt-pilot-horizontal"
+  | "temple-basalt-pilot-vertical"
+  | "temple-wall-divider"
+  | "temple-cover-pylon"
+  | "temple-court-corner-north-west"
+  | "temple-court-corner-north-east"
+  | "temple-court-corner-south-west"
+  | "temple-court-corner-south-east"
+  | "temple-jaguar-root-pilot";
+export type GapVisual =
+  | "chasm"
+  | "collapsed-floor"
+  | "maintenance-pit"
+  | "cenote"
+  | "cenote-pilot";
 export type DecorationKind =
   | "rug"
   | "book-pile"
@@ -20,7 +44,13 @@ export type DecorationKind =
   | "industrial-switch-gate"
   | "industrial-edge-pipes"
   | "industrial-edge-tank"
-  | "industrial-edge-turbine";
+  | "industrial-edge-turbine"
+  | "temple-roots-border"
+  | "temple-vegetation"
+  | "temple-glyph-inlay"
+  | "temple-jaguar-sculpture"
+  | "temple-canopy-edge"
+  | "temple-water-light";
 export type LevelWall = Rect & { visual?: WallVisual };
 export type LevelGap = Rect & { visual?: GapVisual };
 export type LevelDecoration = Rect & { kind: DecorationKind };
@@ -29,6 +59,18 @@ export const LEVEL_THEME_VISUALS = {
   ruins: { floorPrimary: 0, floorAccent: 1, redBase: 2, blueBase: 3, wallHorizontal: 4, wallVertical: 5, gap: 8 },
   library: { floorPrimary: 0, floorAccent: 1, redBase: 2, blueBase: 3, wallHorizontal: 4, wallVertical: 5, gap: 8 },
   industrial: { floorPrimary: 0, floorAccent: 1, redBase: 2, blueBase: 3, wallHorizontal: 4, wallVertical: 5, gap: 8 },
+  "jungle-temple": { floorPrimary: 0, floorAccent: 1, redBase: 2, blueBase: 3, wallHorizontal: 4, wallVertical: 5, gap: 8 },
+} as const;
+
+export const JUNGLE_TEMPLE_GREYBOX_PALETTE = {
+  floor: 0x17221f,
+  floorGrid: 0x2c4039,
+  wall: 0x293431,
+  wallTop: 0x4a5b52,
+  wallEdge: 0x8fa996,
+  gap: 0x07191d,
+  gapEdge: 0x35bfd0,
+  objective: 0xd9a934,
 } as const;
 
 export type LevelData = {
