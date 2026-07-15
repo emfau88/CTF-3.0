@@ -1,8 +1,17 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { calculateArenaFitZoom } from "../src/adapters/phaser/arenaCameraFit";
-import { GRAND_ARCHIVE_V2, TRAINING_CROSSING_V2 } from "../src/core";
+import {
+  calculateArenaFitZoom,
+  MINIMUM_ARENA_VIEW_HEIGHT,
+  MINIMUM_ARENA_VIEW_WIDTH,
+} from "../src/adapters/phaser/arenaCameraFit";
+import {
+  DROWNED_SUN_TEMPLE_V2,
+  GRAND_ARCHIVE_V2,
+  TRAINING_CROSSING_V2,
+  WORLD_MAPS,
+} from "../src/core";
 
 test("desktop camera fit prevents short maps from exposing empty canvas bands", () => {
   for (const map of [TRAINING_CROSSING_V2, GRAND_ARCHIVE_V2]) {
@@ -14,6 +23,34 @@ test("desktop camera fit prevents short maps from exposing empty canvas bands", 
   assert.equal(
     calculateArenaFitZoom(1366, 768, TRAINING_CROSSING_V2.geometry.bounds, 1),
     1,
+  );
+});
+
+test("compact playtest viewports retain useful arena context", () => {
+  const viewportWidth = 288;
+  const viewportHeight = 180;
+  for (const map of WORLD_MAPS) {
+    const zoom = calculateArenaFitZoom(
+      viewportWidth,
+      viewportHeight,
+      map.geometry.bounds,
+      1,
+    );
+    const worldWidth = map.geometry.bounds.maxX - map.geometry.bounds.minX;
+    const worldHeight = map.geometry.bounds.maxY - map.geometry.bounds.minY;
+    assert.ok(viewportWidth / zoom >= MINIMUM_ARENA_VIEW_WIDTH);
+    assert.ok(viewportHeight / zoom >= MINIMUM_ARENA_VIEW_HEIGHT);
+    assert.ok(worldWidth * zoom >= viewportWidth);
+    assert.ok(worldHeight * zoom >= viewportHeight);
+  }
+  assert.equal(
+    calculateArenaFitZoom(
+      viewportWidth,
+      viewportHeight,
+      DROWNED_SUN_TEMPLE_V2.geometry.bounds,
+      1,
+    ),
+    viewportWidth / MINIMUM_ARENA_VIEW_WIDTH,
   );
 });
 
