@@ -213,7 +213,7 @@ test("league route carries the scheduled fixture context and cosmetic skin", () 
   completeCurrent(season);
   const finalSearch = new URLSearchParams(buildLeagueMatchSearch(season));
   assert.equal(finalSearch.get("mode"), "ctf");
-  assert.equal(finalSearch.get("map"), "flow-circuit-v2");
+  assert.equal(finalSearch.get("map"), "drowned-sun-temple-v2");
 });
 
 test("cosmetic skin preference accepts new skins and rejects invalid values", () => {

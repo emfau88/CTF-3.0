@@ -1,6 +1,12 @@
 import Phaser from "phaser";
 import type { WorldSnapshot } from "../../core";
 
+export const ONE_FLAG_NEUTRAL_BANNER_PRESENTATION = {
+  clothScale: .29,
+  clothOffset: 35,
+  mastScale: .19,
+} as const;
+
 type ObjectiveView = Phaser.GameObjects.Image | Phaser.GameObjects.Container;
 
 interface NeutralBannerParts {
@@ -63,16 +69,16 @@ export class PhaserArenaObjectiveRenderer {
   private createView(objective: WorldSnapshot["objectives"][number]): ObjectiveView | null {
     if (objective.kind === "neutral-flag") {
       const cloth = this.scene.add.sprite(
-        -44,
+        -ONE_FLAG_NEUTRAL_BANNER_PRESENTATION.clothOffset,
         0,
         "coreRelayClothPilot",
         0,
-      ).setScale(.38);
+      ).setScale(ONE_FLAG_NEUTRAL_BANNER_PRESENTATION.clothScale);
       const mast = this.scene.add.image(
         0,
         0,
         "coreRelayMastPilot",
-      ).setScale(.19);
+      ).setScale(ONE_FLAG_NEUTRAL_BANNER_PRESENTATION.mastScale);
       const container = this.scene.add.container(
         objective.position.x,
         objective.position.y - 18,
@@ -134,7 +140,12 @@ export class PhaserArenaObjectiveRenderer {
       : 0;
     parts.cloth
       .setFrame(row * 6 + frame)
-      .setPosition(direction > 0 ? -44 : 44, 0);
+      .setPosition(
+        direction > 0
+          ? -ONE_FLAG_NEUTRAL_BANNER_PRESENTATION.clothOffset
+          : ONE_FLAG_NEUTRAL_BANNER_PRESENTATION.clothOffset,
+        0,
+      );
     view
       .setScale(1 + flutter * (moving > 30 ? .018 : .008), 1)
       .setRotation(flutter * (moving > 30 ? .018 : .007));

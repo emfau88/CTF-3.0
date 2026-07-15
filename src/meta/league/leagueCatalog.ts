@@ -46,9 +46,9 @@ export const FOUNDERS_CIRCUIT_DISCIPLINES: readonly LeagueDiscipline[] = [
   {
     mode: "ctf",
     modeLabel: "Classic CTF",
-    trialLabel: "Circuit Final",
-    mapId: "flow-circuit-v2",
-    mapLabel: "Foundry Circuit",
+    trialLabel: "Drowned Sun Final",
+    mapId: "drowned-sun-temple-v2",
+    mapLabel: "Temple of the Drowned Sun",
     scoreTarget: 3,
   },
 ];

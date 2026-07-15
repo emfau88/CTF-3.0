@@ -55,6 +55,7 @@ import {
   cooldownWipeState,
   formatCooldownSeconds,
 } from "../src/adapters/phaser/weaponHudLayout";
+import { ONE_FLAG_NEUTRAL_BANNER_PRESENTATION } from "../src/adapters/phaser/PhaserArenaObjectiveRenderer";
 import {
   V2_CHARACTER_SKINS,
   legacyArenaCharacterFrame,
@@ -145,6 +146,14 @@ test("v2 menu defaults to the 2v2 Foundry Circuit CTF hero slice", () => {
   assert.equal(state.route.teamSize, 2);
   assert.equal(state.route.players, "bot");
   assert.equal(state.route.menu, true);
+});
+
+test("quick play lists Temple of the Drowned Sun", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(
+    html,
+    /<option value="drowned-sun-temple-v2">Temple of the Drowned Sun<\/option>/,
+  );
 });
 
 test("competitive arena set keeps skill shortcuts and contested rail control", () => {
@@ -816,6 +825,7 @@ test("v2 attack touch zones stay separated in compact and full layouts", () => {
 
 test("desktop weapon pickups use stable ordered slots", () => {
   for (const size of [
+    { width: 288, height: 180 },
     { width: 800, height: 450 },
     { width: 1280, height: 720 },
   ]) {
@@ -834,6 +844,20 @@ test("desktop weapon pickups use stable ordered slots", () => {
     );
     assert.ok(layout.rocket.y + layout.rocket.r <= size.height - 5);
   }
+
+  const micro = calculateDesktopWeaponLayout(288, 180);
+  assert.equal(micro.rail.r, 16);
+  assert.ok(
+    micro.whip.x + micro.whip.r - (micro.rocket.x - micro.rocket.r) <= 112,
+  );
+});
+
+test("one-flag neutral cloth stays character-scaled", () => {
+  const displayedClothFrameSize =
+    256 * ONE_FLAG_NEUTRAL_BANNER_PRESENTATION.clothScale;
+  assert.ok(displayedClothFrameSize >= 64);
+  assert.ok(displayedClothFrameSize <= 76);
+  assert.equal(ONE_FLAG_NEUTRAL_BANNER_PRESENTATION.clothOffset, 35);
 });
 
 test("cooldown wipe reveals elapsed time clockwise", () => {

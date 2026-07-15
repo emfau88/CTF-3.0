@@ -10,11 +10,12 @@ export function calculateDesktopWeaponLayout(
   width: number,
   height: number,
 ): Record<WeaponHudId, WeaponHudPosition> {
-  const compact = height <= 520;
-  const radius = compact ? 25 : 29;
-  const spacing = radius * 2 + (compact ? 12 : 14);
+  const micro = width <= 420 || height <= 240;
+  const compact = !micro && height <= 520;
+  const radius = micro ? 16 : compact ? 25 : 29;
+  const spacing = radius * 2 + (micro ? 8 : compact ? 12 : 14);
   const centerX = width / 2;
-  const y = height - radius - (compact ? 6 : 7);
+  const y = height - radius - (micro ? 5 : compact ? 6 : 7);
 
   return {
     rocket: { x: centerX - spacing, y, r: radius },

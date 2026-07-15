@@ -384,6 +384,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       gameSize.width,
       gameSize.height,
     );
+    const micro = positions.rocket.r <= 18;
     const compact = positions.rocket.r <= 25;
     for (const weaponId of ["rocket", "rail", "whip"] as const) {
       Object.assign(this.weaponControls[weaponId], positions[weaponId], {
@@ -394,13 +395,13 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
         .setScale(weaponIconScale(weaponId, positions[weaponId].r));
       this.weaponCooldownLabels[weaponId]
         .setPosition(positions[weaponId].x, positions[weaponId].y)
-        .setFontSize(compact ? 14 : 16);
+        .setFontSize(micro ? 11 : compact ? 14 : 16);
       this.weaponKeyLabels[weaponId]
         .setPosition(
           positions[weaponId].x - positions[weaponId].r * .68,
           positions[weaponId].y - positions[weaponId].r * .68,
         )
-        .setFontSize(compact ? 11 : 12);
+        .setFontSize(micro ? 8 : compact ? 11 : 12);
     }
     this.draw();
   }
@@ -413,7 +414,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     )) {
       const first = this.weaponControls.rocket;
       const last = this.weaponControls.whip;
-      const padding = first.radius <= 25 ? 6 : 7;
+      const padding = first.radius <= 18 ? 4 : first.radius <= 25 ? 6 : 7;
       const left = first.x - first.radius - padding;
       const top = first.y - first.radius - padding;
       const width = last.x - first.x + first.radius + last.radius + padding * 2;
@@ -430,6 +431,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       };
       const available = status.ammo > 0;
       const control = this.weaponControls[weaponId];
+      const micro = control.radius <= 18;
       const compact = control.radius <= 25;
       const badgeOffset = control.radius * .72;
       const badge = this.weaponBadges[weaponId];
@@ -440,12 +442,12 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
         .setScale(baseScale);
       badge.image
         .setPosition(control.x + badgeOffset, control.y + badgeOffset)
-        .setScale(compact ? .085 : .1)
+        .setScale(micro ? .065 : compact ? .085 : .1)
         .setAlpha(.95)
         .setVisible(available);
       badge.text
         .setPosition(control.x + badgeOffset, control.y + badgeOffset)
-        .setFontSize(compact ? 10 : 12)
+        .setFontSize(micro ? 8 : compact ? 10 : 12)
         .setText(String(status.ammo))
         .setVisible(available);
       this.weaponKeyLabels[weaponId].setVisible(available);

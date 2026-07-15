@@ -1,6 +1,6 @@
 # Temple of the Drowned Sun – Übergabe
 
-Stand nach Phase 9 sowie dem Scope- und Visual-Cleanup.
+Stand nach vollständiger Integration und Abschlussprüfung.
 
 ## Erledigt
 
@@ -14,12 +14,14 @@ Stand nach Phase 9 sowie dem Scope- und Visual-Cleanup.
 - Bot-Playtest am Match-Ende geprüft: Ergebnisbildschirm erkennen und `Play Again` anklicken startet die Runde korrekt neu.
 - Kamera-Zoom für kleine Playtest-Flächen korrigiert: Unterhalb normaler Desktop-Größe bleibt eine gemeinsame Mindest-Sichtfläche von 1280×720 Welt-Einheiten erhalten. Normale Desktop-Auflösungen und der Schutz vor leeren Kartenrändern bleiben unverändert.
 
-## Nächste Sitzung
+## Abschlussprüfung
 
-1. **Finale Visual-QA:** Basen, Mittelzone, Court-Corners, Cenoten sowie beide Jaguar-Motive bei der korrigierten Spielansicht prüfen und nur bei Bedarf fein skalieren.
-2. **Waffen-HUD:** Größe und Position der Waffen-Buttons nach Pickups mapübergreifend vergleichen. Bisher nicht geändert; prüfen, ob es ein bestehendes responsives HUD-Verhalten statt eines Temple-Effekts ist.
-3. **One-Flag-Flagge:** Stoff/Flaggentuch im Verhältnis zu den Charakteren prüfen und gegebenenfalls separat skalieren. Bisher nicht geändert.
-4. **Playtest-Ablauf:** Bei Bot-Runden weiterhin den Ergebnisbildschirm überwachen und sofort `Play Again` auslösen, damit die Sichtprüfung nicht auf einem beendeten Match stehenbleibt.
+- Temple of the Drowned Sun ist in Quick Play auswählbar.
+- Das CTF-Finale der dreirundigen Founders Circuit League nutzt nun Temple of the Drowned Sun. Foundry Circuit bleibt in Quick Play verfügbar.
+- Finale Visual-QA in TDM, CTF und One-Flag: Basen, Mittelzone, Court-Corners, Cenoten und Jaguar-Motive bleiben sauber, symmetrisch und proportional.
+- Das Desktop-Waffen-HUD besitzt für sehr kleine Playtest-Flächen eine eigene Mikro-Stufe. Normale kompakte und Desktop-Größen bleiben unverändert.
+- Das neutrale One-Flag-Flaggentuch wurde separat verkleinert; Mast, Animation und Gameplay bleiben unverändert.
+- Live-Playtest ohne Warnungen oder Fehler. Bei späteren Bot-Prüfungen weiterhin am Match-Ende sofort `Play Again` auslösen.
 
 ## Nicht Teil des Temple-Commits
 
