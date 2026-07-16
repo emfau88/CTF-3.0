@@ -11,6 +11,7 @@ import {
   assertWorldMapSupportsMode,
   createEmptyWorldState,
   TRAINING_CROSSING_V2,
+  WORLD_MAP_ACTOR_RADIUS,
   type WorldMapData,
   type WorldState,
 } from "../world";
@@ -89,7 +90,7 @@ function createPlayer(
     position: { ...spawn.position },
     spawnPosition: { ...spawn.position },
     facing: { ...(spawn.facing ?? { x: 1, y: 0 }) },
-    radius: 16,
+    radius: WORLD_MAP_ACTOR_RADIUS,
     health: 100,
     maxHealth: 100,
     armor: 0,

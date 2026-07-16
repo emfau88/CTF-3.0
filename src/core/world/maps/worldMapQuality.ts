@@ -1,8 +1,8 @@
 import type { WorldPosition } from "../../actors";
 import type { WorldRect } from "../worldGeometry";
 import type { WorldMapData, WorldMapPresentationRect } from "./worldMapData";
+import { WORLD_MAP_ACTOR_RADIUS } from "./worldMapClearance";
 
-const DEFAULT_ACTOR_RADIUS = 16;
 const DEFAULT_PICKUP_RADIUS = 22;
 const DEFAULT_MAXIMUM_JUMP_DISTANCE = 170;
 
@@ -53,7 +53,7 @@ export function validateWorldMapQuality(
   map: WorldMapData,
   options: WorldMapQualityGateOptions = {},
 ): readonly WorldMapQualityIssue[] {
-  const actorRadius = options.actorRadius ?? DEFAULT_ACTOR_RADIUS;
+  const actorRadius = options.actorRadius ?? WORLD_MAP_ACTOR_RADIUS;
   const pickupRadius = options.pickupRadius ?? DEFAULT_PICKUP_RADIUS;
   const maximumJumpDistance = options.maximumJumpDistance ??
     DEFAULT_MAXIMUM_JUMP_DISTANCE;

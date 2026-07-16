@@ -1,10 +1,12 @@
 import Phaser from "phaser";
-import type {
-  ActorId,
-  ProjectileId,
-  ProjectileState,
-  WorldMapData,
-  WorldSnapshot,
+import {
+  sampleWorldMapClearance,
+  WORLD_MAP_ACTOR_RADIUS,
+  type ActorId,
+  type ProjectileId,
+  type ProjectileState,
+  type WorldMapData,
+  type WorldSnapshot,
 } from "../../core";
 import { renderArena } from "../../arenaRenderer";
 import type { LevelData } from "../../level";
@@ -38,6 +40,8 @@ interface LibraryDustParticle {
   alpha: number;
 }
 
+export type ArenaCollisionDiagnostics = "off" | "solids" | "heatmap";
+
 export class PhaserArenaRendererPort implements RendererPort {
   private readonly projectileViews =
     new Map<ProjectileId, Phaser.GameObjects.Ellipse | Phaser.GameObjects.Image>();
@@ -48,6 +52,8 @@ export class PhaserArenaRendererPort implements RendererPort {
   private readonly spawnPadParticleGraphics: Phaser.GameObjects.Graphics;
   private readonly libraryDustGraphics?: Phaser.GameObjects.Graphics;
   private readonly libraryDust: LibraryDustParticle[] = [];
+  private readonly collisionDiagnosticGraphics?: Phaser.GameObjects.Graphics;
+  private readonly collisionDiagnosticViews: Phaser.GameObjects.GameObject[] = [];
   private spawnPadParticles: SpawnPadParticle[] = [];
   private spawnPadParticleTimerMs = 0;
   private lastRenderTimeMs = 0;
@@ -59,6 +65,7 @@ export class PhaserArenaRendererPort implements RendererPort {
     private readonly playerSkinId: V2PlayerSkinId = "alien-runner",
     enableManualCamera = false,
     cameraZoom = 1,
+    collisionDiagnostics: ArenaCollisionDiagnostics = "off",
   ) {
     this.cameraController = new PhaserArenaCameraController(
       scene,
@@ -72,6 +79,14 @@ export class PhaserArenaRendererPort implements RendererPort {
     const level = toPresentationLevel(map);
     ensureLibraryCandleAnimation(scene);
     renderArena(scene, level, (x, y) => this.addLibraryCandles(x, y));
+    if (collisionDiagnostics !== "off") {
+      this.collisionDiagnosticGraphics = scene.add.graphics().setDepth(88);
+      this.renderCollisionDiagnostics(
+        map,
+        collisionDiagnostics,
+        this.collisionDiagnosticGraphics,
+      );
+    }
     if (map.presentation.theme === "library") {
       this.libraryDustGraphics = scene.add.graphics().setDepth(8);
       this.libraryDust.push(...createLibraryDust(map));
@@ -108,6 +123,104 @@ export class PhaserArenaRendererPort implements RendererPort {
     this.objectiveRenderer.dispose();
     this.spawnPadParticleGraphics.destroy();
     this.libraryDustGraphics?.destroy();
+    this.collisionDiagnosticGraphics?.destroy();
+    for (const view of this.collisionDiagnosticViews) {
+      view.destroy();
+    }
+  }
+
+  private renderCollisionDiagnostics(
+    map: WorldMapData,
+    mode: Exclude<ArenaCollisionDiagnostics, "off">,
+    graphics: Phaser.GameObjects.Graphics,
+  ): void {
+    const radius = WORLD_MAP_ACTOR_RADIUS;
+    if (mode === "heatmap") {
+      const step = 22;
+      for (const sample of sampleWorldMapClearance(map, {
+        actorRadius: radius,
+        step,
+      })) {
+        if (sample.band === "open") continue;
+        graphics.fillStyle(
+          sample.band === "blocked" ? 0xff3155 : 0xffc83d,
+          sample.band === "blocked" ? .22 : .14,
+        ).fillRect(
+          sample.position.x - step / 2,
+          sample.position.y - step / 2,
+          step,
+          step,
+        );
+      }
+    }
+
+    const bounds = map.geometry.bounds;
+    graphics.lineStyle(3, 0x38e8ff, .9).strokeRect(
+      bounds.minX + radius,
+      bounds.minY + radius,
+      bounds.maxX - bounds.minX - radius * 2,
+      bounds.maxY - bounds.minY - radius * 2,
+    );
+
+    for (const solid of map.geometry.solids) {
+      graphics.fillStyle(0xff3155, .12).fillRoundedRect(
+        solid.x - radius,
+        solid.y - radius,
+        solid.width + radius * 2,
+        solid.height + radius * 2,
+        radius,
+      );
+      graphics.lineStyle(2, 0xff3155, .95).strokeRect(
+        solid.x,
+        solid.y,
+        solid.width,
+        solid.height,
+      );
+      const label = this.scene.add.text(
+        solid.x + 4,
+        solid.y + 4,
+        solid.id,
+        {
+          backgroundColor: "rgba(32, 4, 12, .78)",
+          color: "#fff0f3",
+          fontFamily: "monospace",
+          fontSize: "11px",
+          padding: { x: 3, y: 2 },
+        },
+      ).setDepth(89);
+      this.collisionDiagnosticViews.push(label);
+    }
+
+    for (const gap of map.geometry.gaps) {
+      graphics.fillStyle(0x25c7ff, .18).fillRect(
+        gap.x,
+        gap.y,
+        gap.width,
+        gap.height,
+      );
+      graphics.lineStyle(2, 0x25c7ff, .95).strokeRect(
+        gap.x,
+        gap.y,
+        gap.width,
+        gap.height,
+      );
+    }
+
+    const legend = this.scene.add.text(
+      12,
+      58,
+      mode === "heatmap"
+        ? "CLEARANCE: ROT = BLOCKIERT · GELB = ENG · LINIE = ROHE KOLLISION"
+        : "KOLLISION: ROTFLÄCHE = EFFEKTIVE SPIELER-SPERRZONE · LINIE = ROH",
+      {
+        backgroundColor: "rgba(4, 14, 20, .86)",
+        color: "#e9fbff",
+        fontFamily: "monospace",
+        fontSize: "13px",
+        padding: { x: 8, y: 6 },
+      },
+    ).setDepth(120).setScrollFactor(0);
+    this.collisionDiagnosticViews.push(legend);
   }
 
   private renderProjectiles(snapshot: WorldSnapshot): void {

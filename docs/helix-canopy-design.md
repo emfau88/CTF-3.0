@@ -232,11 +232,18 @@ Phase-4-Art-Status als aktuelle Produktionsgrundlage:
 - Das freigegebene Gesamtzielbild ist als `arena-master.png` die einzige
   visuelle Arena-Grundlage. Es wird proportional bei voller Welthöhe gerendert
   und niemals auf ein anderes Seitenverhältnis gezogen.
-- Die Welt misst 1920 × 960 Einheiten. Seitliche Weltraumränder sind Teil der
-  Komposition, aber nicht begehbar.
+- Der freigegebene Rekonstruktionsstand misst 1920 × 960 Einheiten. Die
+  anschließende reversible Größenprüfung skaliert den vollständigen Designraum
+  einheitlich um 15 Prozent auf 2208 × 1104 Einheiten. Seitenverhältnis,
+  Bildkomposition und relative Positionen bleiben unverändert.
 - 24 Kollisionsrechtecke liegen ausschließlich innerhalb der im Masterbild
   sichtbaren Stationsränder und Pflanzeninseln. Sie erzeugen keine zusätzliche
   Rendergrafik und damit keine zweite, widersprüchliche Geometriesprache.
+- Für die geometrische Endkontrolle stehen zwei reine Diagnoseparameter bereit:
+  `collisionDebug=1` zeigt rohe Rechtecke plus die tatsächliche, um den
+  16-Einheiten-Spielerradius erweiterte Sperrzone; `clearanceHeatmap=1`
+  ergänzt ein automatisches Raster mit blockierten und engen Laufbereichen.
+  Beide Ansichten verändern weder Mapdaten noch normales Rendering.
 - Die leuchtende Helix bleibt vertikal und in die Architektur eingebettet.
   Zusätzliche horizontale Helix-Decals, Bodentexturbänder und wiederholte
   Pflanzenmodule werden nicht mehr verwendet.

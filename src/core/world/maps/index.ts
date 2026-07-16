@@ -23,6 +23,16 @@ export {
   type WorldMapQualityGateOptions,
   type WorldMapQualityIssue,
 } from "./worldMapQuality";
+export {
+  measureWorldMapClearance,
+  sampleWorldMapClearance,
+  WORLD_MAP_ACTOR_RADIUS,
+  type WorldMapClearanceBand,
+  type WorldMapClearanceMeasurement,
+  type WorldMapClearanceObstacleKind,
+  type WorldMapClearanceSample,
+  type WorldMapClearanceSampleOptions,
+} from "./worldMapClearance";
 export type {
   WorldMapData,
   WorldMapGameplay,

@@ -27,7 +27,10 @@ import {
   PhaserDiagnosticInputAdapter,
 } from "../PhaserDiagnosticInputAdapter";
 import { PhaserArenaAudioPort } from "../PhaserArenaAudioPort";
-import { PhaserArenaRendererPort } from "../PhaserArenaRendererPort";
+import {
+  PhaserArenaRendererPort,
+  type ArenaCollisionDiagnostics,
+} from "../PhaserArenaRendererPort";
 import { PhaserGameBridge } from "../PhaserGameBridge";
 import { PhaserMobileInputAdapter } from "../PhaserMobileInputAdapter";
 import { PhaserArenaHudPort } from "../PhaserArenaHudPort";
@@ -69,6 +72,12 @@ export class GameplayV2Scene extends Phaser.Scene {
     const isClassicCtf = route.mode === "ctf";
     const isOneFlag = route.mode === "one-flag";
     const selectedMap = resolveWorldMap(route.map);
+    const collisionDiagnostics: ArenaCollisionDiagnostics =
+      search.get("clearanceHeatmap") === "1"
+        ? "heatmap"
+        : search.get("collisionDebug") === "1"
+        ? "solids"
+        : "off";
     const traversalSmokeSetup =
       search.get("traversalSmoke") === "1" &&
       isTeamDeathmatch &&
@@ -197,6 +206,7 @@ export class GameplayV2Scene extends Phaser.Scene {
         route.skin,
         useBotOpponent,
         useMobileControls ? .8 : 1,
+        collisionDiagnostics,
       ),
       audio: new PhaserArenaAudioPort(this, "blue-player"),
       diagnostics: hud,
