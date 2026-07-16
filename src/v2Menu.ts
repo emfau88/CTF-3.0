@@ -7,7 +7,6 @@ import {
   type V2ModeId,
   type V2PlayerSkinId,
   type V2RouteConfig,
-  type V2PlayersMode,
 } from "./v2Route";
 import type { GameModeId, MatchStatEntry, ScoreEntry } from "./core";
 import { createLeagueMenuController } from "./leagueMenu";
@@ -39,16 +38,56 @@ interface V2MenuElements {
   readonly mode: HTMLSelectElement;
   readonly modePicker: HTMLElement;
   readonly map: HTMLSelectElement;
-  readonly players: HTMLSelectElement;
+  readonly arenaPreview: HTMLElement;
+  readonly arenaPreviewImage: HTMLImageElement;
+  readonly arenaPreviewKicker: HTMLElement;
+  readonly arenaPreviewName: HTMLElement;
+  readonly arenaPreviewDescription: HTMLElement;
+  readonly arenaPreviewMeta: HTMLElement;
   readonly teamSize: HTMLSelectElement;
   readonly controls: HTMLSelectElement;
+  readonly controlsHint: HTMLElement;
   readonly skin: HTMLSelectElement;
   readonly skinPicker: HTMLElement;
   readonly skinPreview: HTMLElement;
   readonly skinName: HTMLElement;
   readonly sfx: HTMLSelectElement;
+  readonly launchSummary: HTMLElement;
+  readonly launchDetail: HTMLElement;
   readonly start: HTMLButtonElement;
 }
+
+interface QuickPlayArenaPreview {
+  readonly image: string;
+  readonly kicker: string;
+  readonly description: string;
+  readonly meta: string;
+}
+
+const QUICK_PLAY_ARENA_PREVIEWS: Readonly<
+  Partial<Record<string, QuickPlayArenaPreview>>
+> = {
+  "helix-canopy-v2": {
+    image: "assets/map-previews/helix-canopy-v2-overview.png",
+    kicker: "FEATURED ARENA · ORBITAL BIO-DOME",
+    description:
+      "A bright mirrored arena with clean lanes and a clear central objective route.",
+    meta: "PREMIUM ARENA · ALL MODES",
+  },
+  "drowned-sun-temple-v2": {
+    image: "assets/map-previews/drowned-sun-temple-v2-overview.png",
+    kicker: "FEATURED ARENA · DROWNED TEMPLE",
+    description:
+      "A darker battleground with layered cover, flank routes and a contested central court.",
+    meta: "PREMIUM ARENA · ALL MODES",
+  },
+};
+
+const QUICK_PLAY_MODE_LABELS: Readonly<Record<V2ModeId, string>> = {
+  tdm: "Team Deathmatch",
+  ctf: "Classic CTF",
+  "one-flag": "One Flag",
+};
 
 interface V2PauseElements {
   readonly root: HTMLElement;
@@ -99,23 +138,62 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     "--v2-menu-background",
     `url("${import.meta.env.BASE_URL}assets/league-menu-arena-v1.png")`,
   );
+  elements.map.value = route.map;
+  elements.teamSize.value = String(route.teamSize);
+  elements.controls.value = route.controls;
+  const preferredSkin = loadPlayerSkinPreference();
+
+  const syncArenaPreview = (): void => {
+    const preview = QUICK_PLAY_ARENA_PREVIEWS[elements.map.value];
+    elements.arenaPreview.classList.toggle("is-hidden", !preview);
+    if (!preview) {
+      elements.arenaPreviewImage.removeAttribute("src");
+      elements.arenaPreviewImage.alt = "";
+      return;
+    }
+    const mapLabel =
+      elements.map.selectedOptions[0]?.textContent?.trim() ?? elements.map.value;
+    elements.arenaPreviewImage.src =
+      `${import.meta.env.BASE_URL}${preview.image}`;
+    elements.arenaPreviewImage.alt = `${mapLabel} arena overview`;
+    elements.arenaPreviewKicker.textContent = preview.kicker;
+    elements.arenaPreviewName.textContent = mapLabel;
+    elements.arenaPreviewDescription.textContent = preview.description;
+    elements.arenaPreviewMeta.textContent = preview.meta;
+  };
+
+  const syncLaunchSummary = (): void => {
+    const mode = elements.mode.value as V2ModeId;
+    const map =
+      elements.map.selectedOptions[0]?.textContent?.trim() ?? elements.map.value;
+    const teamSize =
+      elements.teamSize.selectedOptions[0]?.textContent?.trim() ??
+      elements.teamSize.value;
+    const skin = playerSkinLabel(elements.skin.value as V2PlayerSkinId);
+    elements.launchSummary.textContent =
+      `${QUICK_PLAY_MODE_LABELS[mode]} · ${map}`;
+    elements.launchDetail.textContent =
+      `${teamSize} · SOLO + BOTS · ${skin}`;
+  };
+
+  const syncQuickPlayPresentation = (): void => {
+    syncArenaPreview();
+    syncLaunchSummary();
+  };
+
   setupQuickPlayModePicker({
     select: elements.mode,
     picker: elements.modePicker,
-  }, route.mode);
-  elements.map.value = route.map;
-  elements.players.value = route.players;
-  elements.teamSize.value = String(route.teamSize);
-  elements.controls.value = route.controls;
-  const preferredSkin = new URLSearchParams(window.location.search).has("skin")
-    ? route.skin
-    : loadPlayerSkinPreference();
+  }, route.mode, syncQuickPlayPresentation);
   setupQuickPlaySkinPicker({
     select: elements.skin,
     picker: elements.skinPicker,
     preview: elements.skinPreview,
     name: elements.skinName,
-  }, preferredSkin);
+  }, preferredSkin, (skinId) => {
+    savePlayerSkinPreference(skinId);
+    syncLaunchSummary();
+  });
   elements.sfx.value = route.sfx;
   elements.status.textContent = statusMessage ?? "";
   elements.status.classList.toggle("is-hidden", !statusMessage);
@@ -123,13 +201,9 @@ export function showGameplayV2Menu(statusMessage?: string): void {
   hideGameplayV2Pause();
   hideGameplayV2Result();
   hideGameplayV2Stats();
-  const syncControls = (): void => {
-    const localMatch = elements.players.value === "local";
-    if (localMatch) {
-      elements.controls.value = "keyboard";
-    }
-    elements.controls.disabled = localMatch;
-  };
+  elements.controls.disabled = false;
+  elements.controlsHint.textContent =
+    "Auto detect uses keyboard or touch controls when available.";
   const showHome = (): void => {
     elements.home.classList.remove("is-hidden");
     elements.setup.classList.add("is-hidden");
@@ -155,8 +229,9 @@ export function showGameplayV2Menu(statusMessage?: string): void {
   elements.setup.classList.toggle("is-hidden", !statusMessage);
   elements.league.classList.add("is-hidden");
   focusMenuScreen(elements.root);
-  syncControls();
-  elements.players.onchange = syncControls;
+  syncQuickPlayPresentation();
+  elements.map.onchange = syncQuickPlayPresentation;
+  elements.teamSize.onchange = syncLaunchSummary;
   elements.enterSetup.onclick = () => {
     elements.home.classList.add("is-hidden");
     elements.setup.classList.remove("is-hidden");
@@ -179,7 +254,7 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     window.location.search = buildV2MatchSearch({
       mode: elements.mode.value as typeof route.mode,
       map: elements.map.value,
-      players: elements.players.value as V2PlayersMode,
+      players: "bot",
       teamSize: Number(elements.teamSize.value) as typeof route.teamSize,
       controls: elements.controls.value as V2ControlsMode,
       skin: elements.skin.value as V2PlayerSkinId,
@@ -342,14 +417,32 @@ function readMenuElements(): V2MenuElements {
     mode: requiredElement<HTMLSelectElement>("v2-menu-mode"),
     modePicker: requiredElement<HTMLElement>("v2-menu-mode-picker"),
     map: requiredElement<HTMLSelectElement>("v2-menu-map"),
-    players: requiredElement<HTMLSelectElement>("v2-menu-players"),
+    arenaPreview: requiredElement<HTMLElement>("v2-menu-arena-preview"),
+    arenaPreviewImage: requiredElement<HTMLImageElement>(
+      "v2-menu-arena-preview-image",
+    ),
+    arenaPreviewKicker: requiredElement<HTMLElement>(
+      "v2-menu-arena-preview-kicker",
+    ),
+    arenaPreviewName: requiredElement<HTMLElement>(
+      "v2-menu-arena-preview-name",
+    ),
+    arenaPreviewDescription: requiredElement<HTMLElement>(
+      "v2-menu-arena-preview-description",
+    ),
+    arenaPreviewMeta: requiredElement<HTMLElement>(
+      "v2-menu-arena-preview-meta",
+    ),
     teamSize: requiredElement<HTMLSelectElement>("v2-menu-team-size"),
     controls: requiredElement<HTMLSelectElement>("v2-menu-controls"),
+    controlsHint: requiredElement<HTMLElement>("v2-menu-controls-hint"),
     skin: requiredElement<HTMLSelectElement>("v2-menu-skin"),
     skinPicker: requiredElement<HTMLElement>("v2-menu-skin-picker"),
     skinPreview: requiredElement<HTMLElement>("v2-menu-skin-preview"),
     skinName: requiredElement<HTMLElement>("v2-menu-skin-name"),
     sfx: requiredElement<HTMLSelectElement>("v2-menu-sfx"),
+    launchSummary: requiredElement<HTMLElement>("v2-menu-launch-summary"),
+    launchDetail: requiredElement<HTMLElement>("v2-menu-launch-detail"),
     start: requiredElement<HTMLButtonElement>("v2-menu-start"),
   };
 }

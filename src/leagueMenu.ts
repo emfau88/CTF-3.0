@@ -49,9 +49,11 @@ export function createLeagueMenuController(actions: {
   const dashboard = element("league-dashboard");
   const recruitment = element("league-recruitment");
   const progression = element("league-progression");
+  const resetDialog = element("league-reset-confirm");
+  const seasonTools = element("league-season-tools") as HTMLDetailsElement;
   let season = repository.load();
   let selectedTeamId: LeagueTeamId = season?.playerTeamId ?? "iron-vanguard";
-  let activeModal: "progression" | "recruitment" | null = null;
+  let activeModal: "progression" | "recruitment" | "reset" | null = null;
 
   const resetMenuScroll = (): void => {
     menuRoot.scrollTop = 0;
@@ -61,10 +63,13 @@ export function createLeagueMenuController(actions: {
   const syncModalState = (): void => {
     const progressionOpen = !progression.classList.contains("is-hidden");
     const recruitmentOpen = !recruitment.classList.contains("is-hidden");
+    const resetOpen = !resetDialog.classList.contains("is-hidden");
     const nextModal = progressionOpen
       ? "progression"
       : recruitmentOpen
       ? "recruitment"
+      : resetOpen
+      ? "reset"
       : null;
     const modalOpen = nextModal !== null;
     menuRoot.classList.toggle("has-modal-open", modalOpen);
@@ -73,6 +78,7 @@ export function createLeagueMenuController(actions: {
     dashboard.inert = modalOpen;
     progression.setAttribute("aria-hidden", String(!progressionOpen));
     recruitment.setAttribute("aria-hidden", String(!recruitmentOpen));
+    resetDialog.setAttribute("aria-hidden", String(!resetOpen));
     if (nextModal === activeModal) return;
 
     const previousModal = activeModal;
@@ -83,6 +89,14 @@ export function createLeagueMenuController(actions: {
       });
     } else if (nextModal === "recruitment") {
       requiredButton("league-confirm-recruit").focus({
+        preventScroll: true,
+      });
+    } else if (nextModal === "reset") {
+      requiredButton("league-reset-cancel").focus({
+        preventScroll: true,
+      });
+    } else if (previousModal === "reset") {
+      document.getElementById("league-season-options")?.focus({
         preventScroll: true,
       });
     } else if (previousModal) {
@@ -114,7 +128,8 @@ export function createLeagueMenuController(actions: {
     empty.classList.toggle("is-hidden", Boolean(season));
     dashboard.classList.toggle("is-hidden", !season);
     dashboard.classList.toggle("has-progress", Boolean(season?.currentRound));
-    element("league-reset").classList.toggle("is-hidden", !season);
+    seasonTools.classList.toggle("is-hidden", !season);
+    if (!season) seasonTools.open = false;
     if (!season) {
       recruitment.classList.add("is-hidden");
       progression.classList.add("is-hidden");
@@ -282,6 +297,9 @@ export function createLeagueMenuController(actions: {
       row.type = "button";
       row.className = `league-table-row${standing.teamId === active.playerTeamId ? " is-player-team" : ""}${standing.teamId === selectedTeamId ? " is-selected" : ""}`;
       row.style.setProperty("--team-color", team.primaryColor);
+      row.setAttribute("aria-controls", "league-team-detail");
+      row.setAttribute("aria-pressed", String(standing.teamId === selectedTeamId));
+      row.title = `Inspect ${team.name} roster`;
       row.innerHTML = `<span>${index + 1}</span><span><img class="league-table-emblem" src="${leagueTeamEmblemUrl(team.id)}" alt="">${team.name}</span><span>${standing.played}</span><span>${standing.wins}</span><span>${standing.draws}</span><span>${standing.losses}</span><strong>${standing.points}</strong>`;
       row.onclick = () => {
         selectedTeamId = standing.teamId;
@@ -296,7 +314,7 @@ export function createLeagueMenuController(actions: {
     const team = leagueTeam(teamId);
     const target = element("league-team-detail");
     target.style.setProperty("--team-color", team.primaryColor);
-    target.innerHTML = `<div class="league-detail-heading"><img class="league-large-emblem" src="${leagueTeamEmblemUrl(team.id)}" alt="${team.name} emblem"><div><small>TEAM FILE</small><h3>${team.name}</h3><p>${team.motto}</p></div></div><div class="league-detail-roster"></div>`;
+    target.innerHTML = `<div class="league-detail-heading"><img class="league-large-emblem" src="${leagueTeamEmblemUrl(team.id)}" alt="${team.name} emblem"><div><small>SCOUTING FILE</small><h3>${team.name}</h3><p>${team.motto}</p></div></div><div class="league-detail-roster"></div>`;
     const roster = target.querySelector<HTMLElement>(".league-detail-roster")!;
     roster.replaceChildren(
       ...active.teamRosters[teamId].map((characterId) => characterCard(active, characterId))
@@ -451,7 +469,22 @@ export function createLeagueMenuController(actions: {
     actions.onBack();
   };
   requiredButton("league-reset").onclick = () => {
-    if (!window.confirm("Reset the current league season? All results will be lost.")) return;
+    seasonTools.open = false;
+    resetDialog.classList.remove("is-hidden");
+    syncModalState();
+  };
+  const cancelReset = (): void => {
+    resetDialog.classList.add("is-hidden");
+    syncModalState();
+  };
+  requiredButton("league-reset-cancel").onclick = cancelReset;
+  resetDialog.onkeydown = (event) => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    cancelReset();
+  };
+  requiredButton("league-reset-confirm-button").onclick = () => {
+    resetDialog.classList.add("is-hidden");
     repository.clear();
     season = null;
     render();

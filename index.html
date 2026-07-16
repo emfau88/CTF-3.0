@@ -102,38 +102,40 @@
                 <option value="one-flag">One Flag</option>
               </select>
             </fieldset>
-            <label>Arena
-              <select id="v2-menu-map">
-                <option value="helix-canopy-v2">Helix Canopy</option>
-                <option value="drowned-sun-temple-v2">Temple of the Drowned Sun</option>
-                <option value="flow-circuit-v2">Foundry Circuit</option>
-                <option value="training-crossing-v2">Training Crossing</option>
-                <option value="grand-archive-v2">Grand Archive</option>
-                <option value="flank-switch-v2">Flank Switch</option>
-                <option value="flow-lab-v2">Sunken Court</option>
-              </select>
-            </label>
-            <label>Match
-              <select id="v2-menu-players">
-                <option value="bot">Solo vs Bot</option>
-                <option value="local">Local 2 Player (Experimental)</option>
-              </select>
-            </label>
-            <label>Team Size
-              <select id="v2-menu-team-size">
-                <option value="1">1v1</option>
-                <option value="2">2v2</option>
-                <option value="3">3v3</option>
-                <option value="4">4v4</option>
-              </select>
-            </label>
-            <label>Controls
-              <select id="v2-menu-controls">
-                <option value="auto">Auto detect</option>
-                <option value="touch">Touch overlay + keyboard</option>
-                <option value="keyboard">Keyboard only</option>
-              </select>
-            </label>
+            <div class="v2-menu-section-title v2-quick-config-heading">
+              <span>Match Setup</span>
+              <small>You control one fighter · open slots are filled by bots</small>
+            </div>
+            <div class="v2-quick-match-fields">
+              <label>Arena
+                <select id="v2-menu-map">
+                  <option value="helix-canopy-v2">Helix Canopy</option>
+                  <option value="drowned-sun-temple-v2">Temple of the Drowned Sun</option>
+                  <option value="flow-circuit-v2">Foundry Circuit</option>
+                  <option value="training-crossing-v2">Training Crossing</option>
+                  <option value="grand-archive-v2">Grand Archive</option>
+                  <option value="flank-switch-v2">Flank Switch</option>
+                  <option value="flow-lab-v2">Sunken Court</option>
+                </select>
+              </label>
+              <label>Team Size
+                <select id="v2-menu-team-size">
+                  <option value="1">1v1</option>
+                  <option value="2">2v2</option>
+                  <option value="3">3v3</option>
+                  <option value="4">4v4</option>
+                </select>
+              </label>
+            </div>
+            <figure id="v2-menu-arena-preview" class="v2-quick-arena-preview is-hidden" aria-live="polite">
+              <img id="v2-menu-arena-preview-image" alt="" />
+              <figcaption>
+                <small id="v2-menu-arena-preview-kicker">Featured Arena</small>
+                <strong id="v2-menu-arena-preview-name"></strong>
+                <span id="v2-menu-arena-preview-description"></span>
+                <b id="v2-menu-arena-preview-meta"></b>
+              </figcaption>
+            </figure>
             <fieldset class="v2-quick-skin-field">
               <legend>Choose Your Fighter</legend>
               <div class="v2-quick-skin-selected">
@@ -147,14 +149,33 @@
               <div id="v2-menu-skin-picker" class="v2-quick-skin-picker" role="listbox" aria-label="Playable character skins"></div>
               <select id="v2-menu-skin" class="v2-quick-skin-native" tabindex="-1" aria-hidden="true"></select>
             </fieldset>
-            <label>SFX
-              <select id="v2-menu-sfx">
-                <option value="on">On</option>
-                <option value="off">Muted</option>
-              </select>
-            </label>
+            <div class="v2-menu-section-title v2-quick-config-heading">
+              <span>Input &amp; Audio</span>
+              <small>Personal preferences</small>
+            </div>
+            <div class="v2-quick-preference-fields">
+              <label>Controls
+                <select id="v2-menu-controls">
+                  <option value="auto">Auto detect</option>
+                  <option value="touch">Touch overlay + keyboard</option>
+                  <option value="keyboard">Keyboard only</option>
+                </select>
+                <small id="v2-menu-controls-hint" class="v2-quick-field-hint"></small>
+              </label>
+              <label>SFX
+                <select id="v2-menu-sfx">
+                  <option value="on">On</option>
+                  <option value="off">Muted</option>
+                </select>
+              </label>
+            </div>
           </div>
-          <div class="v2-menu-actions">
+          <div class="v2-quick-launch">
+            <div class="v2-quick-launch-summary">
+              <small>Selected Match</small>
+              <strong id="v2-menu-launch-summary"></strong>
+              <span id="v2-menu-launch-detail"></span>
+            </div>
             <button id="v2-menu-start" type="button">Start Match</button>
           </div>
           <div class="v2-menu-help">
@@ -173,7 +194,13 @@
               </div>
             </div>
             <div class="v2-subpage-header-actions league-header-actions">
-              <button id="league-reset" class="league-text-button league-danger-button" type="button">Reset Season</button>
+              <details id="league-season-tools" class="league-season-tools">
+                <summary id="league-season-options">Season Options</summary>
+                <div class="league-season-tools-menu">
+                  <small>SEASON MANAGEMENT</small>
+                  <button id="league-reset" class="league-text-button league-danger-button" type="button">Reset Season</button>
+                </div>
+              </details>
             </div>
           </header>
           <div id="league-empty" class="league-empty is-hidden">
@@ -187,7 +214,9 @@
             <div class="league-empty-badge"><img src="assets/league/teams/iron-vanguard-emblem.png" alt="Iron Vanguard emblem" /><small>IRON VANGUARD</small></div>
           </div>
           <div id="league-dashboard" class="league-dashboard is-hidden">
+            <div class="league-dashboard-band league-dashboard-band-match"><span>01</span><strong>Season Command</strong><small>Next fixture and circuit run</small></div>
             <section id="league-next-match" class="league-next-match"></section>
+            <div class="league-dashboard-band league-dashboard-band-team"><span>02</span><strong>Team Operations</strong><small>Squad status and league table</small></div>
             <section class="league-panel league-squad-panel">
               <div class="league-panel-heading"><span>Your Squad</span><small id="league-team-record"></small></div>
               <div id="league-player-roster" class="league-roster"></div>
@@ -200,14 +229,26 @@
               </div>
             </section>
             <section class="league-panel league-table-panel">
-              <div class="league-panel-heading"><span>Founders Standings</span><small>Universal league points</small></div>
+              <div class="league-panel-heading"><span>Founders Standings</span><small>Select a team to inspect</small></div>
               <div id="league-standings" class="league-standings"></div>
             </section>
+            <div class="league-dashboard-band league-dashboard-band-depth"><span>03</span><strong>Scouting &amp; Progression</strong><small>Rival files and the path ahead</small></div>
             <section id="league-team-detail" class="league-panel league-detail-panel"></section>
             <section class="league-panel league-pyramid-panel">
-              <div class="league-panel-heading"><span>Arena Path</span><small>Your climb beyond this circuit</small></div>
+              <div class="league-panel-heading"><span>Arena Path</span><small>Current, next and locked circuits</small></div>
               <div id="league-pyramid" class="league-pyramid"></div>
             </section>
+          </div>
+          <div id="league-reset-confirm" class="league-reset-dialog is-hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="league-reset-title">
+            <div class="league-reset-card">
+              <div class="v2-menu-kicker">SEASON MANAGEMENT</div>
+              <h2 id="league-reset-title">Reset current season?</h2>
+              <p>All match results, standings and squad progress from this Founders Circuit will be permanently removed.</p>
+              <div class="league-reset-actions">
+                <button id="league-reset-cancel" class="league-reset-cancel" type="button">Keep Season</button>
+                <button id="league-reset-confirm-button" class="league-reset-confirm-button" type="button">Reset Season</button>
+              </div>
+            </div>
           </div>
           <div id="league-progression" class="league-progression is-hidden" role="dialog" aria-modal="true" aria-hidden="true"></div>
           <div id="league-recruitment" class="league-recruitment is-hidden" role="dialog" aria-modal="true" aria-hidden="true"></div>

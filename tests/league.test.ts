@@ -59,7 +59,11 @@ function leagueMenuFixture(): string {
       <div id="v2-league-hub" class="is-hidden">
         <header class="league-header">
           <div id="league-header-kicker"></div><div id="league-header-title"></div>
-          <button id="league-back"></button><button id="league-reset"></button>
+          <button id="league-back"></button>
+          <details id="league-season-tools">
+            <summary id="league-season-options">Season Options</summary>
+            <button id="league-reset"></button>
+          </details>
         </header>
         <div id="league-empty"><button id="league-new-season"></button></div>
         <div id="league-intro-route"></div>
@@ -72,6 +76,10 @@ function leagueMenuFixture(): string {
           <div id="league-standings"></div>
           <div id="league-team-detail"></div>
           <div id="league-pyramid"></div>
+        </div>
+        <div id="league-reset-confirm" class="is-hidden">
+          <button id="league-reset-cancel"></button>
+          <button id="league-reset-confirm-button"></button>
         </div>
         <div id="league-progression" class="is-hidden"></div>
         <div id="league-recruitment" class="is-hidden"></div>
@@ -280,6 +288,25 @@ test("career and custom menus share the same primary navigation shell", () => {
   assert.match(html, /id="league-intro-route"/);
 });
 
+test("quick play presents premium arena previews and a final match summary", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const menuSource = readFileSync(
+    new URL("../src/v2Menu.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(html, /id="v2-menu-arena-preview"/);
+  assert.match(html, /id="v2-menu-launch-summary"/);
+  assert.doesNotMatch(html, /id="v2-menu-players"/);
+  assert.doesNotMatch(html, /Local 2 Player/);
+  assert.match(html, /open slots are filled by bots/);
+  assert.match(html, /Input &amp; Audio/);
+  assert.match(menuSource, /helix-canopy-v2-overview\.png/);
+  assert.match(menuSource, /drowned-sun-temple-v2-overview\.png/);
+  assert.match(menuSource, /const preferredSkin = loadPlayerSkinPreference\(\);/);
+  assert.doesNotMatch(menuSource, /has\("skin"\)/);
+  assert.match(menuSource, /players:\s*"bot"/);
+});
+
 test("result screen exposes the emblem score lockup and restrained reveal motion", () => {
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
@@ -471,6 +498,16 @@ test("league menu starts a season and renders the actionable dashboard", () => {
   assert.equal(document.querySelectorAll(".league-season-stop").length, 3);
   assert.equal(document.querySelectorAll(".league-season-stop.is-current").length, 1);
   assert.match(document.getElementById("league-pyramid")!.textContent ?? "", /Challenger League/);
+  const resetDialog = document.getElementById("league-reset-confirm")!;
+  document.getElementById("league-reset")!.click();
+  assert.equal(resetDialog.classList.contains("is-hidden"), false);
+  assert.equal(resetDialog.getAttribute("aria-hidden"), "false");
+  assert.equal(menuRoot.classList.contains("has-modal-open"), true);
+  assert.equal(document.activeElement?.id, "league-reset-cancel");
+  document.getElementById("league-reset-cancel")!.click();
+  assert.equal(resetDialog.classList.contains("is-hidden"), true);
+  assert.equal(menuRoot.classList.contains("has-modal-open"), false);
+  assert.equal(document.activeElement?.id, "league-season-options");
   assert.ok(window.localStorage.getItem(LEAGUE_STORAGE_KEY));
   const repository = createLeagueRepository(window.localStorage);
   const savedSeason = repository.load()!;

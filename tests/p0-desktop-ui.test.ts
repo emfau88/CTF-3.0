@@ -110,6 +110,10 @@ test("desktop P0 UI contract keeps Career primary and uses one outer menu scroll
   assert.match(polishCss, /\.v2-quick-mode-picker/);
   assert.match(polishCss, /\.v2-quick-mode-option\.is-selected/);
   assert.match(polishCss, /\.v2-quick-mode-art/);
+  assert.match(
+    polishCss,
+    /\.v2-setup-view,\s*\n\.v2-league-hub\s*\{[^}]*width:\s*100%[^}]*min-width:\s*0[^}]*justify-self:\s*stretch/,
+  );
   assert.match(polishCss, /\.v2-subpage-title h2\s*\{[^}]*font-weight:\s*800[^}]*letter-spacing:\s*\.025em[^}]*word-spacing:\s*\.12em/);
   assert.match(polishCss, /\.league-character-info > span\s*\{[^}]*font-size:\s*11px[^}]*line-height:\s*1\.35/);
   assert.match(polishCss, /\.league-table-row\s*\{[^}]*font-size:\s*12px/);
