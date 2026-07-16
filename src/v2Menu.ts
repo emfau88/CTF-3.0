@@ -62,6 +62,8 @@ interface QuickPlayArenaPreview {
   readonly kicker: string;
   readonly description: string;
   readonly meta: string;
+  readonly foregroundSize: string;
+  readonly backdropPosition?: string;
 }
 
 const QUICK_PLAY_ARENA_PREVIEWS: Readonly<
@@ -73,6 +75,7 @@ const QUICK_PLAY_ARENA_PREVIEWS: Readonly<
     description:
       "A bright mirrored arena with clean lanes and a clear central objective route.",
     meta: "PREMIUM ARENA · ALL MODES",
+    foregroundSize: "94%",
   },
   "drowned-sun-temple-v2": {
     image: "assets/map-previews/drowned-sun-temple-v2-overview.png",
@@ -80,6 +83,7 @@ const QUICK_PLAY_ARENA_PREVIEWS: Readonly<
     description:
       "A darker battleground with layered cover, flank routes and a contested central court.",
     meta: "PREMIUM ARENA · ALL MODES",
+    foregroundSize: "100%",
   },
 };
 
@@ -151,13 +155,32 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     if (!preview) {
       elements.arenaPreviewImage.removeAttribute("src");
       elements.arenaPreviewImage.alt = "";
+      elements.arenaPreview.style.removeProperty("--arena-preview-image");
+      elements.arenaPreview.style.removeProperty(
+        "--arena-preview-foreground-size",
+      );
+      elements.arenaPreview.style.removeProperty(
+        "--arena-preview-backdrop-position",
+      );
       return;
     }
     const mapLabel =
       elements.map.selectedOptions[0]?.textContent?.trim() ?? elements.map.value;
-    elements.arenaPreviewImage.src =
-      `${import.meta.env.BASE_URL}${preview.image}`;
+    const imageUrl = `${import.meta.env.BASE_URL}${preview.image}`;
+    elements.arenaPreviewImage.src = imageUrl;
     elements.arenaPreviewImage.alt = `${mapLabel} arena overview`;
+    elements.arenaPreview.style.setProperty(
+      "--arena-preview-image",
+      `url("${imageUrl}")`,
+    );
+    elements.arenaPreview.style.setProperty(
+      "--arena-preview-foreground-size",
+      preview.foregroundSize,
+    );
+    elements.arenaPreview.style.setProperty(
+      "--arena-preview-backdrop-position",
+      preview.backdropPosition ?? "center",
+    );
     elements.arenaPreviewKicker.textContent = preview.kicker;
     elements.arenaPreviewName.textContent = mapLabel;
     elements.arenaPreviewDescription.textContent = preview.description;

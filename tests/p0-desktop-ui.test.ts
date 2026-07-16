@@ -150,6 +150,47 @@ test("desktop P0 UI contract keeps Career primary and uses one outer menu scroll
   assert.match(polishCss, /\.v2-quick-mode-art/);
   assert.match(
     polishCss,
+    /\.league-opponent-lineup\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
+  );
+  assert.match(
+    polishCss,
+    /\.league-opponent-member-portrait\s*\{[^}]*var\(--skin-portrait\)/,
+  );
+  assert.match(polishCss, /\.league-scouting-index\s*\{/);
+  assert.match(
+    polishCss,
+    /\.league-fixture-title\s*\{[^}]*grid-template-areas:[^}]*"emblem team"[^}]*"emblem versus"/,
+  );
+  assert.match(
+    polishCss,
+    /\.league-fixture-team strong\s*\{[^}]*white-space:\s*normal[^}]*word-break:\s*keep-all/,
+  );
+  assert.doesNotMatch(
+    polishCss,
+    /\.league-fixture-team strong\s*\{[^}]*text-overflow:\s*ellipsis/,
+  );
+  assert.match(
+    polishCss,
+    /\.v2-quick-arena-preview\s*\{[^}]*grid-template-areas:\s*"caption image"/,
+  );
+  assert.match(
+    polishCss,
+    /\.v2-quick-arena-stage\s*\{[^}]*aspect-ratio:\s*2\.15\s*\/\s*1/,
+  );
+  assert.match(
+    polishCss,
+    /\.v2-quick-arena-stage::before\s*\{[^}]*var\(--arena-preview-image\)[^}]*filter:\s*blur\(14px\)/,
+  );
+  assert.match(
+    polishCss,
+    /\.v2-quick-arena-stage > img\s*\{[^}]*object-fit:\s*contain/,
+  );
+  assert.doesNotMatch(
+    polishCss,
+    /\.v2-quick-arena-stage > img\s*\{[^}]*transform:\s*scale/,
+  );
+  assert.match(
+    polishCss,
     /\.v2-setup-view,\s*\n\.v2-league-hub\s*\{[^}]*width:\s*100%[^}]*min-width:\s*0[^}]*justify-self:\s*stretch/,
   );
   assert.match(polishCss, /\.v2-subpage-title h2\s*\{[^}]*font-weight:\s*800[^}]*letter-spacing:\s*\.025em[^}]*word-spacing:\s*\.12em/);

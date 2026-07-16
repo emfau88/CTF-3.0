@@ -302,6 +302,10 @@ test("quick play presents premium arena previews and a final match summary", () 
   assert.match(html, /Input &amp; Audio/);
   assert.match(menuSource, /helix-canopy-v2-overview\.png/);
   assert.match(menuSource, /drowned-sun-temple-v2-overview\.png/);
+  assert.match(menuSource, /foregroundSize:\s*"94%"/);
+  assert.match(menuSource, /foregroundSize:\s*"100%"/);
+  assert.match(menuSource, /"--arena-preview-image"/);
+  assert.match(menuSource, /"--arena-preview-foreground-size"/);
   assert.match(menuSource, /QUICK_PLAY_DEFAULT_MODE:\s*V2ModeId\s*=\s*"tdm"/);
   assert.match(menuSource, /QUICK_PLAY_DEFAULT_MAP\s*=\s*"helix-canopy-v2"/);
   assert.match(
@@ -495,8 +499,24 @@ test("league menu starts a season and renders the actionable dashboard", () => {
   assert.equal(document.getElementById("league-dashboard")!.classList.contains("is-hidden"), false);
   assert.equal(document.querySelectorAll(".league-table-row").length, 5);
   assert.equal(document.querySelectorAll(".league-table-emblem").length, 4);
-  assert.equal(document.querySelectorAll(".league-mini-emblem").length, 2);
+  assert.equal(document.querySelectorAll(".league-mini-emblem").length, 1);
+  assert.equal(document.querySelectorAll(".league-opponent-emblem").length, 1);
+  assert.equal(document.querySelectorAll(".league-opponent-member").length, 2);
+  assert.equal(document.querySelectorAll(".league-opponent-member-new").length, 2);
+  assert.match(
+    document.getElementById("league-team-detail")!.textContent ?? "",
+    /Choose a team file/,
+  );
+  assert.equal(document.querySelector(".league-large-emblem"), null);
+  const scoutingRow = document.querySelector<HTMLButtonElement>(
+    '.league-table-row[title^="Inspect"]',
+  )!;
+  scoutingRow.click();
   assert.ok(document.querySelector(".league-large-emblem"));
+  assert.equal(
+    document.querySelectorAll("#league-team-detail .league-character").length,
+    2,
+  );
   assert.match(leagueTeamEmblemUrl("crimson-jackals"), /league\/teams\/crimson-jackals-emblem\.png$/);
   assert.equal(document.querySelectorAll("#league-player-roster .league-character").length, 2);
   const skinSelect = document.getElementById("league-skin-select") as HTMLSelectElement;
@@ -506,6 +526,8 @@ test("league menu starts a season and renders the actionable dashboard", () => {
   assert.equal(window.localStorage.getItem(PLAYER_SKIN_STORAGE_KEY), "ax9-mantis");
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /MATCH 1 OF 3/);
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /TEAM DEATHMATCH 2V2/);
+  assert.match(document.getElementById("league-next-match")!.textContent ?? "", /EXPECTED LINEUP/);
+  assert.match(document.getElementById("league-next-match")!.textContent ?? "", /NO SEASON DATA/i);
   assert.equal(document.querySelectorAll(".league-season-stop").length, 3);
   assert.equal(document.querySelectorAll(".league-season-stop.is-current").length, 1);
   assert.match(document.getElementById("league-pyramid")!.textContent ?? "", /Challenger League/);
@@ -567,6 +589,32 @@ test("league progression separates match outcome from rival-driven table movemen
   assert.doesNotMatch(progression.textContent ?? "", /Up 1 Place/);
   assert.match(progression.textContent ?? "", /other circuit result reshaped the table/);
   assert.ok(progression.querySelector(".league-points-earned.is-zero"));
+  window.localStorage.clear();
+});
+
+test("next-match dossier shows recorded opponent performance when scouting data exists", () => {
+  window.localStorage.clear();
+  document.body.innerHTML = leagueMenuFixture();
+  const repository = createLeagueRepository(window.localStorage);
+  const season = createLeagueSeason(505);
+  const opponentId = getPlayerOpponent(season)!;
+  for (const [index, characterId] of season.teamRosters[opponentId].entries()) {
+    season.characterStats[characterId] = {
+      characterId,
+      matches: 2,
+      kills: 3 + index,
+      deaths: 2,
+      flagPickups: 1,
+      flagCaptures: index,
+      flagReturns: 1,
+    };
+  }
+  repository.save(season);
+
+  createLeagueMenuController({ onBack: () => {} }).open();
+  assert.equal(document.querySelectorAll(".league-opponent-member-stats").length, 2);
+  assert.equal(document.querySelectorAll(".league-opponent-member-new").length, 0);
+  assert.match(document.getElementById("league-next-match")!.textContent ?? "", /1\.5K\/M/);
   window.localStorage.clear();
 });
 

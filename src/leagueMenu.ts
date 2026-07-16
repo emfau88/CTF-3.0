@@ -52,7 +52,7 @@ export function createLeagueMenuController(actions: {
   const resetDialog = element("league-reset-confirm");
   const seasonTools = element("league-season-tools") as HTMLDetailsElement;
   let season = repository.load();
-  let selectedTeamId: LeagueTeamId = season?.playerTeamId ?? "iron-vanguard";
+  let selectedTeamId: LeagueTeamId | null = null;
   let activeModal: "progression" | "recruitment" | "reset" | null = null;
 
   const resetMenuScroll = (): void => {
@@ -115,10 +115,7 @@ export function createLeagueMenuController(actions: {
 
   const startSeason = (): void => {
     season = createLeagueSeason();
-    selectedTeamId = getPlayerOpponent(
-      season,
-      getCurrentPlayerMatch(season),
-    ) ?? season.playerTeamId;
+    selectedTeamId = null;
     saveAndRender();
     resetMenuScroll();
   };
@@ -225,15 +222,27 @@ export function createLeagueMenuController(actions: {
     const ownTeam = leagueTeam(active.playerTeamId);
     const discipline = foundersCircuitDiscipline(active.currentRound);
     const opponentStanding = active.standings[opponentId];
+    const opponentLineup = renderOpponentLineup(active, opponentId);
     target.style.setProperty("--opponent-color", opponent.primaryColor);
     target.innerHTML = `
       <div class="league-fixture-meta">
         <span class="league-eyebrow">${discipline.trialLabel.toUpperCase()} · MATCH ${active.currentRound + 1} OF ${active.rounds.length}</span>
-        <div class="league-fixture-title"><img class="league-mini-emblem" src="${leagueTeamEmblemUrl(ownTeam.id)}" alt="${ownTeam.name} emblem"><b>VS</b><img class="league-mini-emblem is-rival" src="${leagueTeamEmblemUrl(opponent.id)}" alt="${opponent.name} emblem"></div>
+        <div class="league-fixture-title">
+          <img class="league-mini-emblem" src="${leagueTeamEmblemUrl(ownTeam.id)}" alt="${ownTeam.name} emblem">
+          <div class="league-fixture-team"><small>YOUR SQUAD</small><strong>${ownTeam.name}</strong></div>
+          <b>VS</b>
+        </div>
       </div>
       <div class="league-opponent-copy">
-        <small>OPPONENT</small><h3>${opponent.name}</h3><p>${opponent.motto}</p>
+        <div class="league-opponent-heading">
+          <img class="league-opponent-emblem" src="${leagueTeamEmblemUrl(opponent.id)}" alt="${opponent.name} emblem">
+          <div><small>NEXT OPPONENT</small><h3>${opponent.name}</h3><p>${opponent.motto}</p></div>
+        </div>
         <div class="league-opponent-form"><span>#${sortedLeagueStandings(active).findIndex((row) => row.teamId === opponentId) + 1} TABLE</span><span>${opponentStanding.points} PTS</span><span>${opponentStanding.wins}-${opponentStanding.draws}-${opponentStanding.losses}</span></div>
+        <div class="league-opponent-lineup" aria-label="${opponent.name} expected lineup">
+          <small class="league-opponent-lineup-label">EXPECTED LINEUP</small>
+          ${opponentLineup}
+        </div>
       </div>
       <button id="league-play-next" type="button"><small>${discipline.mapLabel.toUpperCase()} · ${discipline.modeLabel.toUpperCase()} 2V2</small><strong>Enter Arena</strong></button>
       ${renderSeasonTrack(active)}`;
@@ -310,9 +319,28 @@ export function createLeagueMenuController(actions: {
     });
   };
 
-  const renderTeamDetail = (active: LeagueSeasonState, teamId: LeagueTeamId): void => {
-    const team = leagueTeam(teamId);
+  const renderTeamDetail = (
+    active: LeagueSeasonState,
+    teamId: LeagueTeamId | null,
+  ): void => {
     const target = element("league-team-detail");
+    target.classList.toggle("is-scouting-index", teamId === null);
+    if (!teamId) {
+      target.style.removeProperty("--team-color");
+      target.innerHTML = `
+        <div class="league-scouting-index">
+          <small>SCOUTING NETWORK</small>
+          <h3>Choose a team file</h3>
+          <p>The next opponent's expected lineup is pinned in the match dossier above. Select any team in Founders Standings to inspect its full roster and recorded performance.</p>
+          <div class="league-scouting-index-points" aria-label="Available scouting information">
+            <span><b>NEXT</b><i>Match dossier above</i></span>
+            <span><b>ROSTER</b><i>Fighter identities</i></span>
+            <span><b>FORM</b><i>Recorded career data</i></span>
+          </div>
+        </div>`;
+      return;
+    }
+    const team = leagueTeam(teamId);
     target.style.setProperty("--team-color", team.primaryColor);
     target.innerHTML = `<div class="league-detail-heading"><img class="league-large-emblem" src="${leagueTeamEmblemUrl(team.id)}" alt="${team.name} emblem"><div><small>SCOUTING FILE</small><h3>${team.name}</h3><p>${team.motto}</p></div></div><div class="league-detail-roster"></div>`;
     const roster = target.querySelector<HTMLElement>(".league-detail-roster")!;
@@ -501,13 +529,36 @@ export function createLeagueMenuController(actions: {
     open(): void {
       root.classList.remove("is-hidden");
       season = repository.load();
-      selectedTeamId = season
-        ? getPlayerOpponent(season, getCurrentPlayerMatch(season)) ?? season.playerTeamId
-        : "iron-vanguard";
+      selectedTeamId = null;
       render();
       resetMenuScroll();
     },
   };
+}
+
+function renderOpponentLineup(
+  season: LeagueSeasonState,
+  opponentId: LeagueTeamId,
+): string {
+  const assetBase = import.meta.env?.BASE_URL ?? "/";
+  return season.teamRosters[opponentId].map((characterId, index) => {
+    const character = leagueCharacter(characterId);
+    const stats = season.characterStats[characterId] ?? emptyStats(characterId);
+    const portraitAssetStem = playerSkinPortraitAssetStem(character.skinId);
+    const performance = stats.matches > 0
+      ? `<div class="league-opponent-member-stats" aria-label="${character.name} recorded career performance"><b>${average(stats.kills, stats.matches)}<i>K/M</i></b><b>${average(stats.deaths, stats.matches)}<i>D/M</i></b><b>${stats.flagCaptures}<i>CAP</i></b></div>`
+      : `<span class="league-opponent-member-new">No season data</span>`;
+    return `
+      <article class="league-opponent-member">
+        <div class="league-opponent-member-portrait" style="--skin-portrait:url('${assetBase}assets/ui/portraits/${portraitAssetStem}.png')" aria-hidden="true"></div>
+        <div class="league-opponent-member-copy">
+          <small>FIGHTER 0${index + 1}</small>
+          <strong>${character.name}</strong>
+          <span>${character.visualStyle}</span>
+          ${performance}
+        </div>
+      </article>`;
+  }).join("");
 }
 
 function characterCard(
