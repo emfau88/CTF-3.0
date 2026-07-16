@@ -4,6 +4,7 @@ const assetUrl = (file: string) => `${import.meta.env.BASE_URL}assets/${file}`;
 
 export interface ArenaAssetPreloadOptions {
   readonly includeJungleTemple?: boolean;
+  readonly includeHelixCanopy?: boolean;
 }
 
 export function preloadArenaAssets(
@@ -152,6 +153,7 @@ export function preloadArenaAssets(
   scene.load.image("industrialEdgeTank", assetUrl("industrial/edge-tank-valve.png"));
   scene.load.image("industrialEdgeTurbine", assetUrl("industrial/edge-turbine.png"));
   if (options.includeJungleTemple) preloadJungleTempleAssets(scene);
+  if (options.includeHelixCanopy) preloadHelixCanopyAssets(scene);
   scene.load.audio("step1", assetUrl("sounds/step1.wav"));
   scene.load.audio("step2", assetUrl("sounds/step2.wav"));
   scene.load.audio("step3", assetUrl("sounds/step3.wav"));
@@ -194,4 +196,8 @@ function preloadJungleTempleAssets(scene: Phaser.Scene) {
   scene.load.image("templeJaguarSculpture", assetUrl("jungle-temple/jaguar-sculpture.png"));
   scene.load.image("templeCanopyEdge", assetUrl("jungle-temple/canopy-edge.png"));
   scene.load.image("templeWaterLight", assetUrl("jungle-temple/water-light.png"));
+}
+
+function preloadHelixCanopyAssets(scene: Phaser.Scene) {
+  scene.load.image("helixArenaMaster", assetUrl("helix-canopy/arena-master.png"));
 }

@@ -8,7 +8,8 @@ export type WorldMapTheme =
   | "ruins"
   | "library"
   | "industrial"
-  | "jungle-temple";
+  | "jungle-temple"
+  | "helix-canopy";
 export type WorldMapWallVisual =
   | "stone-wall"
   | "bookshelf"
@@ -24,7 +25,8 @@ export type WorldMapWallVisual =
   | "temple-court-corner-north-east"
   | "temple-court-corner-south-west"
   | "temple-court-corner-south-east"
-  | "temple-jaguar-root-pilot";
+  | "temple-jaguar-root-pilot"
+  | "helix-integrated-cover";
 export type WorldMapGapVisual =
   | "chasm"
   | "collapsed-floor"

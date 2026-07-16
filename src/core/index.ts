@@ -196,6 +196,7 @@ export {
   assertWorldMapSupportsMode,
   createEmptyWorldGeometry,
   DROWNED_SUN_TEMPLE_V2,
+  HELIX_CANOPY_V2,
   FLANK_SWITCH_V2,
   GRAND_ARCHIVE_V2,
   getWorldMap,

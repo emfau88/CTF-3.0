@@ -1,5 +1,6 @@
 export { FLANK_SWITCH_V2 } from "./flankSwitchV2";
 export { DROWNED_SUN_TEMPLE_V2 } from "./drownedSunTempleV2";
+export { HELIX_CANOPY_V2 } from "./helixCanopyV2";
 export { GRAND_ARCHIVE_V2 } from "./grandArchiveV2";
 export { TRAINING_CROSSING_V2 } from "./trainingCrossingV2";
 export {

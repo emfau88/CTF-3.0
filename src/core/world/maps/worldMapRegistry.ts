@@ -1,5 +1,6 @@
 import { FLANK_SWITCH_V2 } from "./flankSwitchV2";
 import { DROWNED_SUN_TEMPLE_V2 } from "./drownedSunTempleV2";
+import { HELIX_CANOPY_V2 } from "./helixCanopyV2";
 import { FLOW_CIRCUIT_V2 } from "./flowCircuitV2";
 import { FLOW_LAB_V2 } from "./flowLabV2";
 import { GRAND_ARCHIVE_V2 } from "./grandArchiveV2";
@@ -13,6 +14,7 @@ export const WORLD_MAPS: readonly WorldMapData[] = [
   FLOW_LAB_V2,
   FLOW_CIRCUIT_V2,
   DROWNED_SUN_TEMPLE_V2,
+  HELIX_CANOPY_V2,
 ];
 
 const WORLD_MAP_BY_ID = new Map(

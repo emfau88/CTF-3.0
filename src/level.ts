@@ -6,7 +6,8 @@ export type LevelTheme =
   | "ruins"
   | "library"
   | "industrial"
-  | "jungle-temple";
+  | "jungle-temple"
+  | "helix-canopy";
 export type WallVisual =
   | "stone-wall"
   | "bookshelf"
@@ -22,7 +23,8 @@ export type WallVisual =
   | "temple-court-corner-north-east"
   | "temple-court-corner-south-west"
   | "temple-court-corner-south-east"
-  | "temple-jaguar-root-pilot";
+  | "temple-jaguar-root-pilot"
+  | "helix-integrated-cover";
 export type GapVisual =
   | "chasm"
   | "collapsed-floor"
@@ -60,6 +62,7 @@ export const LEVEL_THEME_VISUALS = {
   library: { floorPrimary: 0, floorAccent: 1, redBase: 2, blueBase: 3, wallHorizontal: 4, wallVertical: 5, gap: 8 },
   industrial: { floorPrimary: 0, floorAccent: 1, redBase: 2, blueBase: 3, wallHorizontal: 4, wallVertical: 5, gap: 8 },
   "jungle-temple": { floorPrimary: 0, floorAccent: 1, redBase: 2, blueBase: 3, wallHorizontal: 4, wallVertical: 5, gap: 8 },
+  "helix-canopy": { floorPrimary: 0, floorAccent: 1, redBase: 2, blueBase: 3, wallHorizontal: 4, wallVertical: 5, gap: 8 },
 } as const;
 
 export const JUNGLE_TEMPLE_GREYBOX_PALETTE = {
@@ -71,6 +74,10 @@ export const JUNGLE_TEMPLE_GREYBOX_PALETTE = {
   gap: 0x07191d,
   gapEdge: 0x35bfd0,
   objective: 0xd9a934,
+} as const;
+
+export const HELIX_CANOPY_PALETTE = {
+  objective: 0x3ee7ee,
 } as const;
 
 export type LevelData = {

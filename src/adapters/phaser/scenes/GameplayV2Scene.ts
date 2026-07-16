@@ -58,6 +58,7 @@ export class GameplayV2Scene extends Phaser.Scene {
     const map = resolveWorldMap(route.map);
     preloadArenaAssets(this, {
       includeJungleTemple: map.presentation.theme === "jungle-temple",
+      includeHelixCanopy: map.presentation.theme === "helix-canopy",
     });
   }
 

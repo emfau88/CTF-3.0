@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { TEAM } from "./config";
 import {
+  HELIX_CANOPY_PALETTE,
   JUNGLE_TEMPLE_GREYBOX_PALETTE,
   LEVEL_THEME_VISUALS,
   type LevelData,
@@ -44,6 +45,9 @@ export function renderArena(
   if (level.theme === "jungle-temple" && level.combatZone) {
     drawTempleCombatZone(scene, g, level.combatZone, level.id === DROWNED_SUN_TEMPLE_ID);
   }
+  if (level.theme === "helix-canopy" && level.combatZone) {
+    drawHelixCombatZone(scene, level.combatZone);
+  }
   if (level.theme === "ruins" || level.theme === "library") {
     const baseDepth = level.theme === "library" ? .5 : -1;
     drawRuinsBase(scene, level.redBase, "ruinsBaseRed", baseDepth);
@@ -54,6 +58,9 @@ export function renderArena(
   } else if (level.theme === "jungle-temple") {
     drawTempleBase(scene, level.redBase, "templeBaseRed");
     drawTempleBase(scene, level.blueBase, "templeBaseBlue");
+  } else if (level.theme === "helix-canopy") {
+    drawHelixBase(scene, level.redBase, "helixBaseRed");
+    drawHelixBase(scene, level.blueBase, "helixBaseBlue");
   } else {
     drawObjectSprite(scene, level.redBase, visuals.redBase, .92);
     drawObjectSprite(scene, level.blueBase, visuals.blueBase, .92);
@@ -77,6 +84,8 @@ export function renderArena(
     }
     for (const gap of level.gaps) drawTempleGap(scene, g, gap);
     for (const wall of level.walls) drawTempleWall(scene, g, wall);
+  } else if (level.theme === "helix-canopy") {
+    // The approved master art already renders every authored collision island.
   } else {
     for (const gap of level.gaps) drawObjectSprite(scene, gap, visuals.gap, 1);
     for (const wall of level.walls) {
@@ -91,6 +100,10 @@ export function renderArena(
 }
 
 function drawFloorTiles(scene: Phaser.Scene, level: LevelData) {
+  if (level.theme === "helix-canopy") {
+    drawHelixFloor(scene, level);
+    return;
+  }
   if (level.theme === "jungle-temple") {
     if (level.id === DROWNED_SUN_TEMPLE_ID) {
       drawTempleFloor(scene, level);
@@ -161,6 +174,51 @@ function drawZone(g: Phaser.GameObjects.Graphics, r: Rect, fill: number, stroke:
     .fillRoundedRect(r.x, r.y, r.w, r.h, 8)
     .lineStyle(3, stroke, .62)
     .strokeRoundedRect(r.x, r.y, r.w, r.h, 8);
+}
+
+function drawHelixFloor(scene: Phaser.Scene, level: LevelData) {
+  scene.add.rectangle(
+    level.width / 2,
+    level.height / 2,
+    level.width,
+    level.height,
+    0x050b18,
+  ).setDepth(-2.1);
+  const imageWidth = level.height * (1647 / 955);
+  scene.add.image(level.width / 2, level.height / 2, "helixArenaMaster")
+    .setDisplaySize(imageWidth, level.height)
+    .setDepth(-2);
+}
+
+function drawHelixCombatZone(scene: Phaser.Scene, r: Rect) {
+  const centerX = r.x + r.w / 2;
+  const centerY = r.y + r.h / 2;
+  const marker = scene.add.graphics().setDepth(-1.55);
+  marker
+    .fillStyle(HELIX_CANOPY_PALETTE.objective, .06)
+    .fillCircle(centerX, centerY, 54)
+    .lineStyle(2, HELIX_CANOPY_PALETTE.objective, .46)
+    .strokeCircle(centerX, centerY, 54)
+    .lineStyle(1, 0xe8ffff, .34)
+    .strokeCircle(centerX, centerY, 42);
+}
+
+function drawHelixBase(
+  scene: Phaser.Scene,
+  base: Rect,
+  key: "helixBaseRed" | "helixBaseBlue",
+) {
+  const centerX = base.x + base.w / 2;
+  const centerY = base.y + base.h / 2;
+  const color = key === "helixBaseRed" ? TEAM.red.base : TEAM.blue.base;
+  const marker = scene.add.graphics().setDepth(-1.35);
+  marker
+    .fillStyle(color, .055)
+    .fillCircle(centerX, centerY, 68)
+    .lineStyle(3, color, .42)
+    .strokeCircle(centerX, centerY, 68)
+    .lineStyle(1, 0xffffff, .28)
+    .strokeCircle(centerX, centerY, 58);
 }
 
 function drawTempleFloor(scene: Phaser.Scene, level: LevelData) {
