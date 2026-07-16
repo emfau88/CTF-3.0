@@ -43,7 +43,9 @@ export function renderArena(
       .setDepth(-1.7);
   }
   if (level.theme === "jungle-temple" && level.combatZone) {
-    drawTempleCombatZone(scene, g, level.combatZone, level.id === DROWNED_SUN_TEMPLE_ID);
+    if (level.id !== DROWNED_SUN_TEMPLE_ID) {
+      drawTempleCombatZone(scene, g, level.combatZone, false);
+    }
   }
   if (level.theme === "helix-canopy" && level.combatZone) {
     drawHelixCombatZone(scene, level.combatZone);
@@ -56,8 +58,10 @@ export function renderArena(
     drawIndustrialBase(scene, level.redBase, "industrialBaseRed");
     drawIndustrialBase(scene, level.blueBase, "industrialBaseBlue");
   } else if (level.theme === "jungle-temple") {
-    drawTempleBase(scene, level.redBase, "templeBaseRed");
-    drawTempleBase(scene, level.blueBase, "templeBaseBlue");
+    if (level.id !== DROWNED_SUN_TEMPLE_ID) {
+      drawTempleBase(scene, level.redBase, "templeBaseRed");
+      drawTempleBase(scene, level.blueBase, "templeBaseBlue");
+    }
   } else if (level.theme === "helix-canopy") {
     drawHelixBase(scene, level.redBase, "helixBaseRed");
     drawHelixBase(scene, level.blueBase, "helixBaseBlue");
@@ -79,11 +83,13 @@ export function renderArena(
     for (const gap of level.gaps) drawIndustrialGap(scene, gap);
     for (const wall of level.walls) drawIndustrialWall(scene, g, wall);
   } else if (level.theme === "jungle-temple") {
-    for (const decoration of level.decorations ?? []) {
-      drawTempleDecoration(scene, decoration);
+    if (level.id !== DROWNED_SUN_TEMPLE_ID) {
+      for (const decoration of level.decorations ?? []) {
+        drawTempleDecoration(scene, decoration);
+      }
+      for (const gap of level.gaps) drawTempleGap(scene, g, gap);
+      for (const wall of level.walls) drawTempleWall(scene, g, wall);
     }
-    for (const gap of level.gaps) drawTempleGap(scene, g, gap);
-    for (const wall of level.walls) drawTempleWall(scene, g, wall);
   } else if (level.theme === "helix-canopy") {
     // The approved master art already renders every authored collision island.
   } else {
@@ -222,31 +228,47 @@ function drawHelixBase(
 }
 
 function drawTempleFloor(scene: Phaser.Scene, level: LevelData) {
-  const panelWidth = 360;
-  const bands = [
-    { y: 0, height: 300, key: "templeFloorGallery" },
-    { y: 300, height: 320, key: "templeFloorBasaltPilot" },
-    { y: 620, height: 300, key: "templeFloorRootwater" },
-  ] as const;
   scene.add.rectangle(
     level.width / 2,
     level.height / 2,
     level.width,
     level.height,
-    JUNGLE_TEMPLE_GREYBOX_PALETTE.floor,
-  ).setDepth(-2);
-  for (const band of bands) {
-    for (let x = 0, column = 0; x < level.width; x += panelWidth, column += 1) {
-      scene.add.image(
-        x + panelWidth / 2,
-        band.y + band.height / 2,
-        band.key,
+    0x101711,
+  ).setDepth(-2.1);
+  const imageWidth = level.height * (1921 / 819);
+  scene.add.image(level.width / 2, level.height / 2, "templeArenaMasterV2")
+    .setDisplaySize(imageWidth, level.height)
+    .setDepth(-2);
+  for (const gap of level.gaps) {
+    const shimmer = scene.add.graphics()
+      .setDepth(-1.78)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    shimmer
+      .fillStyle(0x45d8d1, .11)
+      .fillRoundedRect(
+        gap.x + gap.w * .12,
+        gap.y + gap.h * .15,
+        gap.w * .76,
+        gap.h * .62,
+        16,
       )
-        .setDisplaySize(Math.min(panelWidth, level.width - x), band.height)
-        .setFlipX(column % 2 === 1)
-        .setAlpha(.96)
-        .setDepth(-1.95);
-    }
+      .lineStyle(1, 0xbafff5, .14)
+      .strokeRoundedRect(
+        gap.x + gap.w * .18,
+        gap.y + gap.h * .23,
+        gap.w * .64,
+        gap.h * .46,
+        12,
+      );
+    scene.tweens.add({
+      targets: shimmer,
+      alpha: .42,
+      duration: 2200,
+      ease: "Sine.InOut",
+      yoyo: true,
+      repeat: -1,
+      delay: gap.x % 317,
+    });
   }
 }
 

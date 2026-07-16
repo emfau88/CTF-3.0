@@ -6,9 +6,12 @@ import {
   DROWNED_SUN_TEMPLE_V2,
   getWorldMap,
   hasWorldMapLineOfSight,
+  measureWorldMapClearance,
   measureWorldRouteLength,
+  sampleWorldMapClearance,
   validateWorldMapForMode,
   validateWorldMapQuality,
+  WORLD_MAP_ACTOR_RADIUS,
 } from "../src/core";
 
 test("Temple of the Drowned Sun registers its complete gameplay contract", () => {
@@ -21,7 +24,7 @@ test("Temple of the Drowned Sun registers its complete gameplay contract", () =>
     maxX: 2160,
     maxY: 920,
   });
-  assert.equal(map?.geometry.solids.length, 23);
+  assert.equal(map?.geometry.solids.length, 27);
   assert.equal(map?.geometry.gaps.length, 2);
   assert.equal(map?.navigation.jumpLinks.length, 4);
   assert.equal(map?.spawnPoints.length, 8);
@@ -29,19 +32,24 @@ test("Temple of the Drowned Sun registers its complete gameplay contract", () =>
   assert.equal(map?.presentation.theme, "jungle-temple");
 });
 
-test("Temple gameplay art covers every solid without changing geometry", () => {
+test("Temple gameplay art uses one universal low-cover visual language", () => {
   const visuals = DROWNED_SUN_TEMPLE_V2.presentation.walls.map((wall) => wall.visual);
-  assert.equal(visuals.filter((visual) => visual === "temple-basalt-pilot-horizontal").length, 4);
-  assert.equal(visuals.filter((visual) => visual === "temple-basalt-pilot-vertical").length, 8);
-  assert.equal(visuals.filter((visual) => visual === "temple-wall-divider").length, 4);
-  assert.equal(visuals.filter((visual) => visual === "temple-cover-pylon").length, 2);
-  assert.equal(visuals.filter((visual) => visual?.startsWith("temple-court-corner-")).length, 4);
-  assert.equal(visuals.filter((visual) => visual === "temple-jaguar-root-pilot").length, 1);
+  assert.equal(visuals.length, 27);
+  assert.ok(visuals.every((visual) => visual === "temple-integrated-cover"));
   assert.ok(DROWNED_SUN_TEMPLE_V2.presentation.gaps.every((gap) => gap.visual === "cenote-pilot"));
-  assert.equal(visuals.filter((visual) => visual === "temple-basalt").length, 0);
 });
 
-test("Temple production art kit ships twenty-two valid PNG assets", () => {
+test("Temple production art ships a cohesive wide master image", () => {
+  const master = readFileSync(resolve("public/assets/jungle-temple/arena-master-v2.png"));
+  assert.equal(master.subarray(1, 4).toString("ascii"), "PNG");
+  assert.equal(master.readUInt32BE(16), 1921);
+  assert.equal(master.readUInt32BE(20), 819);
+  assert.equal(master[25], 2);
+  const renderer = readFileSync(resolve("src/arenaRenderer.ts"), "utf8");
+  assert.match(renderer, /level\.height \* \(1921 \/ 819\)/);
+});
+
+test("Temple legacy production art kit remains available for rollback", () => {
   const expected = {
     "floor-basalt-pilot.png": [1254, 1254, 2],
     "wall-horizontal-pilot.png": [1983, 793, 6],
@@ -84,49 +92,53 @@ test("Temple ships a full clean overview at native world dimensions", () => {
   assert.equal(overview.readUInt32BE(20), 920);
 });
 
-test("Temple atmosphere cannot masquerade as unauthored cover", () => {
+test("Temple master art does not layer ambiguous decorations over gameplay", () => {
   const map = DROWNED_SUN_TEMPLE_V2;
   const decorations = map.presentation.decorations ?? [];
-  assert.equal(decorations.length, 19);
+  assert.deepEqual(decorations, []);
+});
 
-  const jaguars = decorations.filter((decoration) =>
-    decoration.kind === "temple-jaguar-sculpture"
-  );
-  assert.equal(jaguars.length, 4);
-  for (const decoration of jaguars) {
-    assert.ok(map.geometry.solids.some((solid) =>
-      solid.x === decoration.x &&
-      solid.y === decoration.y &&
-      solid.width === decoration.width &&
-      solid.height === decoration.height
-    ));
-  }
-
-  const waterLights = decorations.filter((decoration) =>
-    decoration.kind === "temple-water-light"
-  );
-  assert.equal(waterLights.length, 2);
-  for (const decoration of waterLights) {
-    assert.ok(map.geometry.gaps.some((gap) =>
-      gap.x === decoration.x &&
-      gap.y === decoration.y &&
-      gap.width === decoration.width &&
-      gap.height === decoration.height
-    ));
-  }
-
+test("Temple collision follows visible cover and keeps authored routes clear", () => {
+  const map = DROWNED_SUN_TEMPLE_V2;
   const worldWidth = map.geometry.bounds.maxX;
-  const worldHeight = map.geometry.bounds.maxY;
-  for (const decoration of decorations.filter((item) =>
-    item.kind === "temple-canopy-edge"
-  )) {
-    assert.ok(decoration.y < 0 || decoration.y + decoration.height > worldHeight);
+  for (const solid of map.geometry.solids) {
+    const mirror = map.geometry.solids.find((candidate) =>
+      candidate.x === worldWidth - solid.x - solid.width &&
+      candidate.y === solid.y &&
+      candidate.width === solid.width &&
+      candidate.height === solid.height
+    );
+    assert.ok(
+      solid.id === "solar-sight-altar" || mirror,
+      `${solid.id} needs mirrored collision geometry.`,
+    );
   }
-  for (const decoration of decorations.filter((item) =>
-    item.kind === "temple-vegetation"
-  )) {
-    assert.ok(decoration.x < 0 || decoration.x + decoration.width > worldWidth);
+  for (const [routeId, route] of Object.entries(map.presentation.botRoutes)) {
+    for (const [index, routePoint] of route.entries()) {
+      const clearance = measureWorldMapClearance(map, routePoint);
+      assert.ok(
+        clearance.clearance >= WORLD_MAP_ACTOR_RADIUS,
+        `${routeId} route point ${index} is blocked by ${clearance.obstacleId}.`,
+      );
+    }
   }
+  const samples = sampleWorldMapClearance(map, {
+    step: 22,
+    actorRadius: WORLD_MAP_ACTOR_RADIUS,
+  });
+  assert.ok(samples.some((sample) => sample.band === "blocked"));
+  assert.ok(samples.some((sample) => sample.band === "tight"));
+  assert.ok(samples.some((sample) => sample.band === "open"));
+});
+
+test("projectile impacts teach the low-cover rule with neutral feedback", () => {
+  const effects = readFileSync(
+    resolve("src/adapters/phaser/PhaserWeaponEffectsPort.ts"),
+    "utf8",
+  );
+  assert.match(effects, /event\.type === "projectile\.expired"/);
+  assert.match(effects, /readString\(event\.payload, "reason"\) === "solid"/);
+  assert.match(effects, /addCoverImpact/);
 });
 
 test("Temple of the Drowned Sun supports every mode from 1v1 through 4v4", () => {
@@ -156,11 +168,6 @@ test("Temple of the Drowned Sun passes structural and weapon-safety gates", () =
       minimumClearance: 121,
     }],
     blockedSightLines: [
-      {
-        id: "spawn-to-spawn",
-        from: { x: 150, y: 460 },
-        to: { x: 2010, y: 460 },
-      },
       {
         id: "rail-to-one-flag",
         from: { x: 1080, y: 80 },

@@ -174,6 +174,7 @@ export function preloadArenaAssets(
 }
 
 function preloadJungleTempleAssets(scene: Phaser.Scene) {
+  scene.load.image("templeArenaMasterV2", assetUrl("jungle-temple/arena-master-v2.png"));
   scene.load.image("templeFloorBasaltPilot", assetUrl("jungle-temple/floor-basalt-pilot.png"));
   scene.load.image("templeWallHorizontalPilot", assetUrl("jungle-temple/wall-horizontal-pilot.png"));
   scene.load.image("templeWallVerticalPilot", assetUrl("jungle-temple/wall-vertical-pilot.png"));

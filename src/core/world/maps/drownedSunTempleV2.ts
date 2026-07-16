@@ -1,44 +1,51 @@
 import { createTeamSpawnPoints } from "./createTeamSpawnPoints";
 import type { WorldMapData } from "./worldMapData";
 
+const INTEGRATED_COVER = "temple-integrated-cover" as const;
+const mirrorX = (x: number, width: number) => 2160 - x - width;
+const mirroredCover = (
+  id: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => [
+  { id: `${id}-blue`, x, y, width, height, visual: INTEGRATED_COVER },
+  {
+    id: `${id}-red`,
+    x: mirrorX(x, width),
+    y,
+    width,
+    height,
+    visual: INTEGRATED_COVER,
+  },
+] as const;
+
 const walls = [
-  // Split base shields keep three departures open while blocking spawn-to-spawn fire.
-  { id: "blue-shield-north", x: 300, y: 120, width: 60, height: 245, visual: "temple-basalt-pilot-vertical" },
-  { id: "red-shield-north", x: 1800, y: 120, width: 60, height: 245, visual: "temple-basalt-pilot-vertical" },
-  { id: "blue-shield-south", x: 300, y: 555, width: 60, height: 245, visual: "temple-basalt-pilot-vertical" },
-  { id: "red-shield-south", x: 1800, y: 555, width: 60, height: 245, visual: "temple-basalt-pilot-vertical" },
-  { id: "blue-sight-pylon", x: 470, y: 405, width: 90, height: 110, visual: "temple-cover-pylon" },
-  { id: "red-sight-pylon", x: 1600, y: 405, width: 90, height: 110, visual: "temple-cover-pylon" },
+  // Every interior solid traces a visible low planter or the central lion-head altar.
+  ...mirroredCover("outer-north", 430, 175, 70, 125),
+  ...mirroredCover("outer-south", 430, 555, 70, 130),
+  ...mirroredCover("lane-north", 540, 280, 240, 55),
+  ...mirroredCover("lane-south", 540, 520, 240, 55),
+  ...mirroredCover("court-north", 845, 305, 60, 75),
+  ...mirroredCover("court-south", 845, 480, 60, 75),
+  ...mirroredCover("gallery-center", 910, 100, 120, 50),
+  ...mirroredCover("roots-center", 890, 580, 140, 50),
+  ...mirroredCover("roots-gallery", 890, 665, 140, 55),
 
-  // Lane dividers preserve broad rotations instead of forming rigid corridors.
-  { id: "blue-divider-north", x: 560, y: 300, width: 240, height: 50, visual: "temple-wall-divider" },
-  { id: "red-divider-north", x: 1360, y: 300, width: 240, height: 50, visual: "temple-wall-divider" },
-  { id: "blue-divider-south", x: 560, y: 570, width: 240, height: 50, visual: "temple-wall-divider" },
-  { id: "red-divider-south", x: 1360, y: 570, width: 240, height: 50, visual: "temple-wall-divider" },
+  // L-shaped islands use two rectangles so their visible inner corners stay walkable.
+  ...mirroredCover("gallery-elbow-vertical", 650, 100, 55, 100),
+  ...mirroredCover("gallery-elbow-arm", 680, 160, 80, 55),
+  ...mirroredCover("roots-elbow-vertical", 700, 630, 55, 85),
+  ...mirroredCover("roots-elbow-arm", 645, 655, 90, 55),
 
-  // Four temple corners create 100px side entries and 340px north/south entries.
-  { id: "sun-court-north-west", x: 840, y: 330, width: 70, height: 80, visual: "temple-court-corner-north-west" },
-  { id: "sun-court-north-east", x: 1250, y: 330, width: 70, height: 80, visual: "temple-court-corner-north-east" },
-  { id: "sun-court-south-west", x: 840, y: 510, width: 70, height: 80, visual: "temple-court-corner-south-west" },
-  { id: "sun-court-south-east", x: 1250, y: 510, width: 70, height: 80, visual: "temple-court-corner-south-east" },
-
-  // North gallery supports precision control; south roots create short splash pockets.
-  { id: "gallery-blue", x: 650, y: 70, width: 70, height: 120, visual: "temple-basalt-pilot-vertical" },
-  { id: "gallery-red", x: 1440, y: 70, width: 70, height: 120, visual: "temple-basalt-pilot-vertical" },
-  { id: "roots-blue", x: 650, y: 730, width: 70, height: 120, visual: "temple-basalt-pilot-vertical" },
-  { id: "roots-red", x: 1440, y: 730, width: 70, height: 120, visual: "temple-basalt-pilot-vertical" },
-  { id: "gallery-center-west", x: 900, y: 130, width: 120, height: 45, visual: "temple-basalt-pilot-horizontal" },
-  { id: "gallery-center-east", x: 1140, y: 130, width: 120, height: 45, visual: "temple-basalt-pilot-horizontal" },
-  { id: "roots-center-west", x: 900, y: 660, width: 120, height: 45, visual: "temple-basalt-pilot-horizontal" },
-  { id: "roots-center-east", x: 1140, y: 660, width: 120, height: 45, visual: "temple-basalt-pilot-horizontal" },
-
-  // This bridge explicitly breaks the contested rail pad's line to One Flag.
-  { id: "solar-sight-bridge", x: 1040, y: 230, width: 80, height: 80, visual: "temple-jaguar-root-pilot" },
+  // The small central altar interrupts the rail-to-objective sight line.
+  { id: "solar-sight-altar", x: 1045, y: 215, width: 70, height: 65, visual: INTEGRATED_COVER },
 ] as const;
 
 const gaps = [
-  { id: "cenote-west", x: 900, y: 230, width: 120, height: 80, visual: "cenote-pilot" },
-  { id: "cenote-east", x: 1140, y: 230, width: 120, height: 80, visual: "cenote-pilot" },
+  { id: "cenote-west", x: 900, y: 205, width: 125, height: 85, visual: "cenote-pilot" },
+  { id: "cenote-east", x: 1135, y: 205, width: 125, height: 85, visual: "cenote-pilot" },
 ] as const;
 
 export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
@@ -65,26 +72,26 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
     jumpLinks: [
       {
         id: "cenote-west-north-south",
-        from: { x: 960, y: 200 },
-        to: { x: 960, y: 340 },
+        from: { x: 962, y: 175 },
+        to: { x: 962, y: 320 },
         activationRadius: 44,
       },
       {
         id: "cenote-west-south-north",
-        from: { x: 960, y: 340 },
-        to: { x: 960, y: 200 },
+        from: { x: 962, y: 320 },
+        to: { x: 962, y: 175 },
         activationRadius: 44,
       },
       {
         id: "cenote-east-north-south",
-        from: { x: 1200, y: 200 },
-        to: { x: 1200, y: 340 },
+        from: { x: 1198, y: 175 },
+        to: { x: 1198, y: 320 },
         activationRadius: 44,
       },
       {
         id: "cenote-east-south-north",
-        from: { x: 1200, y: 340 },
-        to: { x: 1200, y: 200 },
+        from: { x: 1198, y: 320 },
+        to: { x: 1198, y: 175 },
         activationRadius: 44,
       },
     ],
@@ -104,10 +111,10 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
     }),
   ],
   pickupSpawns: [
-    { id: "health-blue-upper-exit", type: "health", position: { x: 450, y: 280 } },
-    { id: "health-blue-lower-exit", type: "health", position: { x: 450, y: 640 } },
-    { id: "health-red-upper-exit", type: "health", position: { x: 1710, y: 280 } },
-    { id: "health-red-lower-exit", type: "health", position: { x: 1710, y: 640 } },
+    { id: "health-blue-upper-exit", type: "health", position: { x: 525, y: 220 } },
+    { id: "health-blue-lower-exit", type: "health", position: { x: 525, y: 700 } },
+    { id: "health-red-upper-exit", type: "health", position: { x: 1635, y: 220 } },
+    { id: "health-red-lower-exit", type: "health", position: { x: 1635, y: 700 } },
     { id: "health-inner-west", type: "health", position: { x: 800, y: 460 } },
     { id: "health-inner-east", type: "health", position: { x: 1360, y: 460 } },
     { id: "armor-sun-west", type: "armor", position: { x: 980, y: 460 } },
@@ -115,8 +122,8 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
     { id: "rocket-roots-west", type: "rocket", position: { x: 800, y: 800 } },
     { id: "rocket-roots-east", type: "rocket", position: { x: 1360, y: 800 } },
     { id: "rail-gallery-center", type: "rail", position: { x: 1080, y: 80 } },
-    { id: "arc-lash-west", type: "whip", position: { x: 700, y: 520 } },
-    { id: "arc-lash-east", type: "whip", position: { x: 1460, y: 520 } },
+    { id: "arc-lash-west", type: "whip", position: { x: 815, y: 520 } },
+    { id: "arc-lash-east", type: "whip", position: { x: 1345, y: 520 } },
   ],
   gameplay: {
     blueBase: { x: 60, y: 310, width: 240, height: 300 },
@@ -128,32 +135,7 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
     plan: "Three-route competitive temple: an exposed Sun Causeway, a precision Jaguar Gallery with optional Cenote jumps, and a covered Rootwater Run for rockets and flag returns.",
     walls,
     gaps,
-    decorations: [
-      // Dense foliage is clipped by the world edge, never mistaken for interior cover.
-      { kind: "temple-canopy-edge", x: 0, y: -65, width: 720, height: 100 },
-      { kind: "temple-canopy-edge", x: 720, y: -65, width: 720, height: 100 },
-      { kind: "temple-canopy-edge", x: 1440, y: -65, width: 720, height: 100 },
-      { kind: "temple-canopy-edge", x: 0, y: 885, width: 720, height: 100 },
-      { kind: "temple-canopy-edge", x: 720, y: 885, width: 720, height: 100 },
-      { kind: "temple-canopy-edge", x: 1440, y: 885, width: 720, height: 100 },
-      { kind: "temple-vegetation", x: -110, y: 90, width: 180, height: 300 },
-      { kind: "temple-vegetation", x: -110, y: 530, width: 180, height: 300 },
-      { kind: "temple-vegetation", x: 2090, y: 90, width: 180, height: 300 },
-      { kind: "temple-vegetation", x: 2090, y: 530, width: 180, height: 300 },
-
-      // Flat route dressing remains below actors, pickups, walls, and objectives.
-      { kind: "temple-glyph-inlay", x: 780, y: 25, width: 600, height: 72 },
-      { kind: "temple-roots-border", x: 360, y: 840, width: 600, height: 70 },
-      { kind: "temple-roots-border", x: 1200, y: 840, width: 600, height: 70 },
-
-      // Reliefs stay exactly on existing solids; water light stays exactly on gaps.
-      { kind: "temple-jaguar-sculpture", x: 300, y: 120, width: 60, height: 245 },
-      { kind: "temple-jaguar-sculpture", x: 1800, y: 120, width: 60, height: 245 },
-      { kind: "temple-jaguar-sculpture", x: 300, y: 555, width: 60, height: 245 },
-      { kind: "temple-jaguar-sculpture", x: 1800, y: 555, width: 60, height: 245 },
-      { kind: "temple-water-light", x: 900, y: 230, width: 120, height: 80 },
-      { kind: "temple-water-light", x: 1140, y: 230, width: 120, height: 80 },
-    ],
+    decorations: [],
     botRoutes: {
       attacker: [
         { x: 1980, y: 460 }, { x: 1740, y: 370 },
@@ -166,7 +148,7 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
       defender: [
         { x: 180, y: 260 }, { x: 80, y: 340 },
         { x: 80, y: 580 }, { x: 180, y: 660 },
-        { x: 420, y: 640 }, { x: 420, y: 280 },
+        { x: 360, y: 640 }, { x: 360, y: 280 },
       ],
     },
   },

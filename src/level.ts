@@ -24,6 +24,7 @@ export type WallVisual =
   | "temple-court-corner-south-west"
   | "temple-court-corner-south-east"
   | "temple-jaguar-root-pilot"
+  | "temple-integrated-cover"
   | "helix-integrated-cover";
 export type GapVisual =
   | "chasm"

@@ -61,6 +61,12 @@ interface WhipEffect extends Point {
   readonly maxLifeMs: number;
 }
 
+interface CoverImpact extends Point {
+  lifeMs: number;
+  readonly maxLifeMs: number;
+  readonly rotation: number;
+}
+
 interface DeathParticle {
   x: number;
   y: number;
@@ -95,6 +101,7 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
   private explosions: ExplosionEffect[] = [];
   private railEffects: RailEffect[] = [];
   private whipEffects: WhipEffect[] = [];
+  private coverImpacts: CoverImpact[] = [];
   private deathParticles: DeathParticle[] = [];
   private deathRings: DeathRing[] = [];
   private deathFlashes: DeathFlash[] = [];
@@ -148,6 +155,12 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
           readPoint(event.payload, "position"),
           readNumber(event.payload, "splashRadius"),
         );
+      } else if (
+        event.type === "projectile.expired" &&
+        readString(event.payload, "reason") === "solid" &&
+        readString(event.payload, "weaponId") !== "rocket"
+      ) {
+        this.addCoverImpact(readPoint(event.payload, "position"));
       }
     }
   }
@@ -172,6 +185,7 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
     this.explosions = [];
     this.railEffects = [];
     this.whipEffects = [];
+    this.coverImpacts = [];
     this.deathParticles = [];
     this.deathRings = [];
     this.deathFlashes = [];
@@ -290,6 +304,9 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
 
     for (const effect of this.whipEffects) effect.lifeMs -= ms;
     this.whipEffects = this.whipEffects.filter((effect) => effect.lifeMs > 0);
+
+    for (const impact of this.coverImpacts) impact.lifeMs -= ms;
+    this.coverImpacts = this.coverImpacts.filter((impact) => impact.lifeMs > 0);
   }
 
   private updateDeathBursts(ms: number): void {
@@ -317,6 +334,7 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
     this.renderExplosions();
     this.renderRailEffects(timeMs);
     this.renderWhipEffects();
+    this.renderCoverImpacts();
     this.renderDeathBursts();
   }
 
@@ -450,6 +468,44 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
     }
   }
 
+  private renderCoverImpacts(): void {
+    for (const impact of this.coverImpacts) {
+      const alpha = Phaser.Math.Clamp(
+        impact.lifeMs / impact.maxLifeMs,
+        0,
+        1,
+      );
+      const progress = 1 - alpha;
+      this.effectsGraphics
+        .fillStyle(0xf4dfac, .72 * alpha)
+        .fillCircle(impact.x, impact.y, 2.5 + progress * 2.5)
+        .lineStyle(2, 0xd6b66d, .72 * alpha);
+      for (let index = 0; index < 4; index += 1) {
+        const angle = impact.rotation + index * Math.PI / 2;
+        const innerRadius = 4 + progress * 2;
+        const outerRadius = 9 + progress * 8;
+        this.effectsGraphics.lineBetween(
+          impact.x + Math.cos(angle) * innerRadius,
+          impact.y + Math.sin(angle) * innerRadius,
+          impact.x + Math.cos(angle) * outerRadius,
+          impact.y + Math.sin(angle) * outerRadius,
+        );
+      }
+      this.effectsGraphics
+        .fillStyle(0x74624a, .52 * alpha)
+        .fillCircle(
+          impact.x - 5 - progress * 4,
+          impact.y + 3 + progress * 3,
+          2.2 * alpha,
+        )
+        .fillCircle(
+          impact.x + 6 + progress * 5,
+          impact.y + 4 + progress * 2,
+          1.8 * alpha,
+        );
+    }
+  }
+
   private renderDeathBursts(): void {
     for (const flash of this.deathFlashes) {
       const alpha = Phaser.Math.Clamp(flash.lifeMs / flash.maxLifeMs, 0, 1);
@@ -544,6 +600,17 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
         "rocketExplosion",
         0,
       ).setDepth(70).setScale(.38),
+    });
+  }
+
+  private addCoverImpact(position: Point | null): void {
+    if (!position) return;
+    this.coverImpacts.push({
+      x: position.x,
+      y: position.y,
+      lifeMs: 170,
+      maxLifeMs: 170,
+      rotation: Phaser.Math.FloatBetween(0, Math.PI / 2),
     });
   }
 
@@ -651,4 +718,10 @@ function readBoolean(payload: unknown, key: string): boolean {
       key in payload &&
       (payload as Record<string, unknown>)[key],
   );
+}
+
+function readString(payload: unknown, key: string): string {
+  if (!payload || typeof payload !== "object" || !(key in payload)) return "";
+  const value = (payload as Record<string, unknown>)[key];
+  return typeof value === "string" ? value : "";
 }
