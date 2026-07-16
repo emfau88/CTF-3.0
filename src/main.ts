@@ -26,6 +26,7 @@ import {
 import {
   careerEmblemUrl,
   createCareerProfileRepository,
+  resolveCareerCaptainSkin,
   syncCareerUnlocks,
 } from "./careerProfile";
 import {
@@ -57,6 +58,9 @@ const useGameplayV2Shell = shouldUseGameplayV2Shell(
 const routeState = useGameplayV2Shell ? readV2RouteState(search) : null;
 const activeRoute = routeState ? { ...routeState.route } : null;
 const routeIssues = routeState ? [...routeState.issues] : [];
+if (leagueMatchContext && careerProfile && activeRoute) {
+  activeRoute.skin = resolveCareerCaptainSkin(careerProfile, activeRoute.skin);
+}
 if (useGameplayV2Shell && activeRoute && routeState?.canStartMatch) {
   const map = getWorldMap(activeRoute.map);
   if (!map) {

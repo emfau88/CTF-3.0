@@ -28,6 +28,7 @@ import {
   v2CharacterFrame,
   type V2CharacterAnimationState,
   type V2CharacterPresentation,
+  type V2CharacterRosterPresentation,
   type V2CharacterSkinConfig,
 } from "./v2CharacterPresentation";
 
@@ -56,6 +57,7 @@ export class PhaserArenaActorRenderer {
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly playerSkinId: V2PlayerSkinId,
+    private readonly rosterPresentation?: V2CharacterRosterPresentation,
   ) {
     ensurePlayerSkinAnimations(scene);
   }
@@ -176,7 +178,11 @@ export class PhaserArenaActorRenderer {
       0x000000,
       .2,
     ).setDepth(20);
-    const character = resolveV2CharacterPresentation(actor, this.playerSkinId);
+    const character = resolveV2CharacterPresentation(
+      actor,
+      this.playerSkinId,
+      this.rosterPresentation,
+    );
     const sprite = this.scene.add.sprite(0, 0, character.texture, character.initialFrame)
       .setOrigin(character.origin.x, character.origin.y)
       .setScale(character.scale);

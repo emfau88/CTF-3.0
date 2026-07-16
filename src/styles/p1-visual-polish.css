@@ -39,8 +39,7 @@
 
 /* Roster art is intentionally independent from the gameplay animation sheets. */
 .v2-quick-skin-preview,
-.v2-quick-skin-thumb,
-.league-skin-preview {
+.v2-quick-skin-thumb {
   background-image:
     radial-gradient(circle at 50% 42%, rgb(78 167 194 / .22), transparent 66%),
     linear-gradient(180deg, rgb(18 47 59 / .32), rgb(4 14 20 / .18)),
@@ -210,8 +209,7 @@
 }
 
 .league-profile-intro p,
-.league-profile-review > p,
-.league-wingman-card > p {
+.league-profile-review > p {
   max-width: 760px;
   margin: 0;
   color: #9db0b6;
@@ -235,8 +233,7 @@
   background: linear-gradient(145deg, rgb(7 20 27 / .94), rgb(10 26 34 / .78));
 }
 
-.league-profile-section-heading,
-.league-wingman-toolbar {
+.league-profile-section-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -245,8 +242,7 @@
 }
 
 .league-profile-section-heading small,
-.league-profile-locked-heading small,
-.league-wingman-toolbar small {
+.league-profile-locked-heading small {
   color: #df5961;
   font-size: 9px;
   font-weight: 900;
@@ -261,9 +257,8 @@
 }
 
 .league-profile-section-heading button,
-.league-profile-names label button,
-.league-wingman-toolbar button {
-  min-height: 36px;
+.league-profile-names label button {
+  min-height: 44px;
   padding: 0 13px;
   border: 1px solid rgb(112 183 207 / .42);
   background: rgb(15 40 50 / .84);
@@ -318,7 +313,7 @@
 
 .league-profile-emblem img { grid-row: 1 / 3; width: 112px; height: 126px; object-fit: contain; filter: drop-shadow(0 9px 16px rgb(0 0 0 / .55)); }
 .league-profile-emblem strong { align-self: end; color: #e1ecef; font: 800 20px/1 var(--font-display); text-transform: uppercase; }
-.league-profile-emblem small { align-self: start; color: #6f8c95; font-size: 8px; font-weight: 900; letter-spacing: .1em; }
+.league-profile-emblem small { align-self: start; color: #7897a1; font-size: 9px; font-weight: 900; letter-spacing: .1em; }
 .league-profile-emblem.is-selected { border-color: #66c5df; background: linear-gradient(120deg, rgb(24 66 80 / .82), rgb(9 27 35 / .94)); box-shadow: inset 0 -3px #66c5df; }
 
 .league-profile-section-note { margin: -5px 0 15px; color: #879da4; font-size: 11px; line-height: 1.5; }
@@ -345,11 +340,11 @@ button.league-profile-fighter:hover { border-color: rgb(102 197 223 / .64); tran
 .league-profile-fighter.is-selected { border-color: #66c5df; box-shadow: inset 0 -3px #66c5df; background: linear-gradient(115deg, rgb(25 68 82 / .82), rgb(8 25 33 / .94)); }
 .league-profile-fighter-portrait { width: 96px; height: 102px; background: radial-gradient(circle, rgb(73 155 181 / .18), transparent 66%), var(--skin-portrait) center bottom / contain no-repeat; filter: drop-shadow(0 7px 10px rgb(0 0 0 / .42)); }
 .league-profile-fighter-copy { min-width: 0; display: grid; gap: 3px; }
-.league-profile-fighter-copy small { color: #df5961; font-size: 8px; font-weight: 900; letter-spacing: .09em; }
+.league-profile-fighter-copy small { color: #df5961; font-size: 9px; font-weight: 900; letter-spacing: .09em; }
 .league-profile-fighter-copy strong { overflow-wrap: anywhere; color: #e4eef0; font: 800 18px/1.05 var(--font-display); text-transform: uppercase; }
 .league-profile-fighter-copy i { color: #839ba2; font-size: 9px; font-style: normal; font-weight: 800; text-transform: uppercase; }
 .league-profile-fighter.is-locked { opacity: .54; filter: grayscale(.5); }
-.league-profile-fighter.is-locked > b { position: absolute; right: 8px; bottom: 7px; color: #a2b2b7; font-size: 8px; letter-spacing: .12em; }
+.league-profile-fighter.is-locked > b { position: absolute; right: 8px; bottom: 7px; color: #a2b2b7; font-size: 9px; letter-spacing: .12em; }
 .league-profile-locked-heading { display: flex; justify-content: space-between; gap: 12px; margin: 20px 0 9px; padding-top: 15px; border-top: 1px solid rgb(123 166 178 / .15); }
 .league-profile-locked-heading span { color: #718890; font-size: 9px; font-weight: 800; text-transform: uppercase; }
 
@@ -384,49 +379,13 @@ button.league-profile-fighter:hover { border-color: rgb(102 197 223 / .64); tran
 .league-profile-lockup span { color: #9ab0b6; font-size: 13px; font-weight: 800; }
 .league-profile-review-squad { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-.league-manage-wingman {
-  width: calc(100% - 28px);
-  min-height: 40px;
-  margin: 0 14px 10px;
-  border: 1px solid rgb(94 169 191 / .35);
-  background: rgb(15 39 49 / .88);
-  color: #bde6f0;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: .09em;
-  text-transform: uppercase;
-  cursor: pointer;
+.league-manage-team,
+.league-team-file-manage {
+  min-height: 44px;
+  border-color: rgb(102 197 223 / .5);
+  background: linear-gradient(180deg, rgb(27 69 82 / .9), rgb(13 39 49 / .94));
+  box-shadow: inset 0 -2px rgb(102 197 223 / .22);
 }
-
-.league-wingman-manager {
-  position: fixed;
-  inset: 0;
-  z-index: 13;
-  display: grid;
-  place-items: center;
-  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-  overflow: hidden;
-  overscroll-behavior: contain;
-  background: rgb(2 8 12 / .86);
-  backdrop-filter: blur(10px);
-}
-
-.league-wingman-card {
-  width: min(1050px, 100%);
-  max-height: calc(100vh - 32px);
-  max-height: calc(100dvh - 32px);
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: clamp(24px, 4vw, 44px);
-  border: 1px solid rgb(130 184 200 / .32);
-  border-top: 4px solid #66c5df;
-  background: linear-gradient(145deg, #0b1d26, #071218);
-  box-shadow: 0 32px 100px #000;
-}
-
-.league-wingman-card h2 { margin: 6px 0 8px; color: #eff7f8; font: 800 clamp(38px, 5vw, 58px)/.94 var(--font-display); text-transform: uppercase; }
-.league-wingman-toolbar { margin-top: 20px; }
 
 @media (max-width: 900px) {
   .league-profile-emblem { grid-template-columns: 86px 1fr; }
@@ -1008,6 +967,22 @@ button.league-profile-fighter:hover { border-color: rgb(102 197 223 / .64); tran
   box-shadow: inset 3px 0 var(--team-color);
 }
 
+.league-table-row.is-player-team,
+.league-table-row.is-player-team:hover,
+.league-table-row.is-player-team.is-selected {
+  background: linear-gradient(90deg, rgb(43 142 174 / .28), rgb(26 88 106 / .13) 66%, transparent);
+  box-shadow: inset 4px 0 #62cce9;
+}
+
+.league-table-row.is-player-team.is-selected {
+  outline: 1px solid rgb(102 211 239 / .34);
+  outline-offset: -1px;
+}
+
+.league-table-row.is-player-team .league-table-emblem {
+  filter: drop-shadow(0 0 8px rgb(89 197 229 / .24)) drop-shadow(0 4px 7px rgb(0 0 0 / .45));
+}
+
 .league-detail-panel,
 .league-pyramid-panel {
   background: linear-gradient(145deg, rgb(7 19 25 / .94), rgb(5 15 21 / .9));
@@ -1033,6 +1008,36 @@ button.league-profile-fighter:hover { border-color: rgb(102 197 223 / .64); tran
 .league-tier.is-current > b {
   border-color: rgb(100 207 238 / .38);
   background: rgb(29 91 111 / .42);
+}
+
+.league-tier.is-locked > b {
+  min-width: 88px;
+  color: #7f959c;
+}
+
+.league-tier.is-current > b {
+  min-width: 92px;
+  color: #d1f6ff;
+}
+
+.league-tier-connector {
+  position: relative;
+}
+
+.league-tier-connector::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  inset-block: -5px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgb(98 195 222 / .34), transparent);
+  transform: translateX(-50%);
+}
+
+.league-tier-connector > * {
+  position: relative;
+  z-index: 1;
+  background: #091a21;
 }
 
 .league-reset-dialog {
@@ -1133,6 +1138,81 @@ button.league-profile-fighter:hover { border-color: rgb(102 197 223 / .64); tran
 .league-next-match:has(.league-season-track) {
   grid-template-columns: minmax(200px, .72fr) minmax(480px, 1.75fr) minmax(210px, .72fr);
   min-height: 250px;
+}
+
+.league-season-track {
+  grid-template-columns: minmax(185px, .58fr) minmax(0, 1.8fr);
+  gap: 14px;
+  padding: 10px 14px;
+}
+
+.league-season-track > .league-season-track-summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 2px 10px;
+}
+
+.league-season-track-summary > small {
+  grid-column: 1 / -1;
+  color: #819da6;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .15em;
+}
+
+.league-season-track-summary > strong {
+  color: #d9edf2;
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+
+.league-season-track-summary > span {
+  color: #7f989f;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+
+.league-season-track > div:last-child {
+  grid-template-columns: repeat(3, minmax(92px, 1fr));
+  gap: 7px;
+}
+
+.league-season-stop {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  justify-content: initial;
+  gap: 7px;
+  min-height: 40px;
+  padding: 5px 9px;
+}
+
+.league-season-stop > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.league-season-stop small {
+  overflow: hidden;
+  color: #899fa6;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.league-season-stop b {
+  display: block;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.league-season-stop.is-locked {
+  opacity: .62;
 }
 
 .league-fixture-title {
@@ -1711,6 +1791,25 @@ button.league-profile-fighter:hover { border-color: rgb(102 197 223 / .64); tran
 }
 
 @media (max-width: 720px) {
+  .league-season-track {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .league-season-track > .league-season-track-summary {
+    grid-template-columns: 1fr auto;
+  }
+
+  .league-season-track > div:last-child {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .league-season-stop {
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 5px;
+    padding-inline: 7px;
+  }
+
   .league-next-match:has(.league-season-track) {
     grid-template-columns: 126px minmax(0, 1fr) 150px;
     min-height: 300px;
@@ -1815,8 +1914,7 @@ button.league-profile-fighter:hover { border-color: rgb(102 197 223 / .64); tran
 }
 
 .v2-flow-overlay:not(.is-hidden) .v2-flow-card,
-.league-progression:not(.is-hidden) .league-progression-card,
-.league-recruitment:not(.is-hidden) .league-recruitment-card {
+.league-progression:not(.is-hidden) .league-progression-card {
   animation: p1-card-enter .2s cubic-bezier(.2, .75, .25, 1) both;
 }
 

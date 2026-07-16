@@ -22,6 +22,49 @@ export const STARTER_WINGMAN_IDS = [
   "dax-ember",
 ] as const;
 
+export interface LeagueCircuitPresentation {
+  readonly id: "proving" | "contender" | "apex";
+  readonly tier: 1 | 2 | 3;
+  readonly name: string;
+  readonly levelLabel: string;
+  readonly description: string;
+  readonly availability: "current" | "coming-soon";
+}
+
+/**
+ * Product-facing career hierarchy. The domain model still runs one opening
+ * season; future circuits stay explicitly labelled as previews until their
+ * schedules and progression state actually exist.
+ */
+export const LEAGUE_CIRCUITS: readonly LeagueCircuitPresentation[] = [
+  {
+    id: "proving",
+    tier: 1,
+    name: "Proving Circuit",
+    levelLabel: "ENTRY",
+    description: "A focused three-match campaign. Top two earn qualification status.",
+    availability: "current",
+  },
+  {
+    id: "contender",
+    tier: 2,
+    name: "Contender Circuit",
+    levelLabel: "ADVANCED",
+    description: "A deeper six-team circuit planned for a future season.",
+    availability: "coming-soon",
+  },
+  {
+    id: "apex",
+    tier: 3,
+    name: "Apex Circuit",
+    levelLabel: "CHAMPIONSHIP · HIGHEST",
+    description: "The championship tier and the final Core Arena title.",
+    availability: "coming-soon",
+  },
+];
+
+export const CURRENT_LEAGUE_CIRCUIT = LEAGUE_CIRCUITS[0];
+
 export interface LeagueDiscipline {
   readonly mode: V2ModeId;
   readonly modeLabel: string;

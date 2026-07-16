@@ -1,5 +1,9 @@
 import { LEAGUE_CHARACTERS, LEAGUE_TEAMS } from "./leagueCatalog";
-import { LEAGUE_SAVE_VERSION, type LeagueSeasonState } from "./leagueTypes";
+import {
+  LEAGUE_SAVE_VERSION,
+  type LeagueCharacterStats,
+  type LeagueSeasonState,
+} from "./leagueTypes";
 
 export const LEAGUE_STORAGE_KEY = "core-arena.league.v2";
 
@@ -27,10 +31,16 @@ function isValidSeason(value: unknown): value is LeagueSeasonState {
     !season.standings ||
     !season.teamRosters ||
     !season.characterStats ||
+    !Array.isArray(season.defeatedTeamIds) ||
     !season.recruitment ||
     !LEAGUE_TEAMS.some((team) => team.id === season.playerTeamId) ||
     !["locked", "pending", "completed"].includes(season.recruitment.status) ||
-    !Array.isArray(season.recruitment.candidateIds)
+    !Array.isArray(season.recruitment.candidateIds) ||
+    season.recruitment.candidateIds.some((id) => typeof id !== "string") ||
+    (
+      season.recruitment.selectedCharacterId !== null &&
+      typeof season.recruitment.selectedCharacterId !== "string"
+    )
   ) return false;
   const characterIds = new Set(LEAGUE_CHARACTERS.map((character) => character.id));
   const teamIds = new Set(LEAGUE_TEAMS.map((team) => team.id));
@@ -60,7 +70,50 @@ function isValidSeason(value: unknown): value is LeagueSeasonState {
     typeof season.lastProgression === "object" &&
     typeof season.lastProgression.acknowledged === "boolean"
   );
-  return validTeams && validRounds && validProgression;
+  const validDefeatedTeams = season.defeatedTeamIds.every((teamId) =>
+    teamIds.has(teamId) && teamId !== season.playerTeamId
+  );
+  const validCharacterStats = Object.entries(season.characterStats).every(
+    ([key, value]) => isValidCharacterStats(key, value, characterIds, teamIds),
+  );
+  return validTeams && validRounds && validProgression &&
+    validDefeatedTeams && validCharacterStats;
+}
+
+function isValidCharacterStats(
+  key: string,
+  value: unknown,
+  characterIds: ReadonlySet<string>,
+  teamIds: ReadonlySet<string>,
+): value is LeagueCharacterStats {
+  if (!value || typeof value !== "object") return false;
+  const stats = value as Partial<LeagueCharacterStats>;
+  if (
+    typeof stats.characterId !== "string" ||
+    !characterIds.has(stats.characterId) ||
+    ![stats.matches, stats.kills, stats.deaths, stats.flagPickups,
+      stats.flagCaptures, stats.flagReturns].every(Number.isFinite)
+  ) return false;
+  if (stats.teamId === undefined) return key === stats.characterId;
+  return teamIds.has(stats.teamId) && key === `${stats.teamId}:${stats.characterId}`;
+}
+
+function normalizeRecruitment(season: LeagueSeasonState): LeagueSeasonState {
+  if (season.recruitment.status !== "pending") return season;
+  season.recruitment = {
+    status: "completed",
+    candidateIds: [],
+    selectedCharacterId: null,
+  };
+  return season;
+}
+
+function normalizeRivalRosters(season: LeagueSeasonState): LeagueSeasonState {
+  for (const team of LEAGUE_TEAMS) {
+    if (team.id === season.playerTeamId) continue;
+    season.teamRosters[team.id] = [...team.characterIds];
+  }
+  return season;
 }
 
 export function createLeagueRepository(storage: LeagueStoragePort) {
@@ -70,7 +123,9 @@ export function createLeagueRepository(storage: LeagueStoragePort) {
         const raw = storage.getItem(LEAGUE_STORAGE_KEY);
         if (!raw) return null;
         const parsed: unknown = JSON.parse(raw);
-        return isValidSeason(parsed) ? parsed : null;
+        return isValidSeason(parsed)
+          ? normalizeRecruitment(normalizeRivalRosters(parsed))
+          : null;
       } catch {
         return null;
       }

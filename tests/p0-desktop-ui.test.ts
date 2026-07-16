@@ -117,14 +117,15 @@ test("desktop P0 UI contract keeps Career primary and uses one outer menu scroll
   assert.doesNotMatch(desktopCss, /\.v2-setup-view\s*>\s*\.v2-menu-section\s*\{[^}]*overflow-y:\s*auto/);
   assert.doesNotMatch(polishCss, /\.v2-league-hub\s*\{[^}]*height:\s*calc\([^}]*100vh/);
   assert.match(baseCss, /\.league-progression-card\s*\{[^}]*overflow-y:\s*auto/);
-  assert.match(baseCss, /\.league-recruitment-card\s*\{[^}]*overflow-y:\s*auto/);
+  assert.doesNotMatch(html, /id="league-recruitment"|id="league-wingman-manager"/);
+  assert.doesNotMatch(menuSource, /renderRecruitment|openWingmanManager/);
   assert.match(menuSource, /root\.onkeydown\s*=/);
   assert.match(menuSource, /event\.key === "PageDown"/);
   assert.match(menuSource, /event\.key === "PageUp"/);
   assert.match(menuSource, /event\.key === "Home"/);
   assert.match(menuSource, /event\.key === "End"/);
   assert.match(desktopCss, /#v2-pause-overlay \.v2-flow-card/);
-  assert.match(desktopCss, /\.league-cosmetic-contract/);
+  assert.doesNotMatch(desktopCss, /\.league-cosmetic-contract/);
   assert.match(desktopCss, /:focus-visible/);
   assert.match(polishCss, /@media \(min-width: 901px\) and \(max-height: 800px\)/);
   assert.match(polishCss, /grid-template-areas:[\s\S]*"next"[\s\S]*"squad"[\s\S]*"table"/);

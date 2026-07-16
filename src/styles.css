@@ -436,32 +436,12 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .league-pyramid-panel { grid-area: pyramid; }
 .league-panel-heading { display: flex; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid rgb(124 166 179 / .15); color: #d8e6ea; font-size: 12px; font-weight: 900; letter-spacing: .11em; text-transform: uppercase; }
 .league-panel-heading small { color: #667f87; font-size: 9px; }
+.league-squad-heading > div { display: flex; align-items: center; gap: 12px; }
+.league-manage-team,
+.league-team-file-manage { min-height: 40px; padding: 0 15px; border: 1px solid rgb(100 181 205 / .42); background: rgb(19 52 64 / .76); color: #d9f1f6; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+.league-manage-team:hover,
+.league-team-file-manage:hover { border-color: #72cde4; background: rgb(24 66 81 / .88); }
 .league-roster { display: grid; grid-template-columns: 1fr 1fr; }
-.league-skin-control {
-  display: grid;
-  grid-template-columns: 76px minmax(150px, 1fr) auto;
-  align-items: center;
-  gap: 14px;
-  min-height: 88px;
-  padding: 8px 14px;
-  border-top: 1px solid rgb(124 166 179 / .15);
-  background: linear-gradient(90deg, rgb(32 73 88 / .2), transparent);
-}
-.league-skin-preview {
-  width: 68px;
-  height: 68px;
-  border: 1px solid rgb(92 158 180 / .28);
-  background-image:
-    radial-gradient(circle, rgb(59 138 164 / .18), transparent 68%),
-    var(--skin-sprite);
-  background-size: 100% 100%, calc(var(--skin-columns) * 100%) 400%;
-  background-position: center, 0 0;
-  background-repeat: no-repeat;
-  image-rendering: auto;
-}
-.league-skin-control label { display: grid; gap: 5px; color: #7e99a2; font-size: 8px; font-weight: 900; letter-spacing: .15em; text-transform: uppercase; }
-.league-skin-control select { height: 38px; border: 1px solid rgb(92 150 168 / .32); border-radius: 2px; background: #10242d; color: #e0edf0; padding: 0 10px; font-size: 12px; font-weight: 900; }
-.league-skin-control > small { max-width: 100px; color: #5f7880; font-size: 8px; font-weight: 800; line-height: 1.35; text-transform: uppercase; }
 .league-character { --portrait-size: 112px; min-width: 0; display: grid; grid-template-columns: var(--portrait-size) 1fr; min-height: 128px; overflow: hidden; background: linear-gradient(110deg, rgb(17 37 47 / .8), rgb(8 19 25 / .55)); }
 .league-character + .league-character { border-left: 1px solid rgb(126 168 181 / .14); }
 .league-character-portrait { width: var(--portrait-size); height: var(--portrait-size); align-self: center; background-image: linear-gradient(0deg, rgb(9 21 27 / .8), transparent 65%), var(--sprite); background-repeat: no-repeat; background-size: 100% 100%, calc(var(--sprite-columns) * 100%) 400%; background-position: center, 0 0; image-rendering: auto; }
@@ -494,14 +474,17 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .league-standings { padding: 7px 10px 10px; }
 .league-table-row { width: 100%; min-height: 47px; display: grid; grid-template-columns: 27px minmax(120px, 1fr) 28px 28px 28px 28px 40px; align-items: center; gap: 4px; border: 0; border-bottom: 1px solid rgb(119 157 168 / .1); background: transparent; color: #8fa5ac; text-align: center; font-size: 11px; font-weight: 800; cursor: pointer; }
 .league-table-row > span:nth-child(2) { display: flex; align-items: center; gap: 9px; color: #c7d7db; text-align: left; }
+.league-table-team-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.league-you-badge { flex: 0 0 auto; padding: 3px 6px; border: 1px solid rgb(103 211 239 / .42); background: rgb(44 128 155 / .32); color: #c8f4ff; font-size: 8px; font-style: normal; font-weight: 900; letter-spacing: .12em; line-height: 1; }
 .league-table-emblem { width: 30px; height: 30px; object-fit: contain; filter: drop-shadow(0 4px 7px rgb(0 0 0 / .45)); }
 .league-table-row strong { color: #e2eef1; font-size: 15px; }
 .league-table-row:not(.league-table-head):hover, .league-table-row.is-selected { background: rgb(75 129 146 / .13); }
-.league-table-row.is-player-team { box-shadow: inset 3px 0 #438fbd; }
+.league-table-row.is-player-team { background: linear-gradient(90deg, rgb(40 132 163 / .24), rgb(23 79 96 / .11) 62%, transparent); box-shadow: inset 4px 0 #59c5e5; }
+.league-table-row.is-player-team > span:nth-child(2), .league-table-row.is-player-team strong { color: #e8f9fd; }
 .league-table-head { min-height: 29px; color: #566f77; font-size: 8px; cursor: default; }
 .league-table-head > span:nth-child(2) { color: #566f77; }
 .league-detail-panel { border-left: 3px solid var(--team-color); }
-.league-detail-heading { display: grid; grid-template-columns: 70px 1fr; align-items: center; padding: 15px 18px 10px; }
+.league-detail-heading { display: grid; grid-template-columns: 70px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 15px 18px 10px; }
 .league-large-emblem { width: 62px; height: 68px; object-fit: contain; filter: drop-shadow(0 8px 14px rgb(0 0 0 / .48)); }
 .league-detail-heading small { color: #6e8992; font-size: 8px; font-weight: 900; letter-spacing: .16em; }
 .league-detail-heading h3 { margin: 3px 0; font-size: 22px; }
@@ -510,22 +493,28 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .league-detail-roster .league-character { --portrait-size: 82px; min-height: 110px; }
 .league-pyramid { display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 14px 18px 18px; background: radial-gradient(circle at 50% 100%, rgb(45 110 137 / .16), transparent 58%); }
 .league-tier { width: min(100%, 740px); min-height: 66px; display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 13px; padding: 10px 16px; clip-path: polygon(4% 0, 96% 0, 100% 100%, 0 100%); border: 1px solid rgb(113 164 180 / .18); background: linear-gradient(90deg, rgb(16 37 47 / .88), rgb(9 23 30 / .82)); color: #718991; }
-.league-tier:nth-child(1) { width: min(70%, 520px); }
-.league-tier:nth-child(2) { width: min(85%, 630px); }
+.league-tier.is-apex { width: min(70%, 520px); }
+.league-tier.is-contender { width: min(85%, 630px); }
 .league-tier > span { color: #4f6972; font-size: 11px; font-weight: 900; }
 .league-tier > div { min-width: 0; }
 .league-tier small { display: block; color: #627d86; font-size: 7px; font-weight: 900; letter-spacing: .17em; }
 .league-tier strong { color: #c4d5d9; font: 900 16px/1.05 var(--font-display); text-transform: uppercase; }
 .league-tier p { display: inline; margin: 0 0 0 9px; color: #667d85; font-size: 8px; font-weight: 700; }
 .league-tier > b { min-width: 48px; color: #5f767e; font-size: 9px; text-align: right; letter-spacing: .1em; }
+.league-tier > b > span, .league-tier > b > small { display: block; }
+.league-tier > b > small { margin-top: 4px; color: #85b7c7; font-size: 8px; letter-spacing: .09em; }
 .league-tier.is-current { min-height: 76px; border-color: rgb(69 157 198 / .55); background: linear-gradient(90deg, rgb(27 75 96 / .7), rgb(10 31 41 / .92)); box-shadow: 0 10px 32px rgb(16 101 139 / .16); }
 .league-tier.is-current strong, .league-tier.is-current > b { color: #bde9fb; }
 .league-tier.is-elite { opacity: .58; }
+.league-tier-connector { min-height: 22px; display: grid; grid-template-columns: 16px auto; align-items: center; justify-content: center; gap: 6px; color: #67838c; }
+.league-tier-connector span { color: #66c8e5; font-size: 15px; font-weight: 900; line-height: 1; }
+.league-tier-connector small { font-size: 7px; font-weight: 900; letter-spacing: .14em; }
+.league-tier-connector.is-qualification small { color: #92b4be; }
 .league-tier-rivals { display: inline-flex; align-items: center; margin-left: 12px; vertical-align: middle; }
 .league-tier-rivals img { width: 25px; height: 25px; object-fit: contain; margin-left: -3px; filter: grayscale(.25) drop-shadow(0 4px 5px #000); }
 .league-tier-rivals i { display: grid; place-items: center; width: 25px; height: 25px; margin-left: 2px; border: 1px dashed #56727b; border-radius: 50%; color: #718b93; font-size: 7px; font-style: normal; font-weight: 900; }
 /* Dialogs are the sole menu exception allowed to own an inner vertical scroller. */
-.league-progression, .league-recruitment {
+.league-progression {
   position: fixed;
   inset: 0;
   z-index: 10;
@@ -564,17 +553,12 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .league-points-earned small { grid-column: 1 / -1; }
 .league-points-earned strong { color: #61da91; }
 .league-points-earned span { color: #789198; font-size: 8px; font-weight: 900; }
+.league-unlock-note { display: grid; gap: 3px; max-width: 530px; margin: 10px auto 0; padding: 10px 14px; border: 1px solid rgb(82 198 146 / .28); background: rgb(18 66 52 / .32); text-align: left; }
+.league-unlock-note small { color: #67d49a; font-size: 9px; font-weight: 900; letter-spacing: .12em; }
+.league-unlock-note strong { color: #d8f2e4; font-size: 12px; text-transform: uppercase; }
+.league-unlock-note span { color: #94b7a5; font-size: 10px; }
 .league-progression-card > p { margin: 17px auto; max-width: 560px; color: #8fa6ad; font-size: 12px; line-height: 1.5; }
 .league-progression-card > button { min-width: 250px; min-height: 52px; border: 0; background: linear-gradient(180deg, #e65058, #ac2730); color: #fff; font-size: 13px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; cursor: pointer; box-shadow: 0 12px 30px rgb(167 38 47 / .28); }
-.league-recruitment-card { width: min(940px, 100%); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: clamp(25px, 4vw, 48px); border: 1px solid rgb(142 190 204 / .32); border-top: 4px solid #e34b53; background: linear-gradient(145deg, #0b1b24, #081319); box-shadow: 0 30px 100px #000; }
-.league-recruitment-card h2 { margin: 8px 0 7px; font-size: clamp(34px, 5vw, 60px); text-transform: uppercase; }
-.league-recruitment-card > p { color: #92a7ae; line-height: 1.5; }
-.league-candidates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 25px 0 12px; }
-.league-candidate { padding: 0; border: 1px solid rgb(120 165 178 / .23); background: transparent; color: inherit; text-align: left; cursor: pointer; }
-.league-candidate:hover { border-color: #e34b53; transform: translateY(-2px); }
-.league-candidate .league-character { --portrait-size: 128px; min-height: 160px; }
-.league-keep-button { width: 100%; min-height: 48px; border: 1px solid #45616b; background: #132832; color: #d1e0e4; font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
-
 @media (max-width: 900px), (max-height: 640px) {
   .v2-menu-card.v2-menu-shell {
     min-height: calc(100vh - 20px);
@@ -593,9 +577,6 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   .league-character { --portrait-size: 78px; min-height: 104px; }
   .league-character-info { padding: 8px; }
   .league-character-stats { gap: 8px; margin-top: 7px; }
-  .league-skin-control { grid-template-columns: 58px 1fr; min-height: 66px; padding: 5px 9px; }
-  .league-skin-preview { width: 52px; height: 52px; }
-  .league-skin-control > small { display: none; }
   .v2-subpage-header { grid-template-columns: 128px minmax(0, 1fr) 128px; gap: 10px; min-height: 58px; padding-bottom: 10px; }
   .v2-subpage-header.league-header { grid-template-columns: 160px minmax(0, 1fr) 160px; }
   .v2-subpage-title h2 { font-size: 34px; }
@@ -624,7 +605,10 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   .league-mini-emblem { width: 38px; height: 42px; font-size: 13px; }
   .league-opponent-form { display: none; }
   .league-table-panel { min-height: 300px; }
-  .league-candidates { grid-template-columns: 1fr; }
+  .league-squad-heading { align-items: flex-start; gap: 8px; }
+  .league-squad-heading > div { align-items: flex-end; flex-direction: column; gap: 6px; }
+  .league-detail-heading { grid-template-columns: 58px minmax(0, 1fr); }
+  .league-detail-heading .league-team-file-manage { grid-column: 1 / -1; width: 100%; }
   .league-tier p { display: none; }
   .league-result-lockup { grid-template-columns: 1fr 90px 1fr; }
   .league-result-lockup img { width: 64px; height: 64px; }

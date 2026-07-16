@@ -75,9 +75,13 @@ function initialStanding(teamId: LeagueTeamId): LeagueStanding {
   };
 }
 
-function initialCharacterStats(characterId: string): LeagueCharacterStats {
+function initialCharacterStats(
+  characterId: string,
+  teamId?: LeagueTeamId,
+): LeagueCharacterStats {
   return {
     characterId,
+    ...(teamId ? { teamId } : {}),
     matches: 0,
     kills: 0,
     deaths: 0,
@@ -87,18 +91,69 @@ function initialCharacterStats(characterId: string): LeagueCharacterStats {
   };
 }
 
+export function leagueCharacterStatsKey(
+  teamId: LeagueTeamId,
+  characterId: string,
+): string {
+  return `${teamId}:${characterId}`;
+}
+
+export function leagueCharacterStats(
+  season: LeagueSeasonState,
+  teamId: LeagueTeamId,
+  characterId: string,
+): LeagueCharacterStats | undefined {
+  return season.characterStats[leagueCharacterStatsKey(teamId, characterId)] ??
+    season.characterStats[characterId];
+}
+
+function characterTeamCount(
+  season: LeagueSeasonState,
+  characterId: string,
+): number {
+  return LEAGUE_TEAMS.reduce(
+    (count, team) => count + Number(season.teamRosters[team.id].includes(characterId)),
+    0,
+  );
+}
+
+function mutableCharacterStats(
+  season: LeagueSeasonState,
+  teamId: LeagueTeamId,
+  characterId: string,
+): LeagueCharacterStats {
+  const scopedKey = leagueCharacterStatsKey(teamId, characterId);
+  const scoped = season.characterStats[scopedKey];
+  if (scoped) return scoped;
+
+  const legacy = season.characterStats[characterId];
+  const canonicalTeamId = LEAGUE_CHARACTERS.find(
+    (character) => character.id === characterId,
+  )?.teamId;
+  if (legacy && (characterTeamCount(season, characterId) <= 1 || canonicalTeamId === teamId)) {
+    return legacy;
+  }
+
+  const created = initialCharacterStats(characterId, teamId);
+  season.characterStats[scopedKey] = created;
+  return created;
+}
+
 export function createLeagueSeason(
   seed = Date.now(),
-  starterWingmanId: string = STARTER_WINGMAN_IDS[0],
+  selectedWingmanId: string = STARTER_WINGMAN_IDS[0],
 ): LeagueSeasonState {
   const safeSeed = Math.abs(Math.trunc(seed)) || 1;
+  const selectedWingman = LEAGUE_CHARACTERS.find(
+    (character) => character.id === selectedWingmanId,
+  );
+  if (!selectedWingman || selectedWingmanId === "nova-vale") {
+    throw new Error("The selected wingman is not a valid league fighter.");
+  }
   const teamRosters = Object.fromEntries(
     LEAGUE_TEAMS.map((team) => [team.id, [...team.characterIds]])
   ) as LeagueSeasonState["teamRosters"];
-  const safeStarterWingmanId = STARTER_WINGMAN_IDS.includes(
-    starterWingmanId as (typeof STARTER_WINGMAN_IDS)[number],
-  ) ? starterWingmanId : STARTER_WINGMAN_IDS[0];
-  teamRosters[PLAYER_LEAGUE_TEAM_ID] = ["nova-vale", safeStarterWingmanId];
+  teamRosters[PLAYER_LEAGUE_TEAM_ID] = ["nova-vale", selectedWingman.id];
   const standings = Object.fromEntries(
     LEAGUE_TEAMS.map((team) => [team.id, initialStanding(team.id)])
   ) as LeagueSeasonState["standings"];
@@ -108,6 +163,11 @@ export function createLeagueSeason(
       initialCharacterStats(character.id),
     ])
   );
+
+  if (selectedWingman.teamId !== PLAYER_LEAGUE_TEAM_ID) {
+    characterStats[leagueCharacterStatsKey(PLAYER_LEAGUE_TEAM_ID, selectedWingman.id)] =
+      initialCharacterStats(selectedWingman.id, PLAYER_LEAGUE_TEAM_ID);
+  }
 
   return {
     version: LEAGUE_SAVE_VERSION,
@@ -142,16 +202,8 @@ export function selectLeagueWingman(
   }
   const currentCompanion = season.teamRosters[season.playerTeamId][1];
   if (currentCompanion === selectedCharacterId) return season;
-  const sourceTeam = LEAGUE_TEAMS.find((team) =>
-    team.id !== season.playerTeamId &&
-    season.teamRosters[team.id].includes(selectedCharacterId)
-  );
-  if (sourceTeam) {
-    const sourceIndex = season.teamRosters[sourceTeam.id].indexOf(selectedCharacterId);
-    season.teamRosters[sourceTeam.id][sourceIndex] = currentCompanion;
-  }
   season.teamRosters[season.playerTeamId][1] = selectedCharacterId;
-  season.characterStats[selectedCharacterId] ??= initialCharacterStats(selectedCharacterId);
+  mutableCharacterStats(season, season.playerTeamId, selectedCharacterId);
   season.updatedAt = new Date().toISOString();
   return season;
 }
@@ -254,7 +306,7 @@ function addSimulatedCharacterStats(
 ): void {
   const discipline = foundersCircuitDiscipline(roundIndex);
   season.teamRosters[teamId].forEach((characterId, index) => {
-    const stats = season.characterStats[characterId] ?? initialCharacterStats(characterId);
+    const stats = mutableCharacterStats(season, teamId, characterId);
     const roll = random01(seed + index * 73);
     stats.matches += 1;
     stats.kills += discipline.mode === "tdm"
@@ -268,7 +320,6 @@ function addSimulatedCharacterStats(
       stats.flagCaptures += index === 0 ? Math.ceil(goals / 2) : Math.floor(goals / 2);
       stats.flagReturns += Math.round((1 - roll) * 2 + goalsAgainst * 0.5);
     }
-    season.characterStats[characterId] = stats;
   });
 }
 
@@ -313,57 +364,54 @@ function recordPlayedCharacterStats(
   input: CompleteLeagueMatchInput,
   opponentId: LeagueTeamId
 ): void {
-  const actorMap: Record<string, string | undefined> = {
-    "blue-player": season.teamRosters[season.playerTeamId][0],
-    "blue-player-2": season.teamRosters[season.playerTeamId][1],
-    "red-player": season.teamRosters[opponentId][0],
-    "red-player-2": season.teamRosters[opponentId][1],
+  const actorMap: Record<string, { teamId: LeagueTeamId; characterId: string } | undefined> = {
+    "blue-player": {
+      teamId: season.playerTeamId,
+      characterId: season.teamRosters[season.playerTeamId][0],
+    },
+    "blue-player-2": {
+      teamId: season.playerTeamId,
+      characterId: season.teamRosters[season.playerTeamId][1],
+    },
+    "red-player": {
+      teamId: opponentId,
+      characterId: season.teamRosters[opponentId][0],
+    },
+    "red-player-2": {
+      teamId: opponentId,
+      characterId: season.teamRosters[opponentId][1],
+    },
   };
   const touched = new Set<string>();
   for (const row of input.stats) {
-    const characterId = actorMap[row.actorId];
-    if (!characterId) continue;
-    const stats = season.characterStats[characterId] ?? initialCharacterStats(characterId);
+    const identity = actorMap[row.actorId];
+    if (!identity) continue;
+    const stats = mutableCharacterStats(
+      season,
+      identity.teamId,
+      identity.characterId,
+    );
     stats.matches += 1;
     stats.kills += row.kills;
     stats.deaths += row.deaths;
     stats.flagPickups += row.flagPickups;
     stats.flagCaptures += row.flagCaptures;
     stats.flagReturns += row.flagReturns;
-    season.characterStats[characterId] = stats;
-    touched.add(characterId);
+    touched.add(leagueCharacterStatsKey(identity.teamId, identity.characterId));
   }
-  for (const characterId of [
-    ...season.teamRosters[season.playerTeamId],
-    ...season.teamRosters[opponentId],
-  ]) {
-    if (touched.has(characterId)) continue;
-    const stats = season.characterStats[characterId] ?? initialCharacterStats(characterId);
-    stats.matches += 1;
-    season.characterStats[characterId] = stats;
+  for (const teamId of [season.playerTeamId, opponentId]) {
+    for (const characterId of season.teamRosters[teamId]) {
+      const scopedKey = leagueCharacterStatsKey(teamId, characterId);
+      if (touched.has(scopedKey)) continue;
+      mutableCharacterStats(season, teamId, characterId).matches += 1;
+    }
   }
 }
 
 function openRecruitment(season: LeagueSeasonState): void {
-  const defeated = season.defeatedTeamIds;
-  const fallbackOpponent = getPlayerOpponent({ ...season, currentRound: 0 });
-  const sourceTeams = defeated.length > 0
-    ? defeated
-    : fallbackOpponent
-      ? [fallbackOpponent]
-      : [season.teamIds.find((teamId) => teamId !== season.playerTeamId)!];
-  const candidateIds = sourceTeams
-    .map((teamId) => {
-      const roster = season.teamRosters[teamId];
-      if (roster.length === 0) return undefined;
-      const cosmeticIndex = hashText(`${season.seasonId}:${teamId}`) % roster.length;
-      return roster[cosmeticIndex];
-    })
-    .filter((id): id is string => Boolean(id))
-    .slice(0, 3);
   season.recruitment = {
-    status: "pending",
-    candidateIds: [...new Set(candidateIds)],
+    status: "completed",
+    candidateIds: [],
     selectedCharacterId: null,
   };
 }

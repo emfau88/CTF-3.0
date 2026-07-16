@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>CTF Movement Prototype</title>
+    <title>Core Arena</title>
     <link rel="stylesheet" href="/src/styles.css" />
     <link rel="stylesheet" href="/src/styles/p0-desktop.css" />
     <link rel="stylesheet" href="/src/styles/p1-visual-polish.css" />
@@ -212,7 +212,7 @@
             <div class="v2-subpage-title league-header-title">
               <img class="league-header-mark" src="assets/league/arena-league-emblem.png" alt="" aria-hidden="true" />
               <div>
-                <div id="league-header-kicker" class="v2-menu-kicker">CAREER &middot; FOUNDERS SEASON</div>
+                <div id="league-header-kicker" class="v2-menu-kicker">CAREER &middot; PROVING CIRCUIT</div>
                 <h2 id="league-header-title">League HQ</h2>
               </div>
             </div>
@@ -231,7 +231,6 @@
                 <summary id="league-season-options" title="Season options">Season Options</summary>
                 <div class="league-season-tools-menu">
                   <small>SEASON MANAGEMENT</small>
-                  <button id="league-edit-profile" class="league-text-button" type="button">Team Identity</button>
                   <button id="league-reset" class="league-text-button league-danger-button" type="button">Reset Season</button>
                 </div>
               </details>
@@ -249,37 +248,32 @@
             <div class="league-empty-badge"><img id="league-intro-emblem" src="assets/league/teams/iron-vanguard-emblem.png" alt="Iron Vanguard emblem" /><small id="league-intro-team-name">IRON VANGUARD</small></div>
           </div>
           <div id="league-dashboard" class="league-dashboard is-hidden">
-            <div class="league-dashboard-band league-dashboard-band-match"><span>01</span><strong>Season Command</strong><small>Next fixture and circuit run</small></div>
+            <div class="league-dashboard-band league-dashboard-band-match"><span>01</span><strong>Season Command</strong><small id="league-season-command-status">Proving Circuit &middot; Match 1 of 3</small></div>
             <section id="league-next-match" class="league-next-match"></section>
             <div class="league-dashboard-band league-dashboard-band-team"><span>02</span><strong>Team Operations</strong><small>Squad status and league table</small></div>
             <section class="league-panel league-squad-panel">
-              <div class="league-panel-heading"><span>Your Squad</span><small id="league-team-record"></small></div>
-              <div id="league-player-roster" class="league-roster"></div>
-              <button id="league-manage-wingman" class="league-manage-wingman" type="button">Manage Wingman</button>
-              <div class="league-skin-control">
-                <div id="league-skin-preview" class="league-skin-preview" aria-hidden="true"></div>
-                <label for="league-skin-select"><span>Arena Skin</span>
-                  <select id="league-skin-select"></select>
-                </label>
-                <small>Cosmetic profile · change anytime</small>
+              <div class="league-panel-heading league-squad-heading">
+                <span>Your Squad</span>
+                <div><small id="league-team-record"></small><button id="league-manage-team" class="league-manage-team" type="button">Manage Team</button></div>
               </div>
+              <div id="league-player-roster" class="league-roster"></div>
             </section>
             <section class="league-panel league-table-panel">
-              <div class="league-panel-heading"><span>Founders Standings</span><small>Select a team to inspect</small></div>
+              <div class="league-panel-heading"><span id="league-standings-title">Proving Circuit Standings</span><small>Select a team to inspect</small></div>
               <div id="league-standings" class="league-standings"></div>
             </section>
             <div class="league-dashboard-band league-dashboard-band-depth"><span>03</span><strong>Scouting &amp; Progression</strong><small>Rival files and the path ahead</small></div>
             <section id="league-team-detail" class="league-panel league-detail-panel"></section>
             <section class="league-panel league-pyramid-panel">
-              <div class="league-panel-heading"><span>Arena Path</span><small>Current, next and locked circuits</small></div>
-              <div id="league-pyramid" class="league-pyramid"></div>
+              <div class="league-panel-heading"><span>Arena Path</span><small>Your current tier and future circuits</small></div>
+              <div id="league-pyramid" class="league-pyramid" role="list" aria-label="Core Arena League circuit path"></div>
             </section>
           </div>
           <div id="league-reset-confirm" class="league-reset-dialog is-hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="league-reset-title">
             <div class="league-reset-card">
               <div class="v2-menu-kicker">SEASON MANAGEMENT</div>
               <h2 id="league-reset-title">Reset current season?</h2>
-              <p>All match results and standings from this Founders Circuit will be permanently removed. Your team identity and unlocked wingmen remain.</p>
+              <p>All match results and standings from the current circuit will be permanently removed. Your team identity and unlocked wingmen remain.</p>
               <div class="league-reset-actions">
                 <button id="league-reset-cancel" class="league-reset-cancel" type="button">Keep Season</button>
                 <button id="league-reset-confirm-button" class="league-reset-confirm-button" type="button">Reset Season</button>
@@ -287,8 +281,6 @@
             </div>
           </div>
           <div id="league-progression" class="league-progression is-hidden" role="dialog" aria-modal="true" aria-hidden="true"></div>
-          <div id="league-recruitment" class="league-recruitment is-hidden" role="dialog" aria-modal="true" aria-hidden="true"></div>
-          <div id="league-wingman-manager" class="league-wingman-manager is-hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="league-wingman-title"></div>
         </div>
       </div>
     </div>

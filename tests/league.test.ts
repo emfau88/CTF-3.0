@@ -31,7 +31,6 @@ import {
   FOUNDERS_CIRCUIT_DISCIPLINES,
   FOUNDERS_CIRCUIT_TEAM_IDS,
   buildLeagueMatchSearch,
-  acknowledgeLeagueProgression,
   completeLeagueRound,
   completeRecruitment,
   createLeagueRepository,
@@ -70,7 +69,6 @@ function leagueMenuFixture(): string {
           <button id="league-back"></button>
           <details id="league-season-tools">
             <summary id="league-season-options">Season Options</summary>
-            <button id="league-edit-profile"></button>
             <button id="league-reset"></button>
           </details>
         </header>
@@ -85,9 +83,7 @@ function leagueMenuFixture(): string {
           <section id="league-next-match"></section>
           <span id="league-team-record"></span>
           <div id="league-player-roster"></div>
-          <button id="league-manage-wingman"></button>
-          <div id="league-skin-preview"></div>
-          <select id="league-skin-select"></select>
+          <button id="league-manage-team"></button>
           <div id="league-standings"></div>
           <div id="league-team-detail"></div>
           <div id="league-pyramid"></div>
@@ -97,8 +93,6 @@ function leagueMenuFixture(): string {
           <button id="league-reset-confirm-button"></button>
         </div>
         <div id="league-progression" class="is-hidden"></div>
-        <div id="league-recruitment" class="is-hidden"></div>
-        <div id="league-wingman-manager" class="is-hidden"></div>
       </div>
     </div>`;
 }
@@ -207,20 +201,28 @@ test("played result advances one round, updates points, and is idempotent", () =
   assert.equal(season.standings[season.playerTeamId].played, 1);
 });
 
-test("one recruitment choice opens after the three-match circuit and swaps one wingmate", () => {
+test("legacy recruitment completion never mutates a canonical rival roster", () => {
   const season = createLeagueSeason(42);
   for (let round = 0; round < 3; round += 1) completeCurrent(season);
   assert.equal(season.currentRound, 3);
   assert.equal(season.status, "completed");
-  assert.equal(season.recruitment.status, "pending");
-  assert.ok(season.recruitment.candidateIds.length >= 1);
+  assert.equal(season.recruitment.status, "completed");
+  assert.deepEqual(season.recruitment.candidateIds, []);
   const oldWingmate = season.teamRosters[season.playerTeamId][1];
-  const recruit = season.recruitment.candidateIds[0];
+  const defeatedTeamId = season.defeatedTeamIds[0];
+  const recruit = LEAGUE_TEAMS.find((team) => team.id === defeatedTeamId)!.characterIds[0];
+  season.recruitment = {
+    status: "pending",
+    candidateIds: [recruit],
+    selectedCharacterId: null,
+  };
   const sourceTeam = LEAGUE_TEAMS.find((team) => season.teamRosters[team.id].includes(recruit))!;
+  const sourceRoster = [...season.teamRosters[sourceTeam.id]];
   completeRecruitment(season, recruit);
   assert.equal(season.recruitment.status, "completed");
   assert.equal(season.teamRosters[season.playerTeamId][1], recruit);
-  assert.ok(season.teamRosters[sourceTeam.id].includes(oldWingmate));
+  assert.deepEqual(season.teamRosters[sourceTeam.id], sourceRoster);
+  assert.equal(season.teamRosters[sourceTeam.id].includes(oldWingmate), false);
   const snapshot = JSON.stringify(season.teamRosters);
   completeRecruitment(season, null);
   assert.equal(JSON.stringify(season.teamRosters), snapshot);
@@ -589,7 +591,7 @@ test("league profile reviews correctable choices before starting the season", ()
   assert.equal(savedProfile.selectedWingmanId, "lyra-quell");
   assert.equal(controller.hasSave, true);
   assert.equal(document.querySelectorAll(".league-intro-stop").length, 3);
-  assert.equal(document.getElementById("league-header-title")!.textContent, "Founders Circuit");
+  assert.equal(document.getElementById("league-header-title")!.textContent, "Proving Circuit");
   assert.equal(document.getElementById("league-intro-title")!.textContent, "Lead Comet Vanguard");
   menuRoot.scrollTop = 380;
   document.getElementById("league-new-season")!.click();
@@ -620,33 +622,39 @@ test("league profile reviews correctable choices before starting the season", ()
   assert.equal(document.querySelectorAll("#league-player-roster .league-character").length, 2);
   assert.match(document.getElementById("league-player-roster")!.textContent ?? "", /Vector/);
   assert.match(document.getElementById("league-player-roster")!.textContent ?? "", /Lyra Quell/);
-  const skinSelect = document.getElementById("league-skin-select") as HTMLSelectElement;
-  assert.equal(skinSelect.options.length, 9);
-  skinSelect.value = "ax9-mantis";
-  skinSelect.dispatchEvent(new Event("change"));
-  assert.equal(window.localStorage.getItem(PLAYER_SKIN_STORAGE_KEY), "ax9-mantis");
   assert.equal(createCareerProfileRepository(window.localStorage).load()?.captainSkinId, "ax9-mantis");
+  assert.equal(window.localStorage.getItem(PLAYER_SKIN_STORAGE_KEY), null);
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /MATCH 1 OF 3/);
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /TEAM DEATHMATCH 2V2/);
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /EXPECTED LINEUP/);
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /NO SEASON DATA/i);
   assert.equal(document.querySelectorAll(".league-season-stop").length, 3);
   assert.equal(document.querySelectorAll(".league-season-stop.is-current").length, 1);
-  assert.match(document.getElementById("league-pyramid")!.textContent ?? "", /Challenger League/);
-  document.getElementById("league-manage-wingman")!.click();
-  const wingmanManager = document.getElementById("league-wingman-manager")!;
-  assert.equal(wingmanManager.classList.contains("is-hidden"), false);
-  assert.equal(wingmanManager.querySelectorAll("[data-manager-wingman-id]").length, 3);
-  assert.equal(wingmanManager.querySelectorAll(".league-profile-fighter.is-locked").length, 6);
-  wingmanManager.querySelector<HTMLButtonElement>('[data-manager-wingman-id="dax-ember"]')!.click();
+  assert.match(document.getElementById("league-pyramid")!.textContent ?? "", /Contender Circuit/);
+  document.getElementById("league-manage-team")!.click();
+  assert.equal(document.getElementById("league-header-title")!.textContent, "Team Manager");
+  assert.equal(document.querySelectorAll("[data-wingman-id]").length, 3);
+  assert.equal(document.querySelectorAll(".league-profile-fighter.is-locked").length, 6);
+  document.querySelector<HTMLButtonElement>('[data-wingman-id="dax-ember"]')!.click();
+  assert.equal(document.activeElement?.getAttribute("data-wingman-id"), "dax-ember");
   assert.equal(createCareerProfileRepository(window.localStorage).load()?.selectedWingmanId, "lyra-quell");
-  document.getElementById("league-wingman-cancel")!.click();
+  document.getElementById("league-profile-cancel")!.click();
   assert.equal(createLeagueRepository(window.localStorage).load()?.teamRosters["iron-vanguard"][1], "lyra-quell");
-  document.getElementById("league-manage-wingman")!.click();
-  wingmanManager.querySelector<HTMLButtonElement>('[data-manager-wingman-id="dax-ember"]')!.click();
-  document.getElementById("league-wingman-apply")!.click();
+  assert.equal(document.activeElement?.id, "league-manage-team");
+  document.getElementById("league-manage-team")!.click();
+  document.querySelector<HTMLButtonElement>('[data-wingman-id="dax-ember"]')!.click();
+  document.querySelector<HTMLButtonElement>('[data-skin-id="briarhorn"]')!.click();
+  document.getElementById("league-profile-review")!.click();
+  assert.match(document.getElementById("league-profile-setup")!.textContent ?? "", /CHANGES NOT SAVED/);
+  document.getElementById("league-profile-confirm")!.click();
   assert.equal(createCareerProfileRepository(window.localStorage).load()?.selectedWingmanId, "dax-ember");
+  assert.equal(createCareerProfileRepository(window.localStorage).load()?.captainSkinId, "briarhorn");
   assert.equal(createLeagueRepository(window.localStorage).load()?.teamRosters["iron-vanguard"][1], "dax-ember");
+  assert.equal(window.localStorage.getItem(PLAYER_SKIN_STORAGE_KEY), null);
+  assert.equal(document.activeElement?.id, "league-manage-team");
+  const ownRow = document.querySelector<HTMLButtonElement>('.league-table-row[aria-current="true"]')!;
+  ownRow.click();
+  assert.ok(document.getElementById("league-team-file-manage"));
   const resetDialog = document.getElementById("league-reset-confirm")!;
   document.getElementById("league-reset")!.click();
   assert.equal(resetDialog.classList.contains("is-hidden"), false);
@@ -736,40 +744,26 @@ test("next-match dossier shows recorded opponent performance when scouting data 
   window.localStorage.clear();
 });
 
-test("recruitment UI compares cosmetic identities and uses explicit Recruit/Keep actions", () => {
+test("season reset requires confirmation and preserves career identity and unlocks", () => {
   window.localStorage.clear();
-  seedCareerProfile();
+  const profile = seedCareerProfile();
+  syncCareerUnlocks(profile, ["crimson-jackals"]);
+  profile.selectedWingmanId = "kael-voss";
+  createCareerProfileRepository(window.localStorage).save(profile);
   document.body.innerHTML = leagueMenuFixture();
   const repository = createLeagueRepository(window.localStorage);
-  const season = createLeagueSeason(4242);
-  for (let round = 0; round < 3; round += 1) completeCurrent(season);
-  acknowledgeLeagueProgression(season);
+  const season = createLeagueSeason(4242, "kael-voss");
   repository.save(season);
 
-  const controller = createLeagueMenuController({ onBack: () => {} });
-  controller.open();
-  const recruitment = document.getElementById("league-recruitment")!;
-  const menuRoot = document.getElementById("v2-main-menu")!;
-  const dashboard = document.getElementById("league-dashboard")!;
-  assert.equal(recruitment.classList.contains("is-hidden"), false);
-  assert.equal(recruitment.getAttribute("aria-hidden"), "false");
-  assert.equal(menuRoot.classList.contains("has-modal-open"), true);
-  assert.equal(dashboard.inert, true);
-  assert.equal(document.activeElement?.id, "league-confirm-recruit");
-  assert.match(recruitment.textContent ?? "", /Identical arena stats/);
-  assert.doesNotMatch(recruitment.textContent ?? "", /OVR|ATTACKER|DEFENDER/);
-  assert.equal(recruitment.querySelectorAll(".league-recruitment-side .league-character").length, 2);
-  assert.ok(recruitment.querySelector("#league-confirm-recruit"));
-  assert.ok(recruitment.querySelector("#league-keep-roster"));
-
-  const option = recruitment.querySelector<HTMLButtonElement>(".league-candidate")!;
-  option.click();
-  const confirm = recruitment.querySelector<HTMLButtonElement>("#league-confirm-recruit")!;
-  assert.match(confirm.textContent ?? "", /^Recruit /);
-  confirm.click();
-  assert.equal(repository.load()?.recruitment.status, "completed");
-  assert.equal(recruitment.getAttribute("aria-hidden"), "true");
-  assert.equal(menuRoot.classList.contains("has-modal-open"), false);
-  assert.equal(dashboard.inert, false);
+  createLeagueMenuController({ onBack: () => {} }).open();
+  document.getElementById("league-reset")!.click();
+  assert.ok(repository.load());
+  document.getElementById("league-reset-confirm-button")!.click();
+  assert.equal(repository.load(), null);
+  const preserved = createCareerProfileRepository(window.localStorage).load()!;
+  assert.equal(preserved.selectedWingmanId, "kael-voss");
+  assert.ok(preserved.unlockedWingmanIds.includes("kael-voss"));
+  assert.equal(document.getElementById("league-empty")!.classList.contains("is-hidden"), false);
+  assert.equal(document.activeElement?.id, "league-new-season");
   window.localStorage.clear();
 });

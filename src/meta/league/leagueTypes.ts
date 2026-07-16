@@ -62,6 +62,7 @@ export interface LeagueStanding {
 
 export interface LeagueCharacterStats {
   readonly characterId: string;
+  readonly teamId?: LeagueTeamId;
   matches: number;
   kills: number;
   deaths: number;

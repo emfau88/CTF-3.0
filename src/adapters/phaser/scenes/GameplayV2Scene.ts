@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { preloadArenaAssets } from "../../../assets";
 import { playerSkinPortraitAssetStem } from "../../../playerSkinPreference";
+import { readLeagueMatchRosterPresentation } from "../../../meta/league";
 import {
   readV2Route,
   type V2PlayerSkinId,
@@ -81,6 +82,14 @@ export class GameplayV2Scene extends Phaser.Scene {
   create(): void {
     const search = new URLSearchParams(window.location.search);
     const route = readV2Route(search);
+    const leagueRosterPresentation = readLeagueMatchRosterPresentation(search);
+    const captainSkinId = leagueRosterPresentation?.captainSkinId ?? route.skin;
+    const characterRosterPresentation = leagueRosterPresentation
+      ? {
+          blueBotSkinIds: [leagueRosterPresentation.playerWingmanSkinId],
+          redSkinIds: leagueRosterPresentation.opponentSkinIds,
+        }
+      : undefined;
     const isTeamDeathmatch = route.mode === "tdm";
     const isClassicCtf = route.mode === "ctf";
     const isOneFlag = route.mode === "one-flag";
@@ -202,7 +211,7 @@ export class GameplayV2Scene extends Phaser.Scene {
       this.hudScene,
       useMobileControls,
       useBotOpponent,
-      route.skin,
+      captainSkinId,
       isClassicCtf && useBotOpponent ? requestTeamCommand : undefined,
     );
     const playerInput = useMobileControls && mobileInput
@@ -228,10 +237,11 @@ export class GameplayV2Scene extends Phaser.Scene {
         this,
         selectedMap,
         useBotOpponent ? "blue-player" : undefined,
-        route.skin,
+        captainSkinId,
         useBotOpponent,
         useMobileControls ? .8 : 1,
         collisionDiagnostics,
+        characterRosterPresentation,
       ),
       audio: new PhaserArenaAudioPort(this, "blue-player"),
       diagnostics: hud,

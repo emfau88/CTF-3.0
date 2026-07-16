@@ -71,6 +71,23 @@ export function normalizeCareerText(value: string, maxLength: number): string {
   return value.replace(/\s+/g, " ").trim().slice(0, maxLength);
 }
 
+function careerTeamNameKey(value: string): string {
+  return normalizeCareerText(value, 28).normalize("NFKC").toLocaleLowerCase("en-US");
+}
+
+export function isReservedLeagueTeamName(value: string): boolean {
+  const key = careerTeamNameKey(value);
+  return LEAGUE_TEAMS.some((team) => careerTeamNameKey(team.name) === key);
+}
+
+function assertUniqueCareerTeamName(teamName: string): void {
+  if (isReservedLeagueTeamName(teamName)) {
+    throw new Error(
+      "That team name belongs to an official league team. Choose a unique team name.",
+    );
+  }
+}
+
 export function randomCareerChoice<T>(
   choices: readonly T[],
   random: () => number = Math.random,
@@ -98,6 +115,13 @@ export function randomStarterWingman(random: () => number = Math.random): string
   return randomCareerChoice(STARTER_WINGMAN_IDS, random);
 }
 
+export function resolveCareerCaptainSkin(
+  profile: CareerProfile | null,
+  quickPlayFallback: V2PlayerSkinId,
+): V2PlayerSkinId {
+  return profile?.captainSkinId ?? quickPlayFallback;
+}
+
 export function createCareerProfile(
   draft: CareerProfileDraft,
   now = new Date().toISOString(),
@@ -107,6 +131,7 @@ export function createCareerProfile(
   if (callsign.length < 2 || teamName.length < 2) {
     throw new Error("Callsign and team name must contain at least two characters.");
   }
+  assertUniqueCareerTeamName(teamName);
   if (!isCareerEmblemId(draft.emblemId)) {
     throw new Error("Unknown career emblem.");
   }
@@ -141,6 +166,12 @@ export function updateCareerProfile(
   const teamName = normalizeCareerText(draft.teamName, 28);
   if (callsign.length < 2 || teamName.length < 2) {
     throw new Error("Callsign and team name must contain at least two characters.");
+  }
+  if (
+    isReservedLeagueTeamName(teamName) &&
+    careerTeamNameKey(teamName) !== careerTeamNameKey(current.teamName)
+  ) {
+    assertUniqueCareerTeamName(teamName);
   }
   if (!current.unlockedEmblemIds.includes(draft.emblemId)) {
     throw new Error("That emblem is still locked.");

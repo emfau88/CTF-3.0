@@ -13,6 +13,7 @@ import type { LevelData } from "../../level";
 import type { RendererPort } from "../rendering";
 import type { V2PlayerSkinId } from "../../v2Route";
 import { PhaserArenaActorRenderer } from "./PhaserArenaActorRenderer";
+import type { V2CharacterRosterPresentation } from "./v2CharacterPresentation";
 import { PhaserArenaCameraController } from "./PhaserArenaCameraController";
 import { PhaserArenaObjectiveRenderer } from "./PhaserArenaObjectiveRenderer";
 import {
@@ -66,6 +67,7 @@ export class PhaserArenaRendererPort implements RendererPort {
     enableManualCamera = false,
     cameraZoom = 1,
     collisionDiagnostics: ArenaCollisionDiagnostics = "off",
+    rosterPresentation?: V2CharacterRosterPresentation,
   ) {
     this.cameraController = new PhaserArenaCameraController(
       scene,
@@ -73,7 +75,11 @@ export class PhaserArenaRendererPort implements RendererPort {
       enableManualCamera,
       cameraZoom,
     );
-    this.actorRenderer = new PhaserArenaActorRenderer(scene, playerSkinId);
+    this.actorRenderer = new PhaserArenaActorRenderer(
+      scene,
+      playerSkinId,
+      rosterPresentation,
+    );
     this.pickupRenderer = new PhaserArenaPickupRenderer(scene);
     this.objectiveRenderer = new PhaserArenaObjectiveRenderer(scene);
     const level = toPresentationLevel(map);

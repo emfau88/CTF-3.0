@@ -18,6 +18,11 @@ export interface V2CharacterPresentation {
   readonly skin?: V2CharacterSkinConfig;
 }
 
+export interface V2CharacterRosterPresentation {
+  readonly blueBotSkinIds?: readonly V2PlayerSkinId[];
+  readonly redSkinIds?: readonly V2PlayerSkinId[];
+}
+
 export interface V2CharacterSkinConfig {
   readonly id: V2PlayerSkinId;
   readonly texture: string;
@@ -123,8 +128,13 @@ function sixColumnSkin(
 export function resolveV2CharacterPresentation(
   actor: Readonly<ActorState>,
   playerSkinId: V2PlayerSkinId,
+  rosterPresentation?: V2CharacterRosterPresentation,
 ): V2CharacterPresentation {
-  const skinId = resolveV2CharacterSkinId(actor, playerSkinId);
+  const skinId = resolveV2CharacterSkinId(
+    actor,
+    playerSkinId,
+    rosterPresentation,
+  );
   if (skinId) {
     const skin = V2_CHARACTER_SKINS[skinId];
     return {
@@ -149,26 +159,33 @@ export function resolveV2CharacterPresentation(
 function resolveV2CharacterSkinId(
   actor: Readonly<ActorState>,
   playerSkinId: V2PlayerSkinId,
+  rosterPresentation?: V2CharacterRosterPresentation,
 ): V2PlayerSkinId | null {
   if (actor.id === "blue-player") {
     return playerSkinId;
   }
   if (actor.teamId === "blue") {
+    const rosterIndex = Math.max(0, actorRosterSlot(actor.id) - 2);
+    const assignedSkinId = rosterPresentation?.blueBotSkinIds?.[rosterIndex];
+    if (assignedSkinId) return assignedSkinId;
     const blueRoster: readonly V2PlayerSkinId[] = [
       "prism-bastion",
       "briarhorn",
       "null-courier",
     ];
-    return blueRoster[Math.max(0, actorRosterSlot(actor.id) - 2) % blueRoster.length];
+    return blueRoster[rosterIndex % blueRoster.length];
   }
   if (actor.teamId === "red") {
+    const rosterIndex = actorRosterSlot(actor.id) - 1;
+    const assignedSkinId = rosterPresentation?.redSkinIds?.[rosterIndex];
+    if (assignedSkinId) return assignedSkinId;
     const redRoster: readonly V2PlayerSkinId[] = [
       "mirejaw",
       "scrapwing",
       "volt-hound",
       "ax9-mantis",
     ];
-    return redRoster[(actorRosterSlot(actor.id) - 1) % redRoster.length];
+    return redRoster[rosterIndex % redRoster.length];
   }
   return null;
 }
