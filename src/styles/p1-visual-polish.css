@@ -23,6 +23,20 @@
   letter-spacing: .12em;
 }
 
+.v2-subpage-title h2 {
+  font-size: clamp(32px, 4.2vw, 48px);
+  font-weight: 800;
+  line-height: .94;
+  letter-spacing: .025em;
+  word-spacing: .12em;
+}
+
+.v2-menu-section-title {
+  color: #c1d0d4;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
 /* Roster art is intentionally independent from the gameplay animation sheets. */
 .v2-quick-skin-preview,
 .v2-quick-skin-thumb,
@@ -54,13 +68,116 @@
 .league-character-info > strong {
   font-family: var(--font-display);
   font-size: 18px;
-  letter-spacing: .01em;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: .02em;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
 }
 
-.league-character-info > span,
-.league-detail-heading p {
-  font-size: 10px;
+.league-character-info > span {
+  display: -webkit-box;
+  min-height: 2.7em;
+  overflow: hidden;
+  color: #91a7ae;
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
+
+.league-eyebrow {
+  color: #9fc4cf;
+  font-size: 11px;
+  line-height: 1.35;
+  letter-spacing: .16em;
+}
+
+.league-panel-heading {
+  color: #e6f0f2;
+  font-size: 13px;
+  line-height: 1.3;
+  letter-spacing: .09em;
+}
+
+.league-panel-heading small {
+  color: #8fa5ac;
+  font-size: 10px;
+  line-height: 1.3;
+  letter-spacing: .1em;
+}
+
+.league-opponent-copy small {
+  color: #94abb2;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.league-opponent-copy p {
+  color: #9aadb3;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.league-character-info small {
+  font-size: 9px;
+  line-height: 1.3;
+}
+
+.league-character-stats i { font-size: 8px; }
+
+.league-table-row {
+  color: #a6b8be;
+  font-size: 12px;
+}
+
+.league-table-row > span:nth-child(2) { color: #d4e0e3; }
+
+.league-table-head,
+.league-table-head > span:nth-child(2) {
+  color: #718a92;
+  font-size: 9px;
+}
+
+.league-detail-heading small {
+  color: #88a0a8;
+  font-size: 9px;
+  line-height: 1.3;
+}
+
+.league-detail-heading p {
+  color: #8fa4ab;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.league-tier { color: #82979e; }
+
+.league-tier small {
+  color: #78939c;
+  font-size: 8px;
+  line-height: 1.3;
+}
+
+.league-tier strong {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: .015em;
+}
+
+.league-tier p {
+  color: #82969d;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.league-tier.is-elite { opacity: .68; }
 
 .v2-quick-mode-field {
   grid-column: 1 / -1;
@@ -72,10 +189,11 @@
 
 .v2-quick-mode-field legend {
   margin-bottom: 7px;
-  color: #aebdc2;
-  font-size: 11px;
+  color: #c1d0d4;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: .12em;
+  line-height: 1.3;
   text-transform: uppercase;
 }
 
@@ -171,13 +289,17 @@
 }
 
 .v2-quick-mode-copy small {
+  display: -webkit-box;
   overflow: hidden;
-  color: #789098;
-  font-size: 9px;
+  color: #91a5ac;
+  font-size: 10px;
   font-weight: 700;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .v2-quick-mode-option > b {
@@ -185,8 +307,13 @@
   padding: 3px 5px;
   border: 1px solid color-mix(in srgb, var(--mode-accent) 28%, transparent);
   color: color-mix(in srgb, var(--mode-accent) 72%, #d9e6e9);
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: .1em;
+}
+
+.v2-quick-skin-option strong {
+  font-size: 9px;
+  line-height: 1.2;
 }
 
 .v2-quick-mode-native {
@@ -202,107 +329,27 @@
   min-height: 202px;
 }
 
-@media (min-width: 901px) {
-  .v2-league-hub {
-    height: calc(100vh - 72px);
-    min-height: 0;
-    grid-template-rows: auto minmax(0, 1fr);
-    overflow: hidden;
-  }
-}
-
-/* Quick Play remains fully operable at the desktop floor of 1024 x 768. */
+/* Short desktop viewports use moderate spacing reductions; the page itself scrolls. */
 @media (min-width: 901px) and (max-height: 800px) {
   .v2-menu-card.v2-menu-shell {
     min-height: calc(100vh - 36px);
+    min-height: calc(100dvh - 36px);
     padding: 18px;
   }
 
   .v2-setup-view {
-    height: calc(100vh - 72px);
-    gap: 8px;
-    padding: 13px 22px 15px;
-    grid-template-rows: auto minmax(0, 1fr) auto auto;
-  }
-
-  .v2-setup-view > .v2-menu-section {
-    gap: 8px 12px;
-    padding-right: 8px;
+    gap: 10px;
+    padding: 18px 22px 20px;
   }
 
   .v2-setup-view .v2-subpage-header {
-    min-height: 50px;
+    min-height: 58px;
     padding-bottom: 8px;
   }
 
   .v2-setup-view .v2-subpage-title h2 {
     margin-top: 2px;
-    font-size: 32px;
-  }
-
-  .v2-setup-view select {
-    height: 39px;
-  }
-
-  .v2-quick-mode-field legend {
-    margin-bottom: 5px;
-    font-size: 10px;
-  }
-
-  .v2-quick-mode-option {
-    min-height: 70px;
-    grid-template-columns: 38px minmax(0, 1fr) auto;
-    gap: 8px;
-    padding: 7px 9px;
-  }
-
-  .v2-quick-mode-icon {
-    width: 36px;
-    height: 36px;
-  }
-
-  .v2-quick-mode-icon svg {
-    width: 26px;
-    height: 26px;
-  }
-
-  .v2-quick-mode-copy strong {
-    font-size: 16px;
-  }
-
-  .v2-quick-mode-copy small {
-    font-size: 8px;
-  }
-
-  .v2-quick-skin-field {
-    grid-template-columns: 116px minmax(0, 1fr);
-    gap: 8px 12px;
-    padding: 8px;
-  }
-
-  .v2-quick-skin-preview {
-    width: 98px;
-    height: 98px;
-  }
-
-  .v2-quick-skin-picker {
-    gap: 5px;
-  }
-
-  .v2-quick-skin-option {
-    min-height: 66px;
-    gap: 2px;
-  }
-
-  .v2-quick-skin-thumb {
-    width: 43px;
-    height: 43px;
-  }
-
-  .v2-quick-skin-option strong,
-  .v2-quick-skin-selected small,
-  .v2-quick-skin-selected span {
-    font-size: 9px;
+    font-size: 34px;
   }
 
   .v2-setup-view .v2-menu-actions {
@@ -335,7 +382,6 @@
       "pyramid"
       "detail";
     gap: 10px;
-    scrollbar-color: #456a78 #071820;
   }
 
   .league-next-match {
@@ -594,6 +640,8 @@
 }
 
 @media (max-width: 720px) {
+  .v2-subpage-title h2 { font-size: 30px; }
+
   .v2-quick-mode-picker {
     grid-template-columns: 1fr;
   }

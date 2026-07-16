@@ -43,12 +43,56 @@ export function createLeagueMenuController(actions: {
 }): LeagueMenuController {
   const repository = createLeagueRepository(window.localStorage);
   const root = element("v2-league-hub");
+  const menuRoot = document.getElementById("v2-main-menu") ?? root;
+  const header = root.querySelector<HTMLElement>(".league-header");
   const empty = element("league-empty");
   const dashboard = element("league-dashboard");
   const recruitment = element("league-recruitment");
   const progression = element("league-progression");
   let season = repository.load();
   let selectedTeamId: LeagueTeamId = season?.playerTeamId ?? "iron-vanguard";
+  let activeModal: "progression" | "recruitment" | null = null;
+
+  const resetMenuScroll = (): void => {
+    menuRoot.scrollTop = 0;
+    menuRoot.scrollLeft = 0;
+  };
+
+  const syncModalState = (): void => {
+    const progressionOpen = !progression.classList.contains("is-hidden");
+    const recruitmentOpen = !recruitment.classList.contains("is-hidden");
+    const nextModal = progressionOpen
+      ? "progression"
+      : recruitmentOpen
+      ? "recruitment"
+      : null;
+    const modalOpen = nextModal !== null;
+    menuRoot.classList.toggle("has-modal-open", modalOpen);
+    if (header) header.inert = modalOpen;
+    empty.inert = modalOpen;
+    dashboard.inert = modalOpen;
+    progression.setAttribute("aria-hidden", String(!progressionOpen));
+    recruitment.setAttribute("aria-hidden", String(!recruitmentOpen));
+    if (nextModal === activeModal) return;
+
+    const previousModal = activeModal;
+    activeModal = nextModal;
+    if (nextModal === "progression") {
+      requiredButton("league-progression-continue").focus({
+        preventScroll: true,
+      });
+    } else if (nextModal === "recruitment") {
+      requiredButton("league-confirm-recruit").focus({
+        preventScroll: true,
+      });
+    } else if (previousModal) {
+      (
+        document.getElementById("league-play-next") ??
+        document.getElementById("league-finish-new") ??
+        document.getElementById("league-back")
+      )?.focus({ preventScroll: true });
+    }
+  };
 
   const saveAndRender = (): void => {
     if (season) repository.save(season);
@@ -62,6 +106,7 @@ export function createLeagueMenuController(actions: {
       getCurrentPlayerMatch(season),
     ) ?? season.playerTeamId;
     saveAndRender();
+    resetMenuScroll();
   };
 
   const render = (): void => {
@@ -74,6 +119,7 @@ export function createLeagueMenuController(actions: {
       recruitment.classList.add("is-hidden");
       progression.classList.add("is-hidden");
       renderLeagueIntro();
+      syncModalState();
       return;
     }
     renderNextMatch(season);
@@ -83,6 +129,7 @@ export function createLeagueMenuController(actions: {
     renderPyramid(season);
     renderProgression(season);
     renderRecruitment(season);
+    syncModalState();
   };
 
   const renderSeasonTrack = (active: LeagueSeasonState): string => {
@@ -399,12 +446,16 @@ export function createLeagueMenuController(actions: {
   };
 
   requiredButton("league-new-season").onclick = startSeason;
-  requiredButton("league-back").onclick = actions.onBack;
+  requiredButton("league-back").onclick = () => {
+    menuRoot.classList.remove("has-modal-open");
+    actions.onBack();
+  };
   requiredButton("league-reset").onclick = () => {
     if (!window.confirm("Reset the current league season? All results will be lost.")) return;
     repository.clear();
     season = null;
     render();
+    resetMenuScroll();
   };
 
   return {
@@ -421,6 +472,7 @@ export function createLeagueMenuController(actions: {
         ? getPlayerOpponent(season, getCurrentPlayerMatch(season)) ?? season.playerTeamId
         : "iron-vanguard";
       render();
+      resetMenuScroll();
     },
   };
 }

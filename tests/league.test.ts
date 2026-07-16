@@ -55,23 +55,27 @@ function completeCurrent(season: ReturnType<typeof createLeagueSeason>, blue = 3
 
 function leagueMenuFixture(): string {
   return `
-    <div id="v2-league-hub" class="is-hidden">
-      <div id="league-header-kicker"></div><div id="league-header-title"></div>
-      <div id="league-empty"><button id="league-new-season"></button></div>
-      <div id="league-intro-route"></div>
-      <div id="league-dashboard" class="is-hidden">
-        <section id="league-next-match"></section>
-        <span id="league-team-record"></span>
-        <div id="league-player-roster"></div>
-        <div id="league-skin-preview"></div>
-        <select id="league-skin-select"></select>
-        <div id="league-standings"></div>
-        <div id="league-team-detail"></div>
-        <div id="league-pyramid"></div>
+    <div id="v2-main-menu" tabindex="-1">
+      <div id="v2-league-hub" class="is-hidden">
+        <header class="league-header">
+          <div id="league-header-kicker"></div><div id="league-header-title"></div>
+          <button id="league-back"></button><button id="league-reset"></button>
+        </header>
+        <div id="league-empty"><button id="league-new-season"></button></div>
+        <div id="league-intro-route"></div>
+        <div id="league-dashboard" class="is-hidden">
+          <section id="league-next-match"></section>
+          <span id="league-team-record"></span>
+          <div id="league-player-roster"></div>
+          <div id="league-skin-preview"></div>
+          <select id="league-skin-select"></select>
+          <div id="league-standings"></div>
+          <div id="league-team-detail"></div>
+          <div id="league-pyramid"></div>
+        </div>
+        <div id="league-progression" class="is-hidden"></div>
+        <div id="league-recruitment" class="is-hidden"></div>
       </div>
-      <button id="league-back"></button><button id="league-reset"></button>
-      <div id="league-progression" class="is-hidden"></div>
-      <div id="league-recruitment" class="is-hidden"></div>
     </div>`;
 }
 
@@ -439,11 +443,16 @@ test("league menu starts a season and renders the actionable dashboard", () => {
   window.localStorage.clear();
   document.body.innerHTML = leagueMenuFixture();
   const controller = createLeagueMenuController({ onBack: () => {} });
+  const menuRoot = document.getElementById("v2-main-menu")!;
   assert.equal(controller.hasSave, false);
+  menuRoot.scrollTop = 420;
   controller.open();
+  assert.equal(menuRoot.scrollTop, 0);
   assert.equal(document.querySelectorAll(".league-intro-stop").length, 3);
   assert.equal(document.getElementById("league-header-title")!.textContent, "Founders Circuit");
+  menuRoot.scrollTop = 380;
   document.getElementById("league-new-season")!.click();
+  assert.equal(menuRoot.scrollTop, 0);
   assert.equal(document.getElementById("league-header-title")!.textContent, "League HQ");
   assert.equal(document.getElementById("league-dashboard")!.classList.contains("is-hidden"), false);
   assert.equal(document.querySelectorAll(".league-table-row").length, 5);
@@ -468,10 +477,19 @@ test("league menu starts a season and renders the actionable dashboard", () => {
   completeCurrent(savedSeason);
   repository.save(savedSeason);
   controller.open();
-  assert.equal(document.getElementById("league-progression")!.classList.contains("is-hidden"), false);
-  assert.match(document.getElementById("league-progression")!.textContent ?? "", /LEAGUE POINTS/);
+  const progression = document.getElementById("league-progression")!;
+  const dashboard = document.getElementById("league-dashboard")!;
+  assert.equal(progression.classList.contains("is-hidden"), false);
+  assert.equal(progression.getAttribute("aria-hidden"), "false");
+  assert.equal(menuRoot.classList.contains("has-modal-open"), true);
+  assert.equal(dashboard.inert, true);
+  assert.equal(document.activeElement?.id, "league-progression-continue");
+  assert.match(progression.textContent ?? "", /LEAGUE POINTS/);
   document.getElementById("league-progression-continue")!.click();
-  assert.equal(document.getElementById("league-progression")!.classList.contains("is-hidden"), true);
+  assert.equal(progression.classList.contains("is-hidden"), true);
+  assert.equal(progression.getAttribute("aria-hidden"), "true");
+  assert.equal(menuRoot.classList.contains("has-modal-open"), false);
+  assert.equal(dashboard.inert, false);
   window.localStorage.clear();
 });
 
@@ -516,7 +534,13 @@ test("recruitment UI compares cosmetic identities and uses explicit Recruit/Keep
   const controller = createLeagueMenuController({ onBack: () => {} });
   controller.open();
   const recruitment = document.getElementById("league-recruitment")!;
+  const menuRoot = document.getElementById("v2-main-menu")!;
+  const dashboard = document.getElementById("league-dashboard")!;
   assert.equal(recruitment.classList.contains("is-hidden"), false);
+  assert.equal(recruitment.getAttribute("aria-hidden"), "false");
+  assert.equal(menuRoot.classList.contains("has-modal-open"), true);
+  assert.equal(dashboard.inert, true);
+  assert.equal(document.activeElement?.id, "league-confirm-recruit");
   assert.match(recruitment.textContent ?? "", /Identical arena stats/);
   assert.doesNotMatch(recruitment.textContent ?? "", /OVR|ATTACKER|DEFENDER/);
   assert.equal(recruitment.querySelectorAll(".league-recruitment-side .league-character").length, 2);
@@ -529,5 +553,8 @@ test("recruitment UI compares cosmetic identities and uses explicit Recruit/Keep
   assert.match(confirm.textContent ?? "", /^Recruit /);
   confirm.click();
   assert.equal(repository.load()?.recruitment.status, "completed");
+  assert.equal(recruitment.getAttribute("aria-hidden"), "true");
+  assert.equal(menuRoot.classList.contains("has-modal-open"), false);
+  assert.equal(dashboard.inert, false);
   window.localStorage.clear();
 });

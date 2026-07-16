@@ -92,6 +92,9 @@ interface V2StatsElements {
 export function showGameplayV2Menu(statusMessage?: string): void {
   const elements = readMenuElements();
   const route = readV2Route();
+  elements.root.classList.remove("has-modal-open");
+  setupMenuKeyboardScrolling(elements.root);
+  resetMenuScroll(elements.root);
   document.documentElement.style.setProperty(
     "--v2-menu-background",
     `url("${import.meta.env.BASE_URL}assets/league-menu-arena-v1.png")`,
@@ -132,6 +135,8 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     elements.setup.classList.add("is-hidden");
     elements.league.classList.add("is-hidden");
     elements.status.classList.add("is-hidden");
+    resetMenuScroll(elements.root);
+    focusMenuScreen(elements.root);
   };
   const syncLeagueHome = (): void => {
     elements.leagueLabel.textContent = leagueController.hasSave
@@ -149,15 +154,20 @@ export function showGameplayV2Menu(statusMessage?: string): void {
   elements.home.classList.toggle("is-hidden", Boolean(statusMessage));
   elements.setup.classList.toggle("is-hidden", !statusMessage);
   elements.league.classList.add("is-hidden");
+  focusMenuScreen(elements.root);
   syncControls();
   elements.players.onchange = syncControls;
   elements.enterSetup.onclick = () => {
     elements.home.classList.add("is-hidden");
     elements.setup.classList.remove("is-hidden");
+    resetMenuScroll(elements.root);
+    focusMenuScreen(elements.root);
   };
   elements.enterLeague.onclick = () => {
     elements.home.classList.add("is-hidden");
     elements.setup.classList.add("is-hidden");
+    resetMenuScroll(elements.root);
+    focusMenuScreen(elements.root);
     leagueController.open();
   };
   elements.back.onclick = () => {
@@ -165,6 +175,7 @@ export function showGameplayV2Menu(statusMessage?: string): void {
   };
   elements.start.onclick = () => {
     savePlayerSkinPreference(elements.skin.value as V2PlayerSkinId);
+    resetMenuScroll(elements.root);
     window.location.search = buildV2MatchSearch({
       mode: elements.mode.value as typeof route.mode,
       map: elements.map.value,
@@ -181,7 +192,10 @@ export function showGameplayV2Menu(statusMessage?: string): void {
 }
 
 export function hideGameplayV2Menu(): void {
-  readMenuElements().root.classList.add("is-hidden");
+  const root = readMenuElements().root;
+  root.classList.add("is-hidden");
+  root.classList.remove("has-modal-open");
+  resetMenuScroll(root);
 }
 
 export function showGameplayV2Pause(actions: {
@@ -626,4 +640,41 @@ function requiredElement<T extends HTMLElement>(id: string): T {
     throw new Error(`Missing V2 menu element: ${id}`);
   }
   return element as T;
+}
+
+function resetMenuScroll(root: HTMLElement): void {
+  root.scrollTop = 0;
+  root.scrollLeft = 0;
+}
+
+function focusMenuScreen(root: HTMLElement): void {
+  root.focus({ preventScroll: true });
+}
+
+function setupMenuKeyboardScrolling(root: HTMLElement): void {
+  root.onkeydown = (event) => {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLSelectElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    ) {
+      return;
+    }
+    const pageDistance = Math.max(120, Math.round(root.clientHeight * .85));
+    const maximumScroll = Math.max(0, root.scrollHeight - root.clientHeight);
+    if (event.key === "PageDown") {
+      root.scrollTop = Math.min(maximumScroll, root.scrollTop + pageDistance);
+    } else if (event.key === "PageUp") {
+      root.scrollTop = Math.max(0, root.scrollTop - pageDistance);
+    } else if (event.key === "Home") {
+      root.scrollTop = 0;
+    } else if (event.key === "End") {
+      root.scrollTop = maximumScroll;
+    } else {
+      return;
+    }
+    event.preventDefault();
+  };
 }

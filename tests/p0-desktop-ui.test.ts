@@ -54,7 +54,7 @@ test("compact playtest viewports retain useful arena context", () => {
   );
 });
 
-test("desktop P0 UI contract keeps Career primary and Quick Play CTA pinned", () => {
+test("desktop P0 UI contract keeps Career primary and uses one outer menu scroller", () => {
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const baseCss = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
   const desktopCss = readFileSync(
@@ -65,9 +65,26 @@ test("desktop P0 UI contract keeps Career primary and Quick Play CTA pinned", ()
     new URL("../src/styles/p1-visual-polish.css", import.meta.url),
     "utf8",
   );
+  const menuSource = readFileSync(
+    new URL("../src/v2Menu.ts", import.meta.url),
+    "utf8",
+  );
   assert.match(html, /id="v2-menu-league" class="v2-home-action v2-home-action-primary"/);
+  assert.match(html, /id="v2-main-menu"[^>]*tabindex="-1"/);
   assert.doesNotMatch(baseCss, /#v2-menu-play,\s*\n#v2-menu-start/);
-  assert.match(desktopCss, /\.v2-setup-view \.v2-menu-actions[\s\S]*border-top/);
+  assert.match(baseCss, /\.v2-main-menu\s*\{[\s\S]*overflow-y:\s*auto/);
+  assert.match(baseCss, /#game\s*\{[\s\S]*position:\s*fixed[\s\S]*height:\s*100dvh[\s\S]*overflow:\s*hidden/);
+  assert.match(baseCss, /\.v2-setup-view\s*\{[^}]*height:\s*auto[^}]*max-height:\s*none[^}]*overflow:\s*visible/);
+  assert.match(baseCss, /\.league-dashboard\s*\{[^}]*overflow:\s*visible/);
+  assert.doesNotMatch(desktopCss, /\.v2-setup-view\s*>\s*\.v2-menu-section\s*\{[^}]*overflow-y:\s*auto/);
+  assert.doesNotMatch(polishCss, /\.v2-league-hub\s*\{[^}]*height:\s*calc\([^}]*100vh/);
+  assert.match(baseCss, /\.league-progression-card\s*\{[^}]*overflow-y:\s*auto/);
+  assert.match(baseCss, /\.league-recruitment-card\s*\{[^}]*overflow-y:\s*auto/);
+  assert.match(menuSource, /root\.onkeydown\s*=/);
+  assert.match(menuSource, /event\.key === "PageDown"/);
+  assert.match(menuSource, /event\.key === "PageUp"/);
+  assert.match(menuSource, /event\.key === "Home"/);
+  assert.match(menuSource, /event\.key === "End"/);
   assert.match(desktopCss, /#v2-pause-overlay \.v2-flow-card/);
   assert.match(desktopCss, /\.league-cosmetic-contract/);
   assert.match(desktopCss, /:focus-visible/);
@@ -78,6 +95,10 @@ test("desktop P0 UI contract keeps Career primary and Quick Play CTA pinned", ()
   assert.equal((html.match(/class="v2-quick-mode-option"/g) ?? []).length, 3);
   assert.match(polishCss, /\.v2-quick-mode-picker/);
   assert.match(polishCss, /\.v2-quick-mode-option\.is-selected/);
+  assert.match(polishCss, /\.v2-subpage-title h2\s*\{[^}]*font-weight:\s*800[^}]*letter-spacing:\s*\.025em[^}]*word-spacing:\s*\.12em/);
+  assert.match(polishCss, /\.league-character-info > span\s*\{[^}]*font-size:\s*11px[^}]*line-height:\s*1\.35/);
+  assert.match(polishCss, /\.league-table-row\s*\{[^}]*font-size:\s*12px/);
+  assert.match(polishCss, /\.league-tier p\s*\{[^}]*font-size:\s*9px[^}]*line-height:\s*1\.4/);
 });
 
 test("project typography uses central UI, display, and diagnostic font tokens", () => {

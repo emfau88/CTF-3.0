@@ -5,12 +5,42 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body, #game { width: 100%; height: 100%; margin: 0; overflow: hidden; touch-action: none; user-select: none; background: #edf5ee; font-family: var(--font-ui); }
-canvas { display: block; }
+html,
+body {
+  width: 100%;
+  min-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #edf5ee;
+  font-family: var(--font-ui);
+}
+html { height: 100%; }
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  user-select: none;
+}
+#game {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #edf5ee;
+  touch-action: none;
+}
+canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  touch-action: none;
+}
 .is-hidden { display: none !important; }
 body.v2-map-preview,
 body.v2-map-preview #game { background: #050b18; }
 body.v2-map-preview > :not(#game) { display: none !important; }
+/* Normal menu pages scroll only at this fullscreen boundary. */
 .v2-main-menu {
   position: fixed;
   inset: 0;
@@ -21,13 +51,18 @@ body.v2-map-preview > :not(#game) { display: none !important; }
     max(18px, env(safe-area-inset-right))
     max(18px, env(safe-area-inset-bottom))
     max(18px, env(safe-area-inset-left));
+  overflow-x: clip;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+  touch-action: pan-y;
   background:
     linear-gradient(135deg, rgb(10 23 20 / .9), rgb(25 48 42 / .78)),
-    var(--v2-menu-floor);
+    var(--v2-menu-floor) #03090e;
   background-size: cover, 320px 320px;
   pointer-events: auto;
 }
+.v2-main-menu.has-modal-open { overflow-y: hidden; }
 .v2-menu-card {
   width: min(470px, 100%);
   max-width: 100%;
@@ -165,6 +200,7 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .v2-menu-card.v2-menu-shell {
   width: min(1440px, 100%);
   min-height: min(820px, calc(100vh - 36px));
+  min-height: min(820px, calc(100dvh - 36px));
   margin: auto;
   padding: clamp(24px, 3vw, 48px);
   border: 0;
@@ -172,7 +208,7 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   background: transparent;
   color: #eaf4f7;
   box-shadow: none;
-  overflow: hidden;
+  overflow: visible;
 }
 .v2-menu-shell .v2-menu-kicker { color: #e54b54; text-shadow: 0 1px 0 #000; }
 .v2-menu-shell .v2-menu-intro { color: #9fb1b9; }
@@ -225,7 +261,7 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .v2-home-action small { color: #8fa5ad; font-size: 12px; font-weight: 700; }
 .v2-home-classic { justify-self: end; padding: 6px; color: #6f8790; font-size: 11px; font-weight: 800; text-decoration: none; }
 .v2-home-classic:hover { color: #d6e8ee; }
-.v2-setup-view { width: min(980px, 100%); max-height: calc(100vh - 44px); align-self: center; justify-self: center; overflow: auto; padding: 24px 30px 28px; background: linear-gradient(145deg, rgb(6 17 23 / .96), rgb(7 19 25 / .88)); border: 1px solid rgb(129 192 214 / .2); border-left: 4px solid #e54b54; box-shadow: 0 28px 80px rgb(0 0 0 / .46); backdrop-filter: blur(12px); }
+.v2-setup-view { width: min(980px, 100%); height: auto; max-height: none; align-self: center; justify-self: center; overflow: visible; padding: 24px 30px 28px; background: linear-gradient(145deg, rgb(6 17 23 / .96), rgb(7 19 25 / .88)); border: 1px solid rgb(129 192 214 / .2); border-left: 4px solid #e54b54; box-shadow: 0 28px 80px rgb(0 0 0 / .46); backdrop-filter: blur(12px); }
 .v2-setup-view .v2-menu-section-title { border-color: rgb(255 255 255 / .12); }
 .v2-setup-view label { color: #aebdc2; }
 .v2-setup-view select { border-color: rgb(109 155 169 / .3); background: #122630; color: #eef7f8; }
@@ -283,10 +319,23 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .v2-quick-skin-option:hover { transform: translateY(-2px); border-color: rgb(103 181 207 / .55); background: rgb(16 39 49 / .94); color: #d9e8eb; }
 .v2-quick-skin-option.is-selected { border-color: #df4b54; background: linear-gradient(160deg, rgb(91 31 37 / .62), rgb(16 37 46 / .96)); color: #fff; box-shadow: inset 0 -3px #df4b54; }
 .v2-quick-skin-thumb { width: 62px; height: 62px; pointer-events: none; }
-.v2-quick-skin-option strong { max-width: 100%; overflow: hidden; font-size: 8px; letter-spacing: .03em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; pointer-events: none; }
+.v2-quick-skin-option strong {
+  max-width: 100%;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 8px;
+  line-height: 1.15;
+  letter-spacing: .03em;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  pointer-events: none;
+}
 .v2-quick-skin-native { position: absolute; width: 1px !important; height: 1px !important; overflow: hidden; opacity: 0; pointer-events: none; }
 
-.v2-league-hub { min-height: 100%; grid-template-rows: auto 1fr; gap: 20px; padding: clamp(18px, 2.2vw, 30px); border: 1px solid rgb(129 192 214 / .18); background: linear-gradient(145deg, rgb(5 14 20 / .94), rgb(7 17 23 / .82)); box-shadow: 0 28px 90px rgb(0 0 0 / .42); backdrop-filter: blur(12px); }
+.v2-league-hub { min-height: 100%; grid-template-rows: auto auto; gap: 20px; padding: clamp(18px, 2.2vw, 30px); border: 1px solid rgb(129 192 214 / .18); background: linear-gradient(145deg, rgb(5 14 20 / .94), rgb(7 17 23 / .82)); box-shadow: 0 28px 90px rgb(0 0 0 / .42); backdrop-filter: blur(12px); }
 .league-header-title { display: flex; align-items: center; justify-content: center; gap: 13px; }
 .league-header-mark { width: 58px; height: 58px; object-fit: contain; filter: drop-shadow(0 8px 16px rgb(0 0 0 / .45)); }
 .league-header h2 { margin: 4px 0 0; }
@@ -313,7 +362,7 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .league-empty-badge { aspect-ratio: .82; display: grid; place-items: center; align-content: center; padding: 20px; border: 1px solid rgb(91 148 167 / .38); background: radial-gradient(circle, rgb(45 102 126 / .28), rgb(7 18 25 / .82) 68%); box-shadow: inset 0 0 0 8px rgb(101 175 203 / .05), 0 24px 60px rgb(0 0 0 / .28); }
 .league-empty-badge img { width: 100%; max-height: 250px; object-fit: contain; filter: drop-shadow(0 14px 26px rgb(0 0 0 / .46)); }
 .league-empty-badge small { color: #adcbd5; font-size: 10px; font-weight: 900; letter-spacing: .17em; }
-.league-dashboard { display: grid; grid-template-columns: minmax(320px, 1.08fr) minmax(320px, 1fr); grid-template-areas: "next next" "squad table" "detail pyramid"; gap: 14px; min-height: 0; overflow: auto; padding-right: 4px; }
+.league-dashboard { display: grid; grid-template-columns: minmax(320px, 1.08fr) minmax(320px, 1fr); grid-template-areas: "next next" "squad table" "detail pyramid"; gap: 14px; min-height: auto; overflow: visible; padding-right: 0; }
 .league-next-match { grid-area: next; display: grid; grid-template-columns: 250px 1fr 240px; align-items: center; min-height: 150px; border: 1px solid rgb(134 182 196 / .23); border-left: 5px solid var(--opponent-color, #c73b43); background: linear-gradient(105deg, rgb(10 26 35 / .98), rgb(14 31 39 / .82)); box-shadow: 0 16px 36px rgb(0 0 0 / .22); }
 .league-fixture-meta, .league-opponent-copy { padding: 22px 28px; }
 .league-fixture-title { display: flex; align-items: center; gap: 14px; margin-top: 13px; }
@@ -371,8 +420,27 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .league-character-portrait { width: var(--portrait-size); height: var(--portrait-size); align-self: center; background-image: linear-gradient(0deg, rgb(9 21 27 / .8), transparent 65%), var(--sprite); background-repeat: no-repeat; background-size: 100% 100%, calc(var(--sprite-columns) * 100%) 400%; background-position: center, 0 0; image-rendering: auto; }
 .league-character-info { min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: 12px 13px; }
 .league-character-info small { color: #db555d; font-size: 8px; font-weight: 900; letter-spacing: .13em; }
-.league-character-info > strong { margin-top: 4px; color: #e7f1f3; font-size: 16px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.league-character-info > span { margin-top: 3px; color: #789098; font-size: 9px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.league-character-info > strong {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  color: #e7f1f3;
+  font-size: 16px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.league-character-info > span {
+  display: -webkit-box;
+  min-height: 2.5em;
+  margin-top: 3px;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: #789098;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
 .league-character-stats { display: flex; gap: 12px; margin-top: 12px; }
 .league-character-stats b { color: #d8e7ea; font-size: 13px; }
 .league-character-stats i { display: block; color: #627b83; font-size: 7px; font-style: normal; letter-spacing: .08em; }
@@ -409,9 +477,26 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .league-tier-rivals { display: inline-flex; align-items: center; margin-left: 12px; vertical-align: middle; }
 .league-tier-rivals img { width: 25px; height: 25px; object-fit: contain; margin-left: -3px; filter: grayscale(.25) drop-shadow(0 4px 5px #000); }
 .league-tier-rivals i { display: grid; place-items: center; width: 25px; height: 25px; margin-left: 2px; border: 1px dashed #56727b; border-radius: 50%; color: #718b93; font-size: 7px; font-style: normal; font-weight: 900; }
-.league-progression, .league-recruitment { position: absolute; inset: 0; z-index: 10; display: grid; place-items: center; padding: 30px; background: rgb(2 8 12 / .84); backdrop-filter: blur(10px); }
+/* Dialogs are the sole menu exception allowed to own an inner vertical scroller. */
+.league-progression, .league-recruitment {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding:
+    max(16px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgb(2 8 12 / .84);
+  backdrop-filter: blur(10px);
+  touch-action: pan-y;
+}
 .league-progression { z-index: 12; }
-.league-progression-card { position: relative; width: min(720px, 100%); overflow: hidden; padding: clamp(25px, 4vw, 48px); border: 1px solid rgb(131 183 199 / .34); border-top: 4px solid #6a94a1; background: linear-gradient(145deg, #0b1d26, #071218); box-shadow: 0 35px 110px #000; text-align: center; }
+.league-progression-card { position: relative; width: min(720px, 100%); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: clamp(25px, 4vw, 48px); border: 1px solid rgb(131 183 199 / .34); border-top: 4px solid #6a94a1; background: linear-gradient(145deg, #0b1d26, #071218); box-shadow: 0 35px 110px #000; text-align: center; }
 .league-progression-card.is-win { border-top-color: #55d68b; }
 .league-progression-card.is-loss { border-top-color: #d94c56; }
 .league-progression-glow { position: absolute; inset: -40% 10% auto; height: 260px; pointer-events: none; background: radial-gradient(circle, rgb(71 178 219 / .19), transparent 70%); }
@@ -434,7 +519,7 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .league-points-earned span { color: #789198; font-size: 8px; font-weight: 900; }
 .league-progression-card > p { margin: 17px auto; max-width: 560px; color: #8fa6ad; font-size: 12px; line-height: 1.5; }
 .league-progression-card > button { min-width: 250px; min-height: 52px; border: 0; background: linear-gradient(180deg, #e65058, #ac2730); color: #fff; font-size: 13px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; cursor: pointer; box-shadow: 0 12px 30px rgb(167 38 47 / .28); }
-.league-recruitment-card { width: min(940px, 100%); max-height: 100%; overflow: auto; padding: clamp(25px, 4vw, 48px); border: 1px solid rgb(142 190 204 / .32); border-top: 4px solid #e34b53; background: linear-gradient(145deg, #0b1b24, #081319); box-shadow: 0 30px 100px #000; }
+.league-recruitment-card { width: min(940px, 100%); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: clamp(25px, 4vw, 48px); border: 1px solid rgb(142 190 204 / .32); border-top: 4px solid #e34b53; background: linear-gradient(145deg, #0b1b24, #081319); box-shadow: 0 30px 100px #000; }
 .league-recruitment-card h2 { margin: 8px 0 7px; font-size: clamp(34px, 5vw, 60px); text-transform: uppercase; }
 .league-recruitment-card > p { color: #92a7ae; line-height: 1.5; }
 .league-candidates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 25px 0 12px; }
@@ -444,7 +529,11 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .league-keep-button { width: 100%; min-height: 48px; border: 1px solid #45616b; background: #132832; color: #d1e0e4; font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
 
 @media (max-width: 900px), (max-height: 640px) {
-  .v2-menu-card.v2-menu-shell { min-height: calc(100vh - 20px); padding: 18px; }
+  .v2-menu-card.v2-menu-shell {
+    min-height: calc(100vh - 20px);
+    min-height: calc(100dvh - 20px);
+    padding: 18px;
+  }
   .v2-home-view { grid-template-columns: .85fr 1fr; gap: 26px; }
   .v2-home-brand h1 { font-size: clamp(60px, 10vw, 96px); }
   .v2-home-action { min-height: 84px; padding: 13px 17px 12px 22px; }
@@ -727,9 +816,10 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   .v2-menu-help,
   .v2-menu-v1-link { font-size: 10px; }
   #v2-menu-setup {
-    max-height: min(100%, 540px);
-    overflow: auto;
-    padding-right: 4px;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    padding-right: 18px;
   }
   .v2-menu-section { grid-template-columns: 1fr 1fr; gap: 10px; }
   .v2-menu-card label { gap: 4px; font-size: 11px; }
@@ -814,10 +904,11 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   .v2-menu-card.v2-menu-shell {
     width: 100%;
     min-height: calc(100vh - 20px);
+    min-height: calc(100dvh - 20px);
     border-radius: 5px;
     padding: 18px;
   }
   .v2-home-view { align-content: center; }
-  .v2-league-hub { align-content: stretch; overflow: hidden; }
-  .league-dashboard { max-height: calc(100vh - 110px); }
+  .v2-league-hub { align-content: stretch; overflow: visible; }
+  .league-dashboard { max-height: none; }
 }

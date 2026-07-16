@@ -10,7 +10,7 @@
   </head>
   <body>
     <div id="game"></div>
-    <div id="v2-main-menu" class="v2-main-menu is-hidden">
+    <div id="v2-main-menu" class="v2-main-menu is-hidden" tabindex="-1">
       <div class="v2-menu-card v2-menu-shell">
         <div id="v2-menu-status" class="v2-menu-status is-hidden" role="status" aria-live="polite"></div>
         <div class="v2-menu-rotate" aria-live="polite">
@@ -206,8 +206,8 @@
               <div id="league-pyramid" class="league-pyramid"></div>
             </section>
           </div>
-          <div id="league-progression" class="league-progression is-hidden" role="dialog" aria-modal="true"></div>
-          <div id="league-recruitment" class="league-recruitment is-hidden" role="dialog" aria-modal="true"></div>
+          <div id="league-progression" class="league-progression is-hidden" role="dialog" aria-modal="true" aria-hidden="true"></div>
+          <div id="league-recruitment" class="league-recruitment is-hidden" role="dialog" aria-modal="true" aria-hidden="true"></div>
         </div>
       </div>
     </div>
