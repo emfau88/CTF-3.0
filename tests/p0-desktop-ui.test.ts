@@ -10,8 +10,10 @@ import {
 import {
   DROWNED_SUN_TEMPLE_V2,
   GRAND_ARCHIVE_V2,
+  HELIX_CANOPY_V2,
   TRAINING_CROSSING_V2,
   WORLD_MAPS,
+  getWorldMap,
 } from "../src/core";
 import {
   readV2FullscreenControlState,
@@ -19,18 +21,31 @@ import {
   type V2FullscreenDocument,
 } from "../src/v2Fullscreen";
 
-test("desktop camera fit preserves the accepted arena scale in fullscreen", () => {
+test("desktop camera fit prioritizes overview with a restrained zoom cap", () => {
   for (const map of [TRAINING_CROSSING_V2, GRAND_ARCHIVE_V2]) {
     const zoom = calculateArenaFitZoom(1920, 1080, map.geometry.bounds, 1);
     assert.ok(zoom >= 1);
     assert.ok(zoom <= MAXIMUM_DESKTOP_ARENA_ZOOM);
   }
-  const flowBounds = {
-    minX: 0,
-    minY: 0,
-    maxX: 2000,
-    maxY: 820,
-  };
+  const flowBounds = getWorldMap("flow-circuit-v2")!.geometry.bounds;
+  assert.equal(
+    calculateArenaFitZoom(
+      1920,
+      1080,
+      HELIX_CANOPY_V2.geometry.bounds,
+      1,
+    ),
+    1,
+  );
+  assert.equal(
+    calculateArenaFitZoom(
+      1920,
+      1080,
+      DROWNED_SUN_TEMPLE_V2.geometry.bounds,
+      1,
+    ),
+    MAXIMUM_DESKTOP_ARENA_ZOOM,
+  );
   assert.equal(
     calculateArenaFitZoom(1920, 944, flowBounds, 1),
     MAXIMUM_DESKTOP_ARENA_ZOOM,

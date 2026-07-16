@@ -228,6 +228,33 @@ Pflichtprüfungen:
 - Kamera bei normalen und kompakten Desktop-Viewports,
 - menschlicher Schnellspiel-Test auf Lesbarkeit.
 
+#### Verbindlicher Kamera- und Viewportvertrag
+
+CTF-3.0 ist ein schnelles, skillbasiertes Arena-Spiel. Bewegung, Sprünge,
+Projectile Lead, Positioning und Objectives müssen gleichzeitig lesbar bleiben.
+Darum hat Übersicht Vorrang vor einem um jeden Preis randlos gefüllten
+Viewport.
+
+- Der gemeinsame Desktop-Zoom darf `1.05` nicht überschreiten.
+- Eine Map darf die Kamera nicht weiter hineinzoomen, nur um ihre kürzere
+  Weltachse bis an den Viewportrand zu strecken.
+- Auf kleinen oder kompakten Viewports darf die Kamera weiterhin automatisch
+  herauszoomen, damit mindestens die definierte Mindest-Sichtfläche erhalten
+  bleibt.
+- Kleine sichtbare Randbereiche an den äußeren Mapgrenzen sind akzeptabel,
+  sofern Gameplayfläche, Figuren und Objectives dadurch besser überblickbar
+  bleiben.
+- Neue Premium-Maps sollen bereits im Greybox- und Masterbild-Stadium gegen
+  diesen Kameravertrag gestaltet werden. Falls nötig, erhalten sie außerhalb
+  der spielbaren Fläche einen thematisch passenden dekorativen Bleed, statt
+  den Gameplay-Zoom zu erhöhen.
+- Die Kamera ist ein konstanter Teil des Gameplay-Feelings. Neue Maps werden an
+  den Kameravertrag angepasst; keine map-spezifischen Zoom-Sonderfälle
+  einführen.
+- Pflichtabnahme mindestens bei `1920×1080`, `1600×900`, `1366×768`,
+  `1280×720`, `1024×768` und `2560×1080`, jeweils mit besonderem Blick auf
+  Übersicht, Randdarstellung und konstante Actor-Größe.
+
 Bei beendeten Botmatches `Play Again` auslösen, damit der nächste Test nicht am
 Ergebnisbildschirm hängen bleibt.
 
@@ -590,4 +617,3 @@ dürfen nicht versehentlich in einen Map-Commit geraten:
 - `public/assets/ui/portraits/xeno-runner-portrait.png`
 - `src/adapters/phaser/characterSpecialIdle.ts`
 - `tmp/`
-

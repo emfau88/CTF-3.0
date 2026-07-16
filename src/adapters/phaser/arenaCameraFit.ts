@@ -2,7 +2,7 @@ import type { WorldGeometry } from "../../core";
 
 export const MINIMUM_ARENA_VIEW_WIDTH = 1280;
 export const MINIMUM_ARENA_VIEW_HEIGHT = 720;
-export const MAXIMUM_DESKTOP_ARENA_ZOOM = 1.15;
+export const MAXIMUM_DESKTOP_ARENA_ZOOM = 1.05;
 
 export function calculateArenaFitZoom(
   viewportWidth: number,
