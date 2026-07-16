@@ -1,6 +1,9 @@
 import Phaser from "phaser";
 import { preloadArenaAssets } from "../../../assets";
-import { readV2Route } from "../../../v2Route";
+import {
+  readV2Route,
+  type V2PlayerSkinId,
+} from "../../../v2Route";
 import {
   ArenaBotControllerGroup,
   ClassicCtfMode,
@@ -16,6 +19,7 @@ import {
   toggleClassicCtfTeamCommand,
   type ClassicCtfManualTeamCommand,
   type ClassicCtfTeamCommand,
+  type WorldMapData,
   V2_ACTOR_LIFECYCLE_CONFIG,
   V2_COLLISION_GROUNDWORK_CONFIG,
 } from "../../../core";
@@ -51,6 +55,8 @@ export class GameplayV2Scene extends Phaser.Scene {
   private skipNextFrame = false;
   private lastReportedMatchSignature = "";
   private traversalSmokeOverlay?: PhaserBotTraversalSmokeOverlay;
+  private mapPreviewRenderer?: PhaserArenaRendererPort;
+  private mapPreviewResize?: () => void;
 
   constructor() {
     super("GameplayV2Scene");
@@ -72,6 +78,11 @@ export class GameplayV2Scene extends Phaser.Scene {
     const isClassicCtf = route.mode === "ctf";
     const isOneFlag = route.mode === "one-flag";
     const selectedMap = resolveWorldMap(route.map);
+    if (search.get("mapPreview") === "1") {
+      this.createMapPreview(selectedMap, route.skin);
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
+      return;
+    }
     const collisionDiagnostics: ArenaCollisionDiagnostics =
       search.get("clearanceHeatmap") === "1"
         ? "heatmap"
@@ -265,17 +276,52 @@ export class GameplayV2Scene extends Phaser.Scene {
       this.handleVisibilityChange,
     );
     this.bridge?.dispose();
+    this.mapPreviewRenderer?.dispose();
     this.traversalSmokeOverlay?.dispose();
     this.inputAdapter?.dispose();
     this.menuKey?.destroy();
     this.bridge = undefined;
+    if (this.mapPreviewResize) {
+      this.scale.off("resize", this.mapPreviewResize);
+    }
+    document.body.classList.remove("v2-map-preview");
     this.inputAdapter = undefined;
     this.menuKey = undefined;
     this.traversalSmokeOverlay = undefined;
+    this.mapPreviewRenderer = undefined;
+    this.mapPreviewResize = undefined;
     this.pauseForVisibility = false;
     this.pauseForOverlay = false;
     this.skipNextFrame = false;
     this.lastReportedMatchSignature = "";
+  }
+
+  private createMapPreview(
+    map: WorldMapData,
+    skin: V2PlayerSkinId,
+  ): void {
+    document.body.classList.add("v2-map-preview");
+    this.mapPreviewRenderer = new PhaserArenaRendererPort(
+      this,
+      map,
+      undefined,
+      skin,
+    );
+    const bounds = map.geometry.bounds;
+    this.mapPreviewResize = () => {
+      const camera = this.cameras.main;
+      const width = bounds.maxX - bounds.minX;
+      const height = bounds.maxY - bounds.minY;
+      camera
+        .setBounds(bounds.minX, bounds.minY, width, height)
+        .setZoom(Math.min(camera.width / width, camera.height / height))
+        .centerOn(
+          bounds.minX + width / 2,
+          bounds.minY + height / 2,
+        );
+    };
+    this.scale.on("resize", this.mapPreviewResize);
+    this.mapPreviewResize();
   }
 
   private readonly handleSfxChanged = (event: Event): void => {

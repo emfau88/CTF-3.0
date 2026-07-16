@@ -30,17 +30,17 @@ export const FOUNDERS_CIRCUIT_DISCIPLINES: readonly LeagueDiscipline[] = [
   {
     mode: "tdm",
     modeLabel: "Team Deathmatch",
-    trialLabel: "Combat Trial",
-    mapId: "training-crossing-v2",
-    mapLabel: "Training Crossing",
+    trialLabel: "Canopy Skirmish",
+    mapId: "helix-canopy-v2",
+    mapLabel: "Helix Canopy",
     scoreTarget: 10,
   },
   {
     mode: "one-flag",
     modeLabel: "One Flag",
-    trialLabel: "Objective Clash",
-    mapId: "grand-archive-v2",
-    mapLabel: "Grand Archive",
+    trialLabel: "Drowned Sun Clash",
+    mapId: "drowned-sun-temple-v2",
+    mapLabel: "Temple of the Drowned Sun",
     scoreTarget: 3,
   },
   {

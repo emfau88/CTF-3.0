@@ -21,6 +21,7 @@ import { V2_PLAYER_SKINS } from "../src/v2Route";
 import {
   LEAGUE_STORAGE_KEY,
   LEAGUE_TEAMS,
+  FOUNDERS_CIRCUIT_DISCIPLINES,
   FOUNDERS_CIRCUIT_TEAM_IDS,
   buildLeagueMatchSearch,
   acknowledgeLeagueProgression,
@@ -96,6 +97,17 @@ test("opening circuit creates a complete three-match single round robin", () => 
   }
   assert.ok(season.teamRosters["solar-wardens"]);
   assert.ok(season.teamRosters["void-runners"]);
+});
+
+test("league season prioritizes the two premium arenas", () => {
+  assert.deepEqual(
+    FOUNDERS_CIRCUIT_DISCIPLINES.map((discipline) => discipline.mapId),
+    [
+      "helix-canopy-v2",
+      "drowned-sun-temple-v2",
+      "drowned-sun-temple-v2",
+    ],
+  );
 });
 
 test("played result advances one round, updates points, and is idempotent", () => {
@@ -203,13 +215,13 @@ test("league route carries the scheduled fixture context and cosmetic skin", () 
     opponentId: getPlayerOpponent(season),
   });
   assert.equal(new URLSearchParams(search).get("mode"), "tdm");
-  assert.equal(new URLSearchParams(search).get("map"), "training-crossing-v2");
+  assert.equal(new URLSearchParams(search).get("map"), "helix-canopy-v2");
   assert.match(search, /teamSize=2/);
   assert.equal(new URLSearchParams(search).get("skin"), "briarhorn");
   completeCurrent(season);
   const secondSearch = new URLSearchParams(buildLeagueMatchSearch(season));
   assert.equal(secondSearch.get("mode"), "one-flag");
-  assert.equal(secondSearch.get("map"), "grand-archive-v2");
+  assert.equal(secondSearch.get("map"), "drowned-sun-temple-v2");
   completeCurrent(season);
   const finalSearch = new URLSearchParams(buildLeagueMatchSearch(season));
   assert.equal(finalSearch.get("mode"), "ctf");

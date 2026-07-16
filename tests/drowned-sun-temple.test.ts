@@ -75,6 +75,15 @@ test("Temple production art kit ships twenty-two valid PNG assets", () => {
   }
 });
 
+test("Temple ships a full clean overview at native world dimensions", () => {
+  const overview = readFileSync(
+    resolve("public/assets/map-previews/drowned-sun-temple-v2-overview.png"),
+  );
+  assert.equal(overview.subarray(1, 4).toString("ascii"), "PNG");
+  assert.equal(overview.readUInt32BE(16), 2160);
+  assert.equal(overview.readUInt32BE(20), 920);
+});
+
 test("Temple atmosphere cannot masquerade as unauthored cover", () => {
   const map = DROWNED_SUN_TEMPLE_V2;
   const decorations = map.presentation.decorations ?? [];

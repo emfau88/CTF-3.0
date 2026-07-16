@@ -12,6 +12,7 @@ import {
   validateWorldMapForMode,
   validateWorldMapQuality,
   WORLD_MAP_ACTOR_RADIUS,
+  WORLD_MAPS,
 } from "../src/core";
 
 const MAP_SCALE = 1.15;
@@ -34,6 +35,18 @@ test("Helix Canopy registers its rebuilt gameplay contract", () => {
   assert.equal(map?.spawnPoints.length, 8);
   assert.equal(map?.pickupSpawns.length, 11);
   assert.equal(map?.presentation.theme, "helix-canopy");
+});
+
+test("premium arenas lead the shared and Quick Play map order", () => {
+  assert.deepEqual(
+    WORLD_MAPS.slice(0, 2).map((map) => map.id),
+    ["helix-canopy-v2", "drowned-sun-temple-v2"],
+  );
+  const html = readFileSync(resolve("index.html"), "utf8");
+  assert.match(
+    html,
+    /id="v2-menu-map"[\s\S]*<option value="helix-canopy-v2">Helix Canopy<\/option>\s*<option value="drowned-sun-temple-v2">Temple of the Drowned Sun<\/option>/,
+  );
 });
 
 test("Helix Canopy supports every mode while prioritizing smaller teams", () => {
@@ -191,4 +204,19 @@ test("Helix Canopy ships the approved undistorted arena master", () => {
 test("Quick Play exposes Helix Canopy", () => {
   const html = readFileSync(resolve("index.html"), "utf8");
   assert.match(html, /<option value="helix-canopy-v2">Helix Canopy<\/option>/);
+});
+
+test("static overview routes omit gameplay and collision overlays", () => {
+  const scene = readFileSync(
+    resolve("src/adapters/phaser/scenes/GameplayV2Scene.ts"),
+    "utf8",
+  );
+  assert.match(scene, /search\.get\("mapPreview"\) === "1"/);
+  assert.match(scene, /createMapPreview\(selectedMap, route\.skin\)/);
+  const overview = readFileSync(
+    resolve("public/assets/map-previews/helix-canopy-v2-overview.png"),
+  );
+  assert.equal(overview.subarray(1, 4).toString("ascii"), "PNG");
+  assert.equal(overview.readUInt32BE(16), 2208);
+  assert.equal(overview.readUInt32BE(20), 1104);
 });
