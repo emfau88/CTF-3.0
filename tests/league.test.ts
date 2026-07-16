@@ -302,6 +302,12 @@ test("quick play presents premium arena previews and a final match summary", () 
   assert.match(html, /Input &amp; Audio/);
   assert.match(menuSource, /helix-canopy-v2-overview\.png/);
   assert.match(menuSource, /drowned-sun-temple-v2-overview\.png/);
+  assert.match(menuSource, /QUICK_PLAY_DEFAULT_MODE:\s*V2ModeId\s*=\s*"tdm"/);
+  assert.match(menuSource, /QUICK_PLAY_DEFAULT_MAP\s*=\s*"helix-canopy-v2"/);
+  assert.match(
+    menuSource,
+    /elements\.map\.value\s*=\s*QUICK_PLAY_DEFAULT_MAP;[\s\S]*selectQuickPlayMode\(QUICK_PLAY_DEFAULT_MODE\)/,
+  );
   assert.match(menuSource, /const preferredSkin = loadPlayerSkinPreference\(\);/);
   assert.doesNotMatch(menuSource, /has\("skin"\)/);
   assert.match(menuSource, /players:\s*"bot"/);
@@ -451,7 +457,7 @@ test("quick play mode cards sync the route select and support arrow navigation",
   const selected: string[] = [];
   const select = document.getElementById("mode-source") as HTMLSelectElement;
   const picker = document.getElementById("mode-picker")!;
-  setupQuickPlayModePicker({ select, picker }, "ctf", (modeId) => {
+  const selectMode = setupQuickPlayModePicker({ select, picker }, "ctf", (modeId) => {
     selected.push(modeId);
   });
   const ctf = picker.querySelector<HTMLButtonElement>('[data-mode="ctf"]')!;
@@ -463,7 +469,12 @@ test("quick play mode cards sync the route select and support arrow navigation",
   assert.equal(select.value, "one-flag");
   assert.equal(oneFlag.getAttribute("aria-checked"), "true");
   assert.equal(oneFlag.tabIndex, 0);
-  assert.deepEqual(selected, ["one-flag"]);
+  selectMode("tdm");
+  const tdm = picker.querySelector<HTMLButtonElement>('[data-mode="tdm"]')!;
+  assert.equal(select.value, "tdm");
+  assert.equal(tdm.getAttribute("aria-checked"), "true");
+  assert.equal(tdm.tabIndex, 0);
+  assert.deepEqual(selected, ["one-flag", "tdm"]);
 });
 
 test("league menu starts a season and renders the actionable dashboard", () => {

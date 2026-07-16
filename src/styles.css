@@ -221,6 +221,7 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .v2-menu-shell .v2-menu-kicker { color: #e54b54; text-shadow: 0 1px 0 #000; }
 .v2-menu-shell .v2-menu-intro { color: #9fb1b9; }
 .v2-home-view {
+  position: relative;
   grid-template-columns: minmax(280px, 1fr) minmax(340px, 480px);
   align-items: center;
   gap: clamp(30px, 7vw, 110px);
@@ -275,12 +276,49 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .v2-setup-view select { border-color: rgb(109 155 169 / .3); background: #122630; color: #eef7f8; }
 .v2-setup-view .v2-menu-secondary { background: #182c35; border-color: #36515c; color: #d8e7eb; }
 .v2-setup-view .v2-menu-help { color: #81969d; }
-.v2-subpage-header { display: grid; grid-template-columns: 160px minmax(0, 1fr) 160px; align-items: center; gap: 18px; min-height: 72px; padding-bottom: 14px; border-bottom: 1px solid rgb(125 176 192 / .2); }
+.v2-subpage-header { display: grid; grid-template-columns: 180px minmax(0, 1fr) 180px; align-items: center; gap: 18px; min-height: 72px; padding-bottom: 14px; border-bottom: 1px solid rgb(125 176 192 / .2); }
 .v2-subpage-title { min-width: 0; text-align: center; }
 .v2-subpage-title h2 { margin: 5px 0 0; font: 900 clamp(34px, 4.6vw, 52px)/.82 var(--font-display); text-transform: uppercase; }
 .v2-subpage-back { min-height: 38px; padding: 0 13px; border: 1px solid rgb(128 172 185 / .3); border-radius: 2px; background: rgb(12 28 36 / .82); color: #c4d5da; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
 .v2-subpage-back:hover { color: #fff; border-color: #65a9bf; background: rgb(18 42 53 / .94); }
 .v2-subpage-header-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.v2-screen-fullscreen-button {
+  min-width: 112px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid rgb(128 172 185 / .3);
+  border-radius: 2px;
+  background: rgb(12 28 36 / .82);
+  color: #c4d5da;
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.v2-screen-fullscreen-button img { width: 15px; height: 15px; flex: 0 0 auto; opacity: .92; }
+.v2-screen-fullscreen-button:hover {
+  border-color: #65a9bf;
+  background: rgb(18 42 53 / .94);
+  color: #fff;
+}
+.v2-screen-fullscreen-button.is-active {
+  border-color: rgb(216 184 103 / .45);
+  background: rgb(62 53 31 / .68);
+  color: #f2dfaa;
+}
+.v2-screen-fullscreen-button:focus-visible {
+  outline: 2px solid var(--hud-cyan);
+  outline-offset: 2px;
+}
+.v2-screen-fullscreen-button:active { transform: translateY(1px); }
+.v2-home-fullscreen-button { position: absolute; z-index: 2; top: 0; right: 0; }
 .v2-setup-view > .v2-menu-intro { margin: 9px 0 2px; text-align: center; }
 .v2-setup-view .v2-menu-actions { grid-template-columns: minmax(220px, 300px); justify-content: end; }
 .v2-quick-skin-field {
@@ -344,6 +382,7 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .v2-quick-skin-native { position: absolute; width: 1px !important; height: 1px !important; overflow: hidden; opacity: 0; pointer-events: none; }
 
 .v2-league-hub { min-height: 100%; grid-template-rows: auto auto; gap: 20px; padding: clamp(18px, 2.2vw, 30px); border: 1px solid rgb(129 192 214 / .18); background: linear-gradient(145deg, rgb(5 14 20 / .94), rgb(7 17 23 / .82)); box-shadow: 0 28px 90px rgb(0 0 0 / .42); backdrop-filter: blur(12px); }
+.v2-subpage-header.league-header { grid-template-columns: 180px minmax(0, 1fr) 180px; }
 .league-header-title { display: flex; align-items: center; justify-content: center; gap: 13px; }
 .league-header-mark { width: 58px; height: 58px; object-fit: contain; filter: drop-shadow(0 8px 16px rgb(0 0 0 / .45)); }
 .league-header h2 { margin: 4px 0 0; }
@@ -558,6 +597,7 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   .league-skin-preview { width: 52px; height: 52px; }
   .league-skin-control > small { display: none; }
   .v2-subpage-header { grid-template-columns: 128px minmax(0, 1fr) 128px; gap: 10px; min-height: 58px; padding-bottom: 10px; }
+  .v2-subpage-header.league-header { grid-template-columns: 160px minmax(0, 1fr) 160px; }
   .v2-subpage-title h2 { font-size: 34px; }
   .league-header-mark { width: 44px; height: 44px; }
   .league-empty { grid-template-columns: minmax(420px, 1fr) 190px; gap: 22px; }
@@ -589,8 +629,17 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   .league-result-lockup { grid-template-columns: 1fr 90px 1fr; }
   .league-result-lockup img { width: 64px; height: 64px; }
   .league-result-lockup > strong { font-size: 40px; }
-  .v2-subpage-header { grid-template-columns: 108px minmax(0, 1fr) 108px; gap: 7px; }
+  .v2-subpage-header { grid-template-columns: 108px minmax(0, 1fr) 112px; gap: 7px; }
   .v2-subpage-back, .league-text-button { padding: 0 8px; font-size: 8px; }
+  .v2-subpage-header.league-header {
+    grid-template-columns: 108px minmax(0, 1fr);
+    grid-template-areas:
+      "back title"
+      "actions actions";
+  }
+  .league-header > .v2-subpage-back { grid-area: back; }
+  .league-header-title { grid-area: title; }
+  .league-header-actions { grid-area: actions; }
   .league-header-mark { display: none; }
 }
 .v2-flow-overlay {
@@ -616,7 +665,7 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 }
 .v2-game-utility {
   position: fixed;
-  z-index: 1900;
+  z-index: 1960;
   top: max(10px, env(safe-area-inset-top));
   right: max(10px, env(safe-area-inset-right));
   display: flex;
@@ -894,7 +943,7 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   .v2-flow-card h2 { font-size: clamp(34px, 13vw, 54px); }
   .v2-menu-section { grid-template-columns: 1fr; gap: 9px; }
   .v2-menu-section-title { grid-column: auto; }
-  .v2-subpage-header { grid-template-columns: 94px minmax(0, 1fr) 94px; }
+  .v2-subpage-header { grid-template-columns: 94px minmax(0, 1fr) 112px; }
   .v2-subpage-title h2 { font-size: 27px; }
   .v2-quick-skin-field { grid-column: auto; grid-template-columns: 104px 1fr; }
   .v2-quick-skin-preview { width: 88px; height: 88px; }

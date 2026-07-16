@@ -73,6 +73,7 @@ const showV2Menu = useGameplayV2Shell &&
 
 if (useGameplayV2Shell) {
   document.querySelector<HTMLElement>("#hud")?.setAttribute("hidden", "");
+  setupV2FullscreenControls();
 }
 
 if (showV2Menu) {
@@ -93,12 +94,6 @@ if (showV2Menu) {
     );
     const fullscreenButton = document.querySelector<HTMLButtonElement>(
       "#v2-fullscreen-button",
-    );
-    const fullscreenIcon = document.querySelector<HTMLImageElement>(
-      "#v2-fullscreen-icon",
-    );
-    const fullscreenLabel = document.querySelector<HTMLElement>(
-      "#v2-fullscreen-label",
     );
     const gameUtility = document.querySelector<HTMLElement>(
       "#v2-game-utility",
@@ -122,7 +117,13 @@ if (showV2Menu) {
       "#v2-respawn-status",
     );
     const setIngameButtonsVisible = (visible: boolean): void => {
-      gameUtility?.classList.toggle("is-hidden", !visible);
+      const fullscreenAvailable = Boolean(
+        fullscreenButton && !fullscreenButton.classList.contains("is-hidden"),
+      );
+      gameUtility?.classList.toggle(
+        "is-hidden",
+        !visible && !fullscreenAvailable,
+      );
       menuButton?.classList.toggle("is-hidden", !visible);
       audioButton?.classList.toggle("is-hidden", !visible);
       statsButton?.classList.toggle("is-hidden", !visible || !usesTouchControls);
@@ -258,31 +259,6 @@ if (showV2Menu) {
         );
       };
     }
-    if (fullscreenButton) {
-      const syncFullscreenButton = (): void => {
-        const state = readV2FullscreenControlState(document);
-        fullscreenButton.classList.toggle("is-hidden", !state.available);
-        fullscreenButton.classList.toggle("is-active", state.active);
-        fullscreenButton.setAttribute("aria-label", state.ariaLabel);
-        fullscreenButton.setAttribute("title", state.ariaLabel);
-        if (fullscreenLabel) fullscreenLabel.textContent = state.label;
-        if (fullscreenIcon) {
-          fullscreenIcon.src = `${import.meta.env.BASE_URL}assets/ui/hud-fullscreen-${state.icon}.svg`;
-        }
-      };
-      fullscreenButton.onclick = async () => {
-        try {
-          await toggleV2Fullscreen(document);
-        } catch {
-          // Browsers may reject fullscreen because of policy or user settings.
-        } finally {
-          syncFullscreenButton();
-        }
-      };
-      document.addEventListener("fullscreenchange", syncFullscreenButton);
-      document.addEventListener("fullscreenerror", syncFullscreenButton);
-      syncFullscreenButton();
-    }
     window.addEventListener("v2-request-pause", openPauseOverlay);
     window.addEventListener("v2-match-state", (event) => {
       const detail = (event as CustomEvent<{
@@ -406,4 +382,50 @@ function resultModeLabel(modeId: ReturnType<typeof modeIdForRoute>): string {
     : modeId === "classic-ctf"
       ? "CLASSIC CTF"
       : "ONE FLAG";
+}
+
+function setupV2FullscreenControls(): void {
+  const controls = Array.from(
+    document.querySelectorAll<HTMLButtonElement>("[data-v2-fullscreen-control]"),
+  );
+  if (controls.length === 0) return;
+
+  const syncControls = (): void => {
+    const state = readV2FullscreenControlState(document);
+    for (const control of controls) {
+      control.classList.toggle("is-hidden", !state.available);
+      control.classList.toggle("is-active", state.active);
+      control.setAttribute("aria-label", state.ariaLabel);
+      control.setAttribute("aria-pressed", String(state.active));
+      control.setAttribute("title", state.ariaLabel);
+      const label = control.querySelector<HTMLElement>(
+        "[data-v2-fullscreen-label]",
+      );
+      const icon = control.querySelector<HTMLImageElement>(
+        "[data-v2-fullscreen-icon]",
+      );
+      if (label) label.textContent = state.label;
+      if (icon) {
+        icon.src =
+          `${import.meta.env.BASE_URL}assets/ui/hud-fullscreen-${state.icon}.svg`;
+      }
+    }
+  };
+
+  const toggleFullscreen = async (): Promise<void> => {
+    try {
+      await toggleV2Fullscreen(document);
+    } catch {
+      // Browsers may reject fullscreen because of policy or user settings.
+    } finally {
+      syncControls();
+    }
+  };
+
+  for (const control of controls) {
+    control.onclick = toggleFullscreen;
+  }
+  document.addEventListener("fullscreenchange", syncControls);
+  document.addEventListener("fullscreenerror", syncControls);
+  syncControls();
 }

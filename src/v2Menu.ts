@@ -88,6 +88,8 @@ const QUICK_PLAY_MODE_LABELS: Readonly<Record<V2ModeId, string>> = {
   ctf: "Classic CTF",
   "one-flag": "One Flag",
 };
+const QUICK_PLAY_DEFAULT_MODE: V2ModeId = "tdm";
+const QUICK_PLAY_DEFAULT_MAP = "helix-canopy-v2";
 
 interface V2PauseElements {
   readonly root: HTMLElement;
@@ -181,7 +183,7 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     syncLaunchSummary();
   };
 
-  setupQuickPlayModePicker({
+  const selectQuickPlayMode = setupQuickPlayModePicker({
     select: elements.mode,
     picker: elements.modePicker,
   }, route.mode, syncQuickPlayPresentation);
@@ -233,6 +235,8 @@ export function showGameplayV2Menu(statusMessage?: string): void {
   elements.map.onchange = syncQuickPlayPresentation;
   elements.teamSize.onchange = syncLaunchSummary;
   elements.enterSetup.onclick = () => {
+    elements.map.value = QUICK_PLAY_DEFAULT_MAP;
+    selectQuickPlayMode(QUICK_PLAY_DEFAULT_MODE);
     elements.home.classList.add("is-hidden");
     elements.setup.classList.remove("is-hidden");
     resetMenuScroll(elements.root);
@@ -575,7 +579,7 @@ export function setupQuickPlayModePicker(
   elements: QuickPlayModePickerElements,
   initialMode: V2ModeId,
   onSelected: (modeId: V2ModeId) => void = () => {},
-): void {
+): (modeId: V2ModeId) => void {
   const buttons = Array.from(
     elements.picker.querySelectorAll<HTMLButtonElement>("[data-mode]"),
   );
@@ -626,6 +630,7 @@ export function setupQuickPlayModePicker(
     }
   };
   selectMode(initialMode, false);
+  return (modeId) => selectMode(modeId, true);
 }
 
 export function setupQuickPlaySkinPicker(

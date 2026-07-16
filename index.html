@@ -22,6 +22,16 @@
           <a class="v2-menu-v1-link" href="?scene=v1">Play frozen V1 Classic CTF</a>
         </div>
         <div id="v2-menu-home" class="v2-menu-view v2-home-view">
+          <button
+            class="v2-screen-fullscreen-button v2-home-fullscreen-button is-hidden"
+            type="button"
+            data-v2-fullscreen-control
+            aria-label="Enter fullscreen"
+            aria-pressed="false"
+          >
+            <img data-v2-fullscreen-icon src="./assets/ui/hud-fullscreen-enter.svg" alt="" aria-hidden="true" />
+            <span data-v2-fullscreen-label>Fullscreen</span>
+          </button>
           <div class="v2-home-brand">
             <img class="v2-home-league-mark" src="assets/league/arena-league-emblem.png" alt="" aria-hidden="true" />
             <div class="v2-menu-kicker">THE OFFICIAL ARENA LEAGUE</div>
@@ -49,7 +59,18 @@
               <div class="v2-menu-kicker">CUSTOM ARENA</div>
               <h2>Quick Play</h2>
             </div>
-            <div class="v2-subpage-header-actions" aria-hidden="true"></div>
+            <div class="v2-subpage-header-actions">
+              <button
+                class="v2-screen-fullscreen-button is-hidden"
+                type="button"
+                data-v2-fullscreen-control
+                aria-label="Enter fullscreen"
+                aria-pressed="false"
+              >
+                <img data-v2-fullscreen-icon src="./assets/ui/hud-fullscreen-enter.svg" alt="" aria-hidden="true" />
+                <span data-v2-fullscreen-label>Fullscreen</span>
+              </button>
+            </div>
           </header>
           <p class="v2-menu-intro">
             Pick a mode and start with the current V2 arena rules.
@@ -194,8 +215,18 @@
               </div>
             </div>
             <div class="v2-subpage-header-actions league-header-actions">
+              <button
+                class="v2-screen-fullscreen-button is-hidden"
+                type="button"
+                data-v2-fullscreen-control
+                aria-label="Enter fullscreen"
+                aria-pressed="false"
+              >
+                <img data-v2-fullscreen-icon src="./assets/ui/hud-fullscreen-enter.svg" alt="" aria-hidden="true" />
+                <span data-v2-fullscreen-label>Fullscreen</span>
+              </button>
               <details id="league-season-tools" class="league-season-tools">
-                <summary id="league-season-options">Season Options</summary>
+                <summary id="league-season-options" title="Season options">Season Options</summary>
                 <div class="league-season-tools-menu">
                   <small>SEASON MANAGEMENT</small>
                   <button id="league-reset" class="league-text-button league-danger-button" type="button">Reset Season</button>
@@ -313,9 +344,16 @@
         <img src="./assets/ui/hud-audio.svg" alt="" aria-hidden="true" />
         <span id="v2-audio-label">SFX ON</span>
       </button>
-      <button id="v2-fullscreen-button" class="v2-game-menu-button v2-fullscreen-button is-hidden" type="button">
-        <img id="v2-fullscreen-icon" src="./assets/ui/hud-fullscreen-enter.svg" alt="" aria-hidden="true" />
-        <span id="v2-fullscreen-label">Fullscreen</span>
+      <button
+        id="v2-fullscreen-button"
+        class="v2-game-menu-button v2-fullscreen-button is-hidden"
+        type="button"
+        data-v2-fullscreen-control
+        aria-label="Enter fullscreen"
+        aria-pressed="false"
+      >
+        <img id="v2-fullscreen-icon" data-v2-fullscreen-icon src="./assets/ui/hud-fullscreen-enter.svg" alt="" aria-hidden="true" />
+        <span id="v2-fullscreen-label" data-v2-fullscreen-label>Fullscreen</span>
       </button>
       <button id="v2-stats-button" class="v2-game-menu-button v2-stats-button is-hidden" type="button">
         <img src="./assets/ui/hud-stats.svg" alt="" aria-hidden="true" />

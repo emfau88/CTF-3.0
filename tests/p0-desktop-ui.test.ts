@@ -103,6 +103,10 @@ test("desktop P0 UI contract keeps Career primary and uses one outer menu scroll
     new URL("../src/v2Menu.ts", import.meta.url),
     "utf8",
   );
+  const mainSource = readFileSync(
+    new URL("../src/main.ts", import.meta.url),
+    "utf8",
+  );
   assert.match(html, /id="v2-menu-league" class="v2-home-action v2-home-action-primary"/);
   assert.match(html, /id="v2-main-menu"[^>]*tabindex="-1"/);
   assert.doesNotMatch(baseCss, /#v2-menu-play,\s*\n#v2-menu-start/);
@@ -159,10 +163,23 @@ test("desktop P0 UI contract keeps Career primary and uses one outer menu scroll
   assert.match(html, /id="v2-audio-label">SFX ON/);
   assert.match(baseCss, /--hud-armor:\s*#d8b867/);
   assert.match(baseCss, /\.v2-game-utility\s*\{/);
+  assert.match(baseCss, /\.v2-game-utility\s*\{[^}]*z-index:\s*1960/);
   assert.match(baseCss, /\.v2-audio-button\.is-muted::after/);
+  assert.equal((html.match(/data-v2-fullscreen-control/g) ?? []).length, 4);
+  assert.match(html, /class="v2-screen-fullscreen-button v2-home-fullscreen-button is-hidden"/);
+  assert.match(html, /id="v2-menu-setup"[\s\S]*data-v2-fullscreen-control/);
+  assert.match(html, /id="v2-league-hub"[\s\S]*data-v2-fullscreen-control/);
+  assert.match(baseCss, /\.v2-screen-fullscreen-button\s*\{/);
+  assert.match(baseCss, /\.v2-home-fullscreen-button\s*\{[^}]*position:\s*absolute[^}]*top:\s*0[^}]*right:\s*0/);
+  assert.doesNotMatch(html, /v2-screen-fullscreen-button-icon-only/);
+  assert.doesNotMatch(baseCss, /v2-screen-fullscreen-button-icon-only/);
+  assert.equal((html.match(/data-v2-fullscreen-label/g) ?? []).length, 4);
+  assert.match(mainSource, /querySelectorAll<HTMLButtonElement>\("\[data-v2-fullscreen-control\]"\)/);
+  assert.match(mainSource, /setupV2FullscreenControls\(\)/);
+  assert.match(mainSource, /aria-pressed/);
   assert.match(html, /id="v2-fullscreen-button"/);
   assert.match(html, /id="v2-fullscreen-icon"/);
-  assert.match(html, /id="v2-fullscreen-label">Fullscreen/);
+  assert.match(html, /id="v2-fullscreen-label"[^>]*>Fullscreen/);
   for (const filename of [
     "hud-audio.svg",
     "hud-fullscreen-enter.svg",
