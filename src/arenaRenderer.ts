@@ -235,7 +235,7 @@ function drawTempleFloor(scene: Phaser.Scene, level: LevelData) {
     level.height,
     0x101711,
   ).setDepth(-2.1);
-  const imageWidth = level.height * (1921 / 819);
+  const imageWidth = level.height * (1913 / 822);
   scene.add.image(level.width / 2, level.height / 2, "templeArenaMasterV2")
     .setDisplaySize(imageWidth, level.height)
     .setDepth(-2);

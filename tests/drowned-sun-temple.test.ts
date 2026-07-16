@@ -21,8 +21,8 @@ test("Temple of the Drowned Sun registers its complete gameplay contract", () =>
   assert.deepEqual(map?.geometry.bounds, {
     minX: 0,
     minY: 0,
-    maxX: 2160,
-    maxY: 920,
+    maxX: 2280,
+    maxY: 980,
   });
   assert.equal(map?.geometry.solids.length, 27);
   assert.equal(map?.geometry.gaps.length, 2);
@@ -42,11 +42,11 @@ test("Temple gameplay art uses one universal low-cover visual language", () => {
 test("Temple production art ships a cohesive wide master image", () => {
   const master = readFileSync(resolve("public/assets/jungle-temple/arena-master-v2.png"));
   assert.equal(master.subarray(1, 4).toString("ascii"), "PNG");
-  assert.equal(master.readUInt32BE(16), 1921);
-  assert.equal(master.readUInt32BE(20), 819);
+  assert.equal(master.readUInt32BE(16), 1913);
+  assert.equal(master.readUInt32BE(20), 822);
   assert.equal(master[25], 2);
   const renderer = readFileSync(resolve("src/arenaRenderer.ts"), "utf8");
-  assert.match(renderer, /level\.height \* \(1921 \/ 819\)/);
+  assert.match(renderer, /level\.height \* \(1913 \/ 822\)/);
 });
 
 test("Temple legacy production art kit remains available for rollback", () => {
@@ -88,8 +88,8 @@ test("Temple ships a full clean overview at native world dimensions", () => {
     resolve("public/assets/map-previews/drowned-sun-temple-v2-overview.png"),
   );
   assert.equal(overview.subarray(1, 4).toString("ascii"), "PNG");
-  assert.equal(overview.readUInt32BE(16), 2160);
-  assert.equal(overview.readUInt32BE(20), 920);
+  assert.equal(overview.readUInt32BE(16), 2280);
+  assert.equal(overview.readUInt32BE(20), 980);
 });
 
 test("Temple master art does not layer ambiguous decorations over gameplay", () => {
@@ -162,26 +162,48 @@ test("Temple of the Drowned Sun supports every mode from 1v1 through 4v4", () =>
 
 test("Temple of the Drowned Sun passes structural and weapon-safety gates", () => {
   const issues = validateWorldMapQuality(DROWNED_SUN_TEMPLE_V2, {
-    clearPoints: [{
-      id: "one-flag-center-rocket-clearance",
-      position: { x: 1080, y: 460 },
-      minimumClearance: 121,
-    }],
+    clearPoints: [
+      {
+        id: "one-flag-center-rocket-clearance",
+        position: { x: 1140, y: 490 },
+        minimumClearance: 121,
+      },
+      {
+        id: "gallery-cenote-passage",
+        position: { x: 1025, y: 225 },
+        minimumClearance: 20,
+      },
+      {
+        id: "cenote-court-passage",
+        position: { x: 930, y: 315 },
+        minimumClearance: 38,
+      },
+      {
+        id: "court-side-passage",
+        position: { x: 930, y: 480 },
+        minimumClearance: 42,
+      },
+      {
+        id: "rootwater-row-passage",
+        position: { x: 1025, y: 700 },
+        minimumClearance: 22,
+      },
+    ],
     blockedSightLines: [
       {
         id: "rail-to-one-flag",
-        from: { x: 1080, y: 80 },
-        to: { x: 1080, y: 460 },
+        from: { x: 1140, y: 80 },
+        to: { x: 1140, y: 490 },
       },
       {
         id: "rail-to-blue-spawn",
-        from: { x: 1080, y: 80 },
-        to: { x: 150, y: 460 },
+        from: { x: 1140, y: 80 },
+        to: { x: 150, y: 490 },
       },
       {
         id: "rail-to-red-spawn",
-        from: { x: 1080, y: 80 },
-        to: { x: 2010, y: 460 },
+        from: { x: 1140, y: 80 },
+        to: { x: 2130, y: 490 },
       },
     ],
   });
@@ -190,26 +212,26 @@ test("Temple of the Drowned Sun passes structural and weapon-safety gates", () =
 
 test("Temple routes preserve distinct speed, precision, and safety roles", () => {
   const main = measureWorldRouteLength([
-    { x: 180, y: 460 }, { x: 420, y: 370 },
-    { x: 650, y: 400 }, { x: 840, y: 460 },
-    { x: 1080, y: 460 },
+    { x: 180, y: 490 }, { x: 440, y: 400 },
+    { x: 670, y: 430 }, { x: 900, y: 490 },
+    { x: 1140, y: 490 },
   ]);
   const north = measureWorldRouteLength([
-    { x: 180, y: 460 }, { x: 400, y: 380 },
-    { x: 500, y: 270 }, { x: 700, y: 210 },
-    { x: 900, y: 200 }, { x: 960, y: 200 },
-    { x: 960, y: 340 }, { x: 1080, y: 460 },
+    { x: 180, y: 490 }, { x: 420, y: 410 },
+    { x: 520, y: 300 }, { x: 720, y: 240 },
+    { x: 960, y: 230 }, { x: 1020, y: 230 },
+    { x: 1020, y: 370 }, { x: 1140, y: 490 },
   ]);
   const south = measureWorldRouteLength([
-    { x: 180, y: 460 }, { x: 400, y: 540 },
-    { x: 500, y: 650 }, { x: 700, y: 710 },
-    { x: 880, y: 640 }, { x: 1080, y: 640 },
-    { x: 1080, y: 580 }, { x: 1080, y: 460 },
+    { x: 180, y: 490 }, { x: 420, y: 570 },
+    { x: 520, y: 710 }, { x: 720, y: 770 },
+    { x: 940, y: 700 }, { x: 1140, y: 700 },
+    { x: 1140, y: 640 }, { x: 1140, y: 490 },
   ]);
 
-  assert.ok(main >= 920 && main <= 940);
-  assert.ok(north / main >= 1.24 && north / main <= 1.27);
-  assert.ok(south / main >= 1.24 && south / main <= 1.27);
+  assert.ok(main >= 980 && main <= 990);
+  assert.ok(north / main >= 1.23 && north / main <= 1.25);
+  assert.ok(south / main >= 1.28 && south / main <= 1.31);
 });
 
 test("Temple pickup economy is mirrored and blocks objective weapon spam", () => {
@@ -241,7 +263,7 @@ test("Temple pickup economy is mirrored and blocks objective weapon spam", () =>
     pickup.type === "rocket"
   )) {
     assert.equal(
-      hasWorldMapLineOfSight(map, rocket.position, { x: 1080, y: 460 }),
+      hasWorldMapLineOfSight(map, rocket.position, { x: 1140, y: 490 }),
       false,
       `${rocket.id} must not have a direct One Flag spam line.`,
     );

@@ -2,57 +2,115 @@ import { createTeamSpawnPoints } from "./createTeamSpawnPoints";
 import type { WorldMapData } from "./worldMapData";
 
 const INTEGRATED_COVER = "temple-integrated-cover" as const;
-const mirrorX = (x: number, width: number) => 2160 - x - width;
+const WORLD_WIDTH = 2280;
+const WORLD_HEIGHT = 980;
+
+// The arena gains native floor between architectural groups. Exact seam points
+// use half of the inserted width so mirrored authored points stay mirrored.
+const expandX = (x: number) => {
+  if (x < 360) return x;
+  if (x === 360) return x + 10;
+  if (x < 800) return x + 20;
+  if (x === 800) return x + 40;
+  if (x < 1360) return x + 60;
+  if (x === 1360) return x + 80;
+  if (x < 1800) return x + 100;
+  if (x === 1800) return x + 110;
+  return x + 120;
+};
+const expandY = (y: number) => {
+  if (y < 170) return y;
+  if (y === 170) return y + 15;
+  if (y < 570) return y + 30;
+  if (y === 570) return y + 45;
+  return y + 60;
+};
+const expandRectX = (x: number, width: number) =>
+  expandX(x + width / 2) - width / 2;
+const expandRectY = (y: number, height: number) =>
+  expandY(y + height / 2) - height / 2;
+const point = (x: number, y: number) => ({ x: expandX(x), y: expandY(y) });
+const mirrorX = (x: number, width: number) => WORLD_WIDTH - x - width;
 const mirroredCover = (
   id: string,
   x: number,
   y: number,
   width: number,
   height: number,
-) => [
-  { id: `${id}-blue`, x, y, width, height, visual: INTEGRATED_COVER },
+) => {
+  return [
+    {
+      id: `${id}-blue`,
+      x,
+      y,
+      width,
+      height,
+      visual: INTEGRATED_COVER,
+    },
+    {
+      id: `${id}-red`,
+      x: mirrorX(x, width),
+      y,
+      width,
+      height,
+      visual: INTEGRATED_COVER,
+    },
+  ] as const;
+};
+
+const walls = [
+  // Every interior solid traces a visible low planter or the central lion-head altar.
+  ...mirroredCover("outer-north", 450, 225, 60, 115),
+  ...mirroredCover("outer-south", 450, 595, 60, 115),
+  ...mirroredCover("lane-north", 625, 345, 190, 42),
+  ...mirroredCover("lane-south", 625, 575, 190, 45),
+  ...mirroredCover("court-north", 900, 355, 55, 80),
+  ...mirroredCover("court-south", 900, 525, 55, 80),
+  ...mirroredCover("gallery-center", 965, 160, 125, 42),
+  ...mirroredCover("roots-center", 965, 635, 120, 40),
+  ...mirroredCover("roots-gallery", 960, 735, 125, 45),
+
+  // L-shaped islands use two rectangles so their visible inner corners stay walkable.
+  ...mirroredCover("gallery-elbow-vertical", 685, 155, 65, 105),
+  ...mirroredCover("gallery-elbow-arm", 720, 205, 90, 55),
+  ...mirroredCover("roots-elbow-vertical", 690, 730, 65, 55),
+  ...mirroredCover("roots-elbow-arm", 710, 700, 70, 55),
+
+  // The small central altar interrupts the rail-to-objective sight line.
   {
-    id: `${id}-red`,
-    x: mirrorX(x, width),
-    y,
-    width,
-    height,
+    id: "solar-sight-altar",
+    x: 1105,
+    y: 255,
+    width: 70,
+    height: 65,
     visual: INTEGRATED_COVER,
   },
 ] as const;
 
-const walls = [
-  // Every interior solid traces a visible low planter or the central lion-head altar.
-  ...mirroredCover("outer-north", 430, 175, 70, 125),
-  ...mirroredCover("outer-south", 430, 555, 70, 130),
-  ...mirroredCover("lane-north", 540, 280, 240, 55),
-  ...mirroredCover("lane-south", 540, 520, 240, 55),
-  ...mirroredCover("court-north", 845, 305, 60, 75),
-  ...mirroredCover("court-south", 845, 480, 60, 75),
-  ...mirroredCover("gallery-center", 910, 100, 120, 50),
-  ...mirroredCover("roots-center", 890, 580, 140, 50),
-  ...mirroredCover("roots-gallery", 890, 665, 140, 55),
-
-  // L-shaped islands use two rectangles so their visible inner corners stay walkable.
-  ...mirroredCover("gallery-elbow-vertical", 650, 100, 55, 100),
-  ...mirroredCover("gallery-elbow-arm", 680, 160, 80, 55),
-  ...mirroredCover("roots-elbow-vertical", 700, 630, 55, 85),
-  ...mirroredCover("roots-elbow-arm", 645, 655, 90, 55),
-
-  // The small central altar interrupts the rail-to-objective sight line.
-  { id: "solar-sight-altar", x: 1045, y: 215, width: 70, height: 65, visual: INTEGRATED_COVER },
-] as const;
-
 const gaps = [
-  { id: "cenote-west", x: 900, y: 205, width: 125, height: 85, visual: "cenote-pilot" },
-  { id: "cenote-east", x: 1135, y: 205, width: 125, height: 85, visual: "cenote-pilot" },
+  {
+    id: "cenote-west",
+    x: 975,
+    y: 250,
+    width: 110,
+    height: 75,
+    visual: "cenote-pilot",
+  },
+  {
+    id: "cenote-east",
+    x: mirrorX(975, 110),
+    y: 250,
+    width: 110,
+    height: 75,
+    visual: "cenote-pilot",
+  },
 ] as const;
 
 export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
   id: "drowned-sun-temple-v2",
   displayName: "Temple of the Drowned Sun",
   geometry: {
-    bounds: { minX: 0, minY: 0, maxX: 2160, maxY: 920 },
+    bounds: { minX: 0, minY: 0, maxX: WORLD_WIDTH, maxY: WORLD_HEIGHT },
     solids: walls.map((wall) => ({
       id: wall.id,
       x: wall.x,
@@ -72,26 +130,26 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
     jumpLinks: [
       {
         id: "cenote-west-north-south",
-        from: { x: 962, y: 175 },
-        to: { x: 962, y: 320 },
+        from: { x: 1030, y: 205 },
+        to: { x: 1030, y: 350 },
         activationRadius: 44,
       },
       {
         id: "cenote-west-south-north",
-        from: { x: 962, y: 320 },
-        to: { x: 962, y: 175 },
+        from: { x: 1030, y: 350 },
+        to: { x: 1030, y: 205 },
         activationRadius: 44,
       },
       {
         id: "cenote-east-north-south",
-        from: { x: 1198, y: 175 },
-        to: { x: 1198, y: 320 },
+        from: { x: 1250, y: 205 },
+        to: { x: 1250, y: 350 },
         activationRadius: 44,
       },
       {
         id: "cenote-east-south-north",
-        from: { x: 1198, y: 320 },
-        to: { x: 1198, y: 175 },
+        from: { x: 1250, y: 350 },
+        to: { x: 1250, y: 205 },
         activationRadius: 44,
       },
     ],
@@ -99,36 +157,51 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
   spawnPoints: [
     ...createTeamSpawnPoints({
       teamId: "blue",
-      position: { x: 150, y: 460 },
+      position: point(150, 460),
       facing: { x: 1, y: 0 },
       tags: ["player", "tdm", "featured"],
     }),
     ...createTeamSpawnPoints({
       teamId: "red",
-      position: { x: 2010, y: 460 },
+      position: point(2010, 460),
       facing: { x: -1, y: 0 },
       tags: ["player", "tdm", "featured"],
     }),
   ],
   pickupSpawns: [
-    { id: "health-blue-upper-exit", type: "health", position: { x: 525, y: 220 } },
-    { id: "health-blue-lower-exit", type: "health", position: { x: 525, y: 700 } },
-    { id: "health-red-upper-exit", type: "health", position: { x: 1635, y: 220 } },
-    { id: "health-red-lower-exit", type: "health", position: { x: 1635, y: 700 } },
-    { id: "health-inner-west", type: "health", position: { x: 800, y: 460 } },
-    { id: "health-inner-east", type: "health", position: { x: 1360, y: 460 } },
-    { id: "armor-sun-west", type: "armor", position: { x: 980, y: 460 } },
-    { id: "armor-sun-east", type: "armor", position: { x: 1180, y: 460 } },
-    { id: "rocket-roots-west", type: "rocket", position: { x: 800, y: 800 } },
-    { id: "rocket-roots-east", type: "rocket", position: { x: 1360, y: 800 } },
-    { id: "rail-gallery-center", type: "rail", position: { x: 1080, y: 80 } },
-    { id: "arc-lash-west", type: "whip", position: { x: 815, y: 520 } },
-    { id: "arc-lash-east", type: "whip", position: { x: 1345, y: 520 } },
+    { id: "health-blue-upper-exit", type: "health", position: point(525, 220) },
+    { id: "health-blue-lower-exit", type: "health", position: point(525, 700) },
+    { id: "health-red-upper-exit", type: "health", position: point(1635, 220) },
+    { id: "health-red-lower-exit", type: "health", position: point(1635, 700) },
+    { id: "health-inner-west", type: "health", position: point(800, 460) },
+    { id: "health-inner-east", type: "health", position: point(1360, 460) },
+    { id: "armor-sun-west", type: "armor", position: point(980, 460) },
+    { id: "armor-sun-east", type: "armor", position: point(1180, 460) },
+    { id: "rocket-roots-west", type: "rocket", position: point(800, 800) },
+    { id: "rocket-roots-east", type: "rocket", position: point(1360, 800) },
+    { id: "rail-gallery-center", type: "rail", position: point(1080, 80) },
+    { id: "arc-lash-west", type: "whip", position: point(815, 520) },
+    { id: "arc-lash-east", type: "whip", position: point(1345, 520) },
   ],
   gameplay: {
-    blueBase: { x: 60, y: 310, width: 240, height: 300 },
-    redBase: { x: 1860, y: 310, width: 240, height: 300 },
-    combatZone: { x: 920, y: 330, width: 320, height: 260 },
+    blueBase: {
+      x: expandRectX(60, 240),
+      y: expandRectY(310, 300),
+      width: 240,
+      height: 300,
+    },
+    redBase: {
+      x: mirrorX(expandRectX(60, 240), 240),
+      y: expandRectY(310, 300),
+      width: 240,
+      height: 300,
+    },
+    combatZone: {
+      x: expandRectX(920, 320),
+      y: expandRectY(330, 260),
+      width: 320,
+      height: 260,
+    },
   },
   presentation: {
     theme: "jungle-temple",
@@ -138,19 +211,19 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
     decorations: [],
     botRoutes: {
       attacker: [
-        { x: 1980, y: 460 }, { x: 1740, y: 370 },
-        { x: 1500, y: 390 }, { x: 1360, y: 460 },
-        { x: 1240, y: 460 }, { x: 1080, y: 460 },
-        { x: 920, y: 460 }, { x: 800, y: 460 },
-        { x: 660, y: 390 }, { x: 420, y: 370 },
-        { x: 180, y: 460 },
+        point(1980, 460), point(1740, 370),
+        point(1500, 390), point(1360, 460),
+        point(1240, 460), point(1080, 460),
+        point(920, 460), point(800, 460),
+        point(660, 390), point(420, 370),
+        point(180, 460),
       ],
       defender: [
-        { x: 180, y: 260 }, { x: 80, y: 340 },
-        { x: 80, y: 580 }, { x: 180, y: 660 },
-        { x: 360, y: 640 }, { x: 360, y: 280 },
+        point(180, 260), point(80, 340),
+        point(80, 580), point(180, 660),
+        point(360, 640), point(360, 280),
       ],
     },
   },
-  diagnosticSpawn: { x: 2010, y: 460 },
+  diagnosticSpawn: point(2010, 460),
 };
