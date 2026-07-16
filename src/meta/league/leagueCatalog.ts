@@ -16,6 +16,11 @@ export const CHALLENGER_PREVIEW_TEAM_IDS: readonly LeagueTeamId[] = [
   "solar-wardens",
   "void-runners",
 ];
+export const STARTER_WINGMAN_IDS = [
+  "atlas-rho",
+  "lyra-quell",
+  "dax-ember",
+] as const;
 
 export interface LeagueDiscipline {
   readonly mode: V2ModeId;
@@ -138,6 +143,22 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "Aegis Vanguard",
     personality: "Steady, earnest and impossible to hurry",
     skinId: "aegis-vanguard",
+  },
+  {
+    id: "lyra-quell",
+    name: "Lyra Quell",
+    teamId: "iron-vanguard",
+    visualStyle: "Null Courier",
+    personality: "Finds the quiet route through every firefight",
+    skinId: "null-courier",
+  },
+  {
+    id: "dax-ember",
+    name: "Dax Ember",
+    teamId: "iron-vanguard",
+    visualStyle: "Volt Hound",
+    personality: "Turns every opening into forward pressure",
+    skinId: "volt-hound",
   },
   {
     id: "kael-voss",

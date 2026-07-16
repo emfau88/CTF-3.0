@@ -4,6 +4,7 @@ import {
   FOUNDERS_CIRCUIT_TEAM_IDS,
   foundersCircuitDiscipline,
   PLAYER_LEAGUE_TEAM_ID,
+  STARTER_WINGMAN_IDS,
 } from "./leagueCatalog";
 import {
   LEAGUE_SAVE_VERSION,
@@ -86,11 +87,18 @@ function initialCharacterStats(characterId: string): LeagueCharacterStats {
   };
 }
 
-export function createLeagueSeason(seed = Date.now()): LeagueSeasonState {
+export function createLeagueSeason(
+  seed = Date.now(),
+  starterWingmanId: string = STARTER_WINGMAN_IDS[0],
+): LeagueSeasonState {
   const safeSeed = Math.abs(Math.trunc(seed)) || 1;
   const teamRosters = Object.fromEntries(
     LEAGUE_TEAMS.map((team) => [team.id, [...team.characterIds]])
   ) as LeagueSeasonState["teamRosters"];
+  const safeStarterWingmanId = STARTER_WINGMAN_IDS.includes(
+    starterWingmanId as (typeof STARTER_WINGMAN_IDS)[number],
+  ) ? starterWingmanId : STARTER_WINGMAN_IDS[0];
+  teamRosters[PLAYER_LEAGUE_TEAM_ID] = ["nova-vale", safeStarterWingmanId];
   const standings = Object.fromEntries(
     LEAGUE_TEAMS.map((team) => [team.id, initialStanding(team.id)])
   ) as LeagueSeasonState["standings"];
@@ -122,6 +130,30 @@ export function createLeagueSeason(seed = Date.now()): LeagueSeasonState {
     lastProgression: null,
     updatedAt: new Date().toISOString(),
   };
+}
+
+export function selectLeagueWingman(
+  season: LeagueSeasonState,
+  selectedCharacterId: string,
+): LeagueSeasonState {
+  const selected = LEAGUE_CHARACTERS.find((character) => character.id === selectedCharacterId);
+  if (!selected || selectedCharacterId === season.teamRosters[season.playerTeamId][0]) {
+    throw new Error("Character is not available as a wingman.");
+  }
+  const currentCompanion = season.teamRosters[season.playerTeamId][1];
+  if (currentCompanion === selectedCharacterId) return season;
+  const sourceTeam = LEAGUE_TEAMS.find((team) =>
+    team.id !== season.playerTeamId &&
+    season.teamRosters[team.id].includes(selectedCharacterId)
+  );
+  if (sourceTeam) {
+    const sourceIndex = season.teamRosters[sourceTeam.id].indexOf(selectedCharacterId);
+    season.teamRosters[sourceTeam.id][sourceIndex] = currentCompanion;
+  }
+  season.teamRosters[season.playerTeamId][1] = selectedCharacterId;
+  season.characterStats[selectedCharacterId] ??= initialCharacterStats(selectedCharacterId);
+  season.updatedAt = new Date().toISOString();
+  return season;
 }
 
 export function getCurrentPlayerMatch(
@@ -423,16 +455,14 @@ export function completeRecruitment(
     throw new Error("Character is not available in this recruitment window.");
   }
   if (selectedCharacterId) {
-    const currentCompanion = season.teamRosters[season.playerTeamId][1];
     const sourceTeam = LEAGUE_TEAMS.find((team) =>
+      team.id !== season.playerTeamId &&
       season.teamRosters[team.id].includes(selectedCharacterId)
     );
-    if (!sourceTeam || sourceTeam.id === season.playerTeamId) {
+    if (!sourceTeam) {
       throw new Error("Recruitment candidate has no valid source team.");
     }
-    const sourceIndex = season.teamRosters[sourceTeam.id].indexOf(selectedCharacterId);
-    season.teamRosters[sourceTeam.id][sourceIndex] = currentCompanion;
-    season.teamRosters[season.playerTeamId][1] = selectedCharacterId;
+    selectLeagueWingman(season, selectedCharacterId);
   }
   season.recruitment.status = "completed";
   season.recruitment.selectedCharacterId = selectedCharacterId;

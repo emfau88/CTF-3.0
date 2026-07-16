@@ -24,6 +24,11 @@ import {
   readLeagueMatchContext,
 } from "./meta/league";
 import {
+  careerEmblemUrl,
+  createCareerProfileRepository,
+  syncCareerUnlocks,
+} from "./careerProfile";
+import {
   goToGameplayV2Menu,
   hideGameplayV2Pause,
   hideGameplayV2Result,
@@ -43,6 +48,8 @@ import {
 
 const search = new URLSearchParams(window.location.search);
 const leagueMatchContext = readLeagueMatchContext(search);
+const careerProfileRepository = createCareerProfileRepository(window.localStorage);
+let careerProfile = leagueMatchContext ? careerProfileRepository.load() : null;
 const useGameplayV2Shell = shouldUseGameplayV2Shell(
   window.location,
   import.meta.env.BASE_URL,
@@ -307,6 +314,9 @@ if (showV2Menu) {
             })),
           });
           repository.save(season);
+          if (careerProfile && syncCareerUnlocks(careerProfile, season.defeatedTeamIds)) {
+            careerProfileRepository.save(careerProfile);
+          }
         }
       }
       closeHeldScoreboard();
@@ -319,7 +329,7 @@ if (showV2Menu) {
           ? "Draw"
           : leagueMatchContext
             ? detail.result.winnerEntryId === "blue"
-              ? "Iron Vanguard Win"
+              ? `${careerProfile?.teamName ?? "Iron Vanguard"} Win`
               : `${leagueOpponentName ?? "Rivals"} Win`
             : `${detail.result.winnerEntryId.toUpperCase()} Wins`,
         detail: leagueMatchContext
@@ -332,8 +342,10 @@ if (showV2Menu) {
         teams: leagueMatchContext && leagueOpponent
           ? {
               blue: {
-                name: "Iron Vanguard",
-                emblemUrl: `${import.meta.env.BASE_URL}assets/league/teams/iron-vanguard-emblem.png`,
+                name: careerProfile?.teamName ?? "Iron Vanguard",
+                emblemUrl: careerProfile
+                  ? careerEmblemUrl(careerProfile.emblemId)
+                  : `${import.meta.env.BASE_URL}assets/league/teams/iron-vanguard-emblem.png`,
               },
               red: {
                 name: leagueOpponent.name,

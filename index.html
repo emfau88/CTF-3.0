@@ -231,20 +231,22 @@
                 <summary id="league-season-options" title="Season options">Season Options</summary>
                 <div class="league-season-tools-menu">
                   <small>SEASON MANAGEMENT</small>
+                  <button id="league-edit-profile" class="league-text-button" type="button">Team Identity</button>
                   <button id="league-reset" class="league-text-button league-danger-button" type="button">Reset Season</button>
                 </div>
               </details>
             </div>
           </header>
+          <section id="league-profile-setup" class="league-profile-setup is-hidden" aria-live="polite"></section>
           <div id="league-empty" class="league-empty is-hidden">
             <div class="league-empty-copy">
               <span class="league-eyebrow">YOUR FIRST CONTRACT</span>
-              <h3>Lead Iron Vanguard</h3>
+              <h3 id="league-intro-title">Lead Iron Vanguard</h3>
               <p>Three arena trials introduce the full circuit. Master combat, secure the neutral objective, then face the CTF final.</p>
               <div id="league-intro-route" class="league-intro-route"></div>
               <button id="league-new-season" type="button">Begin Season</button>
             </div>
-            <div class="league-empty-badge"><img src="assets/league/teams/iron-vanguard-emblem.png" alt="Iron Vanguard emblem" /><small>IRON VANGUARD</small></div>
+            <div class="league-empty-badge"><img id="league-intro-emblem" src="assets/league/teams/iron-vanguard-emblem.png" alt="Iron Vanguard emblem" /><small id="league-intro-team-name">IRON VANGUARD</small></div>
           </div>
           <div id="league-dashboard" class="league-dashboard is-hidden">
             <div class="league-dashboard-band league-dashboard-band-match"><span>01</span><strong>Season Command</strong><small>Next fixture and circuit run</small></div>
@@ -253,6 +255,7 @@
             <section class="league-panel league-squad-panel">
               <div class="league-panel-heading"><span>Your Squad</span><small id="league-team-record"></small></div>
               <div id="league-player-roster" class="league-roster"></div>
+              <button id="league-manage-wingman" class="league-manage-wingman" type="button">Manage Wingman</button>
               <div class="league-skin-control">
                 <div id="league-skin-preview" class="league-skin-preview" aria-hidden="true"></div>
                 <label for="league-skin-select"><span>Arena Skin</span>
@@ -276,7 +279,7 @@
             <div class="league-reset-card">
               <div class="v2-menu-kicker">SEASON MANAGEMENT</div>
               <h2 id="league-reset-title">Reset current season?</h2>
-              <p>All match results, standings and squad progress from this Founders Circuit will be permanently removed.</p>
+              <p>All match results and standings from this Founders Circuit will be permanently removed. Your team identity and unlocked wingmen remain.</p>
               <div class="league-reset-actions">
                 <button id="league-reset-cancel" class="league-reset-cancel" type="button">Keep Season</button>
                 <button id="league-reset-confirm-button" class="league-reset-confirm-button" type="button">Reset Season</button>
@@ -285,6 +288,7 @@
           </div>
           <div id="league-progression" class="league-progression is-hidden" role="dialog" aria-modal="true" aria-hidden="true"></div>
           <div id="league-recruitment" class="league-recruitment is-hidden" role="dialog" aria-modal="true" aria-hidden="true"></div>
+          <div id="league-wingman-manager" class="league-wingman-manager is-hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="league-wingman-title"></div>
         </div>
       </div>
     </div>

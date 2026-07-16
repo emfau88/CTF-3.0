@@ -179,6 +179,276 @@
 
 .league-tier.is-elite { opacity: .68; }
 
+/* Career identity is a full menu page. Only the wingman dialog owns an inner scroller. */
+.league-profile-setup {
+  width: min(1180px, 100%);
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.league-profile-form,
+.league-profile-review {
+  display: grid;
+  gap: 14px;
+}
+
+.league-profile-intro,
+.league-profile-review {
+  padding: clamp(22px, 3vw, 38px);
+  border-left: 5px solid #e44c55;
+  background: linear-gradient(100deg, rgb(8 21 28 / .96), rgb(12 27 35 / .76));
+  box-shadow: 0 18px 46px rgb(0 0 0 / .24);
+}
+
+.league-profile-intro h3,
+.league-profile-review h3 {
+  margin: 7px 0 8px;
+  color: #eff7f8;
+  font: 800 clamp(36px, 5vw, 58px)/.96 var(--font-display);
+  letter-spacing: .015em;
+  text-transform: uppercase;
+}
+
+.league-profile-intro p,
+.league-profile-review > p,
+.league-wingman-card > p {
+  max-width: 760px;
+  margin: 0;
+  color: #9db0b6;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.league-profile-error {
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid rgb(229 76 85 / .5);
+  background: rgb(95 25 32 / .52);
+  color: #ffd4d6;
+  font-weight: 800;
+}
+
+.league-profile-section {
+  min-width: 0;
+  padding: clamp(16px, 2.2vw, 26px);
+  border: 1px solid rgb(122 168 182 / .2);
+  background: linear-gradient(145deg, rgb(7 20 27 / .94), rgb(10 26 34 / .78));
+}
+
+.league-profile-section-heading,
+.league-wingman-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.league-profile-section-heading small,
+.league-profile-locked-heading small,
+.league-wingman-toolbar small {
+  color: #df5961;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .14em;
+}
+
+.league-profile-section-heading h4 {
+  margin: 2px 0 0;
+  color: #e8f1f3;
+  font: 800 25px/1 var(--font-display);
+  text-transform: uppercase;
+}
+
+.league-profile-section-heading button,
+.league-profile-names label button,
+.league-wingman-toolbar button {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid rgb(112 183 207 / .42);
+  background: rgb(15 40 50 / .84);
+  color: #b9e5f1;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.league-profile-names {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+}
+
+.league-profile-names .league-profile-section-heading { grid-column: 1 / -1; }
+.league-profile-names label { display: grid; gap: 6px; color: #a8bac0; font-size: 10px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.league-profile-names label > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+.league-profile-names input {
+  min-width: 0;
+  height: 46px;
+  padding: 0 13px;
+  border: 1px solid rgb(110 160 175 / .34);
+  border-right: 0;
+  border-radius: 0;
+  outline: 0;
+  background: #102630;
+  color: #eef6f8;
+  font: 800 17px var(--font-display);
+  letter-spacing: .03em;
+}
+
+.league-profile-names input:focus { border-color: #7ed7ed; box-shadow: inset 0 0 0 1px #7ed7ed; }
+.league-profile-emblems { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.league-profile-emblem {
+  min-width: 0;
+  min-height: 154px;
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  grid-template-rows: 1fr 1fr;
+  align-items: end;
+  gap: 2px 12px;
+  padding: 12px;
+  border: 1px solid rgb(112 158 171 / .24);
+  background: linear-gradient(120deg, rgb(14 34 43 / .94), rgb(7 20 27 / .82));
+  color: #a6b9bf;
+  text-align: left;
+  cursor: pointer;
+}
+
+.league-profile-emblem img { grid-row: 1 / 3; width: 112px; height: 126px; object-fit: contain; filter: drop-shadow(0 9px 16px rgb(0 0 0 / .55)); }
+.league-profile-emblem strong { align-self: end; color: #e1ecef; font: 800 20px/1 var(--font-display); text-transform: uppercase; }
+.league-profile-emblem small { align-self: start; color: #6f8c95; font-size: 8px; font-weight: 900; letter-spacing: .1em; }
+.league-profile-emblem.is-selected { border-color: #66c5df; background: linear-gradient(120deg, rgb(24 66 80 / .82), rgb(9 27 35 / .94)); box-shadow: inset 0 -3px #66c5df; }
+
+.league-profile-section-note { margin: -5px 0 15px; color: #879da4; font-size: 11px; line-height: 1.5; }
+.league-profile-fighter-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.league-profile-fighter-grid.is-skins { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.league-profile-fighter {
+  position: relative;
+  min-width: 0;
+  min-height: 118px;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  overflow: hidden;
+  border: 1px solid rgb(112 158 171 / .2);
+  background: linear-gradient(115deg, rgb(15 37 47 / .92), rgb(7 20 27 / .76));
+  color: inherit;
+  text-align: left;
+}
+
+button.league-profile-fighter { cursor: pointer; }
+button.league-profile-fighter:hover { border-color: rgb(102 197 223 / .64); transform: translateY(-1px); }
+.league-profile-fighter.is-selected { border-color: #66c5df; box-shadow: inset 0 -3px #66c5df; background: linear-gradient(115deg, rgb(25 68 82 / .82), rgb(8 25 33 / .94)); }
+.league-profile-fighter-portrait { width: 96px; height: 102px; background: radial-gradient(circle, rgb(73 155 181 / .18), transparent 66%), var(--skin-portrait) center bottom / contain no-repeat; filter: drop-shadow(0 7px 10px rgb(0 0 0 / .42)); }
+.league-profile-fighter-copy { min-width: 0; display: grid; gap: 3px; }
+.league-profile-fighter-copy small { color: #df5961; font-size: 8px; font-weight: 900; letter-spacing: .09em; }
+.league-profile-fighter-copy strong { overflow-wrap: anywhere; color: #e4eef0; font: 800 18px/1.05 var(--font-display); text-transform: uppercase; }
+.league-profile-fighter-copy i { color: #839ba2; font-size: 9px; font-style: normal; font-weight: 800; text-transform: uppercase; }
+.league-profile-fighter.is-locked { opacity: .54; filter: grayscale(.5); }
+.league-profile-fighter.is-locked > b { position: absolute; right: 8px; bottom: 7px; color: #a2b2b7; font-size: 8px; letter-spacing: .12em; }
+.league-profile-locked-heading { display: flex; justify-content: space-between; gap: 12px; margin: 20px 0 9px; padding-top: 15px; border-top: 1px solid rgb(123 166 178 / .15); }
+.league-profile-locked-heading span { color: #718890; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+
+.league-profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.league-profile-actions button {
+  min-width: 170px;
+  min-height: 50px;
+  padding: 0 20px;
+  border: 0;
+  background: linear-gradient(180deg, #e44c55, #ac2730);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.league-profile-actions .league-profile-secondary { border: 1px solid rgb(112 158 171 / .35); background: #122934; color: #c5d6da; }
+.league-profile-review { width: min(920px, 100%); margin: 30px auto 0; }
+.league-profile-lockup { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: center; gap: 22px; margin-top: 12px; padding: 14px 20px; border: 1px solid rgb(106 176 197 / .28); background: rgb(10 30 39 / .72); }
+.league-profile-lockup img { width: 150px; height: 150px; object-fit: contain; filter: drop-shadow(0 11px 18px rgb(0 0 0 / .5)); }
+.league-profile-lockup div { display: grid; gap: 4px; }
+.league-profile-lockup small { color: #df5961; font-size: 9px; font-weight: 900; letter-spacing: .14em; }
+.league-profile-lockup strong { color: #edf5f7; font: 800 clamp(30px, 5vw, 48px)/.95 var(--font-display); text-transform: uppercase; }
+.league-profile-lockup span { color: #9ab0b6; font-size: 13px; font-weight: 800; }
+.league-profile-review-squad { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.league-manage-wingman {
+  width: calc(100% - 28px);
+  min-height: 40px;
+  margin: 0 14px 10px;
+  border: 1px solid rgb(94 169 191 / .35);
+  background: rgb(15 39 49 / .88);
+  color: #bde6f0;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.league-wingman-manager {
+  position: fixed;
+  inset: 0;
+  z-index: 13;
+  display: grid;
+  place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgb(2 8 12 / .86);
+  backdrop-filter: blur(10px);
+}
+
+.league-wingman-card {
+  width: min(1050px, 100%);
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(24px, 4vw, 44px);
+  border: 1px solid rgb(130 184 200 / .32);
+  border-top: 4px solid #66c5df;
+  background: linear-gradient(145deg, #0b1d26, #071218);
+  box-shadow: 0 32px 100px #000;
+}
+
+.league-wingman-card h2 { margin: 6px 0 8px; color: #eff7f8; font: 800 clamp(38px, 5vw, 58px)/.94 var(--font-display); text-transform: uppercase; }
+.league-wingman-toolbar { margin-top: 20px; }
+
+@media (max-width: 900px) {
+  .league-profile-emblem { grid-template-columns: 86px 1fr; }
+  .league-profile-emblem img { width: 86px; height: 105px; }
+  .league-profile-fighter-grid,
+  .league-profile-fighter-grid.is-skins { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 680px) {
+  .league-profile-names { grid-template-columns: 1fr; }
+  .league-profile-emblems,
+  .league-profile-fighter-grid,
+  .league-profile-fighter-grid.is-skins,
+  .league-profile-review-squad { grid-template-columns: 1fr; }
+  .league-profile-section-heading,
+  .league-profile-locked-heading { align-items: flex-start; flex-direction: column; }
+  .league-profile-actions { flex-direction: column-reverse; }
+  .league-profile-actions button { width: 100%; }
+  .league-profile-lockup { grid-template-columns: 92px 1fr; padding: 10px; }
+  .league-profile-lockup img { width: 92px; height: 100px; }
+}
+
 .v2-quick-mode-field {
   grid-column: 1 / -1;
   min-width: 0;

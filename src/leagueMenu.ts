@@ -3,6 +3,8 @@ import {
   acknowledgeLeagueProgression,
   CHALLENGER_PREVIEW_TEAM_IDS,
   LEAGUE_TEAMS,
+  PLAYER_LEAGUE_TEAM_ID,
+  STARTER_WINGMAN_IDS,
   foundersCircuitDiscipline,
   completeRecruitment,
   createLeagueRepository,
@@ -11,11 +13,29 @@ import {
   getPlayerOpponent,
   leagueCharacter,
   leagueTeam,
+  selectLeagueWingman,
   sortedLeagueStandings,
   type LeagueCharacterStats,
   type LeagueSeasonState,
   type LeagueTeamId,
 } from "./meta/league";
+import {
+  CAREER_PLAYER_EMBLEMS,
+  createCareerProfile,
+  createCareerProfileRepository,
+  careerEmblemUrl,
+  foundersRecruitableWingmanIds,
+  randomCallsign,
+  randomCareerEmblem,
+  randomCareerChoice,
+  randomStarterWingman,
+  randomTeamName,
+  syncCareerUnlocks,
+  updateCareerProfile,
+  wingmanUnlockTeamId,
+  type CareerProfile,
+  type CareerProfileDraft,
+} from "./careerProfile";
 import {
   loadPlayerSkinPreference,
   playerSkinLabel,
@@ -42,43 +62,66 @@ export function createLeagueMenuController(actions: {
   readonly onBack: () => void;
 }): LeagueMenuController {
   const repository = createLeagueRepository(window.localStorage);
+  const profileRepository = createCareerProfileRepository(window.localStorage);
   const root = element("v2-league-hub");
   const menuRoot = document.getElementById("v2-main-menu") ?? root;
   const header = root.querySelector<HTMLElement>(".league-header");
   const empty = element("league-empty");
+  const profileSetup = element("league-profile-setup");
   const dashboard = element("league-dashboard");
   const recruitment = element("league-recruitment");
   const progression = element("league-progression");
   const resetDialog = element("league-reset-confirm");
+  const wingmanManager = element("league-wingman-manager");
   const seasonTools = element("league-season-tools") as HTMLDetailsElement;
   let season = repository.load();
+  let profile = profileRepository.load();
   let selectedTeamId: LeagueTeamId | null = null;
-  let activeModal: "progression" | "recruitment" | "reset" | null = null;
+  let editingProfile = !profile;
+  let profileReview = false;
+  let profileDraft: CareerProfileDraft | null = null;
+  let pendingWingmanId: string | null = null;
+  let activeModal: "progression" | "recruitment" | "reset" | "wingman" | null = null;
 
   const resetMenuScroll = (): void => {
     menuRoot.scrollTop = 0;
     menuRoot.scrollLeft = 0;
   };
 
+  const displayTeamName = (teamId: LeagueTeamId): string =>
+    teamId === PLAYER_LEAGUE_TEAM_ID && profile
+      ? profile.teamName
+      : leagueTeam(teamId).name;
+
+  const displayTeamEmblemUrl = (teamId: LeagueTeamId): string =>
+    teamId === PLAYER_LEAGUE_TEAM_ID && profile
+      ? careerEmblemUrl(profile.emblemId)
+      : leagueTeamEmblemUrl(teamId);
+
   const syncModalState = (): void => {
     const progressionOpen = !progression.classList.contains("is-hidden");
     const recruitmentOpen = !recruitment.classList.contains("is-hidden");
     const resetOpen = !resetDialog.classList.contains("is-hidden");
+    const wingmanOpen = !wingmanManager.classList.contains("is-hidden");
     const nextModal = progressionOpen
       ? "progression"
       : recruitmentOpen
       ? "recruitment"
       : resetOpen
       ? "reset"
+      : wingmanOpen
+      ? "wingman"
       : null;
     const modalOpen = nextModal !== null;
     menuRoot.classList.toggle("has-modal-open", modalOpen);
     if (header) header.inert = modalOpen;
     empty.inert = modalOpen;
     dashboard.inert = modalOpen;
+    profileSetup.inert = modalOpen;
     progression.setAttribute("aria-hidden", String(!progressionOpen));
     recruitment.setAttribute("aria-hidden", String(!recruitmentOpen));
     resetDialog.setAttribute("aria-hidden", String(!resetOpen));
+    wingmanManager.setAttribute("aria-hidden", String(!wingmanOpen));
     if (nextModal === activeModal) return;
 
     const previousModal = activeModal;
@@ -95,6 +138,8 @@ export function createLeagueMenuController(actions: {
       requiredButton("league-reset-cancel").focus({
         preventScroll: true,
       });
+    } else if (nextModal === "wingman") {
+      requiredButton("league-wingman-apply").focus({ preventScroll: true });
     } else if (previousModal === "reset") {
       document.getElementById("league-season-options")?.focus({
         preventScroll: true,
@@ -110,23 +155,37 @@ export function createLeagueMenuController(actions: {
 
   const saveAndRender = (): void => {
     if (season) repository.save(season);
+    if (profile) profileRepository.save(profile);
     render();
   };
 
   const startSeason = (): void => {
-    season = createLeagueSeason();
+    if (!profile) return;
+    season = createLeagueSeason(Date.now(), profile.selectedWingmanId);
     selectedTeamId = null;
     saveAndRender();
     resetMenuScroll();
   };
 
   const render = (): void => {
-    renderHeader(Boolean(season));
-    empty.classList.toggle("is-hidden", Boolean(season));
-    dashboard.classList.toggle("is-hidden", !season);
+    if (profile && season && syncCareerUnlocks(profile, season.defeatedTeamIds)) {
+      profileRepository.save(profile);
+    }
+    renderHeader(Boolean(season), editingProfile);
+    profileSetup.classList.toggle("is-hidden", !editingProfile);
+    empty.classList.toggle("is-hidden", editingProfile || Boolean(season) || !profile);
+    dashboard.classList.toggle("is-hidden", editingProfile || !season || !profile);
     dashboard.classList.toggle("has-progress", Boolean(season?.currentRound));
-    seasonTools.classList.toggle("is-hidden", !season);
-    if (!season) seasonTools.open = false;
+    seasonTools.classList.toggle("is-hidden", editingProfile || !profile);
+    requiredButton("league-reset").classList.toggle("is-hidden", !season);
+    if (editingProfile || !profile) {
+      recruitment.classList.add("is-hidden");
+      progression.classList.add("is-hidden");
+      wingmanManager.classList.add("is-hidden");
+      renderProfileSetup();
+      syncModalState();
+      return;
+    }
     if (!season) {
       recruitment.classList.add("is-hidden");
       progression.classList.add("is-hidden");
@@ -142,6 +201,225 @@ export function createLeagueMenuController(actions: {
     renderProgression(season);
     renderRecruitment(season);
     syncModalState();
+  };
+
+  const availableProfileWingmanIds = (): string[] => {
+    const available = new Set<string>(profile?.unlockedWingmanIds ?? STARTER_WINGMAN_IDS);
+    const currentWingmanId = season?.teamRosters[PLAYER_LEAGUE_TEAM_ID]?.[1];
+    if (!profile && currentWingmanId) available.add(currentWingmanId);
+    for (const teamId of season?.defeatedTeamIds ?? []) {
+      const team = LEAGUE_TEAMS.find((candidate) => candidate.id === teamId);
+      for (const characterId of team?.characterIds ?? []) available.add(characterId);
+    }
+    return [...available];
+  };
+
+  const ensureProfileDraft = (): CareerProfileDraft => {
+    if (profileDraft) return profileDraft;
+    const availableWingmen = availableProfileWingmanIds();
+    const currentWingmanId = season?.teamRosters[PLAYER_LEAGUE_TEAM_ID]?.[1];
+    profileDraft = profile
+      ? {
+          callsign: profile.callsign,
+          teamName: profile.teamName,
+          emblemId: profile.emblemId,
+          captainSkinId: profile.captainSkinId,
+          selectedWingmanId: profile.selectedWingmanId,
+        }
+      : {
+          callsign: randomCallsign(),
+          teamName: randomTeamName(),
+          emblemId: randomCareerEmblem(),
+          captainSkinId: loadPlayerSkinPreference(),
+          selectedWingmanId: currentWingmanId && availableWingmen.includes(currentWingmanId)
+            ? currentWingmanId
+            : randomStarterWingman(),
+        };
+    return profileDraft;
+  };
+
+  const finishProfileSetup = (): void => {
+    const draft = ensureProfileDraft();
+    try {
+      if (profile) {
+        profile = updateCareerProfile(profile, draft);
+      } else {
+        const starterId = STARTER_WINGMAN_IDS.includes(
+          draft.selectedWingmanId as (typeof STARTER_WINGMAN_IDS)[number],
+        ) ? draft.selectedWingmanId : STARTER_WINGMAN_IDS[0];
+        profile = createCareerProfile({ ...draft, selectedWingmanId: starterId });
+        if (season) syncCareerUnlocks(profile, season.defeatedTeamIds);
+        const legacyWingmanId = season?.teamRosters[PLAYER_LEAGUE_TEAM_ID]?.[1];
+        if (legacyWingmanId && !profile.unlockedWingmanIds.includes(legacyWingmanId)) {
+          profile.unlockedWingmanIds.push(legacyWingmanId);
+        }
+        if (profile.unlockedWingmanIds.includes(draft.selectedWingmanId)) {
+          profile = updateCareerProfile(profile, draft);
+        }
+      }
+      if (season) {
+        selectLeagueWingman(season, profile.selectedWingmanId);
+        repository.save(season);
+      }
+      profileRepository.save(profile);
+      savePlayerSkinPreference(profile.captainSkinId);
+      editingProfile = false;
+      profileReview = false;
+      profileDraft = null;
+      render();
+      resetMenuScroll();
+    } catch (error) {
+      profileReview = false;
+      renderProfileSetup(error instanceof Error ? error.message : "Review your selections.");
+    }
+  };
+
+  const renderProfileSetup = (errorMessage = ""): void => {
+    const draft = ensureProfileDraft();
+    const availableWingmen = availableProfileWingmanIds();
+    const lockedWingmen = foundersRecruitableWingmanIds().filter(
+      (characterId) => !availableWingmen.includes(characterId),
+    );
+    if (profileReview) {
+      const wingman = leagueCharacter(draft.selectedWingmanId);
+      profileSetup.innerHTML = `
+        <div class="league-profile-review">
+          <span class="league-eyebrow">FINAL REVIEW · NOTHING SAVED YET</span>
+          <h3>Confirm your arena identity</h3>
+          <p>Check every choice before founding the team. You can still return and correct anything now, or edit the identity later from Season Options.</p>
+          <div class="league-profile-lockup">
+            <img src="${careerEmblemUrl(draft.emblemId)}" alt="${escapeHtml(draft.teamName)} emblem">
+            <div><small>TEAM</small><strong>${escapeHtml(draft.teamName)}</strong><span>Captain ${escapeHtml(draft.callsign)}</span></div>
+          </div>
+          <div class="league-profile-review-squad">
+            ${careerFighterOptionHtml("nova-vale", draft.captainSkinId, "CAPTAIN", true, draft.callsign)}
+            ${careerFighterOptionHtml(wingman.id, wingman.skinId, "WINGMAN", true)}
+          </div>
+          <div class="league-profile-actions">
+            <button id="league-profile-edit" class="league-profile-secondary" type="button">Edit Choices</button>
+            <button id="league-profile-confirm" type="button">${profile ? "Save Changes" : "Found Team"}</button>
+          </div>
+        </div>`;
+      requiredButton("league-profile-edit").onclick = () => {
+        profileReview = false;
+        renderProfileSetup();
+        resetMenuScroll();
+      };
+      requiredButton("league-profile-confirm").onclick = finishProfileSetup;
+      return;
+    }
+
+    const emblemOptions = CAREER_PLAYER_EMBLEMS.map((emblem) => `
+      <button class="league-profile-emblem${emblem.id === draft.emblemId ? " is-selected" : ""}" type="button" data-emblem-id="${emblem.id}" aria-pressed="${emblem.id === draft.emblemId}">
+        <img src="${careerEmblemUrl(emblem.id)}" alt=""><strong>${emblem.label}</strong><small>AVAILABLE</small>
+      </button>`).join("");
+    const skinOptions = V2_PLAYER_SKINS.map((skinId) =>
+      careerFighterOptionHtml("nova-vale", skinId, "CAPTAIN SKIN", skinId === draft.captainSkinId, playerSkinLabel(skinId), "data-skin-id"),
+    ).join("");
+    const wingmanOptions = availableWingmen.map((characterId) => {
+      const character = leagueCharacter(characterId);
+      return careerFighterOptionHtml(characterId, character.skinId, "AVAILABLE", characterId === draft.selectedWingmanId, undefined, "data-wingman-id");
+    }).join("");
+    const lockedOptions = lockedWingmen.map((characterId) => {
+      const character = leagueCharacter(characterId);
+      const teamId = wingmanUnlockTeamId(characterId)!;
+      const team = leagueTeam(teamId);
+      return careerFighterOptionHtml(characterId, character.skinId, `LOCKED · DEFEAT ${team.shortName}`, false, undefined, "", true);
+    }).join("");
+    profileSetup.innerHTML = `
+      <div class="league-profile-form">
+        <div class="league-profile-intro">
+          <span class="league-eyebrow">YOUR TEAM · YOUR CHOICE</span>
+          <h3>${profile ? "Edit team identity" : "Register for the circuit"}</h3>
+          <p>Choose every detail yourself or use Random on any field. Random choices remain a preview until the final confirmation screen.</p>
+        </div>
+        ${errorMessage ? `<p class="league-profile-error" role="alert">${escapeHtml(errorMessage)}</p>` : ""}
+        <section class="league-profile-section league-profile-names">
+          <div class="league-profile-section-heading"><div><small>01 · IDENTITY</small><h4>Names</h4></div><button type="button" data-random="names">Random Both</button></div>
+          <label>Captain Callsign<div><input id="league-profile-callsign" maxlength="20" autocomplete="nickname"><button type="button" data-random="callsign">Random</button></div></label>
+          <label>Team Name<div><input id="league-profile-team-name" maxlength="28" autocomplete="organization"><button type="button" data-random="team-name">Random</button></div></label>
+        </section>
+        <section class="league-profile-section">
+          <div class="league-profile-section-heading"><div><small>02 · CREST</small><h4>Team Emblem</h4></div><button type="button" data-random="emblem">Random</button></div>
+          <div class="league-profile-emblems">${emblemOptions}</div>
+        </section>
+        <section class="league-profile-section">
+          <div class="league-profile-section-heading"><div><small>03 · CAPTAIN</small><h4>Arena Skin</h4></div><button type="button" data-random="skin">Random</button></div>
+          <div class="league-profile-fighter-grid is-skins">${skinOptions}</div>
+        </section>
+        <section class="league-profile-section">
+          <div class="league-profile-section-heading"><div><small>04 · SQUAD</small><h4>Wingman</h4></div><button type="button" data-random="wingman">Random Available</button></div>
+          <p class="league-profile-section-note">All fighters use identical gameplay rules. Three wingmen are free from the start; rival identities unlock when you defeat their team.</p>
+          <div class="league-profile-fighter-grid">${wingmanOptions}</div>
+          ${lockedOptions ? `<div class="league-profile-locked-heading"><small>SCOUTED · NOT YET UNLOCKED</small><span>Win league matches to expand the roster</span></div><div class="league-profile-fighter-grid is-locked">${lockedOptions}</div>` : ""}
+        </section>
+        <div class="league-profile-actions">
+          ${profile ? `<button id="league-profile-cancel" class="league-profile-secondary" type="button">Cancel</button>` : ""}
+          <button id="league-profile-random-all" class="league-profile-secondary" type="button">Randomize All</button>
+          <button id="league-profile-review" type="button">Review Team</button>
+        </div>
+      </div>`;
+    const callsign = element("league-profile-callsign") as HTMLInputElement;
+    const teamName = element("league-profile-team-name") as HTMLInputElement;
+    callsign.value = draft.callsign;
+    teamName.value = draft.teamName;
+    callsign.oninput = () => { draft.callsign = callsign.value; };
+    teamName.oninput = () => { draft.teamName = teamName.value; };
+    profileSetup.querySelectorAll<HTMLButtonElement>("[data-emblem-id]").forEach((button) => {
+      button.onclick = () => {
+        draft.emblemId = button.dataset.emblemId as CareerProfileDraft["emblemId"];
+        renderProfileSetup();
+      };
+    });
+    profileSetup.querySelectorAll<HTMLButtonElement>("[data-skin-id]").forEach((button) => {
+      button.onclick = () => {
+        draft.captainSkinId = button.dataset.skinId as V2PlayerSkinId;
+        renderProfileSetup();
+      };
+    });
+    profileSetup.querySelectorAll<HTMLButtonElement>("[data-wingman-id]").forEach((button) => {
+      button.onclick = () => {
+        draft.selectedWingmanId = button.dataset.wingmanId!;
+        renderProfileSetup();
+      };
+    });
+    profileSetup.querySelectorAll<HTMLButtonElement>("[data-random]").forEach((button) => {
+      button.onclick = () => {
+        if (button.dataset.random === "callsign" || button.dataset.random === "names") draft.callsign = randomCallsign();
+        if (button.dataset.random === "team-name" || button.dataset.random === "names") draft.teamName = randomTeamName();
+        if (button.dataset.random === "emblem") draft.emblemId = randomCareerEmblem();
+        if (button.dataset.random === "skin") draft.captainSkinId = randomCareerChoice(V2_PLAYER_SKINS);
+        if (button.dataset.random === "wingman") draft.selectedWingmanId = randomCareerChoice(availableWingmen);
+        renderProfileSetup();
+      };
+    });
+    requiredButton("league-profile-random-all").onclick = () => {
+      draft.callsign = randomCallsign();
+      draft.teamName = randomTeamName();
+      draft.emblemId = randomCareerEmblem();
+      draft.captainSkinId = randomCareerChoice(V2_PLAYER_SKINS);
+      draft.selectedWingmanId = randomCareerChoice(availableWingmen);
+      renderProfileSetup();
+    };
+    requiredButton("league-profile-review").onclick = () => {
+      draft.callsign = callsign.value;
+      draft.teamName = teamName.value;
+      if (draft.callsign.trim().length < 2 || draft.teamName.trim().length < 2) {
+        renderProfileSetup("Callsign and team name need at least two characters.");
+        return;
+      }
+      profileReview = true;
+      renderProfileSetup();
+      resetMenuScroll();
+    };
+    const cancel = document.getElementById("league-profile-cancel") as HTMLButtonElement | null;
+    if (cancel) cancel.onclick = () => {
+      editingProfile = false;
+      profileReview = false;
+      profileDraft = null;
+      render();
+      resetMenuScroll();
+    };
   };
 
   const renderSeasonTrack = (active: LeagueSeasonState): string => {
@@ -170,17 +448,27 @@ export function createLeagueMenuController(actions: {
     return `<div class="league-season-track" aria-label="Three match season progress"><small>SEASON RUN</small><div>${stops}</div></div>`;
   };
 
-  const renderHeader = (hasSeason: boolean): void => {
-    element("league-header-kicker").textContent = hasSeason
-      ? "CAREER · FOUNDERS SEASON"
-      : "CAREER · CONTRACT BRIEFING";
-    element("league-header-title").textContent = hasSeason
-      ? "League HQ"
-      : "Founders Circuit";
+  const renderHeader = (hasSeason: boolean, isEditing: boolean): void => {
+    element("league-header-kicker").textContent = isEditing
+      ? "CAREER · TEAM REGISTRATION"
+      : hasSeason
+        ? "CAREER · FOUNDERS SEASON"
+        : "CAREER · CONTRACT BRIEFING";
+    element("league-header-title").textContent = isEditing
+      ? "Found Your Team"
+      : hasSeason
+        ? "League HQ"
+        : "Founders Circuit";
   };
 
   const renderLeagueIntro = (): void => {
-    const preview = createLeagueSeason(1);
+    if (!profile) return;
+    element("league-intro-title").textContent = `Lead ${profile.teamName}`;
+    const introEmblem = element("league-intro-emblem") as HTMLImageElement;
+    introEmblem.src = careerEmblemUrl(profile.emblemId);
+    introEmblem.alt = `${profile.teamName} emblem`;
+    element("league-intro-team-name").textContent = profile.teamName.toUpperCase();
+    const preview = createLeagueSeason(1, profile.selectedWingmanId);
     element("league-intro-route").innerHTML = preview.rounds.map((round) => {
       const match = round.matches.find((fixture) =>
         fixture.homeTeamId === preview.playerTeamId || fixture.awayTeamId === preview.playerTeamId
@@ -206,10 +494,11 @@ export function createLeagueMenuController(actions: {
     const opponentId = getPlayerOpponent(active, match);
     if (active.status === "completed" || !match || !opponentId) {
       const champion = leagueTeam(table[0].teamId);
+      const championName = displayTeamName(champion.id);
       target.innerHTML = `
         <div class="league-season-complete">
-          <img class="league-champion-emblem" src="${leagueTeamEmblemUrl(champion.id)}" alt="${champion.name} emblem">
-          <div><span class="league-eyebrow">SEASON COMPLETE</span><h3>${champion.name} take the title</h3>
+          <img class="league-champion-emblem" src="${displayTeamEmblemUrl(champion.id)}" alt="${escapeHtml(championName)} emblem">
+          <div><span class="league-eyebrow">SEASON COMPLETE</span><h3>${escapeHtml(championName)} take the title</h3>
           <p>You finished <strong>#${ownPosition}</strong> with <strong>${active.standings[active.playerTeamId].points} points</strong>.</p></div>
           <button id="league-finish-new" type="button">Start New Season</button>
         </div>`;
@@ -219,7 +508,7 @@ export function createLeagueMenuController(actions: {
       return;
     }
     const opponent = leagueTeam(opponentId);
-    const ownTeam = leagueTeam(active.playerTeamId);
+    const ownTeamName = displayTeamName(active.playerTeamId);
     const discipline = foundersCircuitDiscipline(active.currentRound);
     const opponentStanding = active.standings[opponentId];
     const opponentLineup = renderOpponentLineup(active, opponentId);
@@ -228,8 +517,8 @@ export function createLeagueMenuController(actions: {
       <div class="league-fixture-meta">
         <span class="league-eyebrow">${discipline.trialLabel.toUpperCase()} · MATCH ${active.currentRound + 1} OF ${active.rounds.length}</span>
         <div class="league-fixture-title">
-          <img class="league-mini-emblem" src="${leagueTeamEmblemUrl(ownTeam.id)}" alt="${ownTeam.name} emblem">
-          <div class="league-fixture-team"><small>YOUR SQUAD</small><strong>${ownTeam.name}</strong></div>
+          <img class="league-mini-emblem" src="${displayTeamEmblemUrl(active.playerTeamId)}" alt="${escapeHtml(ownTeamName)} emblem">
+          <div class="league-fixture-team"><small>YOUR SQUAD</small><strong>${escapeHtml(ownTeamName)}</strong></div>
           <b>VS</b>
         </div>
       </div>
@@ -251,7 +540,7 @@ export function createLeagueMenuController(actions: {
       window.location.search = buildLeagueMatchSearch(active, {
         controls: route.controls,
         sfx: route.sfx,
-        skin: loadPlayerSkinPreference(),
+        skin: profile?.captainSkinId ?? loadPlayerSkinPreference(),
       });
     };
   };
@@ -263,7 +552,20 @@ export function createLeagueMenuController(actions: {
     const roster = element("league-player-roster");
     roster.replaceChildren(
       ...active.teamRosters[active.playerTeamId].map((characterId, index) =>
-        characterCard(active, characterId, index === 0 ? "CAPTAIN" : "WINGMATE")
+        characterCard(
+          active,
+          characterId,
+          index === 0 ? "CAPTAIN" : "WINGMATE",
+          true,
+          index === 0 && profile
+            ? {
+                name: profile.callsign,
+                personality: `Captain of ${profile.teamName}`,
+                visualStyle: playerSkinLabel(profile.captainSkinId),
+                skinId: profile.captainSkinId,
+              }
+            : undefined,
+        )
       )
     );
     renderSkinPicker();
@@ -288,11 +590,16 @@ export function createLeagueMenuController(actions: {
         `url('${import.meta.env?.BASE_URL ?? "/"}assets/ui/portraits/${playerSkinPortraitAssetStem(skinId)}.png')`,
       );
     };
-    select.value = loadPlayerSkinPreference();
+    select.value = profile?.captainSkinId ?? loadPlayerSkinPreference();
     syncPreview(select.value as V2PlayerSkinId);
     select.onchange = () => {
       const skinId = select.value as V2PlayerSkinId;
       savePlayerSkinPreference(skinId);
+      if (profile) {
+        profile = updateCareerProfile(profile, { ...profile, captainSkinId: skinId });
+        profileRepository.save(profile);
+        if (season) renderRoster(season);
+      }
       syncPreview(skinId);
     };
   };
@@ -302,14 +609,15 @@ export function createLeagueMenuController(actions: {
     target.innerHTML = `<div class="league-table-row league-table-head"><span>#</span><span>TEAM</span><span>P</span><span>W</span><span>D</span><span>L</span><strong>PTS</strong></div>`;
     sortedLeagueStandings(active).forEach((standing, index) => {
       const team = leagueTeam(standing.teamId);
+      const teamName = displayTeamName(standing.teamId);
       const row = document.createElement("button");
       row.type = "button";
       row.className = `league-table-row${standing.teamId === active.playerTeamId ? " is-player-team" : ""}${standing.teamId === selectedTeamId ? " is-selected" : ""}`;
       row.style.setProperty("--team-color", team.primaryColor);
       row.setAttribute("aria-controls", "league-team-detail");
       row.setAttribute("aria-pressed", String(standing.teamId === selectedTeamId));
-      row.title = `Inspect ${team.name} roster`;
-      row.innerHTML = `<span>${index + 1}</span><span><img class="league-table-emblem" src="${leagueTeamEmblemUrl(team.id)}" alt="">${team.name}</span><span>${standing.played}</span><span>${standing.wins}</span><span>${standing.draws}</span><span>${standing.losses}</span><strong>${standing.points}</strong>`;
+      row.title = `Inspect ${teamName} roster`;
+      row.innerHTML = `<span>${index + 1}</span><span><img class="league-table-emblem" src="${displayTeamEmblemUrl(team.id)}" alt="">${escapeHtml(teamName)}</span><span>${standing.played}</span><span>${standing.wins}</span><span>${standing.draws}</span><span>${standing.losses}</span><strong>${standing.points}</strong>`;
       row.onclick = () => {
         selectedTeamId = standing.teamId;
         renderStandings(active);
@@ -341,11 +649,25 @@ export function createLeagueMenuController(actions: {
       return;
     }
     const team = leagueTeam(teamId);
+    const teamName = displayTeamName(teamId);
     target.style.setProperty("--team-color", team.primaryColor);
-    target.innerHTML = `<div class="league-detail-heading"><img class="league-large-emblem" src="${leagueTeamEmblemUrl(team.id)}" alt="${team.name} emblem"><div><small>SCOUTING FILE</small><h3>${team.name}</h3><p>${team.motto}</p></div></div><div class="league-detail-roster"></div>`;
+    target.innerHTML = `<div class="league-detail-heading"><img class="league-large-emblem" src="${displayTeamEmblemUrl(team.id)}" alt="${escapeHtml(teamName)} emblem"><div><small>${teamId === active.playerTeamId ? "TEAM FILE" : "SCOUTING FILE"}</small><h3>${escapeHtml(teamName)}</h3><p>${teamId === active.playerTeamId && profile ? `Captain ${escapeHtml(profile.callsign)} · ${team.motto}` : team.motto}</p></div></div><div class="league-detail-roster"></div>`;
     const roster = target.querySelector<HTMLElement>(".league-detail-roster")!;
     roster.replaceChildren(
-      ...active.teamRosters[teamId].map((characterId) => characterCard(active, characterId))
+      ...active.teamRosters[teamId].map((characterId, index) => characterCard(
+        active,
+        characterId,
+        undefined,
+        true,
+        teamId === active.playerTeamId && index === 0 && profile
+          ? {
+              name: profile.callsign,
+              personality: `Captain of ${profile.teamName}`,
+              visualStyle: playerSkinLabel(profile.captainSkinId),
+              skinId: profile.captainSkinId,
+            }
+          : undefined,
+      ))
     );
   };
 
@@ -421,6 +743,15 @@ export function createLeagueMenuController(actions: {
     confirmButton.onclick = () => {
       if (!selectedCandidateId) return;
       season = completeRecruitment(active, selectedCandidateId);
+      if (profile) {
+        if (!profile.unlockedWingmanIds.includes(selectedCandidateId)) {
+          profile.unlockedWingmanIds.push(selectedCandidateId);
+        }
+        profile = updateCareerProfile(profile, {
+          ...profile,
+          selectedWingmanId: selectedCandidateId,
+        });
+      }
       saveAndRender();
     };
     requiredButton("league-keep-roster").onclick = () => {
@@ -428,6 +759,87 @@ export function createLeagueMenuController(actions: {
       saveAndRender();
     };
     renderComparison();
+  };
+
+  const closeWingmanManager = (): void => {
+    wingmanManager.classList.add("is-hidden");
+    pendingWingmanId = null;
+    syncModalState();
+  };
+
+  const renderWingmanManager = (): void => {
+    if (!profile || !season) return;
+    const available = new Set(profile.unlockedWingmanIds);
+    const allWingmen = [...new Set([
+      ...STARTER_WINGMAN_IDS,
+      ...foundersRecruitableWingmanIds(),
+    ])];
+    pendingWingmanId = pendingWingmanId && available.has(pendingWingmanId)
+      ? pendingWingmanId
+      : profile.selectedWingmanId;
+    const options = allWingmen.map((characterId) => {
+      const character = leagueCharacter(characterId);
+      const unlocked = available.has(characterId);
+      const unlockTeamId = wingmanUnlockTeamId(characterId);
+      const badge = unlocked
+        ? characterId === profile!.selectedWingmanId ? "CURRENT WINGMAN" : "AVAILABLE"
+        : `LOCKED · DEFEAT ${unlockTeamId ? leagueTeam(unlockTeamId).shortName : "RIVAL"}`;
+      return careerFighterOptionHtml(
+        characterId,
+        character.skinId,
+        badge,
+        unlocked && characterId === pendingWingmanId,
+        undefined,
+        unlocked ? "data-manager-wingman-id" : "",
+        !unlocked,
+      );
+    }).join("");
+    wingmanManager.innerHTML = `
+      <div class="league-wingman-card">
+        <span class="league-eyebrow">SQUAD MANAGEMENT · COSMETIC ONLY</span>
+        <h2 id="league-wingman-title">Choose your wingman</h2>
+        <p>Every wingman follows the same bot rules and uses identical combat values. Locked rivals become selectable after you defeat their team.</p>
+        <div class="league-wingman-toolbar"><small>${available.size} AVAILABLE</small><button id="league-wingman-random" type="button">Random Available</button></div>
+        <div class="league-profile-fighter-grid">${options}</div>
+        <div class="league-profile-actions">
+          <button id="league-wingman-cancel" class="league-profile-secondary" type="button">Cancel</button>
+          <button id="league-wingman-apply" type="button">Apply Wingman</button>
+        </div>
+      </div>`;
+    wingmanManager.querySelectorAll<HTMLButtonElement>("[data-manager-wingman-id]").forEach((button) => {
+      button.onclick = () => {
+        pendingWingmanId = button.dataset.managerWingmanId!;
+        renderWingmanManager();
+      };
+    });
+    requiredButton("league-wingman-random").onclick = () => {
+      pendingWingmanId = randomCareerChoice(profile!.unlockedWingmanIds);
+      renderWingmanManager();
+    };
+    requiredButton("league-wingman-cancel").onclick = closeWingmanManager;
+    requiredButton("league-wingman-apply").onclick = () => {
+      if (!profile || !season || !pendingWingmanId) return;
+      selectLeagueWingman(season, pendingWingmanId);
+      profile = updateCareerProfile(profile, {
+        ...profile,
+        selectedWingmanId: pendingWingmanId,
+      });
+      wingmanManager.classList.add("is-hidden");
+      pendingWingmanId = null;
+      saveAndRender();
+    };
+    wingmanManager.onkeydown = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeWingmanManager();
+    };
+  };
+
+  const openWingmanManager = (): void => {
+    pendingWingmanId = profile?.selectedWingmanId ?? null;
+    wingmanManager.classList.remove("is-hidden");
+    renderWingmanManager();
+    syncModalState();
   };
 
   const renderPyramid = (active: LeagueSeasonState): void => {
@@ -457,6 +869,7 @@ export function createLeagueMenuController(actions: {
     const pointsGained = event.newPoints - event.previousPoints;
     const rivalResultsShiftedTable = !won && positionDelta !== 0;
     const finalRound = event.roundIndex === active.rounds.length - 1;
+    const playerTeamName = displayTeamName(active.playerTeamId);
     const discipline = foundersCircuitDiscipline(event.roundIndex);
     const headline = event.promoted
       ? "Promotion Secured"
@@ -471,7 +884,7 @@ export function createLeagueMenuController(actions: {
         <span class="league-eyebrow">${discipline.modeLabel.toUpperCase()} COMPLETE · MATCH ${event.roundIndex + 1} OF ${active.rounds.length}</span>
         <h2>${headline}</h2>
         <div class="league-result-lockup">
-          <div><img src="${leagueTeamEmblemUrl(active.playerTeamId)}" alt="Iron Vanguard"><small>IRON VANGUARD</small></div>
+          <div><img src="${displayTeamEmblemUrl(active.playerTeamId)}" alt="${escapeHtml(playerTeamName)}"><small>${escapeHtml(playerTeamName.toUpperCase())}</small></div>
           <strong>${event.blueScore}<i>:</i>${event.redScore}</strong>
           <div><img src="${leagueTeamEmblemUrl(opponent.id)}" alt="${opponent.name}"><small>${opponent.name}</small></div>
         </div>
@@ -492,6 +905,15 @@ export function createLeagueMenuController(actions: {
   };
 
   requiredButton("league-new-season").onclick = startSeason;
+  requiredButton("league-edit-profile").onclick = () => {
+    seasonTools.open = false;
+    editingProfile = true;
+    profileReview = false;
+    profileDraft = null;
+    render();
+    resetMenuScroll();
+  };
+  requiredButton("league-manage-wingman").onclick = openWingmanManager;
   requiredButton("league-back").onclick = () => {
     menuRoot.classList.remove("has-modal-open");
     actions.onBack();
@@ -520,15 +942,21 @@ export function createLeagueMenuController(actions: {
   };
 
   return {
-    get hasSave() { return Boolean(season); },
+    get hasSave() { return Boolean(season || profile); },
     get homeMeta() {
-      if (!season) return "TDM · One Flag · CTF · promotion awaits";
+      if (!season) return profile
+        ? `${profile.teamName} · contract ready`
+        : "TDM · One Flag · CTF · promotion awaits";
       if (season.status === "completed") return "Founders Circuit complete · review your run";
       return `Founders Circuit · Match ${season.currentRound + 1} of ${season.rounds.length}`;
     },
     open(): void {
       root.classList.remove("is-hidden");
       season = repository.load();
+      profile = profileRepository.load();
+      editingProfile = !profile;
+      profileReview = false;
+      profileDraft = null;
       selectedTeamId = null;
       render();
       resetMenuScroll();
@@ -566,6 +994,12 @@ function characterCard(
   characterId: string,
   badge?: string,
   showStats = true,
+  presentation?: {
+    readonly name: string;
+    readonly personality: string;
+    readonly visualStyle: string;
+    readonly skinId: V2PlayerSkinId;
+  },
 ): HTMLElement {
   const character = leagueCharacter(characterId);
   const stats = season.characterStats[characterId] ?? emptyStats(characterId);
@@ -575,17 +1009,51 @@ function characterCard(
   const assetBase = import.meta.env?.BASE_URL ?? "/";
   const card = document.createElement("article");
   card.className = "league-character";
-  const portraitAssetStem = playerSkinPortraitAssetStem(character.skinId);
+  const portraitAssetStem = playerSkinPortraitAssetStem(presentation?.skinId ?? character.skinId);
   card.innerHTML = `
     <div class="league-character-portrait" style="--skin-portrait:url('${assetBase}assets/ui/portraits/${portraitAssetStem}.png')"></div>
     <div class="league-character-info">
       <small>${badge ?? `${currentTeam?.shortName ?? "ARENA"} &middot; COSMETIC FIGHTER`}</small>
-      <strong>${character.name}</strong>
-      <span>${character.personality}</span>
-      <em>${character.visualStyle}</em>
+      <strong>${escapeHtml(presentation?.name ?? character.name)}</strong>
+      <span>${escapeHtml(presentation?.personality ?? character.personality)}</span>
+      <em>${escapeHtml(presentation?.visualStyle ?? character.visualStyle)}</em>
       ${showStats ? `<div class="league-character-stats" aria-label="Recorded career performance"><b>${average(stats.kills, stats.matches)}<i>K/M</i></b><b>${average(stats.deaths, stats.matches)}<i>D/M</i></b><b>${stats.flagCaptures}<i>CAP</i></b></div>` : ""}
     </div>`;
   return card;
+}
+
+function careerFighterOptionHtml(
+  characterId: string,
+  skinId: V2PlayerSkinId,
+  badge: string,
+  selected: boolean,
+  displayName?: string,
+  dataAttribute = "",
+  locked = false,
+): string {
+  const character = leagueCharacter(characterId);
+  const assetBase = import.meta.env?.BASE_URL ?? "/";
+  const portrait = `${assetBase}assets/ui/portraits/${playerSkinPortraitAssetStem(skinId)}.png`;
+  const tag = locked || !dataAttribute ? "article" : "button";
+  const attribute = dataAttribute ? ` ${dataAttribute}="${characterId === "nova-vale" ? skinId : characterId}"` : "";
+  const interaction = tag === "button"
+    ? ` type="button" aria-pressed="${selected}"`
+    : "";
+  return `<${tag} class="league-profile-fighter${selected ? " is-selected" : ""}${locked ? " is-locked" : ""}"${attribute}${interaction}>
+    <span class="league-profile-fighter-portrait" style="--skin-portrait:url('${portrait}')" aria-hidden="true"></span>
+    <span class="league-profile-fighter-copy"><small>${escapeHtml(badge)}</small><strong>${escapeHtml(displayName ?? character.name)}</strong><i>${escapeHtml(displayName ? playerSkinLabel(skinId) : character.visualStyle)}</i></span>
+    ${locked ? '<b aria-hidden="true">LOCKED</b>' : ""}
+  </${tag}>`;
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>'"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    '"': "&quot;",
+  })[character]!);
 }
 
 function average(value: number, matches: number): string {

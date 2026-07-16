@@ -19,8 +19,15 @@ import {
 } from "../src/playerSkinPreference";
 import { V2_PLAYER_SKINS } from "../src/v2Route";
 import {
+  CAREER_PROFILE_STORAGE_KEY,
+  createCareerProfile,
+  createCareerProfileRepository,
+  syncCareerUnlocks,
+} from "../src/careerProfile";
+import {
   LEAGUE_STORAGE_KEY,
   LEAGUE_TEAMS,
+  STARTER_WINGMAN_IDS,
   FOUNDERS_CIRCUIT_DISCIPLINES,
   FOUNDERS_CIRCUIT_TEAM_IDS,
   buildLeagueMatchSearch,
@@ -34,6 +41,7 @@ import {
   leagueCharacter,
   readLeagueMatchContext,
   simulateLeagueMatch,
+  selectLeagueWingman,
 } from "../src/meta/league";
 
 function completeCurrent(season: ReturnType<typeof createLeagueSeason>, blue = 3, red = 1) {
@@ -62,15 +70,22 @@ function leagueMenuFixture(): string {
           <button id="league-back"></button>
           <details id="league-season-tools">
             <summary id="league-season-options">Season Options</summary>
+            <button id="league-edit-profile"></button>
             <button id="league-reset"></button>
           </details>
         </header>
-        <div id="league-empty"><button id="league-new-season"></button></div>
-        <div id="league-intro-route"></div>
+        <section id="league-profile-setup" class="is-hidden"></section>
+        <div id="league-empty">
+          <h3 id="league-intro-title"></h3>
+          <img id="league-intro-emblem"><small id="league-intro-team-name"></small>
+          <div id="league-intro-route"></div>
+          <button id="league-new-season"></button>
+        </div>
         <div id="league-dashboard" class="is-hidden">
           <section id="league-next-match"></section>
           <span id="league-team-record"></span>
           <div id="league-player-roster"></div>
+          <button id="league-manage-wingman"></button>
           <div id="league-skin-preview"></div>
           <select id="league-skin-select"></select>
           <div id="league-standings"></div>
@@ -83,8 +98,21 @@ function leagueMenuFixture(): string {
         </div>
         <div id="league-progression" class="is-hidden"></div>
         <div id="league-recruitment" class="is-hidden"></div>
+        <div id="league-wingman-manager" class="is-hidden"></div>
       </div>
     </div>`;
+}
+
+function seedCareerProfile(): ReturnType<typeof createCareerProfile> {
+  const profile = createCareerProfile({
+    callsign: "Axiom",
+    teamName: "Rift Sentinels",
+    emblemId: "comet-lance",
+    captainSkinId: "alien-runner",
+    selectedWingmanId: "atlas-rho",
+  }, "2026-07-16T00:00:00.000Z");
+  createCareerProfileRepository(window.localStorage).save(profile);
+  return profile;
 }
 
 test("opening circuit creates a complete three-match single round robin", () => {
@@ -109,6 +137,42 @@ test("opening circuit creates a complete three-match single round robin", () => 
   }
   assert.ok(season.teamRosters["solar-wardens"]);
   assert.ok(season.teamRosters["void-runners"]);
+});
+
+test("career profile persists identity and exposes three free starter wingmen", () => {
+  window.localStorage.clear();
+  const profile = seedCareerProfile();
+  const loaded = createCareerProfileRepository(window.localStorage).load()!;
+  assert.deepEqual(loaded, profile);
+  assert.deepEqual(loaded.unlockedWingmanIds, STARTER_WINGMAN_IDS);
+  assert.equal(loaded.unlockedEmblemIds.length, 3);
+  const season = createLeagueSeason(73, "lyra-quell");
+  assert.equal(season.teamRosters[season.playerTeamId][1], "lyra-quell");
+  selectLeagueWingman(season, "dax-ember");
+  assert.equal(season.teamRosters[season.playerTeamId][1], "dax-ember");
+  window.localStorage.clear();
+});
+
+test("defeating a rival permanently unlocks its wingmen without changing simulation", () => {
+  const profile = createCareerProfile({
+    callsign: "Cipher",
+    teamName: "Orbit Guard",
+    emblemId: "orbit-talon",
+    captainSkinId: "briarhorn",
+    selectedWingmanId: "atlas-rho",
+  });
+  assert.equal(syncCareerUnlocks(profile, ["crimson-jackals"]), true);
+  assert.ok(profile.unlockedWingmanIds.includes("kael-voss"));
+  assert.ok(profile.unlockedWingmanIds.includes("mara-hex"));
+  assert.equal(syncCareerUnlocks(profile, ["crimson-jackals"]), false);
+  const season = createLeagueSeason(919);
+  const before = season.rounds[0].matches.find((match) =>
+    match.homeTeamId !== season.playerTeamId && match.awayTeamId !== season.playerTeamId
+  )!;
+  const baseline = createLeagueSeason(919);
+  const baselineMatch = baseline.rounds[0].matches.find((match) => match.id === before.id)!;
+  selectLeagueWingman(season, "kael-voss");
+  assert.deepEqual(simulateLeagueMatch(season, before), simulateLeagueMatch(baseline, baselineMatch));
 });
 
 test("league season prioritizes the two premium arenas", () => {
@@ -395,6 +459,9 @@ test("league branding assets expose normalized transparent square emblems", () =
     "teams/grave-circuit-emblem.png",
     "teams/solar-wardens-emblem.png",
     "teams/void-runners-emblem.png",
+    "player-emblems/comet-lance-emblem.png",
+    "player-emblems/orbit-talon-emblem.png",
+    "player-emblems/rift-crown-emblem.png",
     "arena-league-emblem.png",
   ]) {
     const png = readFileSync(new URL(`../public/assets/league/${filename}`, import.meta.url));
@@ -481,7 +548,7 @@ test("quick play mode cards sync the route select and support arrow navigation",
   assert.deepEqual(selected, ["one-flag", "tdm"]);
 });
 
-test("league menu starts a season and renders the actionable dashboard", () => {
+test("league profile reviews correctable choices before starting the season", () => {
   window.localStorage.clear();
   document.body.innerHTML = leagueMenuFixture();
   const controller = createLeagueMenuController({ onBack: () => {} });
@@ -490,8 +557,40 @@ test("league menu starts a season and renders the actionable dashboard", () => {
   menuRoot.scrollTop = 420;
   controller.open();
   assert.equal(menuRoot.scrollTop, 0);
+  assert.equal(document.getElementById("league-header-title")!.textContent, "Found Your Team");
+  assert.equal(document.getElementById("league-profile-setup")!.classList.contains("is-hidden"), false);
+  assert.equal(document.querySelectorAll("[data-emblem-id]").length, 3);
+  assert.equal(document.querySelectorAll("[data-skin-id]").length, 9);
+  assert.equal(document.querySelectorAll("[data-wingman-id]").length, 3);
+  assert.equal(document.querySelectorAll(".league-profile-fighter.is-locked").length, 6);
+  const callsign = document.getElementById("league-profile-callsign") as HTMLInputElement;
+  const teamName = document.getElementById("league-profile-team-name") as HTMLInputElement;
+  callsign.value = "Vector";
+  callsign.dispatchEvent(new Event("input"));
+  teamName.value = "Comet Guard";
+  teamName.dispatchEvent(new Event("input"));
+  document.querySelector<HTMLButtonElement>('[data-emblem-id="rift-crown"]')!.click();
+  document.querySelector<HTMLButtonElement>('[data-skin-id="ax9-mantis"]')!.click();
+  document.querySelector<HTMLButtonElement>('[data-wingman-id="lyra-quell"]')!.click();
+  document.getElementById("league-profile-review")!.click();
+  assert.equal(window.localStorage.getItem(CAREER_PROFILE_STORAGE_KEY), null);
+  assert.match(document.getElementById("league-profile-setup")!.textContent ?? "", /Comet Guard/);
+  document.getElementById("league-profile-edit")!.click();
+  const correctedName = document.getElementById("league-profile-team-name") as HTMLInputElement;
+  correctedName.value = "Comet Vanguard";
+  correctedName.dispatchEvent(new Event("input"));
+  document.getElementById("league-profile-review")!.click();
+  document.getElementById("league-profile-confirm")!.click();
+  const savedProfile = createCareerProfileRepository(window.localStorage).load()!;
+  assert.equal(savedProfile.teamName, "Comet Vanguard");
+  assert.equal(savedProfile.callsign, "Vector");
+  assert.equal(savedProfile.emblemId, "rift-crown");
+  assert.equal(savedProfile.captainSkinId, "ax9-mantis");
+  assert.equal(savedProfile.selectedWingmanId, "lyra-quell");
+  assert.equal(controller.hasSave, true);
   assert.equal(document.querySelectorAll(".league-intro-stop").length, 3);
   assert.equal(document.getElementById("league-header-title")!.textContent, "Founders Circuit");
+  assert.equal(document.getElementById("league-intro-title")!.textContent, "Lead Comet Vanguard");
   menuRoot.scrollTop = 380;
   document.getElementById("league-new-season")!.click();
   assert.equal(menuRoot.scrollTop, 0);
@@ -519,11 +618,14 @@ test("league menu starts a season and renders the actionable dashboard", () => {
   );
   assert.match(leagueTeamEmblemUrl("crimson-jackals"), /league\/teams\/crimson-jackals-emblem\.png$/);
   assert.equal(document.querySelectorAll("#league-player-roster .league-character").length, 2);
+  assert.match(document.getElementById("league-player-roster")!.textContent ?? "", /Vector/);
+  assert.match(document.getElementById("league-player-roster")!.textContent ?? "", /Lyra Quell/);
   const skinSelect = document.getElementById("league-skin-select") as HTMLSelectElement;
   assert.equal(skinSelect.options.length, 9);
   skinSelect.value = "ax9-mantis";
   skinSelect.dispatchEvent(new Event("change"));
   assert.equal(window.localStorage.getItem(PLAYER_SKIN_STORAGE_KEY), "ax9-mantis");
+  assert.equal(createCareerProfileRepository(window.localStorage).load()?.captainSkinId, "ax9-mantis");
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /MATCH 1 OF 3/);
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /TEAM DEATHMATCH 2V2/);
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /EXPECTED LINEUP/);
@@ -531,6 +633,20 @@ test("league menu starts a season and renders the actionable dashboard", () => {
   assert.equal(document.querySelectorAll(".league-season-stop").length, 3);
   assert.equal(document.querySelectorAll(".league-season-stop.is-current").length, 1);
   assert.match(document.getElementById("league-pyramid")!.textContent ?? "", /Challenger League/);
+  document.getElementById("league-manage-wingman")!.click();
+  const wingmanManager = document.getElementById("league-wingman-manager")!;
+  assert.equal(wingmanManager.classList.contains("is-hidden"), false);
+  assert.equal(wingmanManager.querySelectorAll("[data-manager-wingman-id]").length, 3);
+  assert.equal(wingmanManager.querySelectorAll(".league-profile-fighter.is-locked").length, 6);
+  wingmanManager.querySelector<HTMLButtonElement>('[data-manager-wingman-id="dax-ember"]')!.click();
+  assert.equal(createCareerProfileRepository(window.localStorage).load()?.selectedWingmanId, "lyra-quell");
+  document.getElementById("league-wingman-cancel")!.click();
+  assert.equal(createLeagueRepository(window.localStorage).load()?.teamRosters["iron-vanguard"][1], "lyra-quell");
+  document.getElementById("league-manage-wingman")!.click();
+  wingmanManager.querySelector<HTMLButtonElement>('[data-manager-wingman-id="dax-ember"]')!.click();
+  document.getElementById("league-wingman-apply")!.click();
+  assert.equal(createCareerProfileRepository(window.localStorage).load()?.selectedWingmanId, "dax-ember");
+  assert.equal(createLeagueRepository(window.localStorage).load()?.teamRosters["iron-vanguard"][1], "dax-ember");
   const resetDialog = document.getElementById("league-reset-confirm")!;
   document.getElementById("league-reset")!.click();
   assert.equal(resetDialog.classList.contains("is-hidden"), false);
@@ -565,6 +681,7 @@ test("league menu starts a season and renders the actionable dashboard", () => {
 
 test("league progression separates match outcome from rival-driven table movement", () => {
   window.localStorage.clear();
+  seedCareerProfile();
   document.body.innerHTML = leagueMenuFixture();
   const repository = createLeagueRepository(window.localStorage);
   const season = createLeagueSeason(88);
@@ -594,6 +711,7 @@ test("league progression separates match outcome from rival-driven table movemen
 
 test("next-match dossier shows recorded opponent performance when scouting data exists", () => {
   window.localStorage.clear();
+  seedCareerProfile();
   document.body.innerHTML = leagueMenuFixture();
   const repository = createLeagueRepository(window.localStorage);
   const season = createLeagueSeason(505);
@@ -620,6 +738,7 @@ test("next-match dossier shows recorded opponent performance when scouting data 
 
 test("recruitment UI compares cosmetic identities and uses explicit Recruit/Keep actions", () => {
   window.localStorage.clear();
+  seedCareerProfile();
   document.body.innerHTML = leagueMenuFixture();
   const repository = createLeagueRepository(window.localStorage);
   const season = createLeagueSeason(4242);
