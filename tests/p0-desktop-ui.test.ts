@@ -93,8 +93,23 @@ test("desktop P0 UI contract keeps Career primary and uses one outer menu scroll
   assert.match(polishCss, /prefers-reduced-motion/);
   assert.match(html, /id="v2-menu-mode-picker"[\s\S]*role="radiogroup"/);
   assert.equal((html.match(/class="v2-quick-mode-option"/g) ?? []).length, 3);
+  assert.equal((html.match(/class="v2-quick-mode-art"/g) ?? []).length, 3);
+  for (const filename of [
+    "team-deathmatch.png",
+    "classic-ctf.png",
+    "one-flag.png",
+  ]) {
+    assert.match(html, new RegExp(`assets/ui/modes/${filename}`));
+    const png = readFileSync(
+      new URL(`../public/assets/ui/modes/${filename}`, import.meta.url),
+    );
+    assert.equal(png.toString("ascii", 1, 4), "PNG", `${filename} signature`);
+    assert.equal(png.readUInt32BE(16), 256, `${filename} width`);
+    assert.equal(png.readUInt32BE(20), 256, `${filename} height`);
+  }
   assert.match(polishCss, /\.v2-quick-mode-picker/);
   assert.match(polishCss, /\.v2-quick-mode-option\.is-selected/);
+  assert.match(polishCss, /\.v2-quick-mode-art/);
   assert.match(polishCss, /\.v2-subpage-title h2\s*\{[^}]*font-weight:\s*800[^}]*letter-spacing:\s*\.025em[^}]*word-spacing:\s*\.12em/);
   assert.match(polishCss, /\.league-character-info > span\s*\{[^}]*font-size:\s*11px[^}]*line-height:\s*1\.35/);
   assert.match(polishCss, /\.league-table-row\s*\{[^}]*font-size:\s*12px/);
