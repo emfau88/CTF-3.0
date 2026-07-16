@@ -5,6 +5,7 @@ const assetUrl = (file: string) => `${import.meta.env.BASE_URL}assets/${file}`;
 export interface ArenaAssetPreloadOptions {
   readonly includeJungleTemple?: boolean;
   readonly includeHelixCanopy?: boolean;
+  readonly playerHudPortraitAssetStem?: string;
 }
 
 export function preloadArenaAssets(
@@ -37,6 +38,12 @@ export function preloadArenaAssets(
   scene.load.image("uiRailButton", assetUrl("ui-rail-button.png"));
   scene.load.image("uiRailBadge", assetUrl("ui-rail-badge.png"));
   scene.load.image("uiWhipButton", assetUrl("arc-lash-v2.png"));
+  if (options.playerHudPortraitAssetStem) {
+    scene.load.image(
+      "playerHudPortrait",
+      assetUrl(`ui/portraits/${options.playerHudPortraitAssetStem}.png`),
+    );
+  }
   scene.load.image("railImpact", assetUrl("rail-impact.png"));
   scene.load.image("flagRed", assetUrl("flag-red.png"));
   scene.load.image("flagBlue", assetUrl("flag-blue.png"));

@@ -308,15 +308,20 @@
         </div>
       </div>
     </div>
-    <button id="v2-game-menu-button" class="v2-game-menu-button is-hidden" type="button">
-      Menu
-    </button>
-    <button id="v2-audio-button" class="v2-game-menu-button v2-audio-button is-hidden" type="button" aria-pressed="false">
-      SFX ON
-    </button>
-    <button id="v2-stats-button" class="v2-game-menu-button v2-stats-button is-hidden" type="button">
-      Stats
-    </button>
+    <div id="v2-game-utility" class="v2-game-utility is-hidden" role="toolbar" aria-label="Match controls">
+      <button id="v2-audio-button" class="v2-game-menu-button v2-audio-button" type="button" aria-pressed="false">
+        <img src="./assets/ui/hud-audio.svg" alt="" aria-hidden="true" />
+        <span id="v2-audio-label">SFX ON</span>
+      </button>
+      <button id="v2-stats-button" class="v2-game-menu-button v2-stats-button is-hidden" type="button">
+        <img src="./assets/ui/hud-stats.svg" alt="" aria-hidden="true" />
+        <span>Stats</span>
+      </button>
+      <button id="v2-game-menu-button" class="v2-game-menu-button" type="button">
+        <img src="./assets/ui/hud-menu.svg" alt="" aria-hidden="true" />
+        <span>Menu</span>
+      </button>
+    </div>
     <div id="v2-respawn-status" class="v2-respawn-status is-hidden" role="status"></div>
     <div id="hud">
       <div class="score">

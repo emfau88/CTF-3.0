@@ -47,11 +47,16 @@ import { shouldUseGameplayV2Shell } from "../src/bootSceneSelection";
 import { buildV2MatchSearch, readV2RouteState } from "../src/v2Route";
 import { calculateV2TouchLayout } from "../src/adapters/phaser/v2TouchLayout";
 import { resolveDesktopAimDirection } from "../src/adapters/phaser/desktopAim";
-import { formatArenaObjectiveAlert } from "../src/adapters/phaser/PhaserArenaHudPort";
+import {
+  formatArenaModeLine,
+  formatArenaObjectiveAlert,
+} from "../src/adapters/phaser/PhaserArenaHudPort";
+import { calculateArenaHudLayout } from "../src/adapters/phaser/arenaHudLayout";
 import { readArenaKillNotice } from "../src/adapters/phaser/arenaKillFeed";
 import { calculateMatchImpact } from "../src/v2Menu";
 import {
   calculateDesktopWeaponLayout,
+  calculateWeaponStripLayout,
   cooldownWipeState,
   formatCooldownSeconds,
 } from "../src/adapters/phaser/weaponHudLayout";
@@ -852,6 +857,62 @@ test("desktop weapon pickups use stable ordered slots", () => {
   );
 });
 
+test("weapon strip remains compact and supports five future slots", () => {
+  for (const size of [
+    { width: 1024, height: 768 },
+    { width: 1280, height: 720 },
+    { width: 1920, height: 1080 },
+  ]) {
+    const layout = calculateWeaponStripLayout(size.width, size.height, 5);
+    assert.equal(layout.slots.length, 5);
+    assert.ok(layout.width <= 372);
+    assert.ok(layout.x >= 6);
+    assert.ok(layout.x + layout.width <= size.width - 6);
+    assert.equal(layout.y + layout.height, size.height);
+    for (let index = 1; index < layout.slots.length; index += 1) {
+      assert.ok(layout.slots[index - 1].x < layout.slots[index].x);
+      assert.equal(layout.slots[index - 1].y, layout.slots[index].y);
+    }
+  }
+});
+
+test("arena HUD layout preserves map space across desktop and tablet sizes", () => {
+  for (const size of [
+    { width: 1024, height: 768 },
+    { width: 1280, height: 720 },
+    { width: 1366, height: 768 },
+    { width: 1600, height: 900 },
+    { width: 1920, height: 1080 },
+    { width: 2560, height: 1080 },
+  ]) {
+    const layout = calculateArenaHudLayout(size.width, size.height, false);
+    assert.ok(layout.header.x >= 8);
+    assert.ok(layout.header.x + layout.header.width <= size.width - 8);
+    assert.ok(layout.header.height <= 64);
+    assert.ok(layout.objectiveY > layout.header.y);
+    assert.ok(layout.playerStatus.x >= 8);
+    assert.ok(
+      layout.playerStatus.y + layout.playerStatus.height <= size.height - 8,
+    );
+    assert.ok(layout.killFeed.x + layout.killFeed.width <= size.width - 8);
+  }
+
+  const tablet = calculateArenaHudLayout(1024, 768, true);
+  assert.equal(tablet.playerStatusPortrait, false);
+  assert.ok(tablet.playerStatus.y > tablet.header.y + tablet.header.height);
+
+  const micro = calculateArenaHudLayout(480, 270, false);
+  assert.equal(micro.density, "micro");
+  assert.equal(micro.playerStatusVisible, false);
+  assert.ok(micro.killFeed.y > micro.header.y + micro.header.height + 70);
+
+  const shortDesktop = calculateArenaHudLayout(1600, 500, false);
+  assert.ok(
+    shortDesktop.killFeed.y >
+      shortDesktop.header.y + shortDesktop.header.height + 40,
+  );
+});
+
 test("one-flag neutral cloth stays character-scaled", () => {
   const displayedClothFrameSize =
     256 * ONE_FLAG_NEUTRAL_BANNER_PRESENTATION.clothScale;
@@ -1251,6 +1312,10 @@ test("arena HUD hides home flags and only reports active CTF events", () => {
   assert.equal(
     formatArenaObjectiveAlert(mode.getHudState(createWorldSnapshot(world)), false),
     "RED FLAG TAKEN",
+  );
+  assert.match(
+    formatArenaModeLine(mode.getHudState(createWorldSnapshot(world))),
+    /^CLASSIC CTF · /,
   );
 });
 

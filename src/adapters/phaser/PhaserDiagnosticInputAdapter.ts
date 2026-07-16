@@ -17,9 +17,12 @@ import { drawRadialCooldownWipe } from "./PhaserRadialCooldown";
 import { resolveDesktopAimDirection } from "./desktopAim";
 import {
   calculateDesktopWeaponLayout,
+  calculateWeaponStripLayout,
   formatCooldownSeconds,
+  type WeaponStripLayout,
   weaponIconScale,
 } from "./weaponHudLayout";
+import { drawWeaponStrip } from "./hudVisualDesign";
 
 interface DiagnosticKeys {
   readonly up: Phaser.Input.Keyboard.Key;
@@ -47,6 +50,7 @@ interface DiagnosticKeys {
 export type PhaserInputProfile = "diagnostic" | "tdm" | "tdm-solo";
 
 type WeaponId = "rocket" | "rail" | "whip";
+const WEAPON_IDS = ["rocket", "rail", "whip"] as const;
 
 interface DesktopWeaponControl {
   x: number;
@@ -92,6 +96,8 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     rail: createDesktopWeaponControl(),
     whip: createDesktopWeaponControl(),
   };
+  private weaponStripLayout: WeaponStripLayout =
+    calculateWeaponStripLayout(1280, 720, WEAPON_IDS.length);
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -380,13 +386,18 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   }
 
   private layout(gameSize: Phaser.Structs.Size): void {
+    this.weaponStripLayout = calculateWeaponStripLayout(
+      gameSize.width,
+      gameSize.height,
+      WEAPON_IDS.length,
+    );
     const positions = calculateDesktopWeaponLayout(
       gameSize.width,
       gameSize.height,
     );
     const micro = positions.rocket.r <= 18;
     const compact = positions.rocket.r <= 25;
-    for (const weaponId of ["rocket", "rail", "whip"] as const) {
+    for (const weaponId of WEAPON_IDS) {
       Object.assign(this.weaponControls[weaponId], positions[weaponId], {
         radius: positions[weaponId].r,
       });
@@ -409,22 +420,21 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   private draw(): void {
     this.graphics.clear();
     this.cooldownGraphics.clear();
-    if (["rocket", "rail", "whip"].some((weaponId) =>
-      this.weaponAvailable(weaponId as WeaponId)
-    )) {
-      const first = this.weaponControls.rocket;
-      const last = this.weaponControls.whip;
-      const padding = first.radius <= 18 ? 4 : first.radius <= 25 ? 6 : 7;
-      const left = first.x - first.radius - padding;
-      const top = first.y - first.radius - padding;
-      const width = last.x - first.x + first.radius + last.radius + padding * 2;
-      const height = first.radius * 2 + padding * 2;
-      this.graphics.fillStyle(0x08131d, .52)
-        .fillRoundedRect(left, top, width, height, 13);
-      this.graphics.lineStyle(1, 0x8ea6b6, .22)
-        .strokeRoundedRect(left, top, width, height, 13);
+    if (WEAPON_IDS.some((weaponId) => this.weaponAvailable(weaponId))) {
+      drawWeaponStrip(this.graphics, {
+        ...this.weaponStripLayout,
+        slots: WEAPON_IDS.map((weaponId) => {
+          const control = this.weaponControls[weaponId];
+          return {
+            x: control.x,
+            y: control.y,
+            radius: control.radius,
+            available: this.weaponAvailable(weaponId),
+          };
+        }),
+      });
     }
-    for (const weaponId of ["rocket", "rail", "whip"] as const) {
+    for (const weaponId of WEAPON_IDS) {
       const status = this.weaponStatus?.(weaponId) ?? {
         ammo: 0,
         cooldownMs: 0,
@@ -528,7 +538,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       fontSize: "11px",
       fontStyle: "bold",
       color: "#eaf7ff",
-      backgroundColor: "#17232d",
+      backgroundColor: "#0b1824",
       padding: { x: 4, y: 2 },
     }).setOrigin(.5).setScrollFactor(0).setDepth(1104).setVisible(false);
   }

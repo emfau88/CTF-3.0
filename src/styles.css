@@ -2,6 +2,14 @@
   --font-ui: "Inter Variable", Inter, Arial, sans-serif;
   --font-display: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
   --font-mono: Consolas, "Courier New", monospace;
+  --hud-panel: rgb(7 18 29 / .9);
+  --hud-panel-raised: rgb(12 27 41 / .94);
+  --hud-border: rgb(151 174 190 / .3);
+  --hud-cyan: #61c6eb;
+  --hud-red: #f06b70;
+  --hud-armor: #d8b867;
+  --hud-text: #f3f7f9;
+  --hud-muted: #91a6b4;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -606,30 +614,67 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   box-shadow: 0 26px 80px rgb(0 0 0 / .38);
   text-align: center;
 }
-.v2-game-menu-button {
+.v2-game-utility {
   position: fixed;
   z-index: 1900;
-  top: max(72px, calc(env(safe-area-inset-top) + 64px));
+  top: max(10px, env(safe-area-inset-top));
   right: max(10px, env(safe-area-inset-right));
-  min-width: 58px;
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--hud-border);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / .045), transparent 35%),
+    var(--hud-panel);
+  box-shadow: 0 10px 28px rgb(0 0 0 / .28);
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  backdrop-filter: blur(8px);
+}
+.v2-game-menu-button {
+  position: relative;
+  min-width: 67px;
   height: 30px;
-  border: 1px solid rgb(255 255 255 / .2);
-  border-radius: 7px;
-  background: rgb(23 48 45 / .86);
-  color: #f5fbfa;
-  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--hud-text);
+  font-family: var(--font-ui);
+  font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: .06em;
-  box-shadow: 0 6px 18px rgb(0 0 0 / .16);
+  letter-spacing: .08em;
   cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.v2-game-menu-button img { width: 15px; height: 15px; flex: 0 0 auto; opacity: .92; }
+.v2-game-menu-button:hover {
+  border-color: rgb(97 198 235 / .24);
+  background: rgb(97 198 235 / .08);
+  color: white;
+}
+.v2-game-menu-button:focus-visible {
+  outline: 2px solid var(--hud-cyan);
+  outline-offset: 1px;
 }
 .v2-game-menu-button:active { transform: translateY(1px); }
-.v2-audio-button { top: max(38px, calc(env(safe-area-inset-top) + 30px)); min-width: 74px; }
-.v2-stats-button {
-  top: max(38px, calc(env(safe-area-inset-top) + 30px));
-  right: max(92px, calc(env(safe-area-inset-right) + 82px));
-  min-width: 64px;
+.v2-audio-button.is-muted { color: var(--hud-muted); }
+.v2-audio-button.is-muted img { opacity: .48; }
+.v2-audio-button.is-muted::after {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 14px;
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--hud-red);
+  rotate: -42deg;
+  transform-origin: center;
 }
 .v2-stats-card { width: min(660px, calc(100vw - 28px)); }
 .v2-stats-hold-hint { display: none; margin: -7px 0 2px; color: #87a39d; font-size: 11px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
@@ -732,17 +777,18 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   position: fixed;
   z-index: 1880;
   left: 50%;
-  bottom: max(18px, env(safe-area-inset-bottom));
+  bottom: max(84px, calc(env(safe-area-inset-bottom) + 78px));
   translate: -50% 0;
   padding: 9px 15px;
-  border: 1px solid rgb(255 255 255 / .22);
-  border-radius: 8px;
-  background: rgb(23 48 45 / .9);
-  color: white;
+  border: 1px solid var(--hud-border);
+  border-top-color: rgb(216 184 103 / .7);
+  border-radius: 3px;
+  background: var(--hud-panel-raised);
+  color: var(--hud-text);
   font-size: 13px;
   font-weight: 900;
   letter-spacing: .08em;
-  box-shadow: 0 8px 24px rgb(0 0 0 / .25);
+  box-shadow: 0 8px 24px rgb(0 0 0 / .32);
 }
 .v2-stats-card { max-height: calc(100vh - 16px); overflow-y: auto; }
 #hud { position: fixed; inset: 0; pointer-events: none; color: #17302d; font-size: 13px; }
@@ -856,28 +902,41 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   .hud-actions button { width: 30px; height: 30px; font-size: 17px; }
   #status-toast { top: max(45px, calc(env(safe-area-inset-top) + 41px)); padding: 6px 10px; font-size: 11px; }
   .settings-panel { top: max(45px, calc(env(safe-area-inset-top) + 41px)); max-height: calc(100vh - 54px); overflow-y: auto; }
-  .v2-game-menu-button {
-    top: max(62px, calc(env(safe-area-inset-top) + 56px));
-    min-width: 54px;
-    height: 28px;
-    font-size: 10px;
+  .v2-game-utility {
+    top: max(70px, calc(env(safe-area-inset-top) + 62px));
   }
-  .v2-audio-button {
-    top: max(32px, calc(env(safe-area-inset-top) + 24px));
-    min-width: 68px;
+  .v2-game-menu-button { min-width: 34px; width: 34px; height: 28px; padding: 0; }
+  .v2-game-menu-button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
-  .v2-stats-button {
-    top: max(32px, calc(env(safe-area-inset-top) + 24px));
-    right: max(80px, calc(env(safe-area-inset-right) + 72px));
-    min-width: 56px;
-  }
+  .v2-audio-button.is-muted::after { left: 9px; top: 13px; }
   .v2-stats-card { padding: 14px; gap: 9px; }
   .v2-stats-card h2 { margin: 0; font-size: 24px; }
   .v2-stats-table { font-size: 10px; }
   .v2-stats-table th,
   .v2-stats-table td { padding: 3px 5px; }
   .v2-stats-card .v2-flow-actions button { min-height: 34px; }
-  .v2-respawn-status { bottom: max(8px, env(safe-area-inset-bottom)); padding: 7px 11px; font-size: 11px; }
+  .v2-respawn-status { bottom: max(70px, calc(env(safe-area-inset-bottom) + 64px)); padding: 7px 11px; font-size: 11px; }
+}
+@media (max-width: 700px) {
+  .v2-game-utility {
+    top: max(70px, calc(env(safe-area-inset-top) + 62px));
+  }
+  .v2-game-menu-button { min-width: 34px; width: 34px; padding: 0; }
+  .v2-game-menu-button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .v2-audio-button.is-muted::after { left: 9px; }
 }
 @media (hover: none) and (pointer: coarse) and (orientation: portrait) {
   .v2-main-menu {

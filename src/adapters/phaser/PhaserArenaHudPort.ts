@@ -7,7 +7,12 @@ import type {
   ModeHudState,
   WorldSnapshot,
 } from "../../core";
-import { UI_FONT_FAMILY } from "../../uiTypography";
+import { playerSkinLabel } from "../../playerSkinPreference";
+import type { V2PlayerSkinId } from "../../v2Route";
+import {
+  DISPLAY_FONT_FAMILY,
+  UI_FONT_FAMILY,
+} from "../../uiTypography";
 import type { FrameDiagnosticsPort } from "../debugging";
 import type { HudPort } from "../hud";
 import {
@@ -15,27 +20,21 @@ import {
   type ArenaKillCause,
   type ArenaKillNotice,
 } from "./arenaKillFeed";
+import {
+  calculateArenaHudLayout,
+  type ArenaHudDensity,
+  type ArenaHudRect,
+} from "./arenaHudLayout";
+import {
+  drawHudBar,
+  drawTechnicalPanel,
+  HUD_COLORS,
+  HUD_CSS_COLORS,
+} from "./hudVisualDesign";
 
 const HUD_DEPTH = 1000;
-const PANEL_FILL = 0x102320;
-const PANEL_STROKE = 0xffffff;
-const BLUE = "#8db7ff";
-const RED = "#ff9e91";
-const NEUTRAL = "#f5fbfa";
-const MUTED = "#a9bfba";
-const SHOW_PLAYER_PANELS = false;
 const KILL_FEED_LIMIT = 3;
 const KILL_FEED_LIFETIME_MS = 4_200;
-
-interface PlayerPanel {
-  readonly background: Phaser.GameObjects.Graphics;
-  readonly bars: Phaser.GameObjects.Graphics;
-  readonly label: Phaser.GameObjects.Text;
-  readonly state: Phaser.GameObjects.Text;
-  readonly health: Phaser.GameObjects.Text;
-  readonly armor: Phaser.GameObjects.Text;
-  readonly ammo: Phaser.GameObjects.Text;
-}
 
 type TeamCommandButtons = Record<
   ClassicCtfManualTeamCommand,
@@ -55,49 +54,100 @@ interface ActiveKillNotice {
   readonly expiresAt: number;
 }
 
+interface PlayerStatusView {
+  readonly background: Phaser.GameObjects.Graphics;
+  readonly portraitFrame: Phaser.GameObjects.Graphics;
+  readonly bars: Phaser.GameObjects.Graphics;
+  readonly portrait: Phaser.GameObjects.Image;
+  readonly name: Phaser.GameObjects.Text;
+  readonly state: Phaser.GameObjects.Text;
+  readonly healthLabel: Phaser.GameObjects.Text;
+  readonly healthValue: Phaser.GameObjects.Text;
+  readonly armorLabel: Phaser.GameObjects.Text;
+  readonly armorValue: Phaser.GameObjects.Text;
+}
+
 export class PhaserArenaHudPort
 implements HudPort, FrameDiagnosticsPort {
-  private readonly scorePanel: Phaser.GameObjects.Graphics;
+  private readonly headerPanel: Phaser.GameObjects.Graphics;
+  private readonly blueLabel: Phaser.GameObjects.Text;
   private readonly blueScoreText: Phaser.GameObjects.Text;
   private readonly redScoreText: Phaser.GameObjects.Text;
+  private readonly redLabel: Phaser.GameObjects.Text;
   private readonly timerText: Phaser.GameObjects.Text;
+  private readonly modeText: Phaser.GameObjects.Text;
+  private readonly objectivePanel: Phaser.GameObjects.Graphics;
   private readonly objectiveText: Phaser.GameObjects.Text;
   private readonly teamCommandPanel: Phaser.GameObjects.Graphics;
   private readonly teamCommandStatus: Phaser.GameObjects.Text;
   private readonly teamCommandButtons: TeamCommandButtons;
   private readonly killFeedViews: readonly KillFeedView[];
-  private readonly bluePanel: PlayerPanel;
-  private readonly redPanel: PlayerPanel;
-  private readonly resultText: Phaser.GameObjects.Text;
+  private readonly playerStatus: PlayerStatusView;
   private hudState: ModeHudState | null = null;
   private snapshot: WorldSnapshot | null = null;
   private activeTeamCommand: ClassicCtfTeamCommand = "auto";
   private activeKillNotices: ActiveKillNotice[] = [];
   private readonly processedKillEventIds = new Set<string>();
+  private previousBlueScore: number | null = null;
+  private previousRedScore: number | null = null;
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly mobileControls = false,
     private readonly botOpponent = false,
-    private readonly requestRestart?: () => void,
+    private readonly playerSkinId: V2PlayerSkinId = "alien-runner",
     private readonly requestTeamCommand?: (
       command: ClassicCtfManualTeamCommand,
     ) => void,
   ) {
-    this.scorePanel = createGraphics(scene);
-    this.blueScoreText = createText(scene, BLUE, "18px", "bold")
-      .setOrigin(1, 0);
-    this.redScoreText = createText(scene, RED, "18px", "bold");
-    this.timerText = createText(scene, NEUTRAL, "15px", "bold")
-      .setOrigin(.5, 0);
-    this.objectiveText = createText(scene, NEUTRAL, "12px", "bold")
-      .setOrigin(.5, 0)
-      .setPadding(8, 4)
-      .setBackgroundColor("#102320dc")
-      .setVisible(false);
+    this.headerPanel = createGraphics(scene);
+    this.blueLabel = createText(
+      scene,
+      HUD_CSS_COLORS.blue,
+      "12px",
+      "bold",
+    ).setOrigin(0, 0);
+    this.blueScoreText = createDisplayText(
+      scene,
+      HUD_CSS_COLORS.blue,
+      "28px",
+    ).setOrigin(.5, 0);
+    this.redScoreText = createDisplayText(
+      scene,
+      HUD_CSS_COLORS.red,
+      "28px",
+    ).setOrigin(.5, 0);
+    this.redLabel = createText(
+      scene,
+      HUD_CSS_COLORS.red,
+      "12px",
+      "bold",
+    ).setOrigin(1, 0);
+    this.timerText = createDisplayText(
+      scene,
+      HUD_CSS_COLORS.neutral,
+      "24px",
+    ).setOrigin(.5, 0);
+    this.modeText = createText(
+      scene,
+      HUD_CSS_COLORS.muted,
+      "9px",
+      "bold",
+    ).setOrigin(.5, 0).setLetterSpacing(.8);
+    this.objectivePanel = createGraphics(scene).setVisible(false);
+    this.objectiveText = createText(
+      scene,
+      HUD_CSS_COLORS.neutral,
+      "11px",
+      "bold",
+    ).setOrigin(.5, 0).setLetterSpacing(.5).setVisible(false);
     this.teamCommandPanel = createGraphics(scene);
-    this.teamCommandStatus = createText(scene, "#e6f2ef", "11px", "bold")
-      .setVisible(false);
+    this.teamCommandStatus = createText(
+      scene,
+      HUD_CSS_COLORS.neutral,
+      "10px",
+      "bold",
+    ).setVisible(false).setLetterSpacing(.5);
     this.teamCommandButtons = {
       defend: this.createTeamCommandButton("defend", "1 DEFEND"),
       follow: this.createTeamCommandButton("follow", "2 FOLLOW"),
@@ -107,20 +157,7 @@ implements HudPort, FrameDiagnosticsPort {
       { length: KILL_FEED_LIMIT },
       () => createKillFeedView(scene),
     );
-    this.bluePanel = createPlayerPanel(scene, BLUE);
-    this.redPanel = createPlayerPanel(scene, RED);
-    this.resultText = createText(scene, NEUTRAL, "30px", "bold")
-      .setOrigin(.5)
-      .setPadding(22, 16)
-      .setAlign("center")
-      .setBackgroundColor("#102320ee")
-      .setVisible(false)
-      .setDepth(HUD_DEPTH + 1);
-
-    if (mobileControls && requestRestart) {
-      this.resultText.setInteractive({ useHandCursor: true });
-      this.resultText.on("pointerup", this.handleRestart);
-    }
+    this.playerStatus = createPlayerStatusView(scene);
   }
 
   render(state: ModeHudState, snapshot: WorldSnapshot): void {
@@ -149,20 +186,28 @@ implements HudPort, FrameDiagnosticsPort {
     this.activeTeamCommand = "auto";
     this.activeKillNotices = [];
     this.processedKillEventIds.clear();
-    this.resultText.setVisible(false);
+    this.previousBlueScore = null;
+    this.previousRedScore = null;
     this.teamCommandPanel.setVisible(false);
     this.teamCommandStatus.setVisible(false);
     for (const button of Object.values(this.teamCommandButtons)) {
       button.setVisible(false);
     }
     for (const view of this.killFeedViews) setKillFeedViewVisible(view, false);
+    setPlayerStatusVisible(this.playerStatus, false);
   }
 
   dispose(): void {
-    this.scorePanel.destroy();
+    this.scene.tweens.killTweensOf(this.blueScoreText);
+    this.scene.tweens.killTweensOf(this.redScoreText);
+    this.headerPanel.destroy();
+    this.blueLabel.destroy();
     this.blueScoreText.destroy();
     this.redScoreText.destroy();
+    this.redLabel.destroy();
     this.timerText.destroy();
+    this.modeText.destroy();
+    this.objectivePanel.destroy();
     this.objectiveText.destroy();
     this.teamCommandPanel.destroy();
     this.teamCommandStatus.destroy();
@@ -170,25 +215,22 @@ implements HudPort, FrameDiagnosticsPort {
       button.destroy();
     }
     for (const view of this.killFeedViews) destroyKillFeedView(view);
-    destroyPlayerPanel(this.bluePanel);
-    destroyPlayerPanel(this.redPanel);
-    this.resultText.destroy();
+    destroyPlayerStatusView(this.playerStatus);
   }
-
-  private readonly handleRestart = (): void => {
-    if (this.hudState?.phase === "ended") {
-      this.requestRestart?.();
-    }
-  };
 
   private createTeamCommandButton(
     command: ClassicCtfManualTeamCommand,
     label: string,
   ): Phaser.GameObjects.Text {
-    const button = createText(this.scene, MUTED, "11px", "bold")
+    const button = createText(
+      this.scene,
+      HUD_CSS_COLORS.neutral,
+      "10px",
+      "bold",
+    )
       .setText(label)
-      .setPadding(5, 4)
-      .setBackgroundColor("#17302dcc")
+      .setPadding(6, 4)
+      .setBackgroundColor("#0d1d2ad9")
       .setVisible(false);
     if (this.requestTeamCommand) {
       button.setInteractive({ useHandCursor: true });
@@ -211,81 +253,170 @@ implements HudPort, FrameDiagnosticsPort {
   }
 
   private refresh(): void {
-    if (!this.hudState || !this.snapshot) {
-      return;
-    }
+    if (!this.hudState || !this.snapshot) return;
     const width = this.scene.scale.width;
     const height = this.scene.scale.height;
-    const compact = width < 700 || height < 500;
+    const layout = calculateArenaHudLayout(
+      width,
+      height,
+      this.mobileControls,
+    );
     const blueScore = this.hudState.scores.find((entry) =>
       entry.teamId === "blue"
     )?.score ?? 0;
     const redScore = this.hudState.scores.find((entry) =>
       entry.teamId === "red"
     )?.score ?? 0;
-    const blue = this.snapshot.actors.find((actor) =>
-      actor.teamId === "blue" && actor.kind === "player"
+    const player = this.snapshot.actors.find((actor) =>
+      actor.id === "blue-player"
     );
-    const red = this.snapshot.actors.find((actor) =>
-      actor.teamId === "red" && actor.kind === "player"
+    const objective = formatArenaObjectiveAlert(
+      this.hudState,
+      layout.density !== "standard",
     );
-    const objective = formatArenaObjectiveAlert(this.hudState, compact);
 
     this.layoutMatchHeader(
       this.hudState,
-      width,
-      compact,
+      layout.header,
+      layout.density,
       blueScore,
       redScore,
-      objective,
     );
-    this.layoutPlayerPanels(width, height, compact, blue, red);
-    this.layoutTeamCommand(this.hudState, width, compact);
-    this.layoutKillFeed(width, compact, Boolean(objective));
-    this.layoutResult(width, height);
+    this.layoutObjective(width, layout.objectiveY, layout.density, objective);
+    this.layoutPlayerStatus(layout.playerStatus, layout, player);
+    this.layoutTeamCommand(this.hudState, layout.density);
+    this.layoutKillFeed(layout.killFeed, layout.killFeedVisible);
   }
 
   private layoutMatchHeader(
     state: ModeHudState,
-    width: number,
-    compact: boolean,
+    rect: ArenaHudRect,
+    density: ArenaHudDensity,
     blueScore: number,
     redScore: number,
+  ): void {
+    drawTechnicalPanel(
+      this.headerPanel,
+      rect.x,
+      rect.y,
+      rect.width,
+      rect.height,
+      {
+        fillAlpha: .91,
+        borderAlpha: .32,
+        cut: density === "micro" ? 6 : 10,
+        raised: true,
+      },
+    );
+    const centerX = rect.x + rect.width / 2;
+    const primaryY = rect.y + (density === "micro" ? 5 : 7);
+    const modeVisible = density !== "micro";
+    const scoreFont = density === "standard" ? "29px" : density === "compact" ? "24px" : "18px";
+    const timerFont = density === "standard" ? "23px" : density === "compact" ? "20px" : "15px";
+    const labelFont = density === "standard" ? "11px" : density === "compact" ? "10px" : "9px";
+    const leftScoreX = rect.x + rect.width * (density === "micro" ? .27 : .29);
+    const rightScoreX = rect.x + rect.width * (density === "micro" ? .73 : .71);
+
+    this.headerPanel.lineStyle(1, HUD_COLORS.borderBright, .13)
+      .beginPath()
+      .moveTo(centerX - (density === "micro" ? 25 : 34), rect.y + 7)
+      .lineTo(centerX - (density === "micro" ? 25 : 34), rect.y + rect.height - (modeVisible ? 17 : 7))
+      .moveTo(centerX + (density === "micro" ? 25 : 34), rect.y + 7)
+      .lineTo(centerX + (density === "micro" ? 25 : 34), rect.y + rect.height - (modeVisible ? 17 : 7))
+      .strokePath();
+    this.headerPanel.lineStyle(2, HUD_COLORS.blue, .86)
+      .beginPath()
+      .moveTo(rect.x + 8, rect.y + 1)
+      .lineTo(rect.x + Math.min(76, rect.width * .27), rect.y + 1)
+      .strokePath();
+    this.headerPanel.lineStyle(2, HUD_COLORS.red, .86)
+      .beginPath()
+      .moveTo(rect.x + rect.width - Math.min(76, rect.width * .27), rect.y + 1)
+      .lineTo(rect.x + rect.width - 8, rect.y + 1)
+      .strokePath();
+
+    this.blueLabel
+      .setPosition(rect.x + (density === "micro" ? 12 : 20), primaryY + (density === "micro" ? 4 : 7))
+      .setFontSize(labelFont)
+      .setText(density === "micro" ? "B" : "BLUE");
+    this.blueScoreText
+      .setPosition(leftScoreX, primaryY)
+      .setFontSize(scoreFont)
+      .setText(String(blueScore));
+    this.timerText
+      .setPosition(centerX, primaryY + (density === "micro" ? 1 : 2))
+      .setFontSize(timerFont)
+      .setText(formatTime(state.timeRemainingMs ?? 0));
+    this.redScoreText
+      .setPosition(rightScoreX, primaryY)
+      .setFontSize(scoreFont)
+      .setText(String(redScore));
+    this.redLabel
+      .setPosition(rect.x + rect.width - (density === "micro" ? 12 : 20), primaryY + (density === "micro" ? 4 : 7))
+      .setFontSize(labelFont)
+      .setText(density === "micro" ? "R" : "RED");
+    this.modeText
+      .setPosition(centerX, rect.y + rect.height - 15)
+      .setFontSize(density === "standard" ? "9px" : "8px")
+      .setText(formatArenaModeLine(state))
+      .setVisible(modeVisible);
+
+    this.animateScoreChange(
+      this.blueScoreText,
+      blueScore,
+      this.previousBlueScore,
+    );
+    this.animateScoreChange(
+      this.redScoreText,
+      redScore,
+      this.previousRedScore,
+    );
+    this.previousBlueScore = blueScore;
+    this.previousRedScore = redScore;
+  }
+
+  private layoutObjective(
+    width: number,
+    y: number,
+    density: ArenaHudDensity,
     objective: string,
   ): void {
-    const centerX = Math.round(width / 2);
-    const panelWidth = compact ? 170 : 214;
-    const panelHeight = compact ? 34 : 38;
-    const panelX = centerX - panelWidth / 2;
-    const panelY = compact ? 8 : 10;
-    drawPanel(this.scorePanel, panelX, panelY, panelWidth, panelHeight, 10);
-
-    this.blueScoreText
-      .setPosition(centerX - (compact ? 34 : 42), panelY + (compact ? 6 : 7))
-      .setFontSize(compact ? "15px" : "17px")
-      .setText(compact ? `B ${blueScore}` : `BLUE ${blueScore}`);
-    this.redScoreText
-      .setPosition(centerX + (compact ? 34 : 42), panelY + (compact ? 6 : 7))
-      .setFontSize(compact ? "15px" : "17px")
-      .setText(compact ? `${redScore} R` : `${redScore} RED`);
-    this.timerText
-      .setPosition(centerX, panelY + (compact ? 7 : 9))
-      .setFontSize(compact ? "13px" : "14px")
-      .setText(formatTime(state.timeRemainingMs ?? 0));
+    const visible = Boolean(objective);
+    this.objectivePanel.setVisible(visible);
+    this.objectiveText.setVisible(visible);
+    if (!visible) return;
     this.objectiveText
-      .setPosition(centerX, panelY + panelHeight + 6)
-      .setFontSize(compact ? "11px" : "12px")
-      .setText(objective)
-      .setVisible(Boolean(objective));
+      .setFontSize(density === "standard" ? "10px" : "9px")
+      .setText(objective);
+    const panelWidth = Math.min(
+      width - 20,
+      Math.max(128, this.objectiveText.width + 24),
+    );
+    const panelHeight = density === "standard" ? 23 : 21;
+    const x = Math.round((width - panelWidth) / 2);
+    drawTechnicalPanel(
+      this.objectivePanel,
+      x,
+      y,
+      panelWidth,
+      panelHeight,
+      {
+        fillAlpha: .86,
+        borderAlpha: .24,
+        cut: 5,
+        accent: HUD_COLORS.armor,
+      },
+    );
+    this.objectiveText.setPosition(width / 2, y + 5);
   }
 
   private layoutTeamCommand(
     state: ModeHudState,
-    width: number,
-    compact: boolean,
+    density: ArenaHudDensity,
   ): void {
     const visible = state.modeId === "classic-ctf" && this.botOpponent &&
-      !this.mobileControls && width >= 700;
+      !this.mobileControls && density !== "micro" &&
+      this.scene.scale.width >= 760;
     this.teamCommandPanel.setVisible(visible);
     this.teamCommandStatus.setVisible(visible);
     for (const button of Object.values(this.teamCommandButtons)) {
@@ -293,12 +424,25 @@ implements HudPort, FrameDiagnosticsPort {
     }
     if (!visible) return;
 
-    const x = compact ? 8 : 12;
-    const y = compact ? 8 : 10;
-    drawPanel(this.teamCommandPanel, x, y, 226, 52, 9);
+    const x = density === "standard" ? 12 : 8;
+    const y = density === "standard" ? 10 : 8;
+    const width = density === "standard" ? 226 : 214;
+    drawTechnicalPanel(
+      this.teamCommandPanel,
+      x,
+      y,
+      width,
+      52,
+      {
+        accent: HUD_COLORS.blue,
+        fillAlpha: .86,
+        borderAlpha: .24,
+        cut: 7,
+      },
+    );
     this.teamCommandStatus
-      .setPosition(x + 9, y + 5)
-      .setText(`BOT: ${this.activeTeamCommand.toUpperCase()}`)
+      .setPosition(x + 10, y + 6)
+      .setText(`SQUAD · ${this.activeTeamCommand.toUpperCase()}`)
       .setColor(teamCommandColor(this.activeTeamCommand));
     for (const [index, command] of ([
       "defend",
@@ -307,49 +451,50 @@ implements HudPort, FrameDiagnosticsPort {
     ] as const).entries()) {
       const selected = this.activeTeamCommand === command;
       this.teamCommandButtons[command]
-        .setPosition(x + 8 + index * 72, y + 25)
-        .setColor(selected ? "#08131d" : "#d6e4e1")
+        .setPosition(x + 9 + index * (density === "standard" ? 72 : 68), y + 27)
+        .setColor(selected ? HUD_CSS_COLORS.darkText : "#d6e2e9")
         .setBackgroundColor(
-          selected ? teamCommandColor(command) : "#17302dcc",
+          selected ? teamCommandColor(command) : "#0d1d2ad9",
         );
     }
   }
 
-  private layoutKillFeed(
-    width: number,
-    compact: boolean,
-    objectiveVisible: boolean,
-  ): void {
+  private layoutKillFeed(rect: ArenaHudRect, layoutVisible: boolean): void {
     const now = this.scene.time.now;
     this.activeKillNotices = this.activeKillNotices.filter((entry) =>
       entry.expiresAt > now
     );
-    const centerX = Math.round(width / 2);
-    const firstY = (compact ? 49 : 56) + (objectiveVisible ? 28 : 0);
-    const rowWidth = compact ? 228 : 264;
-    const rowHeight = compact ? 22 : 24;
     for (let index = 0; index < this.killFeedViews.length; index += 1) {
       const view = this.killFeedViews[index];
       const entry = this.activeKillNotices[index];
-      if (!entry) {
+      if (!entry || !layoutVisible) {
         setKillFeedViewVisible(view, false);
         continue;
       }
       const { notice } = entry;
-      setKillFeedViewVisible(view, true);
-      const y = firstY + index * (rowHeight + 4);
       const remainingMs = entry.expiresAt - now;
-      const alpha = Math.min(1, remainingMs / 650);
+      const ageMs = KILL_FEED_LIFETIME_MS - remainingMs;
+      const slide = Math.max(0, 14 * (1 - ageMs / 180));
+      const x = rect.x + slide;
+      const y = rect.y + index * (rect.height + 4);
+      const centerX = x + rect.width / 2;
+      const alpha = Math.min(1, remainingMs / 650) * (1 - index * .14);
+      const accent = killFeedActorColorNumber(
+        notice.killerActorId,
+        this.snapshot,
+      );
+      setKillFeedViewVisible(view, true);
       drawKillFeedRow(
         view.background,
-        centerX - rowWidth / 2,
+        x,
         y,
-        rowWidth,
-        rowHeight,
+        rect.width,
+        rect.height,
+        accent,
       );
       view.killer
-        .setPosition(centerX - 19, y + rowHeight / 2)
-        .setFontSize(compact ? "10px" : "11px")
+        .setPosition(centerX - 17, y + rect.height / 2)
+        .setFontSize(rect.height >= 25 ? "10px" : "9px")
         .setText(killFeedActorName(
           notice.killerActorId,
           this.snapshot,
@@ -358,8 +503,8 @@ implements HudPort, FrameDiagnosticsPort {
         ))
         .setColor(killFeedActorColor(notice.killerActorId, this.snapshot));
       view.victim
-        .setPosition(centerX + 19, y + rowHeight / 2)
-        .setFontSize(compact ? "10px" : "11px")
+        .setPosition(centerX + 17, y + rect.height / 2)
+        .setFontSize(rect.height >= 25 ? "10px" : "9px")
         .setText(killFeedActorName(
           notice.victimActorId,
           this.snapshot,
@@ -369,64 +514,147 @@ implements HudPort, FrameDiagnosticsPort {
         .setColor(killFeedActorColor(notice.victimActorId, this.snapshot));
       const weaponTexture = killFeedWeaponTexture(notice.cause);
       view.weaponIcon
-        .setPosition(centerX, y + rowHeight / 2)
-        .setDisplaySize(compact ? 18 : 20, compact ? 18 : 20)
+        .setPosition(centerX, y + rect.height / 2)
+        .setDisplaySize(rect.height - 6, rect.height - 6)
         .setVisible(Boolean(weaponTexture));
       if (weaponTexture) view.weaponIcon.setTexture(weaponTexture);
       view.causeIcon
-        .setPosition(centerX, y + rowHeight / 2)
-        .setFontSize(compact ? "14px" : "16px")
+        .setPosition(centerX, y + rect.height / 2)
+        .setFontSize(rect.height >= 25 ? "14px" : "12px")
         .setText(killFeedCauseGlyph(notice.cause))
         .setVisible(!weaponTexture);
       setKillFeedViewAlpha(view, alpha);
     }
   }
 
-  private layoutPlayerPanels(
-    width: number,
-    height: number,
-    compact: boolean,
-    blue: WorldSnapshot["actors"][number] | undefined,
-    red: WorldSnapshot["actors"][number] | undefined,
+  private layoutPlayerStatus(
+    rect: ArenaHudRect,
+    layout: ReturnType<typeof calculateArenaHudLayout>,
+    actor: WorldSnapshot["actors"][number] | undefined,
   ): void {
-    if (!SHOW_PLAYER_PANELS) {
-      setPlayerPanelVisible(this.bluePanel, false);
-      setPlayerPanelVisible(this.redPanel, false);
+    if (!layout.playerStatusVisible) {
+      setPlayerStatusVisible(this.playerStatus, false);
       return;
     }
-    const panelWidth = compact ? 154 : 184;
-    const panelHeight = compact ? 62 : 68;
-    const edge = compact ? 8 : 12;
-    const desktopY = height - panelHeight - edge;
-    const mobileY = compact ? 70 : 82;
+    setPlayerStatusVisible(this.playerStatus, true);
+    drawTechnicalPanel(
+      this.playerStatus.background,
+      rect.x,
+      rect.y,
+      rect.width,
+      rect.height,
+      {
+        accent: HUD_COLORS.blue,
+        fillAlpha: .9,
+        borderAlpha: .28,
+        cut: layout.playerStatusPortrait ? 9 : 7,
+        raised: true,
+      },
+    );
+    const portraitVisible = layout.playerStatusPortrait;
+    this.playerStatus.portraitFrame.setVisible(portraitVisible);
+    this.playerStatus.portrait.setVisible(portraitVisible);
+    const contentX = portraitVisible ? rect.x + 69 : rect.x + 11;
+    const contentRight = rect.x + rect.width - 10;
+    const contentWidth = contentRight - contentX;
+    if (portraitVisible) {
+      drawTechnicalPanel(
+        this.playerStatus.portraitFrame,
+        rect.x + 8,
+        rect.y + 8,
+        52,
+        52,
+        {
+          fillAlpha: .72,
+          borderAlpha: .3,
+          cut: 6,
+          accent: HUD_COLORS.blue,
+        },
+      );
+      this.playerStatus.portrait
+        .setPosition(rect.x + 34, rect.y + 34)
+        .setDisplaySize(48, 48);
+    }
 
-    updatePlayerPanel(
-      this.bluePanel,
-      this.mobileControls ? "BLUE" : "BLUE P1",
-      blue,
-      edge,
-      this.mobileControls ? mobileY : desktopY,
-      panelWidth,
-      panelHeight,
-      BLUE,
+    const nameY = rect.y + (portraitVisible ? 7 : 5);
+    this.playerStatus.name
+      .setPosition(contentX, nameY)
+      .setFontSize(portraitVisible ? "12px" : "10px")
+      .setText(playerSkinLabel(this.playerSkinId).toUpperCase());
+    this.playerStatus.state
+      .setPosition(contentRight, nameY + 1)
+      .setFontSize(portraitVisible ? "8px" : "7px")
+      .setText(playerStateLabel(actor))
+      .setColor(
+        (actor?.spawnProtectionRemainingMs ?? 0) > 0
+          ? HUD_CSS_COLORS.armor
+          : HUD_CSS_COLORS.muted,
+      );
+
+    const health = Math.max(0, Math.ceil(actor?.health ?? 0));
+    const armor = Math.max(0, Math.ceil(actor?.armor ?? 0));
+    const healthRatio = actor
+      ? actor.health / Math.max(1, actor.maxHealth)
+      : 0;
+    const armorRatio = actor
+      ? actor.armor / Math.max(1, actor.maxArmor)
+      : 0;
+    const healthLabelY = rect.y + (portraitVisible ? 24 : 19);
+    const healthBarY = rect.y + (portraitVisible ? 38 : 29);
+    const armorLabelY = rect.y + (portraitVisible ? 49 : 34);
+    const armorBarY = rect.y + (portraitVisible ? 60 : 42);
+    this.playerStatus.healthLabel
+      .setPosition(contentX, healthLabelY)
+      .setFontSize(portraitVisible ? "8px" : "7px")
+      .setText("HEALTH");
+    this.playerStatus.healthValue
+      .setPosition(contentRight, healthLabelY - 1)
+      .setFontSize(portraitVisible ? "9px" : "8px")
+      .setText(`${health} HP`);
+    this.playerStatus.armorLabel
+      .setPosition(contentX, armorLabelY)
+      .setFontSize(portraitVisible ? "7px" : "6px")
+      .setText("ARMOR");
+    this.playerStatus.armorValue
+      .setPosition(contentRight, armorLabelY - 1)
+      .setFontSize(portraitVisible ? "8px" : "7px")
+      .setText(String(armor));
+    this.playerStatus.bars.clear();
+    drawHudBar(
+      this.playerStatus.bars,
+      contentX,
+      healthBarY,
+      contentWidth,
+      portraitVisible ? 7 : 6,
+      healthRatio,
+      HUD_COLORS.health,
     );
-    updatePlayerPanel(
-      this.redPanel,
-      this.botOpponent ? "RED BOT" : "RED P2",
-      red,
-      width - panelWidth - edge,
-      desktopY,
-      panelWidth,
-      panelHeight,
-      RED,
+    drawHudBar(
+      this.playerStatus.bars,
+      contentX,
+      armorBarY,
+      contentWidth,
+      portraitVisible ? 4 : 5,
+      armorRatio,
+      HUD_COLORS.armor,
     );
-    setPlayerPanelVisible(this.bluePanel, !this.mobileControls);
-    setPlayerPanelVisible(this.redPanel, !this.mobileControls);
   }
 
-  private layoutResult(width: number, height: number): void {
-    this.resultText.setPosition(width / 2, height / 2);
-    this.resultText.setVisible(false);
+  private animateScoreChange(
+    text: Phaser.GameObjects.Text,
+    next: number,
+    previous: number | null,
+  ): void {
+    if (previous === null || next <= previous) return;
+    this.scene.tweens.killTweensOf(text);
+    text.setScale(1.28).setAlpha(1);
+    this.scene.tweens.add({
+      targets: text,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 240,
+      ease: "Back.Out",
+    });
   }
 }
 
@@ -440,8 +668,32 @@ function createText(
   fontSize: string,
   fontStyle = "normal",
 ): Phaser.GameObjects.Text {
+  return createResolvedText(scene, color, fontSize, UI_FONT_FAMILY, fontStyle);
+}
+
+function createDisplayText(
+  scene: Phaser.Scene,
+  color: string,
+  fontSize: string,
+): Phaser.GameObjects.Text {
+  return createResolvedText(
+    scene,
+    color,
+    fontSize,
+    DISPLAY_FONT_FAMILY,
+    "bold",
+  );
+}
+
+function createResolvedText(
+  scene: Phaser.Scene,
+  color: string,
+  fontSize: string,
+  fontFamily: string,
+  fontStyle: string,
+): Phaser.GameObjects.Text {
   const text = scene.add.text(0, 0, "", {
-    fontFamily: UI_FONT_FAMILY,
+    fontFamily,
     fontSize,
     fontStyle,
     color,
@@ -455,19 +707,44 @@ function createText(
 function createKillFeedView(scene: Phaser.Scene): KillFeedView {
   return {
     background: createGraphics(scene),
-    killer: createText(scene, NEUTRAL, "11px", "bold")
+    killer: createText(scene, HUD_CSS_COLORS.neutral, "10px", "bold")
       .setOrigin(1, .5)
       .setVisible(false),
-    victim: createText(scene, NEUTRAL, "11px", "bold")
+    victim: createText(scene, HUD_CSS_COLORS.neutral, "10px", "bold")
       .setOrigin(0, .5)
       .setVisible(false),
     weaponIcon: scene.add.image(0, 0, "uiRocketButton")
       .setScrollFactor(0)
       .setDepth(HUD_DEPTH)
       .setVisible(false),
-    causeIcon: createText(scene, NEUTRAL, "16px", "bold")
+    causeIcon: createText(scene, HUD_CSS_COLORS.neutral, "14px", "bold")
       .setOrigin(.5)
       .setVisible(false),
+  };
+}
+
+function createPlayerStatusView(scene: Phaser.Scene): PlayerStatusView {
+  return {
+    background: createGraphics(scene),
+    portraitFrame: createGraphics(scene),
+    bars: createGraphics(scene),
+    portrait: scene.add.image(0, 0, "playerHudPortrait")
+      .setScrollFactor(0)
+      .setDepth(HUD_DEPTH)
+      .setVisible(false),
+    name: createDisplayText(scene, HUD_CSS_COLORS.neutral, "12px")
+      .setLetterSpacing(.4),
+    state: createText(scene, HUD_CSS_COLORS.muted, "8px", "bold")
+      .setOrigin(1, 0)
+      .setLetterSpacing(.4),
+    healthLabel: createText(scene, HUD_CSS_COLORS.muted, "8px", "bold")
+      .setLetterSpacing(.5),
+    healthValue: createText(scene, HUD_CSS_COLORS.neutral, "9px", "bold")
+      .setOrigin(1, 0),
+    armorLabel: createText(scene, HUD_CSS_COLORS.armor, "7px", "bold")
+      .setLetterSpacing(.5),
+    armorValue: createText(scene, HUD_CSS_COLORS.armor, "8px", "bold")
+      .setOrigin(1, 0),
   };
 }
 
@@ -487,6 +764,22 @@ function setKillFeedViewAlpha(view: KillFeedView, alpha: number): void {
   view.causeIcon.setAlpha(alpha);
 }
 
+function setPlayerStatusVisible(
+  view: PlayerStatusView,
+  visible: boolean,
+): void {
+  view.background.setVisible(visible);
+  view.portraitFrame.setVisible(visible);
+  view.bars.setVisible(visible);
+  view.portrait.setVisible(visible);
+  view.name.setVisible(visible);
+  view.state.setVisible(visible);
+  view.healthLabel.setVisible(visible);
+  view.healthValue.setVisible(visible);
+  view.armorLabel.setVisible(visible);
+  view.armorValue.setVisible(visible);
+}
+
 function destroyKillFeedView(view: KillFeedView): void {
   view.background.destroy();
   view.killer.destroy();
@@ -495,18 +788,34 @@ function destroyKillFeedView(view: KillFeedView): void {
   view.causeIcon.destroy();
 }
 
+function destroyPlayerStatusView(view: PlayerStatusView): void {
+  view.background.destroy();
+  view.portraitFrame.destroy();
+  view.bars.destroy();
+  view.portrait.destroy();
+  view.name.destroy();
+  view.state.destroy();
+  view.healthLabel.destroy();
+  view.healthValue.destroy();
+  view.armorLabel.destroy();
+  view.armorValue.destroy();
+}
+
 function drawKillFeedRow(
   graphics: Phaser.GameObjects.Graphics,
   x: number,
   y: number,
   width: number,
   height: number,
+  accent: number,
 ): void {
-  graphics.clear();
-  graphics.fillStyle(0x08151b, .72);
-  graphics.fillRoundedRect(x, y, width, height, 5);
-  graphics.lineStyle(1, 0xb8d1cc, .12);
-  graphics.strokeRoundedRect(x, y, width, height, 5);
+  drawTechnicalPanel(graphics, x, y, width, height, {
+    fillAlpha: .78,
+    borderAlpha: .18,
+    cut: 5,
+  });
+  graphics.fillStyle(accent, .85);
+  graphics.fillRect(x + 1, y + 5, 2, Math.max(4, height - 10));
 }
 
 function killFeedWeaponTexture(cause: ArenaKillCause): string | null {
@@ -545,140 +854,42 @@ function killFeedActorColor(
   snapshot: WorldSnapshot | null,
 ): string {
   const teamId = snapshot?.actors.find((actor) => actor.id === actorId)?.teamId;
-  return teamId === "blue" ? BLUE : teamId === "red" ? RED : MUTED;
+  return teamId === "blue"
+    ? HUD_CSS_COLORS.blue
+    : teamId === "red"
+    ? HUD_CSS_COLORS.red
+    : HUD_CSS_COLORS.muted;
 }
 
-function createPlayerPanel(scene: Phaser.Scene, accent: string): PlayerPanel {
-  return {
-    background: createGraphics(scene),
-    bars: createGraphics(scene),
-    label: createText(scene, accent, "11px", "bold").setLetterSpacing(.8),
-    state: createText(scene, MUTED, "9px", "bold").setOrigin(1, 0),
-    health: createText(scene, NEUTRAL, "10px", "bold"),
-    armor: createText(scene, NEUTRAL, "10px", "bold"),
-    ammo: createText(scene, MUTED, "9px", "bold"),
-  };
-}
-
-function destroyPlayerPanel(panel: PlayerPanel): void {
-  panel.background.destroy();
-  panel.bars.destroy();
-  panel.label.destroy();
-  panel.state.destroy();
-  panel.health.destroy();
-  panel.armor.destroy();
-  panel.ammo.destroy();
-}
-
-function setPlayerPanelVisible(panel: PlayerPanel, visible: boolean): void {
-  panel.background.setVisible(visible);
-  panel.bars.setVisible(visible);
-  panel.label.setVisible(visible);
-  panel.state.setVisible(visible);
-  panel.health.setVisible(visible);
-  panel.armor.setVisible(visible);
-  panel.ammo.setVisible(visible);
-}
-
-function updatePlayerPanel(
-  panel: PlayerPanel,
-  label: string,
-  actor: WorldSnapshot["actors"][number] | undefined,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  accent: string,
-): void {
-  setPlayerPanelVisible(panel, true);
-  const compact = width <= 160;
-  drawPanel(panel.background, x, y, width, height, compact ? 9 : 10);
-  panel.label
-    .setPosition(x + (compact ? 8 : 9), y + (compact ? 6 : 7))
-    .setFontSize(compact ? "10px" : "11px")
-    .setText(label);
-  panel.state
-    .setPosition(x + width - (compact ? 8 : 9), y + (compact ? 6 : 7))
-    .setFontSize(compact ? "8px" : "9px")
-    .setText(lifeLabel(actor));
-  panel.health
-    .setPosition(x + (compact ? 8 : 9), y + (compact ? 22 : 24))
-    .setFontSize(compact ? "10px" : "10px")
-    .setText(`HP ${actor?.health ?? 0}`);
-  panel.armor
-    .setPosition(x + width - (compact ? 58 : 62), y + (compact ? 22 : 24))
-    .setFontSize(compact ? "10px" : "10px")
-    .setText(`AR ${actor?.armor ?? 0}`);
-  panel.ammo
-    .setPosition(x + (compact ? 8 : 9), y + (compact ? 45 : 49))
-    .setFontSize(compact ? "8px" : "9px")
-    .setText(
-      `R ${actor?.weapons.rocketAmmo ?? 0}  RL ${
-        actor?.weapons.railAmmo ?? 0
-      }  W ${actor?.weapons.whipAmmo ?? 0}`,
-    );
-
-  const healthRatio = actor
-    ? Phaser.Math.Clamp(actor.health / Math.max(1, actor.maxHealth), 0, 1)
-    : 0;
-  const armorRatio = actor
-    ? Phaser.Math.Clamp(actor.armor / Math.max(1, actor.maxArmor), 0, 1)
-    : 0;
-  const gap = compact ? 6 : 7;
-  const barY = y + (compact ? 35 : 38);
-  const inset = compact ? 8 : 9;
-  const healthWidth = Math.floor((width - inset * 2 - gap) * .64);
-  const armorWidth = width - inset * 2 - gap - healthWidth;
-  panel.bars.clear();
-  drawBar(panel.bars, x + inset, barY, healthWidth, 4, healthRatio, 0x56c98c);
-  drawBar(
-    panel.bars,
-    x + inset + healthWidth + gap,
-    barY,
-    armorWidth,
-    4,
-    armorRatio,
-    Phaser.Display.Color.HexStringToColor(accent).color,
-  );
-}
-
-function drawPanel(
-  graphics: Phaser.GameObjects.Graphics,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number,
-): void {
-  graphics.clear();
-  graphics.fillStyle(PANEL_FILL, .88);
-  graphics.fillRoundedRect(x, y, width, height, radius);
-  graphics.lineStyle(1, PANEL_STROKE, .16);
-  graphics.strokeRoundedRect(x, y, width, height, radius);
-}
-
-function drawBar(
-  graphics: Phaser.GameObjects.Graphics,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  ratio: number,
-  color: number,
-): void {
-  graphics.fillStyle(0xffffff, .12);
-  graphics.fillRoundedRect(x, y, width, height, height / 2);
-  if (ratio > 0) {
-    graphics.fillStyle(color, .95);
-    graphics.fillRoundedRect(x, y, width * ratio, height, height / 2);
-  }
+function killFeedActorColorNumber(
+  actorId: string | undefined,
+  snapshot: WorldSnapshot | null,
+): number {
+  const teamId = snapshot?.actors.find((actor) => actor.id === actorId)?.teamId;
+  return teamId === "blue"
+    ? HUD_COLORS.blue
+    : teamId === "red"
+    ? HUD_COLORS.red
+    : HUD_COLORS.muted;
 }
 
 export function teamCommandColor(command: ClassicCtfTeamCommand): string {
-  if (command === "defend") return BLUE;
-  if (command === "attack") return "#ffae9f";
-  if (command === "follow") return "#f3d47f";
-  return "#e6f2ef";
+  if (command === "defend") return HUD_CSS_COLORS.blue;
+  if (command === "attack") return HUD_CSS_COLORS.red;
+  if (command === "follow") return HUD_CSS_COLORS.armor;
+  return HUD_CSS_COLORS.neutral;
+}
+
+export function formatArenaModeLine(state: ModeHudState): string {
+  const title = state.modeId === "classic-ctf"
+    ? "CLASSIC CTF"
+    : state.modeId === "one-flag"
+    ? "ONE FLAG"
+    : state.modeId === "team-deathmatch"
+    ? "TEAM DEATHMATCH"
+    : state.modeId.replaceAll("-", " ").toUpperCase();
+  const notice = state.notices[0]?.toUpperCase();
+  return notice ? `${title} · ${notice}` : title;
 }
 
 export function formatArenaObjectiveAlert(
@@ -734,17 +945,20 @@ function flagLabel(
   return compact ? `D${seconds}` : `DROP ${seconds}S`;
 }
 
-function lifeLabel(
+function playerStateLabel(
   actor: WorldSnapshot["actors"][number] | undefined,
 ): string {
-  if (actor?.lifeState === "active") {
+  if (!actor) return "OFFLINE";
+  if (actor.lifeState === "active") {
+    if (actor.spawnProtectionRemainingMs > 0) {
+      return `SHIELD ${
+        (Math.ceil(actor.spawnProtectionRemainingMs / 100) / 10).toFixed(1)
+      }S`;
+    }
     return "READY";
   }
-  if (!actor) {
-    return "MISSING";
-  }
   const seconds = Math.ceil((actor.respawn?.remainingMs ?? 0) / 100) / 10;
-  return `${actor.lifeState.toUpperCase()} ${seconds}s`;
+  return `RESPAWN ${seconds.toFixed(1)}S`;
 }
 
 function formatTime(timeMs: number): string {

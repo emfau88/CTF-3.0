@@ -6,21 +6,72 @@ export interface WeaponHudPosition {
   readonly r: number;
 }
 
+export interface WeaponStripLayout {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly slots: readonly WeaponHudPosition[];
+}
+
+export function calculateWeaponStripLayout(
+  width: number,
+  height: number,
+  slotCount: number,
+): WeaponStripLayout {
+  const count = Math.max(1, Math.floor(slotCount));
+  const micro = width <= 420 || height <= 240;
+  const compact = !micro && height <= 520;
+  const baseRadius = micro ? 16 : compact ? 25 : 29;
+  const gap = micro ? 8 : compact ? 12 : 14;
+  const frameExtra = micro ? 2 : 3;
+  const panelPadding = micro ? 4 : compact ? 6 : 7;
+  const maximumPanelWidth = Math.max(
+    64,
+    Math.min(width - 12, count > 3 ? 372 : 222),
+  );
+  const availableSlotWidth = Math.max(
+    20,
+    maximumPanelWidth - (frameExtra + panelPadding) * 2,
+  );
+  const fittedRadius = Math.floor(
+    (availableSlotWidth - gap * (count - 1)) / (count * 2),
+  );
+  const radius = Math.max(10, Math.min(baseRadius, fittedRadius));
+  const spacing = radius * 2 + gap;
+  const centerX = width / 2;
+  const centerY = height - radius - frameExtra - panelPadding;
+  const firstX = centerX - spacing * (count - 1) / 2;
+  const slots = Array.from({ length: count }, (_, index) => ({
+    x: firstX + spacing * index,
+    y: centerY,
+    r: radius,
+  }));
+  const left = firstX - radius - frameExtra - panelPadding;
+  const panelWidth = spacing * (count - 1) +
+    (radius + frameExtra + panelPadding) * 2;
+  const panelHeight = (radius + frameExtra + panelPadding) * 2;
+
+  return {
+    x: left,
+    y: height - panelHeight,
+    width: panelWidth,
+    height: panelHeight,
+    slots,
+  };
+}
+
 export function calculateDesktopWeaponLayout(
   width: number,
   height: number,
 ): Record<WeaponHudId, WeaponHudPosition> {
-  const micro = width <= 420 || height <= 240;
-  const compact = !micro && height <= 520;
-  const radius = micro ? 16 : compact ? 25 : 29;
-  const spacing = radius * 2 + (micro ? 8 : compact ? 12 : 14);
-  const centerX = width / 2;
-  const y = height - radius - (micro ? 5 : compact ? 6 : 7);
+  const layout = calculateWeaponStripLayout(width, height, 3);
+  const [rocket, rail, whip] = layout.slots;
 
   return {
-    rocket: { x: centerX - spacing, y, r: radius },
-    rail: { x: centerX, y, r: radius },
-    whip: { x: centerX + spacing, y, r: radius },
+    rocket,
+    rail,
+    whip,
   };
 }
 

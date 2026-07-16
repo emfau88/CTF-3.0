@@ -118,6 +118,27 @@ test("desktop P0 UI contract keeps Career primary and uses one outer menu scroll
   assert.match(polishCss, /\.league-character-info > span\s*\{[^}]*font-size:\s*11px[^}]*line-height:\s*1\.35/);
   assert.match(polishCss, /\.league-table-row\s*\{[^}]*font-size:\s*12px/);
   assert.match(polishCss, /\.league-tier p\s*\{[^}]*font-size:\s*9px[^}]*line-height:\s*1\.4/);
+  assert.match(
+    html,
+    /id="v2-game-utility" class="v2-game-utility is-hidden" role="toolbar"/,
+  );
+  assert.match(html, /id="v2-audio-label">SFX ON/);
+  assert.match(baseCss, /--hud-armor:\s*#d8b867/);
+  assert.match(baseCss, /\.v2-game-utility\s*\{/);
+  assert.match(baseCss, /\.v2-audio-button\.is-muted::after/);
+  for (const filename of [
+    "hud-audio.svg",
+    "hud-stats.svg",
+    "hud-menu.svg",
+  ]) {
+    assert.match(html, new RegExp(`assets/ui/${filename}`));
+    const svg = readFileSync(
+      new URL(`../public/assets/ui/${filename}`, import.meta.url),
+      "utf8",
+    );
+    assert.match(svg, /^<svg /, `${filename} SVG root`);
+    assert.match(svg, /viewBox="0 0 24 24"/, `${filename} viewbox`);
+  }
 });
 
 test("project typography uses central UI, display, and diagnostic font tokens", () => {

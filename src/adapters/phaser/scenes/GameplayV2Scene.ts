@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { preloadArenaAssets } from "../../../assets";
+import { playerSkinPortraitAssetStem } from "../../../playerSkinPreference";
 import {
   readV2Route,
   type V2PlayerSkinId,
@@ -68,6 +69,7 @@ export class GameplayV2Scene extends Phaser.Scene {
     preloadArenaAssets(this, {
       includeJungleTemple: map.presentation.theme === "jungle-temple",
       includeHelixCanopy: map.presentation.theme === "helix-canopy",
+      playerHudPortraitAssetStem: playerSkinPortraitAssetStem(route.skin),
     });
   }
 
@@ -189,7 +191,7 @@ export class GameplayV2Scene extends Phaser.Scene {
       this,
       useMobileControls,
       useBotOpponent,
-      () => mobileInput?.requestRestart(),
+      route.skin,
       isClassicCtf && useBotOpponent ? requestTeamCommand : undefined,
     );
     const playerInput = useMobileControls && mobileInput

@@ -81,6 +81,12 @@ if (showV2Menu) {
     const audioButton = document.querySelector<HTMLButtonElement>(
       "#v2-audio-button",
     );
+    const audioLabel = document.querySelector<HTMLElement>(
+      "#v2-audio-label",
+    );
+    const gameUtility = document.querySelector<HTMLElement>(
+      "#v2-game-utility",
+    );
     const usesTouchControls = activeRoute?.controls === "touch";
     const activeModeId = activeRoute
       ? modeIdForRoute(activeRoute.mode)
@@ -100,6 +106,7 @@ if (showV2Menu) {
       "#v2-respawn-status",
     );
     const setIngameButtonsVisible = (visible: boolean): void => {
+      gameUtility?.classList.toggle("is-hidden", !visible);
       menuButton?.classList.toggle("is-hidden", !visible);
       audioButton?.classList.toggle("is-hidden", !visible);
       statsButton?.classList.toggle("is-hidden", !visible || !usesTouchControls);
@@ -154,6 +161,7 @@ if (showV2Menu) {
         onMainMenu: showMenuRoute,
       });
     };
+    gameUtility?.classList.remove("is-hidden");
     menuButton?.classList.remove("is-hidden");
     if (menuButton && activeRoute) {
       menuButton.onclick = openPauseOverlay;
@@ -206,10 +214,17 @@ if (showV2Menu) {
     if (audioButton && activeRoute) {
       let currentSfx = activeRoute.sfx;
       const syncAudioButton = (): void => {
-        audioButton.textContent = currentSfx === "off" ? "SFX OFF" : "SFX ON";
+        if (audioLabel) {
+          audioLabel.textContent = currentSfx === "off" ? "SFX OFF" : "SFX ON";
+        }
+        audioButton.classList.toggle("is-muted", currentSfx === "off");
         audioButton.setAttribute(
           "aria-pressed",
           currentSfx === "off" ? "true" : "false",
+        );
+        audioButton.setAttribute(
+          "aria-label",
+          currentSfx === "off" ? "Enable sound effects" : "Disable sound effects",
         );
       };
       syncAudioButton();
