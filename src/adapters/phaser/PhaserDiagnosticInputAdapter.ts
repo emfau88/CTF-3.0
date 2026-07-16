@@ -69,6 +69,7 @@ export interface DesktopWeaponStatus {
 }
 
 export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
+  private readonly uiScene: Phaser.Scene;
   private readonly keys: DiagnosticKeys;
   private readonly graphics: Phaser.GameObjects.Graphics;
   private readonly cooldownGraphics: Phaser.GameObjects.Graphics;
@@ -108,7 +109,9 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     private readonly onTeamCommand?: (
       command: ClassicCtfManualTeamCommand,
     ) => void,
+    uiScene: Phaser.Scene = scene,
   ) {
+    this.uiScene = uiScene;
     const keyboard = scene.input.keyboard;
     if (!keyboard) {
       throw new Error("Phaser keyboard input is required for V2 diagnostics.");
@@ -136,14 +139,14 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       redRight: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT),
       redJump: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER),
     };
-    this.graphics = scene.add.graphics().setScrollFactor(0).setDepth(1100);
-    this.cooldownGraphics = scene.add.graphics()
+    this.graphics = uiScene.add.graphics().setDepth(1100);
+    this.cooldownGraphics = uiScene.add.graphics()
       .setScrollFactor(0)
       .setDepth(1102);
     this.weaponViews = {
-      rocket: scene.add.image(0, 0, "uiRocketButton"),
-      rail: scene.add.image(0, 0, "uiRailButton"),
-      whip: scene.add.image(0, 0, "uiWhipButton"),
+      rocket: uiScene.add.image(0, 0, "uiRocketButton"),
+      rail: uiScene.add.image(0, 0, "uiRailButton"),
+      whip: uiScene.add.image(0, 0, "uiWhipButton"),
     };
     for (const view of Object.values(this.weaponViews)) {
       view.setScrollFactor(0).setDepth(1101).setVisible(false);
@@ -163,8 +166,8 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       rail: this.createKeyLabel("E"),
       whip: this.createKeyLabel("F"),
     };
-    scene.scale.on("resize", this.layout, this);
-    this.layout(scene.scale.gameSize);
+    uiScene.scale.on("resize", this.layout, this);
+    this.layout(uiScene.scale.gameSize);
   }
 
   readFrame(deltaMs: number): CoreInputFrame {
@@ -266,7 +269,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   }
 
   dispose(): void {
-    this.scene.scale.off("resize", this.layout, this);
+    this.uiScene.scale.off("resize", this.layout, this);
     for (const key of Object.values(this.keys)) {
       key.destroy();
     }
@@ -507,11 +510,11 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     texture: string,
     stroke: string,
   ): DesktopWeaponBadgeView {
-    const image = this.scene.add.image(0, 0, texture)
+    const image = this.uiScene.add.image(0, 0, texture)
       .setScrollFactor(0)
       .setDepth(1103)
       .setVisible(false);
-    const text = this.scene.add.text(0, 0, "0", {
+    const text = this.uiScene.add.text(0, 0, "0", {
       fontFamily: UI_FONT_FAMILY,
       fontSize: "17px",
       color: "#ffffff",
@@ -522,7 +525,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   }
 
   private createCooldownLabel(): Phaser.GameObjects.Text {
-    return this.scene.add.text(0, 0, "", {
+    return this.uiScene.add.text(0, 0, "", {
       fontFamily: UI_FONT_FAMILY,
       fontSize: "14px",
       fontStyle: "bold",
@@ -533,7 +536,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   }
 
   private createKeyLabel(key: string): Phaser.GameObjects.Text {
-    return this.scene.add.text(0, 0, key, {
+    return this.uiScene.add.text(0, 0, key, {
       fontFamily: UI_FONT_FAMILY,
       fontSize: "11px",
       fontStyle: "bold",

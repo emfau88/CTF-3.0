@@ -46,6 +46,10 @@ import {
   createBotTraversalSmokeSetup,
 } from "../BotTraversalSmoke";
 import { PhaserBotTraversalSmokeOverlay } from "../PhaserBotTraversalSmokeOverlay";
+import {
+  GAMEPLAY_V2_HUD_SCENE_KEY,
+  GameplayV2HudScene,
+} from "./GameplayV2HudScene";
 
 export class GameplayV2Scene extends Phaser.Scene {
   private bridge?: PhaserGameBridge;
@@ -58,6 +62,7 @@ export class GameplayV2Scene extends Phaser.Scene {
   private traversalSmokeOverlay?: PhaserBotTraversalSmokeOverlay;
   private mapPreviewRenderer?: PhaserArenaRendererPort;
   private mapPreviewResize?: () => void;
+  private hudScene?: GameplayV2HudScene;
 
   constructor() {
     super("GameplayV2Scene");
@@ -85,6 +90,11 @@ export class GameplayV2Scene extends Phaser.Scene {
       this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
       return;
     }
+    this.scene.launch(GAMEPLAY_V2_HUD_SCENE_KEY);
+    this.hudScene = this.scene.get(
+      GAMEPLAY_V2_HUD_SCENE_KEY,
+    ) as GameplayV2HudScene;
+    this.scene.bringToTop(GAMEPLAY_V2_HUD_SCENE_KEY);
     const collisionDiagnostics: ArenaCollisionDiagnostics =
       search.get("clearanceHeatmap") === "1"
         ? "heatmap"
@@ -174,6 +184,7 @@ export class GameplayV2Scene extends Phaser.Scene {
         false,
         readBlueWeaponStatus,
         () => this.bridge?.snapshot ?? runtime.snapshot,
+        this.hudScene,
       )
       : undefined;
     let activeTeamCommand: ClassicCtfTeamCommand = "auto";
@@ -188,7 +199,7 @@ export class GameplayV2Scene extends Phaser.Scene {
       hud.showTeamCommand(activeTeamCommand);
     };
     const hud = new PhaserArenaHudPort(
-      this,
+      this.hudScene,
       useMobileControls,
       useBotOpponent,
       route.skin,
@@ -203,6 +214,7 @@ export class GameplayV2Scene extends Phaser.Scene {
         () => this.bridge?.snapshot ?? runtime.snapshot,
         "blue-player",
         isClassicCtf && useBotOpponent ? requestTeamCommand : undefined,
+        this.hudScene,
       );
     this.inputAdapter = botControllers.size > 0
       ? new AugmentedInputAdapter(
@@ -281,6 +293,9 @@ export class GameplayV2Scene extends Phaser.Scene {
     this.mapPreviewRenderer?.dispose();
     this.traversalSmokeOverlay?.dispose();
     this.inputAdapter?.dispose();
+    if (this.scene.isActive(GAMEPLAY_V2_HUD_SCENE_KEY)) {
+      this.scene.stop(GAMEPLAY_V2_HUD_SCENE_KEY);
+    }
     this.menuKey?.destroy();
     this.bridge = undefined;
     if (this.mapPreviewResize) {
@@ -292,6 +307,7 @@ export class GameplayV2Scene extends Phaser.Scene {
     this.traversalSmokeOverlay = undefined;
     this.mapPreviewRenderer = undefined;
     this.mapPreviewResize = undefined;
+    this.hudScene = undefined;
     this.pauseForVisibility = false;
     this.pauseForOverlay = false;
     this.skipNextFrame = false;

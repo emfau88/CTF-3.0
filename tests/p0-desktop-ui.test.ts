@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   calculateArenaFitZoom,
+  MAXIMUM_DESKTOP_ARENA_ZOOM,
   MINIMUM_ARENA_VIEW_HEIGHT,
   MINIMUM_ARENA_VIEW_WIDTH,
 } from "../src/adapters/phaser/arenaCameraFit";
@@ -12,14 +13,32 @@ import {
   TRAINING_CROSSING_V2,
   WORLD_MAPS,
 } from "../src/core";
+import {
+  readV2FullscreenControlState,
+  toggleV2Fullscreen,
+  type V2FullscreenDocument,
+} from "../src/v2Fullscreen";
 
-test("desktop camera fit prevents short maps from exposing empty canvas bands", () => {
+test("desktop camera fit preserves the accepted arena scale in fullscreen", () => {
   for (const map of [TRAINING_CROSSING_V2, GRAND_ARCHIVE_V2]) {
     const zoom = calculateArenaFitZoom(1920, 1080, map.geometry.bounds, 1);
-    const worldHeight = map.geometry.bounds.maxY - map.geometry.bounds.minY;
-    assert.ok(worldHeight * zoom >= 1080);
     assert.ok(zoom >= 1);
+    assert.ok(zoom <= MAXIMUM_DESKTOP_ARENA_ZOOM);
   }
+  const flowBounds = {
+    minX: 0,
+    minY: 0,
+    maxX: 2000,
+    maxY: 820,
+  };
+  assert.equal(
+    calculateArenaFitZoom(1920, 944, flowBounds, 1),
+    MAXIMUM_DESKTOP_ARENA_ZOOM,
+  );
+  assert.equal(
+    calculateArenaFitZoom(1920, 1080, flowBounds, 1),
+    MAXIMUM_DESKTOP_ARENA_ZOOM,
+  );
   assert.equal(
     calculateArenaFitZoom(1366, 768, TRAINING_CROSSING_V2.geometry.bounds, 1),
     1,
@@ -126,12 +145,24 @@ test("desktop P0 UI contract keeps Career primary and uses one outer menu scroll
   assert.match(baseCss, /--hud-armor:\s*#d8b867/);
   assert.match(baseCss, /\.v2-game-utility\s*\{/);
   assert.match(baseCss, /\.v2-audio-button\.is-muted::after/);
+  assert.match(html, /id="v2-fullscreen-button"/);
+  assert.match(html, /id="v2-fullscreen-icon"/);
+  assert.match(html, /id="v2-fullscreen-label">Fullscreen/);
   for (const filename of [
     "hud-audio.svg",
+    "hud-fullscreen-enter.svg",
     "hud-stats.svg",
     "hud-menu.svg",
   ]) {
     assert.match(html, new RegExp(`assets/ui/${filename}`));
+  }
+  for (const filename of [
+    "hud-audio.svg",
+    "hud-fullscreen-enter.svg",
+    "hud-fullscreen-exit.svg",
+    "hud-stats.svg",
+    "hud-menu.svg",
+  ]) {
     const svg = readFileSync(
       new URL(`../public/assets/ui/${filename}`, import.meta.url),
       "utf8",
@@ -139,6 +170,82 @@ test("desktop P0 UI contract keeps Career primary and uses one outer menu scroll
     assert.match(svg, /^<svg /, `${filename} SVG root`);
     assert.match(svg, /viewBox="0 0 24 24"/, `${filename} viewbox`);
   }
+});
+
+test("V2 fullscreen control enters, exits, and reflects browser state", async () => {
+  let active = false;
+  let entered = 0;
+  let exited = 0;
+  const target = {
+    requestFullscreen: async () => {
+      entered++;
+      active = true;
+    },
+  } as unknown as Element;
+  const documentPort = {
+    fullscreenEnabled: true,
+    get fullscreenElement() {
+      return active ? target : null;
+    },
+    documentElement: target,
+    exitFullscreen: async () => {
+      exited++;
+      active = false;
+    },
+  } satisfies V2FullscreenDocument;
+
+  assert.deepEqual(readV2FullscreenControlState(documentPort), {
+    available: true,
+    active: false,
+    label: "Fullscreen",
+    ariaLabel: "Enter fullscreen",
+    icon: "enter",
+  });
+  await toggleV2Fullscreen(documentPort);
+  assert.equal(entered, 1);
+  assert.equal(readV2FullscreenControlState(documentPort).active, true);
+  assert.equal(readV2FullscreenControlState(documentPort).icon, "exit");
+  await toggleV2Fullscreen(documentPort);
+  assert.equal(exited, 1);
+  assert.equal(readV2FullscreenControlState(documentPort).active, false);
+});
+
+test("V2 gameplay renders screen UI in a dedicated unzoomed scene", () => {
+  const gameplay = readFileSync(
+    new URL(
+      "../src/adapters/phaser/scenes/GameplayV2Scene.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const hudScene = readFileSync(
+    new URL(
+      "../src/adapters/phaser/scenes/GameplayV2HudScene.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const desktopInput = readFileSync(
+    new URL(
+      "../src/adapters/phaser/PhaserDiagnosticInputAdapter.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const mobileInput = readFileSync(
+    new URL(
+      "../src/adapters/phaser/PhaserMobileInputAdapter.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(gameplay, /this\.scene\.launch\(GAMEPLAY_V2_HUD_SCENE_KEY\)/);
+  assert.match(gameplay, /new PhaserArenaHudPort\(\s*this\.hudScene/);
+  assert.match(hudScene, /\.setScroll\(0,\s*0\)[\s\S]*\.setZoom\(1\)/);
+  assert.match(desktopInput, /uiScene\.add\.graphics\(\)/);
+  assert.match(mobileInput, /uiScene\.add\.graphics\(\)/);
+  assert.match(mobileInput, /this\.aimGraphics = scene\.add\.graphics\(\)/);
 });
 
 test("project typography uses central UI, display, and diagnostic font tokens", () => {

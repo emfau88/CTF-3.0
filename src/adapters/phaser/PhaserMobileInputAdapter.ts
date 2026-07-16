@@ -69,6 +69,7 @@ export interface MobileWeaponStatus {
 }
 
 export class PhaserMobileInputAdapter implements InputAdapterPort {
+  private readonly uiScene: Phaser.Scene;
   private sequence = 0;
   private restartRequested = false;
   private readonly graphics: Phaser.GameObjects.Graphics;
@@ -137,7 +138,9 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     private readonly manualFireEnabled = false,
     private readonly weaponStatus?: (weaponId: WeaponId) => MobileWeaponStatus,
     private readonly snapshotProvider?: () => WorldSnapshot,
+    uiScene: Phaser.Scene = scene,
   ) {
+    this.uiScene = uiScene;
     scene.input.addPointer(2);
     const keyboard = scene.input.keyboard;
     if (keyboard) {
@@ -152,9 +155,9 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
         whip: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F),
       };
     }
-    this.graphics = scene.add.graphics().setScrollFactor(0).setDepth(1100);
+    this.graphics = uiScene.add.graphics().setDepth(1100);
     this.aimGraphics = scene.add.graphics().setDepth(1099);
-    this.cooldownGraphics = scene.add.graphics()
+    this.cooldownGraphics = uiScene.add.graphics()
       .setScrollFactor(0)
       .setDepth(1102);
     const labelStyle: Phaser.Types.GameObjects.Text.TextStyle = {
@@ -164,14 +167,14 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       color: "#17302d",
       align: "center",
     };
-    this.fireLabel = scene.add.text(0, 0, "FIRE", labelStyle)
+    this.fireLabel = uiScene.add.text(0, 0, "FIRE", labelStyle)
       .setOrigin(.5).setScrollFactor(0).setDepth(1103);
-    this.jumpLabel = scene.add.text(0, 0, "JUMP", labelStyle)
+    this.jumpLabel = uiScene.add.text(0, 0, "JUMP", labelStyle)
       .setOrigin(.5).setScrollFactor(0).setDepth(1103).setVisible(false);
     this.weaponViews = {
-      rocket: scene.add.image(0, 0, "uiRocketButton"),
-      rail: scene.add.image(0, 0, "uiRailButton"),
-      whip: scene.add.image(0, 0, "uiWhipButton"),
+      rocket: uiScene.add.image(0, 0, "uiRocketButton"),
+      rail: uiScene.add.image(0, 0, "uiRailButton"),
+      whip: uiScene.add.image(0, 0, "uiWhipButton"),
     };
     for (const view of Object.values(this.weaponViews)) {
       view.setScrollFactor(0).setDepth(1101);
@@ -191,8 +194,8 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     scene.input.on("pointermove", this.handlePointerMove, this);
     scene.input.on("pointerup", this.handlePointerUp, this);
     scene.input.on("pointerupoutside", this.handlePointerUp, this);
-    scene.scale.on("resize", this.layout, this);
-    this.layout(scene.scale.gameSize);
+    uiScene.scale.on("resize", this.layout, this);
+    this.layout(uiScene.scale.gameSize);
   }
 
   readFrame(deltaMs: number): CoreInputFrame {
@@ -274,7 +277,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     this.scene.input.off("pointermove", this.handlePointerMove, this);
     this.scene.input.off("pointerup", this.handlePointerUp, this);
     this.scene.input.off("pointerupoutside", this.handlePointerUp, this);
-    this.scene.scale.off("resize", this.layout, this);
+    this.uiScene.scale.off("resize", this.layout, this);
     this.graphics.destroy();
     this.aimGraphics.destroy();
     this.cooldownGraphics.destroy();
@@ -699,11 +702,11 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     texture: string,
     stroke: string,
   ): WeaponBadgeView {
-    const image = this.scene.add.image(0, 0, texture)
+    const image = this.uiScene.add.image(0, 0, texture)
       .setScrollFactor(0)
       .setDepth(1103)
       .setVisible(false);
-    const text = this.scene.add.text(0, 0, "0", {
+    const text = this.uiScene.add.text(0, 0, "0", {
       fontFamily: UI_FONT_FAMILY,
       fontSize: "17px",
       color: "#ffffff",
@@ -714,7 +717,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
   }
 
   private createCooldownLabel(): Phaser.GameObjects.Text {
-    return this.scene.add.text(0, 0, "", {
+    return this.uiScene.add.text(0, 0, "", {
       fontFamily: UI_FONT_FAMILY,
       fontSize: "14px",
       fontStyle: "bold",

@@ -16,3 +16,7 @@ export { PhaserArenaHudPort } from "./PhaserArenaHudPort";
 export { PhaserWeaponEffectsPort } from "./PhaserWeaponEffectsPort";
 export { runPhaserGameBridgeSmokeCheck } from "./PhaserGameBridge.smoke";
 export { GameplayV2Scene } from "./scenes/GameplayV2Scene";
+export {
+  GAMEPLAY_V2_HUD_SCENE_KEY,
+  GameplayV2HudScene,
+} from "./scenes/GameplayV2HudScene";

@@ -3,7 +3,10 @@ import "@fontsource/barlow-condensed/latin-700.css";
 import "@fontsource/barlow-condensed/latin-800.css";
 import "@fontsource/barlow-condensed/latin-900.css";
 import Phaser from "phaser";
-import { GameplayV2Scene } from "./adapters/phaser";
+import {
+  GameplayV2HudScene,
+  GameplayV2Scene,
+} from "./adapters/phaser";
 import { shouldUseGameplayV2Shell } from "./bootSceneSelection";
 import {
   getWorldMap,
@@ -33,6 +36,10 @@ import {
 import {
   readV2RouteState,
 } from "./v2Route";
+import {
+  readV2FullscreenControlState,
+  toggleV2Fullscreen,
+} from "./v2Fullscreen";
 
 const search = new URLSearchParams(window.location.search);
 const leagueMatchContext = readLeagueMatchContext(search);
@@ -83,6 +90,15 @@ if (showV2Menu) {
     );
     const audioLabel = document.querySelector<HTMLElement>(
       "#v2-audio-label",
+    );
+    const fullscreenButton = document.querySelector<HTMLButtonElement>(
+      "#v2-fullscreen-button",
+    );
+    const fullscreenIcon = document.querySelector<HTMLImageElement>(
+      "#v2-fullscreen-icon",
+    );
+    const fullscreenLabel = document.querySelector<HTMLElement>(
+      "#v2-fullscreen-label",
     );
     const gameUtility = document.querySelector<HTMLElement>(
       "#v2-game-utility",
@@ -242,6 +258,31 @@ if (showV2Menu) {
         );
       };
     }
+    if (fullscreenButton) {
+      const syncFullscreenButton = (): void => {
+        const state = readV2FullscreenControlState(document);
+        fullscreenButton.classList.toggle("is-hidden", !state.available);
+        fullscreenButton.classList.toggle("is-active", state.active);
+        fullscreenButton.setAttribute("aria-label", state.ariaLabel);
+        fullscreenButton.setAttribute("title", state.ariaLabel);
+        if (fullscreenLabel) fullscreenLabel.textContent = state.label;
+        if (fullscreenIcon) {
+          fullscreenIcon.src = `${import.meta.env.BASE_URL}assets/ui/hud-fullscreen-${state.icon}.svg`;
+        }
+      };
+      fullscreenButton.onclick = async () => {
+        try {
+          await toggleV2Fullscreen(document);
+        } catch {
+          // Browsers may reject fullscreen because of policy or user settings.
+        } finally {
+          syncFullscreenButton();
+        }
+      };
+      document.addEventListener("fullscreenchange", syncFullscreenButton);
+      document.addEventListener("fullscreenerror", syncFullscreenButton);
+      syncFullscreenButton();
+    }
     window.addEventListener("v2-request-pause", openPauseOverlay);
     window.addEventListener("v2-match-state", (event) => {
       const detail = (event as CustomEvent<{
@@ -337,7 +378,7 @@ if (showV2Menu) {
   new Phaser.Game({
     type: Phaser.AUTO,
     parent: "game",
-    backgroundColor: "#edf5ee",
+    backgroundColor: useGameplayV2Shell ? "#050b12" : "#edf5ee",
     scale: {
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -345,7 +386,9 @@ if (showV2Menu) {
       height: window.innerHeight,
     },
     render: { antialias: true },
-    scene: [useGameplayV2Shell ? GameplayV2Scene : ArenaScene],
+    scene: useGameplayV2Shell
+      ? [GameplayV2Scene, GameplayV2HudScene]
+      : [ArenaScene],
   });
 }
 

@@ -657,6 +657,10 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   background: rgb(97 198 235 / .08);
   color: white;
 }
+.v2-fullscreen-button.is-active {
+  border-color: rgb(216 184 103 / .28);
+  background: rgb(216 184 103 / .08);
+}
 .v2-game-menu-button:focus-visible {
   outline: 2px solid var(--hud-cyan);
   outline-offset: 1px;

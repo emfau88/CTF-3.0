@@ -2,6 +2,7 @@ import type { WorldGeometry } from "../../core";
 
 export const MINIMUM_ARENA_VIEW_WIDTH = 1280;
 export const MINIMUM_ARENA_VIEW_HEIGHT = 720;
+export const MAXIMUM_DESKTOP_ARENA_ZOOM = 1.15;
 
 export function calculateArenaFitZoom(
   viewportWidth: number,
@@ -18,9 +19,13 @@ export function calculateArenaFitZoom(
     safeViewportWidth / Math.min(worldWidth, MINIMUM_ARENA_VIEW_WIDTH),
     safeViewportHeight / Math.min(worldHeight, MINIMUM_ARENA_VIEW_HEIGHT),
   );
-  return Math.max(
+  const fillZoom = Math.max(
     responsiveZoom,
     safeViewportWidth / worldWidth,
     safeViewportHeight / worldHeight,
   );
+  const maximumZoom = requestedZoom < 1
+    ? requestedZoom
+    : MAXIMUM_DESKTOP_ARENA_ZOOM;
+  return Math.min(fillZoom, maximumZoom);
 }
