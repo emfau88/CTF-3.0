@@ -3,7 +3,9 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc && vite build",
     "test": "node --import tsx --import ./tests/browser-globals.ts --test tests/**/*.test.ts",
+    "test:e2e": "playwright test",
     "test:typecheck": "tsc -p tsconfig.tests.json",
+    "preview": "vite preview",
     "bot:diagnostics": "node --import tsx ./scripts/run-bot-diagnostics.ts"
   },
   "dependencies": {
@@ -14,6 +16,7 @@
     "vite": "^7.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/jsdom": "^28.0.3",
     "@types/node": "^26.1.1",
     "jsdom": "^29.1.1",

@@ -10,3 +10,5 @@ npm-debug.log*
 
 # additional build output
 build/
+playwright-report/
+test-results/
