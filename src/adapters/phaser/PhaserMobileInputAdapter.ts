@@ -64,7 +64,7 @@ interface WeaponBadgeView {
 }
 
 export interface MobileWeaponStatus {
-  readonly ammo: number;
+  readonly ammo: number | null;
   readonly cooldownMs: number;
 }
 
@@ -595,10 +595,11 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     }
     for (const weaponId of ["rocket", "rail", "whip"] as const) {
       const status = this.weaponStatus?.(weaponId) ?? {
-        ammo: 0,
+        ammo: weaponId === "whip" ? null : 0,
         cooldownMs: 0,
       };
-      const available = status.ammo > 0;
+      const usesAmmo = status.ammo !== null;
+      const available = !usesAmmo || status.ammo > 0;
       const control = this.weaponControls[weaponId];
       const compact = control.radius <= 36;
       const badgeOffset = compact ? 21 : 27;
@@ -606,8 +607,8 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       const active = control.held && status.cooldownMs <= 0;
       const baseScale = weaponIconScale(weaponId, control.radius);
       this.weaponViews[weaponId]
-        .setVisible(available)
-        .setAlpha(1)
+        .setVisible(true)
+        .setAlpha(available ? 1 : .34)
         .setScale(
           active && weaponId !== "whip" ? baseScale + .025 : baseScale,
         );
@@ -615,16 +616,16 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
         .setPosition(control.x + badgeOffset, control.y + badgeOffset)
         .setScale(compact ? .1 : .14)
         .setAlpha(.95)
-        .setVisible(available);
+        .setVisible(usesAmmo);
       badge.text
         .setPosition(control.x + badgeOffset, control.y + badgeOffset)
         .setFontSize(compact ? 12 : 15)
-        .setText(String(status.ammo))
-        .setVisible(available);
+        .setText(String(status.ammo ?? ""))
+        .setVisible(usesAmmo);
       this.weaponCooldownLabels[weaponId]
         .setText(formatCooldownSeconds(status.cooldownMs))
-        .setVisible(available && status.cooldownMs > 0);
-      if (available) {
+        .setVisible(status.cooldownMs > 0);
+      if (status.cooldownMs > 0) {
         this.drawCooldown(weaponId, control, status.cooldownMs);
       }
       if (
@@ -757,7 +758,8 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
   }
 
   private weaponAvailable(weaponId: WeaponId): boolean {
-    return (this.weaponStatus?.(weaponId).ammo ?? 0) > 0;
+    const ammo = this.weaponStatus?.(weaponId).ammo;
+    return weaponId === "whip" || (ammo ?? 0) > 0;
   }
 
   private queueAutoTargetedWeapon(weaponId: WeaponId): void {

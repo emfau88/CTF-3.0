@@ -428,7 +428,7 @@ function checkWorldMapRegistry(): void {
       world.actors.length !== 8 ||
       world.geometry.solids.length !== 19 ||
       world.geometry.gaps.length !== 1 ||
-      world.pickups.length !== 15 ||
+      world.pickups.length !== 13 ||
       world.navigation.jumpLinks.length !== 4 ||
       world.match?.phase !== "running"
     ) {
@@ -488,7 +488,7 @@ function checkWorldMapRegistry(): void {
       world.actors.length !== 8 ||
       world.geometry.solids.length !== 20 ||
       world.geometry.gaps.length !== 2 ||
-      world.pickups.length !== 13 ||
+      world.pickups.length !== 11 ||
       world.navigation.jumpLinks.length !== 4 ||
       world.match?.phase !== "running"
     ) {
@@ -548,7 +548,7 @@ function checkWorldMapRegistry(): void {
     world.geometry.bounds.maxY !== 820 ||
     world.geometry.solids.length !== 20 ||
     world.geometry.gaps.length !== 4 ||
-    world.pickups.length !== 13 ||
+    world.pickups.length !== 11 ||
     world.actors.find((actor) => actor.id === "red-player")
         ?.spawnPosition.x !== 145 ||
     world.actors.find((actor) => actor.id === "blue-player")
@@ -564,7 +564,7 @@ function checkWorldMapRegistry(): void {
     flankWorld.geometry.bounds.maxY !== 820 ||
     flankWorld.geometry.solids.length !== 14 ||
     flankWorld.geometry.gaps.length !== 4 ||
-    flankWorld.pickups.length !== 13 ||
+    flankWorld.pickups.length !== 11 ||
     flankWorld.actors.find((actor) => actor.id === "red-player")
         ?.spawnPosition.x !== 150 ||
     flankWorld.actors.find((actor) => actor.id === "blue-player")
@@ -2513,8 +2513,7 @@ function pickupParityValue(type: PickupState["type"]): number {
   if (type === "health") return V2_ARENA_PICKUP_PARITY_CONFIG.healthValue;
   if (type === "armor") return V2_ARENA_PICKUP_PARITY_CONFIG.armorValue;
   if (type === "rocket") return V2_ARENA_PICKUP_PARITY_CONFIG.rocketValue;
-  if (type === "rail") return V2_ARENA_PICKUP_PARITY_CONFIG.railValue;
-  return V2_ARENA_PICKUP_PARITY_CONFIG.whipValue;
+  return V2_ARENA_PICKUP_PARITY_CONFIG.railValue;
 }
 
 function createCloseRangeTeamDeathmatchWorld() {
@@ -2682,7 +2681,6 @@ function checkTdmBotCombatDecision(): void {
   const bot = world.actors[0]!;
   const target = world.actors[1]!;
   const combat = new TdmBotCombatController();
-  bot.weapons.whipAmmo = 1;
   bot.weapons.rocketAmmo = 1;
   bot.weapons.railAmmo = 1;
   let action = combat.readAction(
@@ -2696,7 +2694,6 @@ function checkTdmBotCombatDecision(): void {
   }
 
   target.position.x = 400;
-  bot.weapons.whipAmmo = 0;
   bot.weapons.railAmmo = 0;
   action = combat.readAction(bot, target, createWorldSnapshot(world), 34);
   if (weaponIdFromAction(action) !== "rocket") {
@@ -2760,7 +2757,6 @@ function checkTdmBotWhipRuntime(): void {
   const red = actorById(frame.snapshot.actors, "red-player");
   const blue = actorById(frame.snapshot.actors, "blue-player");
   if (
-    red.weapons.whipAmmo !== 0 ||
     red.weapons.whipCooldownMs !== 800 ||
     blue.health !== 65 ||
     !frame.events.some((event) =>
@@ -2769,7 +2765,7 @@ function checkTdmBotWhipRuntime(): void {
     )
   ) {
     throw new Error(
-      "TDM bot Whip actions must apply hit, ammo, and cooldown rules.",
+      "TDM bot Arc Lash actions must apply hit and cooldown rules.",
     );
   }
 }
@@ -2881,7 +2877,6 @@ function createBotWeaponRuntime(
     blue.spawnProtectionRemainingMs = 0;
     if (weaponId === "rocket") red.weapons.rocketAmmo = 1;
     if (weaponId === "rail") red.weapons.railAmmo = 1;
-    if (weaponId === "whip") red.weapons.whipAmmo = 1;
     return world;
   };
   const runtime = new GameplayCoreRuntime({
@@ -2938,7 +2933,6 @@ function zeroWeapons(actor: ActorState): void {
   actor.weapons.rocketAmmo = 0;
   actor.weapons.rocketCooldownMs = 0;
   actor.weapons.railAmmo = 0;
-  actor.weapons.whipAmmo = 0;
   actor.weapons.railCooldownMs = 0;
   actor.weapons.whipCooldownMs = 0;
 }
@@ -3381,10 +3375,10 @@ function checkRailParity(): void {
   if (
     owner.weapons.railAmmo !== 1 ||
     owner.weapons.railCooldownMs !== 2500 ||
-    target.health !== 5 ||
+    target.health !== 15 ||
     !events.some((event) => event.type === "weapon.railFired")
   ) {
-    throw new Error("Railgun must mirror V1 damage, ammo, and cooldown.");
+    throw new Error("Railgun must apply fixed damage, ammo, and cooldown.");
   }
   fireV1Weapons(world, owner, weaponInput("rail"));
   if (owner.weapons.railAmmo !== 1) {
@@ -3396,15 +3390,13 @@ function checkWhipParity(): void {
   const world = createWeaponTestWorld(110);
   const owner = world.actors[0]!;
   const target = world.actors[1]!;
-  owner.weapons.whipAmmo = 1;
   const events = fireV1Weapons(world, owner, weaponInput("whip"));
   if (
-    owner.weapons.whipAmmo !== 0 ||
     owner.weapons.whipCooldownMs !== 800 ||
     target.health !== 65 ||
     !events.some((event) => event.type === "weapon.whipFired")
   ) {
-    throw new Error("Whip must mirror V1 cone damage, ammo, and cooldown.");
+    throw new Error("Arc Lash must apply damage and cooldown without ammo.");
   }
 }
 

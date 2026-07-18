@@ -118,8 +118,6 @@ export const FLANK_SWITCH_V2: WorldMapData = {
     { id: "health-blue", type: "health", position: { x: 2280, y: 315 } },
     { id: "armor-blue", type: "armor", position: { x: 2375, y: 315 } },
     { id: "rocket-blue", type: "rocket", position: { x: 2375, y: 505 } },
-    { id: "whip-red", type: "whip", position: { x: 285, y: 410 } },
-    { id: "whip-blue", type: "whip", position: { x: 2215, y: 410 } },
     { id: "health-left", type: "health", position: { x: 820, y: 410 } },
     { id: "health-right", type: "health", position: { x: 1680, y: 410 } },
     { id: "rail-top", type: "rail", position: { x: 1250, y: 105 } },

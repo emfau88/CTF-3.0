@@ -5,19 +5,34 @@ const premiumArenas = [
     name: "Helix Canopy",
     mapId: "helix-canopy-v2",
     expectedAsset: "assets/helix-canopy/arena-master.png",
+    expectedCosmetic: "assets/premium-cosmetics/helix-curious-bloom.png",
     forbiddenAssetFolders: ["assets/jungle-temple/", "assets/library/", "assets/industrial/"],
+    forbiddenCosmetics: [
+      "temple-grumpy-frog.png",
+      "foundry-grumpy-maintenance-bot.png",
+    ],
   },
   {
     name: "Temple of the Drowned Sun",
     mapId: "drowned-sun-temple-v2",
     expectedAsset: "assets/jungle-temple/arena-master-v2.png",
+    expectedCosmetic: "assets/premium-cosmetics/temple-grumpy-frog.png",
     forbiddenAssetFolders: ["assets/helix-canopy/", "assets/library/", "assets/industrial/"],
+    forbiddenCosmetics: [
+      "helix-curious-bloom.png",
+      "foundry-grumpy-maintenance-bot.png",
+    ],
   },
   {
     name: "Foundry Circuit",
     mapId: "flow-circuit-v2",
     expectedAsset: "assets/foundry-circuit/arena-master-v2.png",
+    expectedCosmetic: "assets/premium-cosmetics/foundry-grumpy-maintenance-bot.png",
     forbiddenAssetFolders: ["assets/helix-canopy/", "assets/jungle-temple/", "assets/library/", "assets/industrial/"],
+    forbiddenCosmetics: [
+      "helix-curious-bloom.png",
+      "temple-grumpy-frog.png",
+    ],
   },
 ] as const;
 
@@ -43,10 +58,19 @@ for (const arena of premiumArenas) {
     expect(requestedUrls.some((url) => url.includes(arena.expectedAsset))).toBe(
       true,
     );
+    expect(
+      requestedUrls.some((url) => url.includes(arena.expectedCosmetic)),
+    ).toBe(true);
     for (const folder of arena.forbiddenAssetFolders) {
       expect(
         requestedUrls.some((url) => url.includes(folder)),
         `${arena.name} unexpectedly requested ${folder}`,
+      ).toBe(false);
+    }
+    for (const asset of arena.forbiddenCosmetics) {
+      expect(
+        requestedUrls.some((url) => url.includes(asset)),
+        `${arena.name} unexpectedly requested ${asset}`,
       ).toBe(false);
     }
     expect(diagnostics.errors).toEqual([]);

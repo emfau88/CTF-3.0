@@ -13,6 +13,7 @@ export class TdmBotCombatController {
   private railReactionRemainingMs = 0;
   private railTargetKey: string | null = null;
   private railShotSequence = 0;
+  private rocketShotSequence = 0;
 
   constructor(
     private readonly config: BotCombatConfig = V2_BOT_COMBAT_CONFIG,
@@ -52,6 +53,8 @@ export class TdmBotCombatController {
     }
     const direction = weaponId === "rail"
       ? this.createRailAim(actor, target, directAim, distance)
+      : weaponId === "rocket"
+      ? this.createRocketAim(actor, target, snapshot)
       : directAim;
     return {
       action: "fireWeapon",
@@ -66,6 +69,7 @@ export class TdmBotCombatController {
     this.rocketDecisionCooldownMs = 0;
     this.resetRailTarget();
     this.railShotSequence = 0;
+    this.rocketShotSequence = 0;
   }
 
   private updateRailTarget(
@@ -111,13 +115,55 @@ export class TdmBotCombatController {
     );
   }
 
+  private createRocketAim(
+    actor: Readonly<ActorState>,
+    target: Readonly<ActorState>,
+    snapshot: WorldSnapshot,
+  ): WorldPosition {
+    const sequence = this.rocketShotSequence++;
+    const leadSeconds = interceptTimeSeconds(
+      actor.position,
+      target.position,
+      target.velocity,
+      this.config.rocketProjectileSpeed,
+      this.config.rocketMaxLeadMs / 1000,
+    );
+    const predictedTarget = {
+      x: target.position.x + target.velocity.x * leadSeconds,
+      y: target.position.y + target.velocity.y * leadSeconds,
+    };
+    const surfaceSample = deterministicSignedUnit(
+      `${actor.id}:${actor.lifeId}:${target.id}:${target.lifeId}:${sequence}:surface`,
+    );
+    const surfaceTarget = surfaceSample >
+        1 - this.config.rocketSurfaceAimChance * 2
+      ? nearestRocketSurfacePoint(
+        actor.position,
+        predictedTarget,
+        target.radius,
+        snapshot.geometry.solids,
+        this.config.rocketSplashRadius,
+      )
+      : null;
+    const aim = directionBetween(
+      actor.position,
+      surfaceTarget ?? predictedTarget,
+    );
+    const jitterSample = deterministicSignedUnit(
+      `${actor.id}:${actor.lifeId}:${target.id}:${target.lifeId}:${sequence}:jitter`,
+    );
+    return rotateDirection(
+      aim,
+      jitterSample * this.config.rocketAimJitterRadians,
+    );
+  }
+
   private chooseWeapon(
     actor: Readonly<ActorState>,
     target: Readonly<ActorState>,
     distance: number,
   ): BotWeaponId | null {
     if (
-      actor.weapons.whipAmmo > 0 &&
       actor.weapons.whipCooldownMs <= 0 &&
       distance <= this.config.whipRange + target.radius
     ) {
@@ -151,6 +197,74 @@ export class TdmBotCombatController {
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
+}
+
+function interceptTimeSeconds(
+  origin: WorldPosition,
+  target: WorldPosition,
+  velocity: WorldPosition,
+  projectileSpeed: number,
+  maximum: number,
+): number {
+  const rx = target.x - origin.x;
+  const ry = target.y - origin.y;
+  const a = velocity.x * velocity.x + velocity.y * velocity.y -
+    projectileSpeed * projectileSpeed;
+  const b = 2 * (rx * velocity.x + ry * velocity.y);
+  const c = rx * rx + ry * ry;
+  let time = Math.sqrt(c) / Math.max(1, projectileSpeed);
+  if (Math.abs(a) < .000001) {
+    if (Math.abs(b) > .000001) {
+      const linear = -c / b;
+      if (linear > 0) time = linear;
+    }
+  } else {
+    const discriminant = b * b - 4 * a * c;
+    if (discriminant >= 0) {
+      const root = Math.sqrt(discriminant);
+      const first = (-b - root) / (2 * a);
+      const second = (-b + root) / (2 * a);
+      const positive = [first, second].filter((value) => value > 0);
+      if (positive.length > 0) time = Math.min(...positive);
+    }
+  }
+  return Math.max(0, Math.min(maximum, time));
+}
+
+function nearestRocketSurfacePoint(
+  origin: WorldPosition,
+  target: WorldPosition,
+  targetRadius: number,
+  solids: readonly WorldRect[],
+  splashRadius: number,
+): WorldPosition | null {
+  const maximumSurfaceDistance = Math.max(
+    0,
+    splashRadius - targetRadius - 4,
+  );
+  let best: { readonly point: WorldPosition; readonly distance: number } | null =
+    null;
+  for (const solid of solids) {
+    const point = {
+      x: Math.max(solid.x, Math.min(solid.x + solid.width, target.x)),
+      y: Math.max(solid.y, Math.min(solid.y + solid.height, target.y)),
+    };
+    const targetDistance = distanceBetween(point, target);
+    if (
+      targetDistance <= .0001 ||
+      targetDistance > maximumSurfaceDistance ||
+      solids.some((other) =>
+        other.id !== solid.id &&
+        lineIntersectsRect(origin, point, other)
+      )
+    ) {
+      continue;
+    }
+    if (!best || targetDistance < best.distance) {
+      best = { point, distance: targetDistance };
+    }
+  }
+  return best?.point ?? null;
 }
 
 function deterministicSignedUnit(key: string): number {

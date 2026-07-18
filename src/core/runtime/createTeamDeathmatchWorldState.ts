@@ -2,7 +2,6 @@ import {
   createActorState,
   V2_ACTOR_LIFECYCLE_CONFIG,
 } from "../actors";
-import { V2_V1_WEAPON_PARITY_CONFIG } from "../combat";
 import {
   createPickupState,
   V2_ARENA_PICKUP_PARITY_CONFIG,
@@ -97,8 +96,5 @@ function createPlayer(
     maxArmor: 100,
     spawnProtectionRemainingMs:
       V2_ACTOR_LIFECYCLE_CONFIG.spawnProtectionMs,
-    weapons: {
-      whipAmmo: V2_V1_WEAPON_PARITY_CONFIG.whipMaxCharges,
-    },
   });
 }

@@ -51,9 +51,7 @@ export interface ActorWeaponState {
   rocketCooldownMs: number;
   railAmmo: number;
   railCooldownMs: number;
-  whipAmmo: number;
   whipCooldownMs: number;
-  whipRechargeMs: number;
 }
 
 export interface ActorState {
@@ -159,9 +157,7 @@ export function createActorState(input: CreateActorStateInput): ActorState {
       rocketCooldownMs: input.weapons?.rocketCooldownMs ?? 0,
       railAmmo: input.weapons?.railAmmo ?? 0,
       railCooldownMs: input.weapons?.railCooldownMs ?? 0,
-      whipAmmo: input.weapons?.whipAmmo ?? 0,
       whipCooldownMs: input.weapons?.whipCooldownMs ?? 0,
-      whipRechargeMs: input.weapons?.whipRechargeMs ?? 0,
     },
     respawn: input.respawn ? { ...input.respawn } : null,
   };

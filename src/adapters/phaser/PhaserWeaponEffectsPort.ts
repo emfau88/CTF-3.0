@@ -42,10 +42,13 @@ interface ExplosionEffect extends Point {
   readonly view: Phaser.GameObjects.Image;
 }
 
+type RailImpactKind = "actor" | "solid" | "range";
+
 interface RailEffect {
   readonly start: Point;
   readonly end: Point;
   readonly hit: boolean;
+  readonly impactKind: RailImpactKind;
   lifeMs: number;
   readonly maxLifeMs: number;
   readonly impact?: Phaser.GameObjects.Image;
@@ -132,6 +135,7 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
           readPoint(event.payload, "start"),
           readPoint(event.payload, "end"),
           readBoolean(event.payload, "hit"),
+          readRailImpactKind(event.payload),
         );
       } else if (event.type === "weapon.whipFired") {
         this.addWhip(
@@ -424,6 +428,28 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
         ?.setRotation(timeMs * .018)
         .setScale(.13 + (1 - alpha) * .1)
         .setAlpha(alpha);
+      if (effect.impactKind === "solid") {
+        const progress = 1 - alpha;
+        const rotation = timeMs * .012;
+        this.effectsGraphics
+          .fillStyle(0xbaffd0, .9 * alpha)
+          .fillCircle(effect.end.x, effect.end.y, 3 + progress * 2)
+          .lineStyle(2, 0x34ff79, .82 * alpha)
+          .strokeCircle(
+            effect.end.x,
+            effect.end.y,
+            7 + progress * 8,
+          );
+        for (let index = 0; index < 4; index += 1) {
+          const angle = rotation + index * Math.PI / 2;
+          this.effectsGraphics.lineBetween(
+            effect.end.x + Math.cos(angle) * (5 + progress * 2),
+            effect.end.y + Math.sin(angle) * (5 + progress * 2),
+            effect.end.x + Math.cos(angle) * (11 + progress * 10),
+            effect.end.y + Math.sin(angle) * (11 + progress * 10),
+          );
+        }
+      }
     }
   }
 
@@ -548,12 +574,14 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
     start: Point | null,
     end: Point | null,
     hit: boolean,
+    impactKind: RailImpactKind,
   ): void {
     if (!start || !end) return;
     this.railEffects.push({
       start,
       end,
       hit,
+      impactKind,
       lifeMs: 190,
       maxLifeMs: 190,
       impact: hit
@@ -724,4 +752,9 @@ function readString(payload: unknown, key: string): string {
   if (!payload || typeof payload !== "object" || !(key in payload)) return "";
   const value = (payload as Record<string, unknown>)[key];
   return typeof value === "string" ? value : "";
+}
+
+function readRailImpactKind(payload: unknown): RailImpactKind {
+  const value = readString(payload, "impactKind");
+  return value === "actor" || value === "solid" ? value : "range";
 }

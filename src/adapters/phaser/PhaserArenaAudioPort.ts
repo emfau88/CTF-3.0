@@ -12,7 +12,7 @@ const STEP_KEYS = ["step1", "step2", "step3", "step4", "step5"] as const;
 const MAX_ACTOR_SPEED = V2_GROUND_PARITY_CONFIG.maxSpeed;
 const ENEMY_STEP_RANGE = 420;
 
-type PickupType = "health" | "armor" | "rocket" | "rail" | "whip";
+type PickupType = "health" | "armor" | "rocket" | "rail";
 
 interface StepState {
   index: number;
@@ -376,8 +376,7 @@ function readPickupType(payload: unknown): PickupType | null {
   return type === "health" ||
       type === "armor" ||
       type === "rocket" ||
-      type === "rail" ||
-      type === "whip"
+      type === "rail"
     ? type
     : null;
 }

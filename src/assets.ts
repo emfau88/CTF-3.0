@@ -1,5 +1,6 @@
 import type Phaser from "phaser";
 import type { V2PlayerSkinId } from "./v2Route";
+import { getPremiumMapCosmetic } from "./premiumMapCosmetics";
 
 const assetUrl = (file: string) =>
   `${import.meta.env?.BASE_URL ?? "/"}assets/${file}`;
@@ -95,6 +96,13 @@ export function preloadArenaAssets(
   }
   if (options.mapTheme === "foundry-circuit") {
     preloadFoundryCircuitAssets(scene);
+  }
+  const premiumMapCosmetic = getPremiumMapCosmetic(options.mapId);
+  if (premiumMapCosmetic) {
+    scene.load.image(
+      premiumMapCosmetic.assetKey,
+      assetUrl(premiumMapCosmetic.assetFile),
+    );
   }
   scene.load.audio("step1", assetUrl("sounds/step1.wav"));
   scene.load.audio("step2", assetUrl("sounds/step2.wav"));

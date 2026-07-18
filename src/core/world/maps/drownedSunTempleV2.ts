@@ -260,8 +260,6 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
     { id: "rocket-roots-west", type: "rocket", position: point(800, 800) },
     { id: "rocket-roots-east", type: "rocket", position: point(1360, 800) },
     { id: "rail-gallery-center", type: "rail", position: point(1080, 80) },
-    { id: "arc-lash-west", type: "whip", position: point(815, 520) },
-    { id: "arc-lash-east", type: "whip", position: point(1345, 520) },
   ],
   gameplay: {
     blueBase: {

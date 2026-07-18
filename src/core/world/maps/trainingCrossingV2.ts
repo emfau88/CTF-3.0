@@ -96,10 +96,8 @@ export const TRAINING_CROSSING_V2: WorldMapData = {
     { id: "armor-center", type: "armor", position: { x: 750, y: 410 } },
     { id: "rocket-red", type: "rocket", position: { x: 130, y: 500 } },
     { id: "rail-red", type: "rail", position: { x: 215, y: 500 } },
-    { id: "whip-red", type: "whip", position: { x: 285, y: 410 } },
     { id: "rocket-blue", type: "rocket", position: { x: 1370, y: 500 } },
     { id: "rail-blue", type: "rail", position: { x: 1285, y: 500 } },
-    { id: "whip-blue", type: "whip", position: { x: 1215, y: 410 } },
   ],
   gameplay: {
     redBase: { x: 70, y: 280, width: 190, height: 260 },

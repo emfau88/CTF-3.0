@@ -101,13 +101,11 @@ function pickupTexture(type: PickupState["type"]): string {
   if (type === "health") return "pickupHealth";
   if (type === "armor") return "pickupArmor";
   if (type === "rocket") return "pickupRocket";
-  if (type === "rail") return "pickupRail";
-  return "pickupWhip";
+  return "pickupRail";
 }
 
 function pickupIconScale(type: PickupState["type"]): number {
   if (type === "rail") return .22;
-  if (type === "whip") return .12;
   return .18;
 }
 
@@ -115,8 +113,7 @@ export function pickupPadColor(type: PickupState["type"]): number {
   if (type === "health") return 0x55d88a;
   if (type === "armor") return 0x6fc7ff;
   if (type === "rocket") return 0xff7048;
-  if (type === "rail") return 0x9cff67;
-  return 0x63e9ff;
+  return 0x9cff67;
 }
 
 function drawPickupState(
@@ -144,7 +141,7 @@ function drawPickupState(
 }
 
 function isWeaponPickup(type: PickupState["type"]): boolean {
-  return type === "rocket" || type === "rail" || type === "whip";
+  return type === "rocket" || type === "rail";
 }
 
 function ensureSpawnPadAnimation(scene: Phaser.Scene): void {

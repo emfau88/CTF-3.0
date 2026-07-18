@@ -170,9 +170,7 @@ function updateFalling(
   actor.weapons.rocketCooldownMs = 0;
   actor.weapons.railAmmo = 0;
   actor.weapons.railCooldownMs = 0;
-  actor.weapons.whipAmmo = 0;
   actor.weapons.whipCooldownMs = 0;
-  actor.weapons.whipRechargeMs = 0;
   actor.spawnProtectionRemainingMs = 0;
   actor.lifeState = "dead";
   actor.respawn = {

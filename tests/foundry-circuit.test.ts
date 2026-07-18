@@ -47,7 +47,7 @@ test("Foundry Circuit registers its premium rebuild contract", () => {
   assert.equal(map?.geometry.gaps.length, 2);
   assert.equal(map?.navigation.jumpLinks.length, 4);
   assert.equal(map?.spawnPoints.length, 8);
-  assert.equal(map?.pickupSpawns.length, 13);
+  assert.equal(map?.pickupSpawns.length, 11);
   assert.equal(map?.presentation.theme, "foundry-circuit");
   assert.deepEqual(
     WORLD_MAPS.slice(0, 3).map((candidate) => candidate.id),

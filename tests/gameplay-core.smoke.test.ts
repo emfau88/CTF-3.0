@@ -636,6 +636,69 @@ test("one flag bot projects blocked escort targets to a reachable point", () => 
   );
 });
 
+test("rocket bot leads moving targets and can choose a nearby wall for splash", () => {
+  const createRocketWorld = () => {
+    const world = createEmptyWorldState("rocket-bot-aim");
+    world.geometry = {
+      bounds: { minX: 0, minY: 0, maxX: 1_200, maxY: 600 },
+      solids: [],
+      gaps: [],
+    };
+    const bot = createActorState({
+      id: "rocket-bot-0",
+      kind: "bot",
+      teamId: "red",
+      position: { x: 100, y: 100 },
+      radius: 16,
+      maxHealth: 100,
+      maxArmor: 0,
+      weapons: { rocketAmmo: 2 },
+    });
+    const target = createActorState({
+      id: "rocket-target",
+      kind: "player",
+      teamId: "blue",
+      position: { x: 400, y: 100 },
+      radius: 16,
+      maxHealth: 100,
+      maxArmor: 0,
+    });
+    world.actors.push(bot, target);
+    return { world, bot, target };
+  };
+
+  const moving = createRocketWorld();
+  moving.target.velocity.y = 100;
+  const lead = new TdmBotCombatController().readAction(
+    moving.bot,
+    moving.target,
+    createWorldSnapshot(moving.world),
+    34,
+  );
+  assert.equal(actionWeaponId(lead), "rocket");
+  assert.ok((lead?.direction?.y ?? 0) > .2);
+
+  const surfaced = createRocketWorld();
+  surfaced.world.geometry = {
+    ...surfaced.world.geometry,
+    solids: [{
+      id: "splash-wall",
+      x: 380,
+      y: 130,
+      width: 40,
+      height: 20,
+    }],
+  };
+  const surfaceShot = new TdmBotCombatController().readAction(
+    surfaced.bot,
+    surfaced.target,
+    createWorldSnapshot(surfaced.world),
+    34,
+  );
+  assert.equal(actionWeaponId(surfaceShot), "rocket");
+  assert.ok((surfaceShot?.direction?.y ?? 0) > .08);
+});
+
 test("rail bot waits for target acquisition and applies deterministic spread", () => {
   const world = createEmptyWorldState("rail-bot-balance");
   world.geometry = {
@@ -667,6 +730,11 @@ test("rail bot waits for target acquisition and applies deterministic spread", (
     rocketMinRange: 190,
     rocketMaxRange: 700,
     rocketDecisionCooldownMs: 3000,
+    rocketProjectileSpeed: 371,
+    rocketSplashRadius: 105,
+    rocketMaxLeadMs: 900,
+    rocketAimJitterRadians: .035,
+    rocketSurfaceAimChance: .45,
     railReactionMs: 320,
     railAimJitterRadians: .04,
     railLongRangeJitterMultiplier: 2.5,
@@ -933,6 +1001,11 @@ test("rail bot becomes less precise toward maximum range", () => {
     rocketMinRange: 190,
     rocketMaxRange: 700,
     rocketDecisionCooldownMs: 3000,
+    rocketProjectileSpeed: 371,
+    rocketSplashRadius: 105,
+    rocketMaxLeadMs: 900,
+    rocketAimJitterRadians: .035,
+    rocketSurfaceAimChance: .45,
     railReactionMs: 0,
     railAimJitterRadians: .04,
     railLongRangeJitterMultiplier: 2.5,

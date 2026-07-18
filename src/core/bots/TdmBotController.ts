@@ -239,9 +239,7 @@ function selectPickupGoal(
     ? false
     : preferredWeapon === "rocket"
     ? actor.weapons.rocketAmmo <= 0
-    : preferredWeapon === "rail"
-    ? actor.weapons.railAmmo <= 0
-    : actor.weapons.whipAmmo <= 0;
+    : actor.weapons.railAmmo <= 0;
   const desiredTypes = [
     urgentType,
     needsPreferredWeapon ? preferredWeapon : null,
@@ -281,10 +279,9 @@ function selectPickupGoal(
 
 function preferredWeaponForSlot(
   slot: ArenaTeamSlot,
-): "rocket" | "rail" | "whip" | null {
+): "rocket" | "rail" | null {
   if (slot === 1) return "rocket";
   if (slot === 2) return "rail";
-  if (slot === 3) return "whip";
   return null;
 }
 
@@ -371,12 +368,11 @@ function isWeaponPickupReservedForHuman(
 ): boolean {
   if (
     pickup.type !== "rocket" &&
-    pickup.type !== "rail" &&
-    pickup.type !== "whip"
+    pickup.type !== "rail"
   ) {
     return false;
   }
-  const weapon = pickup.type as "rocket" | "rail" | "whip";
+  const weapon = pickup.type as "rocket" | "rail";
   const actorAmmo = ammoFor(actor, weapon);
   const humans = new Set(humanActorIds);
   return snapshot.actors.some((candidate) =>
@@ -390,13 +386,11 @@ function isWeaponPickupReservedForHuman(
 
 function ammoFor(
   actor: Readonly<ActorState>,
-  weapon: "rocket" | "rail" | "whip",
+  weapon: "rocket" | "rail",
 ): number {
   return weapon === "rocket"
     ? actor.weapons.rocketAmmo
-    : weapon === "rail"
-    ? actor.weapons.railAmmo
-    : actor.weapons.whipAmmo;
+    : actor.weapons.railAmmo;
 }
 
 function distance(

@@ -124,8 +124,6 @@ export const GRAND_ARCHIVE_V2: WorldMapData = {
     { id: "health-blue", type: "health", position: { x: 2285, y: 325 } },
     { id: "armor-blue", type: "armor", position: { x: 2388, y: 325 } },
     { id: "rocket-blue", type: "rocket", position: { x: 2375, y: 500 } },
-    { id: "whip-red", type: "whip", position: { x: 285, y: 410 } },
-    { id: "whip-blue", type: "whip", position: { x: 2215, y: 410 } },
     { id: "health-left", type: "health", position: { x: 760, y: 410 } },
     { id: "health-right", type: "health", position: { x: 1740, y: 410 } },
     { id: "rail-top", type: "rail", position: { x: 1250, y: 105 } },

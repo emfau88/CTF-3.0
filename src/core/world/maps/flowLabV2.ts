@@ -120,8 +120,6 @@ export const FLOW_LAB_V2: WorldMapData = {
     { id: "rocket-lower-right", type: "rocket", position: { x: 1480, y: 670 } },
     { id: "rail-upper", type: "rail", position: { x: 1100, y: 90 } },
     { id: "rail-lower", type: "rail", position: { x: 1100, y: 835 } },
-    { id: "whip-lower-left", type: "whip", position: { x: 900, y: 790 } },
-    { id: "whip-lower-right", type: "whip", position: { x: 1300, y: 790 } },
   ],
   gameplay: {
     blueBase: { x: 55, y: 300, width: 230, height: 300 },

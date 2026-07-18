@@ -134,11 +134,13 @@ function fireRail(
     y: actor.position.y + direction.y * (actor.radius + 5),
   };
   let distance = config.railRange;
+  let impactKind: "range" | "solid" | "actor" = "range";
   for (const solid of world.geometry.solids) {
-    distance = Math.min(
-      distance,
-      rayRectDistance(start, direction, solid) ?? distance,
-    );
+    const solidDistance = rayRectDistance(start, direction, solid);
+    if (solidDistance !== null && solidDistance < distance) {
+      distance = solidDistance;
+      impactKind = "solid";
+    }
   }
   let target: ActorState | null = null;
   for (const candidate of world.actors) {
@@ -154,6 +156,7 @@ function fireRail(
     if (targetDistance !== null && targetDistance < distance) {
       distance = targetDistance;
       target = candidate;
+      impactKind = "actor";
     }
   }
   const end = {
@@ -180,6 +183,7 @@ function fireRail(
       start,
       end,
       hit: Boolean(target),
+      impactKind,
       remainingAmmo: actor.weapons.railAmmo,
       cooldownMs: config.railCooldownMs,
     },
@@ -187,7 +191,7 @@ function fireRail(
   if (target) {
     events.push(...applyDamage(
       target,
-      target.maxHealth * config.railDamageRatio,
+      config.railDamage,
       world.timeMs,
       V2_ACTOR_LIFECYCLE_CONFIG,
       actor.id,
@@ -203,7 +207,6 @@ function fireWhip(
   config: V1WeaponConfig,
 ): readonly GameEvent[] {
   if (
-    actor.weapons.whipAmmo <= 0 ||
     actor.weapons.whipCooldownMs > 0
   ) {
     return [];
@@ -225,14 +228,7 @@ function fireWhip(
     }];
   }
   const { target, direction } = resolved;
-  actor.weapons.whipAmmo--;
   actor.weapons.whipCooldownMs = config.whipCooldownMs;
-  if (
-    actor.weapons.whipAmmo < config.whipMaxCharges &&
-    actor.weapons.whipRechargeMs <= 0
-  ) {
-    actor.weapons.whipRechargeMs = config.whipRechargeMs;
-  }
   const protectionEnded = cancelSpawnProtection(
     actor,
     world.timeMs,
@@ -254,7 +250,6 @@ function fireWhip(
       halfAngle: config.whipHalfAngle,
       hit: true,
       targetPosition: { ...target.position },
-      remainingAmmo: actor.weapons.whipAmmo,
       cooldownMs: config.whipCooldownMs,
     },
   }];

@@ -64,7 +64,7 @@ interface DesktopWeaponBadgeView {
 }
 
 export interface DesktopWeaponStatus {
-  readonly ammo: number;
+  readonly ammo: number | null;
   readonly cooldownMs: number;
 }
 
@@ -423,26 +423,25 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   private draw(): void {
     this.graphics.clear();
     this.cooldownGraphics.clear();
-    if (WEAPON_IDS.some((weaponId) => this.weaponAvailable(weaponId))) {
-      drawWeaponStrip(this.graphics, {
-        ...this.weaponStripLayout,
-        slots: WEAPON_IDS.map((weaponId) => {
-          const control = this.weaponControls[weaponId];
-          return {
-            x: control.x,
-            y: control.y,
-            radius: control.radius,
-            available: this.weaponAvailable(weaponId),
-          };
-        }),
-      });
-    }
+    drawWeaponStrip(this.graphics, {
+      ...this.weaponStripLayout,
+      slots: WEAPON_IDS.map((weaponId) => {
+        const control = this.weaponControls[weaponId];
+        return {
+          x: control.x,
+          y: control.y,
+          radius: control.radius,
+          available: this.weaponAvailable(weaponId),
+        };
+      }),
+    });
     for (const weaponId of WEAPON_IDS) {
       const status = this.weaponStatus?.(weaponId) ?? {
-        ammo: 0,
+        ammo: weaponId === "whip" ? null : 0,
         cooldownMs: 0,
       };
-      const available = status.ammo > 0;
+      const usesAmmo = status.ammo !== null;
+      const available = !usesAmmo || status.ammo > 0;
       const control = this.weaponControls[weaponId];
       const micro = control.radius <= 18;
       const compact = control.radius <= 25;
@@ -450,24 +449,24 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       const badge = this.weaponBadges[weaponId];
       const baseScale = weaponIconScale(weaponId, control.radius);
       this.weaponViews[weaponId]
-        .setVisible(available)
-        .setAlpha(1)
+        .setVisible(true)
+        .setAlpha(available ? 1 : .34)
         .setScale(baseScale);
       badge.image
         .setPosition(control.x + badgeOffset, control.y + badgeOffset)
         .setScale(micro ? .065 : compact ? .085 : .1)
         .setAlpha(.95)
-        .setVisible(available);
+        .setVisible(usesAmmo);
       badge.text
         .setPosition(control.x + badgeOffset, control.y + badgeOffset)
         .setFontSize(micro ? 8 : compact ? 10 : 12)
-        .setText(String(status.ammo))
-        .setVisible(available);
-      this.weaponKeyLabels[weaponId].setVisible(available);
+        .setText(String(status.ammo ?? ""))
+        .setVisible(usesAmmo);
+      this.weaponKeyLabels[weaponId].setVisible(true);
       this.weaponCooldownLabels[weaponId]
         .setText(formatCooldownSeconds(status.cooldownMs))
-        .setVisible(available && status.cooldownMs > 0);
-      if (available) {
+        .setVisible(status.cooldownMs > 0);
+      if (status.cooldownMs > 0) {
         this.drawCooldown(weaponId, control, status.cooldownMs);
       }
     }
@@ -497,7 +496,8 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   }
 
   private weaponAvailable(weaponId: WeaponId): boolean {
-    return (this.weaponStatus?.(weaponId).ammo ?? 0) > 0;
+    const ammo = this.weaponStatus?.(weaponId).ammo;
+    return weaponId === "whip" || (ammo ?? 0) > 0;
   }
 
   private controlledActor(

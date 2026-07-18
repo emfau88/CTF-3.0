@@ -199,7 +199,7 @@ export class GameplayV2Scene extends Phaser.Scene {
         };
       }
       return {
-        ammo: actor.weapons.whipAmmo,
+        ammo: null,
         cooldownMs: actor.weapons.whipCooldownMs,
       };
     };

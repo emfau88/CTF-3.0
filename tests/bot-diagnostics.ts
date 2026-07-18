@@ -62,7 +62,7 @@ export interface BotMovementMetric extends JumpTelemetryMetric {
   pickupCollections: number;
   specialWeaponShots: number;
   allWeaponAmmoEmptyMs: number;
-  zeroAmmoMs: Record<"rocket" | "rail" | "whip", number>;
+  zeroAmmoMs: Record<"rocket" | "rail", number>;
 }
 
 export interface SimulationSummary {
@@ -224,7 +224,6 @@ export interface TdmPickupIntentMetric {
   readonly finalArmor: number;
   readonly finalRocketAmmo: number;
   readonly finalRailAmmo: number;
-  readonly finalWhipAmmo: number;
 }
 
 export interface TdmPickupIntentSummary {
@@ -364,7 +363,7 @@ export function runSimulationScenario(
       pickupCollections: 0,
       specialWeaponShots: 0,
       allWeaponAmmoEmptyMs: 0,
-      zeroAmmoMs: { rocket: 0, rail: 0, whip: 0 },
+      zeroAmmoMs: { rocket: 0, rail: 0 },
       ...createJumpTelemetryMetric(),
     }]),
   );
@@ -459,11 +458,9 @@ export function runSimulationScenario(
       if (current.lifeState === "active") {
         if (current.weapons.rocketAmmo <= 0) metric.zeroAmmoMs.rocket += FRAME_DELTA_MS;
         if (current.weapons.railAmmo <= 0) metric.zeroAmmoMs.rail += FRAME_DELTA_MS;
-        if (current.weapons.whipAmmo <= 0) metric.zeroAmmoMs.whip += FRAME_DELTA_MS;
         if (
           current.weapons.rocketAmmo <= 0 &&
-          current.weapons.railAmmo <= 0 &&
-          current.weapons.whipAmmo <= 0
+          current.weapons.railAmmo <= 0
         ) {
           metric.allWeaponAmmoEmptyMs += FRAME_DELTA_MS;
         }
@@ -575,7 +572,7 @@ export function runOneFlagNavigatorDiagnostics(
       pickupCollections: 0,
       specialWeaponShots: 0,
       allWeaponAmmoEmptyMs: 0,
-      zeroAmmoMs: { rocket: 0, rail: 0, whip: 0 },
+      zeroAmmoMs: { rocket: 0, rail: 0 },
       ...createJumpTelemetryMetric(),
       repathCount: 0,
       pathMissCount: 0,
@@ -1105,7 +1102,6 @@ function configureEscortCarrierHotzoneWorld(world: WorldState): void {
     actor.jump.grounded = true;
     actor.weapons.rocketAmmo = 0;
     actor.weapons.railAmmo = 0;
-    actor.weapons.whipAmmo = 0;
   }
 
   const flag = world.objectives.find((objective) =>
@@ -1321,7 +1317,6 @@ function configureClassicCtfOwnFlagStolenWorld(world: WorldState): void {
     actor.jump.grounded = true;
     actor.weapons.rocketAmmo = 0;
     actor.weapons.railAmmo = 0;
-    actor.weapons.whipAmmo = 0;
   }
 
   const redFlag = world.objectives.find((objective) =>
@@ -1526,7 +1521,6 @@ function configureTdmLowHealthVsEnemyWorld(world: WorldState): void {
     actor.jump.grounded = true;
     actor.weapons.rocketAmmo = 0;
     actor.weapons.railAmmo = 0;
-    actor.weapons.whipAmmo = 0;
   }
   testBot.health = 24;
   enemy.health = enemy.maxHealth;
@@ -1733,7 +1727,6 @@ interface MutableTdmPickupIntentMetric {
   finalArmor: number;
   finalRocketAmmo: number;
   finalRailAmmo: number;
-  finalWhipAmmo: number;
 }
 
 function runTdmPickupIntentCase(
@@ -1810,7 +1803,6 @@ function configureTdmPickupIntentWorld(
     actor.jump.grounded = true;
     actor.weapons.rocketAmmo = 0;
     actor.weapons.railAmmo = 0;
-    actor.weapons.whipAmmo = 0;
   }
   testBot.armor = input.initialArmor;
   world.pickups = [createPickupState({
@@ -1844,7 +1836,6 @@ function createTdmPickupIntentMetric(
     finalArmor: 0,
     finalRocketAmmo: 0,
     finalRailAmmo: 0,
-    finalWhipAmmo: 0,
   };
 }
 
@@ -1870,7 +1861,6 @@ function captureTdmPickupIntentFrame(
   metric.finalArmor = actor.armor;
   metric.finalRocketAmmo = actor.weapons.rocketAmmo;
   metric.finalRailAmmo = actor.weapons.railAmmo;
-  metric.finalWhipAmmo = actor.weapons.whipAmmo;
   metric.intentFramesByKind.set(
     controllerDebug.intent,
     (metric.intentFramesByKind.get(controllerDebug.intent) ?? 0) + 1,
@@ -1927,7 +1917,6 @@ function finalizeTdmPickupIntentMetric(
     finalArmor: metric.finalArmor,
     finalRocketAmmo: metric.finalRocketAmmo,
     finalRailAmmo: metric.finalRailAmmo,
-    finalWhipAmmo: metric.finalWhipAmmo,
   };
 }
 
@@ -1938,7 +1927,7 @@ function formatTdmPickupIntentReport(
   return [
     "TDM Training Crossing Armor/Weapon Pickup Intent Scenario",
     `durationMs=${durationMs}`,
-    "case | pickup | expectedIntent | pickupTargetFrames | enemyTargetFrames | pathMisses | initialPickupDistance | minPickupDistance | reduction | travel | pickupCollected | armor | rocket | rail | whip | intents",
+    "case | pickup | expectedIntent | pickupTargetFrames | enemyTargetFrames | pathMisses | initialPickupDistance | minPickupDistance | reduction | travel | pickupCollected | armor | rocket | rail | intents",
     ...cases.map((metric) => [
       metric.label,
       `${metric.pickupType}:${metric.pickupId}`,
@@ -1954,7 +1943,6 @@ function formatTdmPickupIntentReport(
       metric.finalArmor,
       metric.finalRocketAmmo,
       metric.finalRailAmmo,
-      metric.finalWhipAmmo,
       summarizeCountMap(metric.intentFramesByKind, 6) || "none",
     ].join(" | ")),
   ].join("\n");
@@ -1990,7 +1978,6 @@ function configureTdmCombatStandoffWorld(world: WorldState): void {
     actor.jump.grounded = true;
     actor.weapons.rocketAmmo = 0;
     actor.weapons.railAmmo = 0;
-    actor.weapons.whipAmmo = 0;
   }
   world.pickups = [];
   world.geometry = {

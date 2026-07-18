@@ -91,9 +91,7 @@ export function applyDamage(
     actor.weapons.rocketCooldownMs = 0;
     actor.weapons.railAmmo = 0;
     actor.weapons.railCooldownMs = 0;
-    actor.weapons.whipAmmo = 0;
     actor.weapons.whipCooldownMs = 0;
-    actor.weapons.whipRechargeMs = 0;
     actor.spawnProtectionRemainingMs = 0;
     actor.respawn = {
       reason: "death",
@@ -156,9 +154,7 @@ export function updateActorLifecycle(
   actor.health = actor.maxHealth;
   actor.armor = Math.min(actor.maxArmor, config.respawnArmor);
   actor.spawnProtectionRemainingMs = config.spawnProtectionMs;
-  actor.weapons.whipAmmo = config.respawnWhipCharges;
   actor.weapons.whipCooldownMs = 0;
-  actor.weapons.whipRechargeMs = 0;
   actor.lifeId += 1;
   actor.lifeState = "active";
   actor.respawn = null;

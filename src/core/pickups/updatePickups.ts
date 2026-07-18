@@ -81,11 +81,12 @@ function canApplyPickup(actor: ActorState, pickup: PickupState): boolean {
   if (pickup.type === "armor") {
     return actor.armor < actor.maxArmor;
   }
-  if (pickup.type === "whip") {
-    return actor.weapons.whipAmmo <
-      V2_V1_WEAPON_PARITY_CONFIG.whipMaxCharges;
+  if (pickup.type === "rocket") {
+    return actor.weapons.rocketAmmo <
+      V2_V1_WEAPON_PARITY_CONFIG.rocketMaxAmmo;
   }
-  return true;
+  return actor.weapons.railAmmo <
+    V2_V1_WEAPON_PARITY_CONFIG.railMaxAmmo;
 }
 
 function applyPickup(actor: ActorState, pickup: PickupState): number {
@@ -101,22 +102,19 @@ function applyPickup(actor: ActorState, pickup: PickupState): number {
     return actor.armor - before;
   }
   if (pickup.type === "rocket") {
-    actor.weapons.rocketAmmo += pickup.value;
-  } else if (pickup.type === "rail") {
-    actor.weapons.railAmmo += pickup.value;
-  } else {
-    const before = actor.weapons.whipAmmo;
-    actor.weapons.whipAmmo = Math.min(
-      V2_V1_WEAPON_PARITY_CONFIG.whipMaxCharges,
-      actor.weapons.whipAmmo + pickup.value,
+    const before = actor.weapons.rocketAmmo;
+    actor.weapons.rocketAmmo = Math.min(
+      V2_V1_WEAPON_PARITY_CONFIG.rocketMaxAmmo,
+      actor.weapons.rocketAmmo + pickup.value,
     );
-    actor.weapons.whipRechargeMs = actor.weapons.whipAmmo >=
-        V2_V1_WEAPON_PARITY_CONFIG.whipMaxCharges
-      ? 0
-      : actor.weapons.whipRechargeMs;
-    return actor.weapons.whipAmmo - before;
+    return actor.weapons.rocketAmmo - before;
   }
-  return pickup.value;
+  const before = actor.weapons.railAmmo;
+  actor.weapons.railAmmo = Math.min(
+    V2_V1_WEAPON_PARITY_CONFIG.railMaxAmmo,
+    actor.weapons.railAmmo + pickup.value,
+  );
+  return actor.weapons.railAmmo - before;
 }
 
 function circlesOverlap(actor: ActorState, pickup: PickupState): boolean {

@@ -20,6 +20,7 @@ import {
   PhaserArenaPickupRenderer,
   pickupPadColor,
 } from "./PhaserArenaPickupRenderer";
+import { PhaserPremiumMapCosmetics } from "./PhaserPremiumMapCosmetics";
 
 interface SpawnPadParticle {
   x: number;
@@ -50,6 +51,7 @@ export class PhaserArenaRendererPort implements RendererPort {
   private readonly cameraController: PhaserArenaCameraController;
   private readonly pickupRenderer: PhaserArenaPickupRenderer;
   private readonly objectiveRenderer: PhaserArenaObjectiveRenderer;
+  private readonly premiumMapCosmetics: PhaserPremiumMapCosmetics;
   private readonly spawnPadParticleGraphics: Phaser.GameObjects.Graphics;
   private readonly libraryDustGraphics?: Phaser.GameObjects.Graphics;
   private readonly libraryDust: LibraryDustParticle[] = [];
@@ -87,6 +89,7 @@ export class PhaserArenaRendererPort implements RendererPort {
       ensureLibraryCandleAnimation(scene);
     }
     renderArena(scene, level, (x, y) => this.addLibraryCandles(x, y));
+    this.premiumMapCosmetics = new PhaserPremiumMapCosmetics(scene, map.id);
     if (collisionDiagnostics !== "off") {
       this.collisionDiagnosticGraphics = scene.add.graphics().setDepth(88);
       this.renderCollisionDiagnostics(
@@ -105,6 +108,7 @@ export class PhaserArenaRendererPort implements RendererPort {
 
   render(snapshot: WorldSnapshot): void {
     this.cameraController.update(snapshot);
+    this.premiumMapCosmetics.render(snapshot);
     this.actorRenderer.render(snapshot);
     this.renderProjectiles(snapshot);
     this.pickupRenderer.render(snapshot);
@@ -116,6 +120,7 @@ export class PhaserArenaRendererPort implements RendererPort {
   reset(): void {
     this.cameraController.reset();
     this.lastLibraryTimeMs = 0;
+    this.premiumMapCosmetics.reset();
     this.actorRenderer.reset();
     this.destroyProjectileViews();
     this.pickupRenderer.reset();
@@ -125,6 +130,7 @@ export class PhaserArenaRendererPort implements RendererPort {
 
   dispose(): void {
     this.cameraController.dispose();
+    this.premiumMapCosmetics.dispose();
     this.actorRenderer.dispose();
     this.destroyProjectileViews();
     this.pickupRenderer.dispose();

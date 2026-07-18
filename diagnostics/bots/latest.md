@@ -1,7 +1,7 @@
 # Bot Diagnostics Baseline
 
-Timestamp: 2026-07-14T13:44:37.211Z
-Git: branch=main, commit=1e56fb3, dirty=true
+Timestamp: 2026-07-18T21:16:51.458Z
+Git: branch=main, commit=41a6c3a, dirty=true
 
 ## Kurzurteil
 
@@ -11,24 +11,24 @@ Die Diagnose lief durch, markiert aber 3 Hotzone-Hinweis(e).
 
 | Scenario | Mode | Map | Team | Duration | Score | Pickups | Special | Invalid | Idle |
 |---|---|---|---:|---:|---:|---|---|---:|---:|
-| TDM Training Crossing 1v1 | team-deathmatch | training-crossing-v2 | 1v1 | 18020ms | 2 | 5/6 | 6/5 | 0 | 0 |
-| TDM Training Crossing 2v2 | team-deathmatch | training-crossing-v2 | 2v2 | 18020ms | 0 | 5/8 | 4/3 | 0 | 0 |
-| TDM Training Crossing 3v3 | team-deathmatch | training-crossing-v2 | 3v3 | 18020ms | 0 | 4/6 | 4/4 | 0 | 0 |
-| TDM Training Crossing 4v4 | team-deathmatch | training-crossing-v2 | 4v4 | 18020ms | 5 | 10/4 | 17/8 | 0 | 0 |
+| TDM Training Crossing 1v1 | team-deathmatch | training-crossing-v2 | 1v1 | 18020ms | 2 | 5/6 | 7/5 | 0 | 0 |
+| TDM Training Crossing 2v2 | team-deathmatch | training-crossing-v2 | 2v2 | 18020ms | 5 | 5/5 | 9/9 | 0 | 0 |
+| TDM Training Crossing 3v3 | team-deathmatch | training-crossing-v2 | 3v3 | 18020ms | 3 | 4/7 | 6/5 | 0 | 0 |
+| TDM Training Crossing 4v4 | team-deathmatch | training-crossing-v2 | 4v4 | 18020ms | 4 | 5/7 | 12/5 | 0 | 0 |
 | Classic CTF Flank Switch 1v1 | classic-ctf | flank-switch-v2 | 1v1 | 22032ms | 2 | 2/1 | 2/2 | 0 | 0 |
-| Classic CTF Flank Switch 2v2 | classic-ctf | flank-switch-v2 | 2v2 | 22032ms | 1 | 4/5 | 8/6 | 0 | 0 |
-| Classic CTF Flank Switch 3v3 | classic-ctf | flank-switch-v2 | 3v3 | 22032ms | 0 | 7/5 | 11/10 | 0 | 0 |
-| Classic CTF Flank Switch 4v4 | classic-ctf | flank-switch-v2 | 4v4 | 22032ms | 0 | 7/7 | 22/21 | 0 | 0 |
-| One Flag Grand Archive 1v1 | one-flag | grand-archive-v2 | 1v1 | 18020ms | 1 | 0/2 | 2/2 | 0 | 0 |
-| One Flag Grand Archive 2v2 | one-flag | grand-archive-v2 | 2v2 | 18020ms | 1 | 0/3 | 5/5 | 0 | 0 |
-| One Flag Grand Archive 3v3 | one-flag | grand-archive-v2 | 3v3 | 18020ms | 0 | 0/4 | 7/8 | 0 | 0 |
+| Classic CTF Flank Switch 2v2 | classic-ctf | flank-switch-v2 | 2v2 | 22032ms | 1 | 3/4 | 8/6 | 0 | 0 |
+| Classic CTF Flank Switch 3v3 | classic-ctf | flank-switch-v2 | 3v3 | 22032ms | 0 | 7/4 | 11/10 | 0 | 0 |
+| Classic CTF Flank Switch 4v4 | classic-ctf | flank-switch-v2 | 4v4 | 22032ms | 0 | 8/6 | 23/21 | 0 | 0 |
+| One Flag Grand Archive 1v1 | one-flag | grand-archive-v2 | 1v1 | 18020ms | 1 | 0/1 | 2/2 | 0 | 0 |
+| One Flag Grand Archive 2v2 | one-flag | grand-archive-v2 | 2v2 | 18020ms | 1 | 0/2 | 5/5 | 0 | 0 |
+| One Flag Grand Archive 3v3 | one-flag | grand-archive-v2 | 3v3 | 18020ms | 0 | 0/3 | 7/8 | 0 | 0 |
 | One Flag Grand Archive 4v4 | one-flag | grand-archive-v2 | 4v4 | 18020ms | 0 | 0/3 | 9/11 | 0 | 0 |
 
 ## Full Smoke Matrix
 
-- Kombinationen: 60
+- Kombinationen: 84
 - Modi: 3
-- Maps: 5
+- Maps: 7
 - Teamgroessen: 4
 - Invalid Position Frames: 0
 - Idle Action Frames: 0

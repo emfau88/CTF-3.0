@@ -169,8 +169,6 @@ export const HELIX_CANOPY_V2: WorldMapData = {
     { id: "rocket-root-west", type: "rocket", position: point(675, 765) },
     { id: "rocket-root-east", type: "rocket", position: point(1245, 765) },
     { id: "rail-canopy-center", type: "rail", position: point(960, 175) },
-    { id: "arc-lash-core-west", type: "whip", position: point(880, 480) },
-    { id: "arc-lash-core-east", type: "whip", position: point(1040, 480) },
   ],
   gameplay: {
     blueBase: rect(180, 350, 200, 260),
