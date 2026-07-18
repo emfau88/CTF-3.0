@@ -27,18 +27,20 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Install Linux Rollup binary
         if: runner.os == 'Linux'
-        run: npm install --no-save @rollup/rollup-linux-x64-gnu
+        run: npm install --no-save @rollup/rollup-linux-x64-gnu@4.61.0
+
+      - name: Test
+        run: npm test
+
+      - name: Typecheck tests and scripts
+        run: npm run test:typecheck
 
       - name: Build
         run: npm run build
-
-      - name: Test
-        continue-on-error: true
-        run: npm test
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
