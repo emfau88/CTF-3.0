@@ -9,8 +9,8 @@ import {
 } from "../src/core";
 import {
   JUNGLE_TEMPLE_GREYBOX_PALETTE,
-  type LevelTheme,
-} from "../src/level";
+} from "../src/arenaPresentation";
+import type { WorldMapTheme } from "../src/core/world/maps";
 
 test("registered maps have no blocking structural quality issues", () => {
   const pickupClearanceWarnings: string[] = [];
@@ -107,7 +107,7 @@ test("route measurement and temple greybox theme stay deterministic", () => {
     ]),
     15,
   );
-  const theme: LevelTheme = "jungle-temple";
+  const theme: WorldMapTheme = "jungle-temple";
   assert.equal(theme, "jungle-temple");
   assert.notEqual(
     JUNGLE_TEMPLE_GREYBOX_PALETTE.floor,

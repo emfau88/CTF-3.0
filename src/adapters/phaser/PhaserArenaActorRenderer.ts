@@ -6,7 +6,7 @@ import {
 } from "../../core";
 import type { V2PlayerSkinId } from "../../v2Route";
 import { UI_FONT_FAMILY } from "../../uiTypography";
-import { TEAM } from "../../config";
+import { ARENA_TEAM_PALETTE } from "../../arenaPresentation";
 import { resolveCharacterIdlePose } from "./characterIdlePose";
 import {
   FIGHTER_OUTLINE_OFFSETS,
@@ -18,7 +18,6 @@ import {
 import {
   V2_CHARACTER_DIRECTIONS,
   V2_CHARACTER_SKINS,
-  legacyArenaCharacterFrame,
   resolveV2CharacterPresentation,
   v2CharacterAnimationKey,
   v2CharacterAnimationState,
@@ -243,7 +242,9 @@ export class PhaserArenaActorRenderer {
     const healthRatio = actor.maxHealth > 0
       ? Phaser.Math.Clamp(actor.health / actor.maxHealth, 0, 1)
       : 0;
-    const color = actor.teamId === "red" ? TEAM.red.dark : TEAM.blue.dark;
+    const color = actor.teamId === "red"
+      ? ARENA_TEAM_PALETTE.red.dark
+      : ARENA_TEAM_PALETTE.blue.dark;
     graphics.fillStyle(0x10201d, .65).fillRoundedRect(-22, -38, 44, 6, 3);
     graphics.fillStyle(color, 1).fillRoundedRect(-22, -38, 44 * healthRatio, 6, 3);
     if (actor.armor > 0) {
@@ -308,7 +309,9 @@ function drawTeamRing(
   const radiusX = Math.max(22, actor.radius + 7);
   const radiusY = Math.max(9, radiusX * .42);
   const segments = fighterRingSegments(actor.teamId);
-  const color = actor.teamId === "red" ? TEAM.red.color : TEAM.blue.color;
+  const color = actor.teamId === "red"
+    ? ARENA_TEAM_PALETTE.red.color
+    : ARENA_TEAM_PALETTE.blue.color;
 
   drawEllipseSegments(
     graphics,
@@ -406,12 +409,7 @@ function updateActorSprite(
   character: V2CharacterPresentation,
   actor: Readonly<ActorState>,
 ): void {
-  if (character.kind === "animated-skin" && character.skin) {
-    updatePlayerSkinSprite(sprite, character.skin, actor);
-    return;
-  }
-  if (sprite.anims.isPlaying) sprite.stop();
-  sprite.setFrame(legacyArenaCharacterFrame(actor));
+  updatePlayerSkinSprite(sprite, character.skin, actor);
 }
 
 function updatePlayerSkinSprite(

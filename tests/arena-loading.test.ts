@@ -33,24 +33,6 @@ test("v2 preload selects only the active premium map and match roster", () => {
   );
 });
 
-test("legacy arena preload keeps all map themes and character sheets", () => {
-  const loader = new FakeLoader();
-  preloadArenaAssets({ load: loader } as unknown as Phaser.Scene, {
-    includeJungleTemple: true,
-    includeHelixCanopy: true,
-  });
-
-  assert.equal(loader.keys.has("templeFloorBasaltPilot"), true);
-  assert.equal(loader.keys.has("helixArenaMaster"), true);
-  assert.equal(loader.keys.has("ruinsFloorStone"), true);
-  assert.equal(loader.keys.has("libraryFloorStone"), true);
-  assert.equal(loader.keys.has("industrialFloorMetal"), true);
-  assert.equal(
-    [...loader.keys].filter((key) => key.endsWith("Runner")).length,
-    9,
-  );
-});
-
 test("required v2 skins match quick play and league rosters", () => {
   assert.deepEqual(
     requiredV2CharacterSkinIds(2, "alien-runner"),

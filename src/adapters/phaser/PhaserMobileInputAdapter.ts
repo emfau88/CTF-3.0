@@ -10,7 +10,6 @@ import {
   V2_BASIC_AUTOSHOOT_PARITY_CONFIG,
   V2_V1_WEAPON_PARITY_CONFIG,
 } from "../../core";
-import { lineIntersectsRect, type Rect } from "../../math";
 import { UI_FONT_FAMILY } from "../../uiTypography";
 import type { InputAdapterPort } from "../input";
 import { drawRadialCooldownWipe } from "./PhaserRadialCooldown";
@@ -19,6 +18,7 @@ import {
   formatCooldownSeconds,
   weaponIconScale,
 } from "./weaponHudLayout";
+import { worldLineIntersectsRect } from "./worldLineOfSight";
 
 interface TouchControl {
   id: number;
@@ -856,7 +856,7 @@ export function resolveMobileWeaponTapDirection(
     )
     .filter((candidate) =>
       !snapshot.geometry.solids.some((solid) =>
-        lineIntersectsRect(owner.position, candidate.position, toMathRect(solid))
+        worldLineIntersectsRect(owner.position, candidate.position, solid)
       )
     )
     .sort((left, right) =>
@@ -883,10 +883,4 @@ export function resolveMobileWeaponReleaseDirection(input: {
   if (!input.dragged && !input.autoDirection) return null;
   const direction = input.dragged ? input.manualDirection : input.autoDirection;
   return direction ? normalizeDirection(direction) : null;
-}
-
-function toMathRect(
-  rect: { x: number; y: number; width: number; height: number },
-): Rect {
-  return { x: rect.x, y: rect.y, w: rect.width, h: rect.height };
 }

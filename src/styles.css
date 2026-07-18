@@ -185,15 +185,6 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   font-weight: 700;
   text-align: center;
 }
-.v2-menu-v1-link {
-  color: #315f56;
-  font-size: 12px;
-  font-weight: 800;
-  text-align: center;
-  text-decoration: none;
-}
-.v2-menu-v1-link:hover { text-decoration: underline; }
-
 /* Fullscreen league shell */
 .v2-main-menu {
   place-items: stretch;
@@ -268,8 +259,6 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 .v2-home-action-tag { color: #71929e; font-size: 10px; font-weight: 900; letter-spacing: .2em; }
 .v2-home-action strong { font: 900 28px/1 var(--font-display); letter-spacing: -.02em; text-transform: uppercase; }
 .v2-home-action small { color: #8fa5ad; font-size: 12px; font-weight: 700; }
-.v2-home-classic { justify-self: end; padding: 6px; color: #6f8790; font-size: 11px; font-weight: 800; text-decoration: none; }
-.v2-home-classic:hover { color: #d6e8ee; }
 .v2-setup-view { width: min(980px, 100%); height: auto; max-height: none; align-self: center; justify-self: center; overflow: visible; padding: 24px 30px 28px; background: linear-gradient(145deg, rgb(6 17 23 / .96), rgb(7 19 25 / .88)); border: 1px solid rgb(129 192 214 / .2); border-left: 4px solid #e54b54; box-shadow: 0 28px 80px rgb(0 0 0 / .46); backdrop-filter: blur(12px); }
 .v2-setup-view .v2-menu-section-title { border-color: rgb(255 255 255 / .12); }
 .v2-setup-view label { color: #aebdc2; }
@@ -918,49 +907,6 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   box-shadow: 0 8px 24px rgb(0 0 0 / .32);
 }
 .v2-stats-card { max-height: calc(100vh - 16px); overflow-y: auto; }
-#hud { position: fixed; inset: 0; pointer-events: none; color: #17302d; font-size: 13px; }
-.score { position: absolute; top: max(8px, env(safe-area-inset-top)); left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); display: flex; justify-content: space-between; align-items: center; }
-.score-team, #debug, .hud-actions button, .settings-panel { background: rgb(255 255 255 / .78); border: 1px solid rgb(30 50 45 / .15); border-radius: 8px; box-shadow: 0 8px 22px rgb(20 40 34 / .12); backdrop-filter: blur(10px); }
-.score-team { min-width: 82px; height: 36px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 10px; font-size: 16px; }
-#match-timer { position: absolute; left: 50%; translate: -50% 0; min-width: 72px; height: 36px; display: grid; place-items: center; padding: 0 12px; border-radius: 8px; background: rgb(18 35 32 / .86); color: white; font-size: 16px; letter-spacing: .04em; box-shadow: 0 8px 22px rgb(20 40 34 / .16); }
-.score-red { color: #a9262d; border-left: 4px solid #d63b43; }
-.score-blue { color: #2459a9; border-right: 4px solid #3479df; }
-.score-label { font-size: 10px; }
-#status-toast { position: absolute; top: max(52px, calc(env(safe-area-inset-top) + 48px)); left: 50%; translate: -50% -4px; min-width: 150px; max-width: min(78vw, 360px); padding: 7px 12px; border-radius: 7px; background: rgb(18 35 32 / .86); color: white; font-weight: 800; text-align: center; opacity: 0; transition: opacity 140ms ease, translate 140ms ease; }
-#status-toast.is-visible { opacity: 1; translate: -50% 0; }
-.hud-actions { position: absolute; top: max(8px, env(safe-area-inset-top)); left: calc(50% + 58px); translate: -50% 0; pointer-events: auto; }
-.hud-actions button { width: 36px; height: 36px; padding: 0; color: #17302d; font: 700 21px/1 var(--font-ui); cursor: pointer; }
-.hud-actions button:active { transform: translateY(1px); }
-.settings-panel { position: absolute; top: max(52px, calc(env(safe-area-inset-top) + 48px)); right: max(8px, env(safe-area-inset-right)); display: grid; gap: 8px; width: 190px; padding: 10px; pointer-events: auto; }
-.settings-panel.is-hidden { display: none; }
-.settings-title { font-weight: 800; }
-.settings-panel button { height: 34px; border: 1px solid rgb(30 50 45 / .18); border-radius: 7px; background: rgb(255 255 255 / .75); color: #17302d; font-weight: 700; cursor: pointer; text-align: left; padding: 0 10px; }
-.settings-panel button.is-active { border-color: #255ec8; color: #255ec8; background: rgb(215 229 255 / .9); }
-.settings-panel label { display: grid; grid-template-columns: 42px 1fr; align-items: center; gap: 8px; color: #17302d; font-size: 12px; font-weight: 800; }
-.settings-panel select { height: 32px; border: 1px solid rgb(30 50 45 / .18); border-radius: 7px; background: rgb(255 255 255 / .82); color: #17302d; font-weight: 700; padding: 0 8px; }
-.settings-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-.settings-actions button { padding: 0 7px; text-align: center; font-size: 11px; }
-#debug { position: absolute; left: 10px; bottom: 10px; width: 320px; max-width: calc(100vw - 20px); margin: 0; font: 11px/1.35 var(--font-mono); white-space: pre-wrap; }
-#debug.is-hidden { display: none; }
-.match-overlay { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; background: rgb(10 20 18 / .34); color: white; text-align: center; text-shadow: 0 3px 14px rgb(0 0 0 / .55); }
-.match-overlay.is-hidden { display: none; }
-.match-title { font-size: clamp(64px, 12vw, 128px); font-weight: 900; line-height: .9; }
-.match-detail { font-size: clamp(15px, 2.4vw, 24px); font-weight: 800; }
-.match-actions { display: flex; gap: 10px; pointer-events: auto; }
-.match-actions button { min-width: 140px; height: 46px; margin-top: 8px; border: 2px solid rgb(255 255 255 / .75); border-radius: 10px; background: rgb(255 255 255 / .92); color: #17302d; font-size: 16px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 28px rgb(0 0 0 / .2); }
-.match-actions button.is-hidden { display: none; }
-.main-menu { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; background: radial-gradient(circle at 50% 35%, rgb(47 82 74 / .82), rgb(10 20 18 / .96)); pointer-events: auto; }
-.main-menu.is-hidden { display: none; }
-.main-menu-card { width: min(440px, calc(100vw - 28px)); display: grid; gap: 14px; padding: clamp(22px, 5vw, 38px); border: 1px solid rgb(255 255 255 / .2); border-radius: 18px; background: rgb(237 245 238 / .94); color: #17302d; box-shadow: 0 26px 80px rgb(0 0 0 / .35); }
-.main-menu-kicker { color: #b7272d; font-size: 11px; font-weight: 900; letter-spacing: .22em; }
-.main-menu h1 { margin: 0; font-size: clamp(38px, 10vw, 64px); line-height: .88; letter-spacing: -.05em; }
-.main-menu p { margin: 0 0 5px; color: #49635d; font-weight: 700; }
-.main-menu label { display: grid; gap: 6px; font-size: 12px; font-weight: 900; }
-.main-menu select { width: 100%; height: 42px; border: 1px solid rgb(23 48 45 / .22); border-radius: 8px; background: white; color: #17302d; padding: 0 10px; font-weight: 800; }
-.main-menu-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-#menu-play { height: 52px; margin-top: 4px; border: 0; border-radius: 10px; background: #b7272d; color: white; font-size: 18px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 24px rgb(183 39 45 / .28); }
-#menu-play:active { transform: translateY(1px); }
-.main-menu-help { color: #60736f; font-size: 11px; font-weight: 700; text-align: center; }
 @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
   .v2-main-menu {
     padding:
@@ -986,8 +932,7 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   .v2-menu-card h1 { font-size: clamp(34px, 5.6vw, 54px); }
   .v2-menu-card h2 { font-size: clamp(28px, 4.2vw, 38px); }
   .v2-menu-intro { font-size: 13px; line-height: 1.28; }
-  .v2-menu-help,
-  .v2-menu-v1-link { font-size: 10px; }
+  .v2-menu-help { font-size: 10px; }
   #v2-menu-setup {
     height: auto;
     max-height: none;
@@ -1022,13 +967,6 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   .v2-quick-skin-field { grid-column: auto; grid-template-columns: 104px 1fr; }
   .v2-quick-skin-preview { width: 88px; height: 88px; }
   .v2-quick-skin-picker { grid-template-columns: repeat(3, minmax(62px, 1fr)); }
-  #debug { display: none; }
-  #debug.is-visible { display: block; }
-  .score-team { min-width: 64px; height: 32px; gap: 6px; padding: 0 7px; font-size: 15px; }
-  .score-label { font-size: 8px; }
-  .hud-actions button { width: 30px; height: 30px; font-size: 17px; }
-  #status-toast { top: max(45px, calc(env(safe-area-inset-top) + 41px)); padding: 6px 10px; font-size: 11px; }
-  .settings-panel { top: max(45px, calc(env(safe-area-inset-top) + 41px)); max-height: calc(100vh - 54px); overflow-y: auto; }
   .v2-game-utility {
     top: max(70px, calc(env(safe-area-inset-top) + 62px));
   }

@@ -9,7 +9,7 @@ import {
   type WorldSnapshot,
 } from "../../core";
 import { renderArena } from "../../arenaRenderer";
-import type { LevelData } from "../../level";
+import type { ArenaPresentationData } from "../../arenaPresentation";
 import type { RendererPort } from "../rendering";
 import type { V2PlayerSkinId } from "../../v2Route";
 import { PhaserArenaActorRenderer } from "./PhaserArenaActorRenderer";
@@ -439,7 +439,7 @@ export class PhaserArenaRendererPort implements RendererPort {
 
 }
 
-function toPresentationLevel(map: WorldMapData): LevelData {
+function toPresentationLevel(map: WorldMapData): ArenaPresentationData {
   const bounds = map.geometry.bounds;
   const redSpawn = map.spawnPoints.find((spawn) =>
     spawn.id === "red-player-spawn"

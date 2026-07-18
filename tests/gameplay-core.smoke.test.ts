@@ -43,7 +43,6 @@ import {
   type GameEvent,
   type MatchStatEntry,
 } from "../src/core";
-import { shouldUseGameplayV2Shell } from "../src/bootSceneSelection";
 import { buildV2MatchSearch, readV2RouteState } from "../src/v2Route";
 import { calculateV2TouchLayout } from "../src/adapters/phaser/v2TouchLayout";
 import { resolveDesktopAimDirection } from "../src/adapters/phaser/desktopAim";
@@ -63,7 +62,6 @@ import {
 import { ONE_FLAG_NEUTRAL_BANNER_PRESENTATION } from "../src/adapters/phaser/PhaserArenaObjectiveRenderer";
 import {
   V2_CHARACTER_SKINS,
-  legacyArenaCharacterFrame,
   resolveV2CharacterPresentation,
   v2CharacterAnimationState,
   v2CharacterColumns,
@@ -82,6 +80,15 @@ test("runtime timing hardening clamps negative and oversized frame deltas", () =
     clampRuntimeDeltaMs(999),
     V2_GAMEPLAY_RUNTIME_TIMING_CONFIG.maxFrameDeltaMs,
   );
+});
+
+test("retired v1 URLs resolve to the v2 menu", () => {
+  const state = readV2RouteState(new URLSearchParams("scene=v1"));
+
+  assert.equal(state.canStartMatch, false);
+  assert.equal(state.route.scene, "v2");
+  assert.equal(state.route.menu, true);
+  assert.deepEqual(state.issues, []);
 });
 
 test("v2 route validation rejects invalid match routes", () => {
@@ -122,25 +129,6 @@ test("v2 routes preserve and validate arena team size", () => {
   assert.equal(invalid.canStartMatch, false);
   assert.equal(invalid.route.menu, true);
   assert.deepEqual(invalid.issues, ["Unsupported V2 team size: 5."]);
-});
-
-test("scene selection defaults to v2 and keeps explicit v1 available", () => {
-  assert.equal(shouldUseGameplayV2Shell({
-    pathname: "/CTF/",
-    search: "",
-  }), true);
-  assert.equal(shouldUseGameplayV2Shell({
-    pathname: "/CTF-3.0/",
-    search: "",
-  }), true);
-  assert.equal(shouldUseGameplayV2Shell({
-    pathname: "/CTF-3.0/",
-    search: "?scene=v1",
-  }), false);
-  assert.equal(shouldUseGameplayV2Shell({
-    pathname: "/CTF/",
-    search: "?scene=v2",
-  }), true);
 });
 
 test("v2 menu defaults to the 2v2 Foundry Circuit CTF hero slice", () => {
@@ -204,7 +192,7 @@ test("desktop aim uses the actor and pointer world positions", () => {
   );
 });
 
-test("v2 character presentation animates team actors and keeps a legacy fallback", () => {
+test("v2 character presentation animates team and neutral actors", () => {
   const blue = createActorState({
     id: "blue-player",
     kind: "player",
@@ -246,9 +234,12 @@ test("v2 character presentation animates team actors and keeps a legacy fallback
   assert.deepEqual(vanguardSkin.origin, { x: .5, y: .5 });
 
   const fallback = resolveV2CharacterPresentation(neutral, "volt-hound");
-  assert.equal(fallback.kind, "legacy-arena-character");
-  assert.equal(fallback.texture, "arenaCharacters");
-  assert.equal(fallback.initialFrame, legacyArenaCharacterFrame(neutral));
+  assert.equal(fallback.kind, "animated-skin");
+  assert.equal(fallback.skin.id, "volt-hound");
+  assert.equal(
+    fallback.initialFrame,
+    v2CharacterFrame(V2_CHARACTER_SKINS["volt-hound"], neutral, "idle"),
+  );
   assert.deepEqual(fallback.origin, { x: .5, y: .5 });
 
   assert.equal(v2CharacterAnimationState(blue), "idle");

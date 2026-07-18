@@ -2,7 +2,6 @@ import "@fontsource-variable/inter";
 import "@fontsource/barlow-condensed/latin-700.css";
 import "@fontsource/barlow-condensed/latin-800.css";
 import "@fontsource/barlow-condensed/latin-900.css";
-import { shouldUseGameplayV2Shell } from "./bootSceneSelection";
 import {
   getWorldMap,
   type MatchResult,
@@ -49,17 +48,13 @@ const search = new URLSearchParams(window.location.search);
 const leagueMatchContext = readLeagueMatchContext(search);
 const careerProfileRepository = createCareerProfileRepository(window.localStorage);
 let careerProfile = leagueMatchContext ? careerProfileRepository.load() : null;
-const useGameplayV2Shell = shouldUseGameplayV2Shell(
-  window.location,
-  import.meta.env.BASE_URL,
-);
-const routeState = useGameplayV2Shell ? readV2RouteState(search) : null;
-const activeRoute = routeState ? { ...routeState.route } : null;
-const routeIssues = routeState ? [...routeState.issues] : [];
+const routeState = readV2RouteState(search);
+const activeRoute = { ...routeState.route };
+const routeIssues = [...routeState.issues];
 if (leagueMatchContext && careerProfile && activeRoute) {
   activeRoute.skin = resolveCareerCaptainSkin(careerProfile, activeRoute.skin);
 }
-if (useGameplayV2Shell && activeRoute && routeState?.canStartMatch) {
+if (routeState.canStartMatch) {
   const map = getWorldMap(activeRoute.map);
   if (!map) {
     routeIssues.push(`Unknown V2 arena map: ${activeRoute.map}.`);
@@ -77,18 +72,13 @@ if (useGameplayV2Shell && activeRoute && routeState?.canStartMatch) {
     }
   }
 }
-const showV2Menu = useGameplayV2Shell &&
-  Boolean(activeRoute?.menu || routeIssues.length > 0);
+const showV2Menu = Boolean(activeRoute.menu || routeIssues.length > 0);
 
-if (useGameplayV2Shell) {
-  document.querySelector<HTMLElement>("#hud")?.setAttribute("hidden", "");
-  setupV2FullscreenControls();
-}
+setupV2FullscreenControls();
 
 if (showV2Menu) {
   showGameplayV2Menu(routeIssues[0]);
 } else {
-  if (useGameplayV2Shell) {
     const menuButton = document.querySelector<HTMLButtonElement>(
       "#v2-game-menu-button",
     );
@@ -364,20 +354,15 @@ if (showV2Menu) {
         mainMenuLabel: leagueMatchContext ? "League HQ" : "Main Menu",
       });
     });
-  }
-  if (useGameplayV2Shell) {
-    showArenaLoadingUi(
-      activeRoute
-        ? getWorldMap(activeRoute.map)?.displayName ?? "Arena"
-        : "Arena",
-      "Starting arena engine",
-    );
-  }
+  showArenaLoadingUi(
+    getWorldMap(activeRoute.map)?.displayName ?? "Arena",
+    "Starting arena engine",
+  );
   void import("./phaserBootstrap")
-    .then(({ createPhaserGame }) => createPhaserGame(useGameplayV2Shell))
+    .then(({ createPhaserGame }) => createPhaserGame())
     .catch((error: unknown) => {
       console.error("Could not start Phaser", error);
-      if (useGameplayV2Shell) showArenaLoadingError();
+      showArenaLoadingError();
     });
 }
 

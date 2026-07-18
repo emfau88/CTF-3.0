@@ -10,12 +10,12 @@ export interface V2CharacterOrigin {
 }
 
 export interface V2CharacterPresentation {
-  readonly kind: "animated-skin" | "legacy-arena-character";
+  readonly kind: "animated-skin";
   readonly texture: string;
   readonly initialFrame: number;
   readonly scale: number;
   readonly origin: V2CharacterOrigin;
-  readonly skin?: V2CharacterSkinConfig;
+  readonly skin: V2CharacterSkinConfig;
 }
 
 export interface V2CharacterRosterPresentation {
@@ -96,11 +96,6 @@ export const V2_CHARACTER_SKINS: Record<V2PlayerSkinId, V2CharacterSkinConfig> =
   ),
 };
 
-export const V2_LEGACY_ARENA_CHARACTER_ORIGIN: V2CharacterOrigin = {
-  x: .5,
-  y: .5,
-};
-
 const DEFAULT_BLUE_BOT_SKINS: readonly V2PlayerSkinId[] = [
   "prism-bastion",
   "briarhorn",
@@ -168,24 +163,14 @@ export function resolveV2CharacterPresentation(
     playerSkinId,
     rosterPresentation,
   );
-  if (skinId) {
-    const skin = V2_CHARACTER_SKINS[skinId];
-    return {
-      kind: "animated-skin",
-      texture: skin.texture,
-      initialFrame: v2CharacterFrame(skin, actor, "idle"),
-      scale: skin.scale,
-      origin: skin.origin,
-      skin,
-    };
-  }
-
+  const skin = V2_CHARACTER_SKINS[skinId];
   return {
-    kind: "legacy-arena-character",
-    texture: "arenaCharacters",
-    initialFrame: legacyArenaCharacterFrame(actor),
-    scale: .42,
-    origin: V2_LEGACY_ARENA_CHARACTER_ORIGIN,
+    kind: "animated-skin",
+    texture: skin.texture,
+    initialFrame: v2CharacterFrame(skin, actor, "idle"),
+    scale: skin.scale,
+    origin: skin.origin,
+    skin,
   };
 }
 
@@ -193,7 +178,7 @@ function resolveV2CharacterSkinId(
   actor: Readonly<ActorState>,
   playerSkinId: V2PlayerSkinId,
   rosterPresentation?: V2CharacterRosterPresentation,
-): V2PlayerSkinId | null {
+): V2PlayerSkinId {
   if (actor.id === "blue-player") {
     return playerSkinId;
   }
@@ -211,7 +196,7 @@ function resolveV2CharacterSkinId(
     if (assignedSkinId) return assignedSkinId;
     return DEFAULT_RED_SKINS[rosterIndex % DEFAULT_RED_SKINS.length];
   }
-  return null;
+  return playerSkinId;
 }
 
 function actorRosterSlot(actorId: string): number {
@@ -277,12 +262,4 @@ export function v2CharacterDirectionRow(
   direction: V2CharacterDirection,
 ): number {
   return V2_CHARACTER_DIRECTIONS.indexOf(direction);
-}
-
-export function legacyArenaCharacterFrame(actor: Readonly<ActorState>): number {
-  const row = actor.teamId === "blue" ? 4 : 0;
-  const direction = Math.abs(actor.facing.x) > Math.abs(actor.facing.y)
-    ? actor.facing.x >= 0 ? 1 : 3
-    : actor.facing.y >= 0 ? 2 : 0;
-  return row * 4 + direction;
 }

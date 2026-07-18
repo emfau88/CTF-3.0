@@ -5,11 +5,9 @@ const assetUrl = (file: string) =>
   `${import.meta.env?.BASE_URL ?? "/"}assets/${file}`;
 
 export interface ArenaAssetPreloadOptions {
-  readonly includeJungleTemple?: boolean;
-  readonly includeHelixCanopy?: boolean;
   readonly mapId?: string;
-  readonly mapTheme?: ArenaMapTheme;
-  readonly characterSkinIds?: readonly V2PlayerSkinId[];
+  readonly mapTheme: ArenaMapTheme;
+  readonly characterSkinIds: readonly V2PlayerSkinId[];
   readonly playerHudPortraitAssetStem?: string;
 }
 
@@ -22,7 +20,7 @@ export type ArenaMapTheme =
 
 export function preloadArenaAssets(
   scene: Phaser.Scene,
-  options: ArenaAssetPreloadOptions = {},
+  options: ArenaAssetPreloadOptions,
 ) {
   scene.load.spritesheet("arenaTiles", assetUrl("arena-tileset.png"), {
     frameWidth: 313,
@@ -75,31 +73,23 @@ export function preloadArenaAssets(
     frameWidth: 256,
     frameHeight: 256,
   });
-  scene.load.spritesheet("arenaCharacters", assetUrl("arena-characters.png"), {
-    frameWidth: 128,
-    frameHeight: 128,
-  });
   preloadCharacterAssets(scene, options.characterSkinIds);
-  const loadAllThemes = options.mapTheme === undefined;
-  if (
-    loadAllThemes || options.mapTheme === "ruins" ||
-    options.mapTheme === "library"
-  ) {
+  if (options.mapTheme === "ruins" || options.mapTheme === "library") {
     preloadRuinsAssets(scene);
   }
-  if (loadAllThemes || options.mapTheme === "library") {
+  if (options.mapTheme === "library") {
     preloadLibraryAssets(scene);
   }
-  if (loadAllThemes || options.mapTheme === "industrial") {
+  if (options.mapTheme === "industrial") {
     preloadIndustrialAssets(scene);
   }
-  if (options.includeJungleTemple || options.mapTheme === "jungle-temple") {
+  if (options.mapTheme === "jungle-temple") {
     preloadJungleTempleAssets(
       scene,
       options.mapId === "drowned-sun-temple-v2",
     );
   }
-  if (options.includeHelixCanopy || options.mapTheme === "helix-canopy") {
+  if (options.mapTheme === "helix-canopy") {
     preloadHelixCanopyAssets(scene);
   }
   scene.load.audio("step1", assetUrl("sounds/step1.wav"));
@@ -160,16 +150,6 @@ function preloadRuinsAssets(scene: Phaser.Scene): void {
   scene.load.image(
     "ruinsOvergrownRemains",
     assetUrl("ruins/overgrown-remains.png"),
-  );
-  scene.load.spritesheet(
-    "ruinsBannerRedLegacy",
-    assetUrl("ruins/banner-red.png"),
-    { frameWidth: 192, frameHeight: 256 },
-  );
-  scene.load.spritesheet(
-    "ruinsBannerBlueLegacy",
-    assetUrl("ruins/banner-blue.png"),
-    { frameWidth: 192, frameHeight: 256 },
   );
   scene.load.image("ruinsBannerStandV2", assetUrl("ruins/banner-stand-v2.png"));
   scene.load.spritesheet(
@@ -250,11 +230,9 @@ function preloadIndustrialAssets(scene: Phaser.Scene): void {
 
 function preloadCharacterAssets(
   scene: Phaser.Scene,
-  characterSkinIds?: readonly V2PlayerSkinId[],
+  characterSkinIds: readonly V2PlayerSkinId[],
 ): void {
-  const selectedSkinIds = characterSkinIds
-    ? [...new Set(characterSkinIds)]
-    : Object.keys(CHARACTER_ASSETS) as V2PlayerSkinId[];
+  const selectedSkinIds = [...new Set(characterSkinIds)];
   for (const skinId of selectedSkinIds) {
     const asset = CHARACTER_ASSETS[skinId];
     scene.load.spritesheet(asset.key, assetUrl(asset.file), {

@@ -333,7 +333,6 @@ test("project typography uses central UI, display, and diagnostic font tokens", 
     "utf8",
   );
   const phaserTypographySources = [
-    "../src/scenes/ArenaScene.ts",
     "../src/adapters/phaser/PhaserArenaActorRenderer.ts",
     "../src/adapters/phaser/PhaserArenaPickupRenderer.ts",
     "../src/adapters/phaser/PhaserArenaHudPort.ts",

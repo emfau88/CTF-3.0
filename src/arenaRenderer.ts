@@ -1,25 +1,25 @@
 import Phaser from "phaser";
-import { TEAM } from "./config";
 import {
+  ARENA_TEAM_PALETTE,
+  ARENA_THEME_VISUALS,
   HELIX_CANOPY_PALETTE,
   JUNGLE_TEMPLE_GREYBOX_PALETTE,
-  LEVEL_THEME_VISUALS,
-  type LevelData,
-  type LevelDecoration,
-  type LevelGap,
-  type LevelWall,
-} from "./level";
-import type { Rect } from "./math";
+  type ArenaPresentationData,
+  type ArenaPresentationDecoration,
+  type ArenaPresentationGap,
+  type ArenaPresentationRect,
+  type ArenaPresentationWall,
+} from "./arenaPresentation";
 
 const DROWNED_SUN_TEMPLE_ID = "drowned-sun-temple-v2";
 
 export function renderArena(
   scene: Phaser.Scene,
-  level: LevelData,
+  level: ArenaPresentationData,
   onLibraryTable: (x: number, y: number) => void,
 ) {
   const g = scene.add.graphics().setDepth(0);
-  const visuals = LEVEL_THEME_VISUALS[level.theme];
+  const visuals = ARENA_THEME_VISUALS[level.theme];
   drawFloorTiles(scene, level);
   if (level.theme === "library" && level.combatZone) {
     const r = level.combatZone;
@@ -100,12 +100,12 @@ export function renderArena(
   }
 
   if (level.theme === "library") {
-    drawZone(g, level.redBase, TEAM.red.base, TEAM.red.dark);
-    drawZone(g, level.blueBase, TEAM.blue.base, TEAM.blue.dark);
+    drawZone(g, level.redBase, ARENA_TEAM_PALETTE.red.base, ARENA_TEAM_PALETTE.red.dark);
+    drawZone(g, level.blueBase, ARENA_TEAM_PALETTE.blue.base, ARENA_TEAM_PALETTE.blue.dark);
   }
 }
 
-function drawFloorTiles(scene: Phaser.Scene, level: LevelData) {
+function drawFloorTiles(scene: Phaser.Scene, level: ArenaPresentationData) {
   if (level.theme === "helix-canopy") {
     drawHelixFloor(scene, level);
     return;
@@ -151,7 +151,7 @@ function drawFloorTiles(scene: Phaser.Scene, level: LevelData) {
     return;
   }
   const size = 50;
-  const visuals = LEVEL_THEME_VISUALS[level.theme];
+  const visuals = ARENA_THEME_VISUALS[level.theme];
   for (let y = 0; y < level.height; y += size) {
     for (let x = 0; x < level.width; x += size) {
       if (level.theme === "library") {
@@ -168,21 +168,21 @@ function drawFloorTiles(scene: Phaser.Scene, level: LevelData) {
   }
 }
 
-function drawObjectSprite(scene: Phaser.Scene, r: Rect, frame: number, alpha = 1) {
+function drawObjectSprite(scene: Phaser.Scene, r: ArenaPresentationRect, frame: number, alpha = 1) {
   scene.add.image(r.x + r.w / 2, r.y + r.h / 2, "arenaTiles", frame)
     .setDisplaySize(r.w, r.h)
     .setAlpha(alpha)
     .setDepth(-1);
 }
 
-function drawZone(g: Phaser.GameObjects.Graphics, r: Rect, fill: number, stroke: number) {
+function drawZone(g: Phaser.GameObjects.Graphics, r: ArenaPresentationRect, fill: number, stroke: number) {
   g.fillStyle(fill, .18)
     .fillRoundedRect(r.x, r.y, r.w, r.h, 8)
     .lineStyle(3, stroke, .62)
     .strokeRoundedRect(r.x, r.y, r.w, r.h, 8);
 }
 
-function drawHelixFloor(scene: Phaser.Scene, level: LevelData) {
+function drawHelixFloor(scene: Phaser.Scene, level: ArenaPresentationData) {
   scene.add.rectangle(
     level.width / 2,
     level.height / 2,
@@ -196,7 +196,7 @@ function drawHelixFloor(scene: Phaser.Scene, level: LevelData) {
     .setDepth(-2);
 }
 
-function drawHelixCombatZone(scene: Phaser.Scene, r: Rect) {
+function drawHelixCombatZone(scene: Phaser.Scene, r: ArenaPresentationRect) {
   const centerX = r.x + r.w / 2;
   const centerY = r.y + r.h / 2;
   const marker = scene.add.graphics().setDepth(-1.55);
@@ -211,12 +211,14 @@ function drawHelixCombatZone(scene: Phaser.Scene, r: Rect) {
 
 function drawHelixBase(
   scene: Phaser.Scene,
-  base: Rect,
+  base: ArenaPresentationRect,
   key: "helixBaseRed" | "helixBaseBlue",
 ) {
   const centerX = base.x + base.w / 2;
   const centerY = base.y + base.h / 2;
-  const color = key === "helixBaseRed" ? TEAM.red.base : TEAM.blue.base;
+  const color = key === "helixBaseRed"
+    ? ARENA_TEAM_PALETTE.red.base
+    : ARENA_TEAM_PALETTE.blue.base;
   const marker = scene.add.graphics().setDepth(-1.35);
   marker
     .fillStyle(color, .055)
@@ -227,7 +229,7 @@ function drawHelixBase(
     .strokeCircle(centerX, centerY, 58);
 }
 
-function drawTempleFloor(scene: Phaser.Scene, level: LevelData) {
+function drawTempleFloor(scene: Phaser.Scene, level: ArenaPresentationData) {
   scene.add.rectangle(
     level.width / 2,
     level.height / 2,
@@ -275,7 +277,7 @@ function drawTempleFloor(scene: Phaser.Scene, level: LevelData) {
 function drawTempleCombatZone(
   scene: Phaser.Scene,
   g: Phaser.GameObjects.Graphics,
-  r: Rect,
+  r: ArenaPresentationRect,
   usePilotArt: boolean,
 ) {
   const color = JUNGLE_TEMPLE_GREYBOX_PALETTE.objective;
@@ -298,7 +300,7 @@ function drawTempleCombatZone(
 
 function drawTempleBase(
   scene: Phaser.Scene,
-  r: Rect,
+  r: ArenaPresentationRect,
   key: "templeBaseRed" | "templeBaseBlue",
 ) {
   scene.add.image(r.x + r.w / 2, r.y + r.h / 2, key)
@@ -309,7 +311,7 @@ function drawTempleBase(
 function drawTempleWall(
   scene: Phaser.Scene,
   g: Phaser.GameObjects.Graphics,
-  wall: LevelWall,
+  wall: ArenaPresentationWall,
 ) {
   const palette = JUNGLE_TEMPLE_GREYBOX_PALETTE;
   if (!wall.visual || wall.visual === "temple-basalt") {
@@ -360,7 +362,7 @@ function drawTempleWall(
 function drawTempleGap(
   scene: Phaser.Scene,
   g: Phaser.GameObjects.Graphics,
-  gap: LevelGap,
+  gap: ArenaPresentationGap,
 ) {
   const palette = JUNGLE_TEMPLE_GREYBOX_PALETTE;
   if (gap.visual === "cenote-pilot") {
@@ -384,7 +386,7 @@ function drawTempleGap(
 
 function drawTempleDecoration(
   scene: Phaser.Scene,
-  decoration: LevelDecoration,
+  decoration: ArenaPresentationDecoration,
 ) {
   const centerX = decoration.x + decoration.w / 2;
   const centerY = decoration.y + decoration.h / 2;
@@ -442,7 +444,7 @@ function drawTempleDecoration(
   }
 }
 
-function drawRuinsWall(scene: Phaser.Scene, g: Phaser.GameObjects.Graphics, wall: LevelWall) {
+function drawRuinsWall(scene: Phaser.Scene, g: Phaser.GameObjects.Graphics, wall: ArenaPresentationWall) {
   const horizontal = wall.w > wall.h;
   g.fillStyle(0x18201d, .2).fillRoundedRect(wall.x + 5, wall.y + 8, wall.w, wall.h, 7);
   scene.add.image(
@@ -454,7 +456,7 @@ function drawRuinsWall(scene: Phaser.Scene, g: Phaser.GameObjects.Graphics, wall
     .setDepth(2);
 }
 
-function drawRuinsGap(scene: Phaser.Scene, gap: LevelGap) {
+function drawRuinsGap(scene: Phaser.Scene, gap: ArenaPresentationGap) {
   scene.add.image(gap.x + gap.w / 2, gap.y + gap.h / 2, "ruinsGapChasm")
     .setDisplaySize(gap.w, gap.h)
     .setDepth(1);
@@ -462,7 +464,7 @@ function drawRuinsGap(scene: Phaser.Scene, gap: LevelGap) {
 
 function drawIndustrialBase(
   scene: Phaser.Scene,
-  base: Rect,
+  base: ArenaPresentationRect,
   key: "industrialBaseRed" | "industrialBaseBlue",
 ) {
   scene.add.image(base.x + base.w / 2, base.y + base.h / 2, key)
@@ -470,7 +472,7 @@ function drawIndustrialBase(
     .setDepth(-.5);
 }
 
-function drawIndustrialWall(scene: Phaser.Scene, g: Phaser.GameObjects.Graphics, wall: LevelWall) {
+function drawIndustrialWall(scene: Phaser.Scene, g: Phaser.GameObjects.Graphics, wall: ArenaPresentationWall) {
   const horizontal = wall.w > wall.h;
   g.fillStyle(0x080d12, .32).fillRoundedRect(wall.x + 5, wall.y + 7, wall.w, wall.h, 6);
   scene.add.image(
@@ -482,13 +484,13 @@ function drawIndustrialWall(scene: Phaser.Scene, g: Phaser.GameObjects.Graphics,
     .setDepth(2);
 }
 
-function drawIndustrialGap(scene: Phaser.Scene, gap: LevelGap) {
+function drawIndustrialGap(scene: Phaser.Scene, gap: ArenaPresentationGap) {
   scene.add.image(gap.x + gap.w / 2, gap.y + gap.h / 2, "industrialMaintenancePit")
     .setDisplaySize(gap.w + 8, gap.h + 8)
     .setDepth(1);
 }
 
-function drawIndustrialDecoration(scene: Phaser.Scene, decoration: LevelDecoration) {
+function drawIndustrialDecoration(scene: Phaser.Scene, decoration: ArenaPresentationDecoration) {
   const x = decoration.x + decoration.w / 2;
   const y = decoration.y + decoration.h / 2;
 
@@ -541,7 +543,7 @@ function drawIndustrialDecoration(scene: Phaser.Scene, decoration: LevelDecorati
 
 function drawRuinsBase(
   scene: Phaser.Scene,
-  base: Rect,
+  base: ArenaPresentationRect,
   key: "ruinsBaseRed" | "ruinsBaseBlue",
   depth: number,
 ) {
@@ -564,7 +566,7 @@ function ensureRuinsAnimations(scene: Phaser.Scene) {
   }
 }
 
-function drawRuinsDecoration(scene: Phaser.Scene, decoration: LevelDecoration) {
+function drawRuinsDecoration(scene: Phaser.Scene, decoration: ArenaPresentationDecoration) {
   const x = decoration.x + decoration.w / 2;
   const y = decoration.y + decoration.h / 2;
 
@@ -595,7 +597,7 @@ function drawRuinsDecoration(scene: Phaser.Scene, decoration: LevelDecoration) {
 function drawLibraryWall(
   scene: Phaser.Scene,
   g: Phaser.GameObjects.Graphics,
-  wall: LevelWall,
+  wall: ArenaPresentationWall,
   onLibraryTable: (x: number, y: number) => void,
 ) {
   const table = wall.visual === "reading-table";
@@ -618,14 +620,14 @@ function drawLibraryWall(
     .setDepth(2);
 }
 
-function drawLibraryGap(scene: Phaser.Scene, g: Phaser.GameObjects.Graphics, gap: LevelGap) {
+function drawLibraryGap(scene: Phaser.Scene, g: Phaser.GameObjects.Graphics, gap: ArenaPresentationGap) {
   g.fillStyle(0x090707, .66).fillRoundedRect(gap.x + 3, gap.y + 5, gap.w, gap.h, 8);
   scene.add.image(gap.x + gap.w / 2, gap.y + gap.h / 2, "libraryCollapsedFloor")
     .setDisplaySize(gap.w + 12, gap.h + 12)
     .setDepth(1);
 }
 
-function drawLibraryDecoration(scene: Phaser.Scene, g: Phaser.GameObjects.Graphics, decoration: LevelDecoration) {
+function drawLibraryDecoration(scene: Phaser.Scene, g: Phaser.GameObjects.Graphics, decoration: ArenaPresentationDecoration) {
   if (decoration.kind === "rug") {
     scene.add.image(decoration.x + decoration.w / 2, decoration.y + decoration.h / 2, "libraryRug")
       .setDisplaySize(decoration.w, decoration.h)

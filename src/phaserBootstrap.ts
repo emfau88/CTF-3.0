@@ -3,13 +3,12 @@ import {
   GameplayV2HudScene,
   GameplayV2Scene,
 } from "./adapters/phaser";
-import { ArenaScene } from "./scenes/ArenaScene";
 
-export function createPhaserGame(useGameplayV2Shell: boolean): Phaser.Game {
+export function createPhaserGame(): Phaser.Game {
   return new Phaser.Game({
     type: Phaser.AUTO,
     parent: "game",
-    backgroundColor: useGameplayV2Shell ? "#050b12" : "#edf5ee",
+    backgroundColor: "#050b12",
     scale: {
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -17,8 +16,6 @@ export function createPhaserGame(useGameplayV2Shell: boolean): Phaser.Game {
       height: window.innerHeight,
     },
     render: { antialias: true },
-    scene: useGameplayV2Shell
-      ? [GameplayV2Scene, GameplayV2HudScene]
-      : [ArenaScene],
+    scene: [GameplayV2Scene, GameplayV2HudScene],
   });
 }
