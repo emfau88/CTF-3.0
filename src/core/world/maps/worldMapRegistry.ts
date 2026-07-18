@@ -10,11 +10,11 @@ import type { WorldMapData } from "./worldMapData";
 export const WORLD_MAPS: readonly WorldMapData[] = [
   HELIX_CANOPY_V2,
   DROWNED_SUN_TEMPLE_V2,
+  FLOW_CIRCUIT_V2,
   TRAINING_CROSSING_V2,
   GRAND_ARCHIVE_V2,
   FLANK_SWITCH_V2,
   FLOW_LAB_V2,
-  FLOW_CIRCUIT_V2,
 ];
 
 const WORLD_MAP_BY_ID = new Map(

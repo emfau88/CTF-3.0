@@ -16,7 +16,8 @@ export type ArenaMapTheme =
   | "library"
   | "industrial"
   | "jungle-temple"
-  | "helix-canopy";
+  | "helix-canopy"
+  | "foundry-circuit";
 
 export function preloadArenaAssets(
   scene: Phaser.Scene,
@@ -91,6 +92,9 @@ export function preloadArenaAssets(
   }
   if (options.mapTheme === "helix-canopy") {
     preloadHelixCanopyAssets(scene);
+  }
+  if (options.mapTheme === "foundry-circuit") {
+    preloadFoundryCircuitAssets(scene);
   }
   scene.load.audio("step1", assetUrl("sounds/step1.wav"));
   scene.load.audio("step2", assetUrl("sounds/step2.wav"));
@@ -274,4 +278,11 @@ function preloadJungleTempleAssets(
 
 function preloadHelixCanopyAssets(scene: Phaser.Scene) {
   scene.load.image("helixArenaMaster", assetUrl("helix-canopy/arena-master.png"));
+}
+
+function preloadFoundryCircuitAssets(scene: Phaser.Scene) {
+  scene.load.image(
+    "foundryArenaMasterV2",
+    assetUrl("foundry-circuit/arena-master-v2.png"),
+  );
 }

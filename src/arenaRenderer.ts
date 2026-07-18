@@ -62,6 +62,8 @@ export function renderArena(
       drawTempleBase(scene, level.redBase, "templeBaseRed");
       drawTempleBase(scene, level.blueBase, "templeBaseBlue");
     }
+  } else if (level.theme === "foundry-circuit") {
+    // Team pads are authored directly into the integrated Foundry master.
   } else if (level.theme === "helix-canopy") {
     drawHelixBase(scene, level.redBase, "helixBaseRed");
     drawHelixBase(scene, level.blueBase, "helixBaseBlue");
@@ -90,6 +92,8 @@ export function renderArena(
       for (const gap of level.gaps) drawTempleGap(scene, g, gap);
       for (const wall of level.walls) drawTempleWall(scene, g, wall);
     }
+  } else if (level.theme === "foundry-circuit") {
+    // Cover, pits and the decorative shell are part of the integrated master.
   } else if (level.theme === "helix-canopy") {
     // The approved master art already renders every authored collision island.
   } else {
@@ -106,6 +110,10 @@ export function renderArena(
 }
 
 function drawFloorTiles(scene: Phaser.Scene, level: ArenaPresentationData) {
+  if (level.theme === "foundry-circuit") {
+    drawFoundryFloor(scene, level);
+    return;
+  }
   if (level.theme === "helix-canopy") {
     drawHelixFloor(scene, level);
     return;
@@ -180,6 +188,20 @@ function drawZone(g: Phaser.GameObjects.Graphics, r: ArenaPresentationRect, fill
     .fillRoundedRect(r.x, r.y, r.w, r.h, 8)
     .lineStyle(3, stroke, .62)
     .strokeRoundedRect(r.x, r.y, r.w, r.h, 8);
+}
+
+function drawFoundryFloor(scene: Phaser.Scene, level: ArenaPresentationData) {
+  scene.add.rectangle(
+    level.width / 2,
+    level.height / 2,
+    level.width,
+    level.height,
+    0x08090b,
+  ).setDepth(-2.1);
+  const imageWidth = level.height * (1915 / 821);
+  scene.add.image(level.width / 2, level.height / 2, "foundryArenaMasterV2")
+    .setDisplaySize(imageWidth, level.height)
+    .setDepth(-2);
 }
 
 function drawHelixFloor(scene: Phaser.Scene, level: ArenaPresentationData) {

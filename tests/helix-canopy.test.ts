@@ -39,13 +39,13 @@ test("Helix Canopy registers its rebuilt gameplay contract", () => {
 
 test("premium arenas lead the shared and Quick Play map order", () => {
   assert.deepEqual(
-    WORLD_MAPS.slice(0, 2).map((map) => map.id),
-    ["helix-canopy-v2", "drowned-sun-temple-v2"],
+    WORLD_MAPS.slice(0, 3).map((map) => map.id),
+    ["helix-canopy-v2", "drowned-sun-temple-v2", "flow-circuit-v2"],
   );
   const html = readFileSync(resolve("index.html"), "utf8");
   assert.match(
     html,
-    /id="v2-menu-map"[\s\S]*<option value="helix-canopy-v2">Helix Canopy<\/option>\s*<option value="drowned-sun-temple-v2">Temple of the Drowned Sun<\/option>/,
+    /id="v2-menu-map"[\s\S]*<option value="helix-canopy-v2">Helix Canopy<\/option>\s*<option value="drowned-sun-temple-v2">Temple of the Drowned Sun<\/option>\s*<option value="flow-circuit-v2">Foundry Circuit<\/option>/,
   );
 });
 

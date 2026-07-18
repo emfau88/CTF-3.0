@@ -85,6 +85,14 @@ const QUICK_PLAY_ARENA_PREVIEWS: Readonly<
     meta: "PREMIUM ARENA · ALL MODES",
     foregroundSize: "100%",
   },
+  "flow-circuit-v2": {
+    image: "assets/map-previews/flow-circuit-v2-overview.png",
+    kicker: "FEATURED ARENA · ORBITAL STEELWORKS",
+    description:
+      "A rebuilt steelworks arena with a volatile Forge Heart and three broad combat routes.",
+    meta: "PREMIUM ARENA · ALL MODES",
+    foregroundSize: "100%",
+  },
 };
 
 const QUICK_PLAY_MODE_LABELS: Readonly<Record<V2ModeId, string>> = {

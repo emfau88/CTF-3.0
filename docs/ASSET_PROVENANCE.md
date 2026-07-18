@@ -112,3 +112,15 @@ Identitaetsreferenzen dienten ausschliesslich die vorhandenen Gameplay-
 Spritesheets dieses Projekts. Vollstaendige Prompt-Spezifikation,
 figurenspezifische Leitplanken, Dateiliste und Nachbearbeitung stehen in
 `CHARACTER_UI_PORTRAIT_BATCH_2026-07-14.md`.
+
+## Foundry Circuit Premium-Rebuild
+
+Das integrierte Foundry-Masterbild
+`public/assets/foundry-circuit/arena-master-v2.png` und die bitidentische
+Quick-Play-Vorschau
+`public/assets/map-previews/flow-circuit-v2-overview.png` wurden am 2026-07-18
+mit dem eingebauten OpenAI-ImageGen-Modus erzeugt. Das Bild wurde nach der
+menschlichen Abnahme unveraendert aus
+`docs/concepts/foundry-circuit-rebuild-target-v2.png` uebernommen. Prompt,
+Edit-Ziel und technische Leitplanken stehen in
+`docs/concepts/foundry-circuit-rebuild-target-v2-prompt.md`.

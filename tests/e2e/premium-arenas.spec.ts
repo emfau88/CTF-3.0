@@ -13,6 +13,12 @@ const premiumArenas = [
     expectedAsset: "assets/jungle-temple/arena-master-v2.png",
     forbiddenAssetFolders: ["assets/helix-canopy/", "assets/library/", "assets/industrial/"],
   },
+  {
+    name: "Foundry Circuit",
+    mapId: "flow-circuit-v2",
+    expectedAsset: "assets/foundry-circuit/arena-master-v2.png",
+    forbiddenAssetFolders: ["assets/helix-canopy/", "assets/jungle-temple/", "assets/library/", "assets/industrial/"],
+  },
 ] as const;
 
 for (const arena of premiumArenas) {

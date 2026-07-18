@@ -1,71 +1,155 @@
-import type { WorldMapData, WorldMapGapPresentation } from "./worldMapData";
 import { createTeamSpawnPoints } from "./createTeamSpawnPoints";
+import type { WorldMapData } from "./worldMapData";
+
+const WORLD_WIDTH = 2440;
+const WORLD_HEIGHT = 1046;
+const MASTER_WIDTH = 1915;
+const MASTER_HEIGHT = 821;
+const MASTER_SCALE = WORLD_HEIGHT / MASTER_HEIGHT;
+const MASTER_OFFSET_X = (WORLD_WIDTH - MASTER_WIDTH * MASTER_SCALE) / 2;
+const INTEGRATED_COVER = "foundry-integrated-cover" as const;
+
+const masterRect = (
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => ({
+  x: Math.round(MASTER_OFFSET_X + x * MASTER_SCALE),
+  y: Math.round(y * MASTER_SCALE),
+  width: Math.round(width * MASTER_SCALE),
+  height: Math.round(height * MASTER_SCALE),
+});
+
+const cover = (
+  id: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => ({
+  id,
+  x,
+  y,
+  width,
+  height,
+  visual: INTEGRATED_COVER,
+} as const);
+
+const mirroredCover = (
+  id: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => {
+  const west = cover(`${id}-west`, x, y, width, height);
+  return [
+    west,
+    {
+      ...west,
+      id: `${id}-east`,
+      x: WORLD_WIDTH - x - width,
+    },
+  ] as const;
+};
+
+const masterCover = (
+  id: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => ({
+  id,
+  ...masterRect(x, y, width, height),
+  visual: INTEGRATED_COVER,
+} as const);
+
+const mirroredMasterCover = (
+  id: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => {
+  const west = masterCover(`${id}-west`, x, y, width, height);
+  return [
+    west,
+    {
+      ...west,
+      id: `${id}-east`,
+      x: WORLD_WIDTH - west.x - west.width,
+    },
+  ] as const;
+};
 
 const walls = [
-  // Split base shields create upper, middle, and lower departures.
-  { x: 280, y: 120, width: 55, height: 210, visual: "industrial-barrier" },
-  { x: 280, y: 490, width: 55, height: 210, visual: "industrial-barrier" },
-  { x: 1665, y: 120, width: 55, height: 210, visual: "industrial-barrier" },
-  { x: 1665, y: 490, width: 55, height: 210, visual: "industrial-barrier" },
-  { x: 430, y: 370, width: 120, height: 80, visual: "industrial-barrier" },
-  { x: 1450, y: 370, width: 120, height: 80, visual: "industrial-barrier" },
+  // The approved master contains the complete foundry shell. These two strips
+  // keep actors out of the decorative furnace machinery without drawing a
+  // second border over the integrated art.
+  cover("foundry-rim-north", 0, 0, WORLD_WIDTH, 110),
+  cover("foundry-rim-south", 0, 936, WORLD_WIDTH, 110),
 
-  // Four broken corners define an objective courtyard with four entrances.
-  { x: 760, y: 250, width: 150, height: 45, visual: "industrial-barrier" },
-  { x: 1090, y: 250, width: 150, height: 45, visual: "industrial-barrier" },
-  { x: 760, y: 525, width: 150, height: 45, visual: "industrial-barrier" },
-  { x: 1090, y: 525, width: 150, height: 45, visual: "industrial-barrier" },
-  { x: 760, y: 295, width: 45, height: 80, visual: "industrial-barrier" },
-  { x: 760, y: 445, width: 45, height: 80, visual: "industrial-barrier" },
-  { x: 1195, y: 295, width: 45, height: 80, visual: "industrial-barrier" },
-  { x: 1195, y: 445, width: 45, height: 80, visual: "industrial-barrier" },
+  // Upper precision lane. The gaps between these low shields preserve the
+  // long route while repeatedly breaking Rail sight lines. These raw boxes are
+  // inset in master-image space so their actor-expanded collision follows the
+  // visible metal body rather than extending onto open floor.
+  ...mirroredMasterCover("precision-outer", 390, 180, 89, 28),
+  ...mirroredMasterCover("precision-inner", 747, 168, 86, 27),
+  ...mirroredMasterCover("upper-exchange", 375, 316, 95, 31),
 
-  // Short separators preserve the outer circuit without making corridors rigid.
-  { x: 580, y: 145, width: 55, height: 140, visual: "industrial-barrier" },
-  { x: 1365, y: 145, width: 55, height: 140, visual: "industrial-barrier" },
-  { x: 580, y: 535, width: 55, height: 140, visual: "industrial-barrier" },
-  { x: 1365, y: 535, width: 55, height: 140, visual: "industrial-barrier" },
+  // The Forge Heart remains a flat floor landmark. Four surrounding shields
+  // block direct spawn and objective fire while leaving four broad entries.
+  ...mirroredMasterCover("forge-side", 733, 366, 27, 86),
+  masterCover("forge-north", 898, 263, 119, 25),
+  masterCover("forge-south", 898, 533, 119, 25),
 
-  // Small cover islands break long rail sightlines on the fast outer route.
-  { x: 875, y: 65, width: 70, height: 105, visual: "industrial-barrier" },
-  { x: 1055, y: 65, width: 70, height: 105, visual: "industrial-barrier" },
-  { x: 875, y: 650, width: 70, height: 105, visual: "industrial-barrier" },
-  { x: 1055, y: 650, width: 70, height: 105, visual: "industrial-barrier" },
+  // Lower coolant route. Staggered cover creates wide splash-combat bays and
+  // safe rotations instead of a single enclosed corridor.
+  ...mirroredMasterCover("lower-exchange", 375, 474, 95, 34),
+  ...mirroredMasterCover("coolant-mid", 579, 564, 93, 30),
+  ...mirroredMasterCover("coolant-outer", 373, 613, 93, 32),
+  ...mirroredMasterCover("coolant-inner", 746, 613, 86, 28),
 ] as const;
 
-const gaps: readonly WorldMapGapPresentation[] = [
-  // Optional movement shortcuts connect the exposed outer strip with the
-  // safer inner circuit without opening a direct horizontal sightline.
+const maintenancePitWest = {
+  id: "maintenance-pit-west",
+  ...masterRect(584, 180, 78, 68),
+  visual: "maintenance-pit",
+} as const;
+
+const gaps = [
+  maintenancePitWest,
   {
-    x: 945,
-    y: 62,
-    width: 110,
-    height: 112,
+    id: "maintenance-pit-east",
+    x: WORLD_WIDTH - maintenancePitWest.x - maintenancePitWest.width,
+    y: maintenancePitWest.y,
+    width: maintenancePitWest.width,
+    height: maintenancePitWest.height,
     visual: "maintenance-pit",
   },
-  {
-    x: 945,
-    y: 646,
-    width: 110,
-    height: 112,
-    visual: "maintenance-pit",
-  },
-];
+] as const;
+
+const maintenancePitWestCenterX = Math.round(
+  maintenancePitWest.x + maintenancePitWest.width / 2,
+);
+const maintenancePitEastCenterX = WORLD_WIDTH - maintenancePitWestCenterX;
 
 export const FLOW_CIRCUIT_V2: WorldMapData = {
   id: "flow-circuit-v2",
   displayName: "Foundry Circuit",
   geometry: {
-    bounds: { minX: 0, minY: 0, maxX: 2000, maxY: 820 },
-    solids: walls.map((wall, index) => ({
-      id: `wall-${String(index + 1).padStart(2, "0")}`,
+    bounds: { minX: 0, minY: 0, maxX: WORLD_WIDTH, maxY: WORLD_HEIGHT },
+    solids: walls.map((wall) => ({
+      id: wall.id,
       x: wall.x,
       y: wall.y,
       width: wall.width,
       height: wall.height,
     })),
-    gaps: gaps.map((gap, index) => ({
-      id: `gap-${String(index + 1).padStart(2, "0")}`,
+    gaps: gaps.map((gap) => ({
+      id: gap.id,
       x: gap.x,
       y: gap.y,
       width: gap.width,
@@ -75,27 +159,27 @@ export const FLOW_CIRCUIT_V2: WorldMapData = {
   navigation: {
     jumpLinks: [
       {
-        id: "upper-gap-south-north",
-        from: { x: 1000, y: 168 },
-        to: { x: 1000, y: 68 },
+        id: "maintenance-west-north-south",
+        from: { x: maintenancePitWestCenterX, y: 200 },
+        to: { x: maintenancePitWestCenterX, y: 340 },
         activationRadius: 44,
       },
       {
-        id: "upper-gap-north-south",
-        from: { x: 1000, y: 68 },
-        to: { x: 1000, y: 168 },
+        id: "maintenance-west-south-north",
+        from: { x: maintenancePitWestCenterX, y: 340 },
+        to: { x: maintenancePitWestCenterX, y: 200 },
         activationRadius: 44,
       },
       {
-        id: "lower-gap-north-south",
-        from: { x: 1000, y: 652 },
-        to: { x: 1000, y: 752 },
+        id: "maintenance-east-north-south",
+        from: { x: maintenancePitEastCenterX, y: 200 },
+        to: { x: maintenancePitEastCenterX, y: 340 },
         activationRadius: 44,
       },
       {
-        id: "lower-gap-south-north",
-        from: { x: 1000, y: 752 },
-        to: { x: 1000, y: 652 },
+        id: "maintenance-east-south-north",
+        from: { x: maintenancePitEastCenterX, y: 340 },
+        to: { x: maintenancePitEastCenterX, y: 200 },
         activationRadius: 44,
       },
     ],
@@ -103,68 +187,58 @@ export const FLOW_CIRCUIT_V2: WorldMapData = {
   spawnPoints: [
     ...createTeamSpawnPoints({
       teamId: "blue",
-      position: { x: 135, y: 410 },
+      position: { x: 190, y: 523 },
       facing: { x: 1, y: 0 },
       tags: ["player", "tdm", "featured"],
     }),
     ...createTeamSpawnPoints({
       teamId: "red",
-      position: { x: 1865, y: 410 },
+      position: { x: 2250, y: 523 },
       facing: { x: -1, y: 0 },
       tags: ["player", "tdm", "featured"],
     }),
   ],
   pickupSpawns: [
-    { id: "armor-center", type: "armor", position: { x: 1000, y: 410 } },
-    { id: "health-court-west", type: "health", position: { x: 850, y: 410 } },
-    { id: "health-court-east", type: "health", position: { x: 1150, y: 410 } },
-    { id: "health-upper-west", type: "health", position: { x: 700, y: 105 } },
-    { id: "health-upper-east", type: "health", position: { x: 1300, y: 105 } },
-    { id: "health-lower-west", type: "health", position: { x: 700, y: 715 } },
-    { id: "health-lower-east", type: "health", position: { x: 1300, y: 715 } },
-    { id: "rocket-west", type: "rocket", position: { x: 510, y: 620 } },
-    { id: "rocket-east", type: "rocket", position: { x: 1490, y: 620 } },
-    { id: "rocket-contested", type: "rocket", position: { x: 1000, y: 610 } },
-    { id: "rail-contested", type: "rail", position: { x: 1000, y: 210 } },
-    { id: "whip-blue", type: "whip", position: { x: 265, y: 410 } },
-    { id: "whip-red", type: "whip", position: { x: 1735, y: 410 } },
-    { id: "armor-blue", type: "armor", position: { x: 390, y: 610 } },
-    { id: "armor-red", type: "armor", position: { x: 1610, y: 610 } },
+    { id: "health-blue-upper-exit", type: "health", position: { x: 360, y: 275 } },
+    { id: "health-red-upper-exit", type: "health", position: { x: 2080, y: 275 } },
+    { id: "health-blue-lower-exit", type: "health", position: { x: 360, y: 770 } },
+    { id: "health-red-lower-exit", type: "health", position: { x: 2080, y: 770 } },
+    { id: "health-inner-west", type: "health", position: { x: 865, y: 523 } },
+    { id: "health-inner-east", type: "health", position: { x: 1575, y: 523 } },
+    { id: "armor-exchange-west", type: "armor", position: { x: 1000, y: 620 } },
+    { id: "armor-exchange-east", type: "armor", position: { x: 1440, y: 620 } },
+    { id: "rocket-coolant-west", type: "rocket", position: { x: 660, y: 800 } },
+    { id: "rocket-coolant-east", type: "rocket", position: { x: 1780, y: 800 } },
+    { id: "rail-precision-center", type: "rail", position: { x: 1220, y: 145 } },
+    { id: "arc-lash-forge-west", type: "whip", position: { x: 1040, y: 523 } },
+    { id: "arc-lash-forge-east", type: "whip", position: { x: 1400, y: 523 } },
   ],
   gameplay: {
-    blueBase: { x: 45, y: 285, width: 205, height: 250 },
-    redBase: { x: 1750, y: 285, width: 205, height: 250 },
-    combatZone: { x: 825, y: 320, width: 350, height: 180 },
+    blueBase: { x: 45, y: 245, width: 260, height: 556 },
+    redBase: { x: 2135, y: 245, width: 260, height: 556 },
+    combatZone: { x: 1040, y: 393, width: 360, height: 260 },
   },
   presentation: {
-    theme: "industrial",
-    plan: "Featured competitive CTF arena with three readable routes: a precision outer lane with pit shortcuts into the inner circuit, a fast four-entry objective court, and a covered splash lane with short recovery rotations.",
+    theme: "foundry-circuit",
+    plan: "A rebuilt premium steelworks arena with an exposed precision deck, a four-entry Forge Heart and a wide coolant route for protected splash rotations.",
     walls,
     gaps,
-    decorations: [
-      { kind: "industrial-energy-blue", x: 58, y: 363, width: 410, height: 94 },
-      { kind: "industrial-energy-red", x: 1532, y: 363, width: 410, height: 94 },
-      { kind: "industrial-switch-gate", x: 285, y: 155, width: 46, height: 140 },
-      { kind: "industrial-switch-gate", x: 1669, y: 155, width: 46, height: 140 },
-      { kind: "industrial-edge-pipes", x: 350, y: -12, width: 520, height: 94 },
-      { kind: "industrial-edge-pipes", x: 1130, y: 738, width: 520, height: 94 },
-      { kind: "industrial-edge-tank", x: 38, y: -34, width: 128, height: 160 },
-      { kind: "industrial-edge-tank", x: 1834, y: 694, width: 128, height: 160 },
-      { kind: "industrial-edge-turbine", x: 918, y: -72, width: 164, height: 128 },
-      { kind: "industrial-edge-turbine", x: 918, y: 764, width: 164, height: 128 },
-    ],
+    decorations: [],
     botRoutes: {
       attacker: [
-        { x: 1835, y: 410 }, { x: 1600, y: 180 },
-        { x: 1300, y: 115 }, { x: 1000, y: 200 },
-        { x: 700, y: 115 }, { x: 400, y: 180 },
-        { x: 165, y: 410 },
+        { x: 2250, y: 523 }, { x: 2080, y: 690 },
+        { x: 1880, y: 760 }, { x: 1660, y: 820 },
+        { x: 1450, y: 750 }, { x: 1220, y: 760 },
+        { x: 990, y: 750 }, { x: 780, y: 820 },
+        { x: 560, y: 760 }, { x: 360, y: 690 },
+        { x: 190, y: 523 },
       ],
       defender: [
-        { x: 230, y: 250 }, { x: 100, y: 315 },
-        { x: 100, y: 505 }, { x: 230, y: 570 },
+        { x: 190, y: 300 }, { x: 310, y: 350 },
+        { x: 360, y: 523 }, { x: 310, y: 696 },
+        { x: 190, y: 746 },
       ],
     },
   },
-  diagnosticSpawn: { x: 1865, y: 410 },
+  diagnosticSpawn: { x: 2250, y: 523 },
 };

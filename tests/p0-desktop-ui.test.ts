@@ -48,11 +48,11 @@ test("desktop camera fit prioritizes overview with a restrained zoom cap", () =>
   );
   assert.equal(
     calculateArenaFitZoom(1920, 944, flowBounds, 1),
-    MAXIMUM_DESKTOP_ARENA_ZOOM,
+    1,
   );
   assert.equal(
     calculateArenaFitZoom(1920, 1080, flowBounds, 1),
-    MAXIMUM_DESKTOP_ARENA_ZOOM,
+    1080 / 1046,
   );
   assert.equal(
     calculateArenaFitZoom(1366, 768, TRAINING_CROSSING_V2.geometry.bounds, 1),

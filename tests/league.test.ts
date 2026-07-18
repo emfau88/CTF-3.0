@@ -368,6 +368,7 @@ test("quick play presents premium arena previews and a final match summary", () 
   assert.match(html, /Input &amp; Audio/);
   assert.match(menuSource, /helix-canopy-v2-overview\.png/);
   assert.match(menuSource, /drowned-sun-temple-v2-overview\.png/);
+  assert.match(menuSource, /flow-circuit-v2-overview\.png/);
   assert.match(menuSource, /foregroundSize:\s*"94%"/);
   assert.match(menuSource, /foregroundSize:\s*"100%"/);
   assert.match(menuSource, /"--arena-preview-image"/);

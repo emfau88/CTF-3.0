@@ -58,6 +58,43 @@ test("all arena modes start on every v2 map from 1v1 through 4v4", () => {
   }
 });
 
+test("rebuilt Foundry Circuit keeps both bot teams progressing in long 2v2 matches", () => {
+  const scenarios = createAllModeMapTeamSizeSmokeScenarios().filter(
+    (scenario) =>
+      scenario.map.id === "flow-circuit-v2" && scenario.teamSize === 2,
+  );
+  assert.equal(scenarios.length, 3);
+
+  for (const scenario of scenarios) {
+    const summary = runSimulationScenario({
+      ...scenario,
+      durationMs: 18_000,
+      label: `${scenario.label} long-run`,
+    });
+    const progress = groupProgressByTeam(summary.movementByActor);
+    assert.equal(summary.invalidPositionFrames, 0, summary.label);
+    assert.equal(summary.idleActionFrames, 0, summary.label);
+    assert.equal(
+      bothTeamsExceed(progress, "highestTravelDistance", 1_500),
+      true,
+      `${summary.label} did not sustain movement for both teams`,
+    );
+    assert.equal(
+      progress.blue.longestMoveIntentStallMs < 500 &&
+        progress.red.longestMoveIntentStallMs < 500,
+      true,
+      `${summary.label} produced a movement-intent stall`,
+    );
+    if (summary.modeId !== "team-deathmatch") {
+      assert.equal(
+        summary.flagPickups > 0,
+        true,
+        `${summary.label} never reached its flag objective`,
+      );
+    }
+  }
+});
+
 test("tdm low health bot prioritizes health pickup over visible enemy", () => {
   const diagnostic = runTdmLowHealthVsEnemyScenario();
 
