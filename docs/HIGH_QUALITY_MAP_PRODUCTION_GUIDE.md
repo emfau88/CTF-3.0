@@ -1,18 +1,20 @@
 # Leitfaden für hochwertige CTF-3.0-Maps
 
-Stand: 2026-07-16  
-Referenzmaps: `Helix Canopy` und `Temple of the Drowned Sun`
+Stand: 2026-07-18
+
+Referenzmaps: `Helix Canopy`, `Temple of the Drowned Sun` und `Foundry Circuit`
 
 Dieses Dokument ist die zentrale Übergabe für zukünftige Map-Arbeit. Es
 beschreibt den technischen Aufbau, den tatsächlich erfolgreichen
 Produktionsablauf, die wichtigsten Fehler und Erkenntnisse sowie die noch nicht
 umgesetzten Mapkonzepte.
 
-Ein neuer Chat soll vor neuer Map-Arbeit mindestens dieses Dokument,
-`docs/helix-canopy-design.md` und die aktuelle Mapdatei der gewählten
-Referenzmap lesen.
+Ein neuer Chat soll vor neuer Map-Arbeit mindestens dieses Dokument, die
+aktuelle Mapdatei der gewählten Referenzmap und je nach Vorbild
+`docs/helix-canopy-design.md` oder `docs/foundry-circuit-rebuild-design.md`
+lesen.
 
-## 1. Warum Helix und Temple hochwertiger wirken
+## 1. Warum Helix, Temple und Foundry hochwertiger wirken
 
 Die älteren Maps funktionieren technisch, wirken aber stärker wie
 zusammengesetzte Spielbausteine. Viele Wand- und Hindernisassets haben
@@ -24,7 +26,8 @@ dadurch nicht immer sofort klar:
 - was übersprungen werden kann,
 - was lediglich Dekoration ist.
 
-Helix Canopy und die überarbeitete Temple-Map lösen das anders:
+Helix Canopy, die überarbeitete Temple-Map und der Foundry-Rebuild lösen das
+anders:
 
 1. Eine vollständige, zusammenhängende Draufsicht ist die visuelle
    Hauptquelle.
@@ -163,8 +166,8 @@ als Gesamtmap scheitern können.
 
 ### Phase D – integriertes Masterbild statt Asset-Collage
 
-Für Helix und die finale Temple-Version ist das vollständige Arena-Masterbild
-die visuelle Single Source of Truth.
+Für Helix, die finale Temple-Version und Foundry ist das vollständige
+Arena-Masterbild die visuelle Single Source of Truth.
 
 - Das Bild wird proportional auf die Welthöhe gebracht.
 - Die Breite ergibt sich aus dem nativen Seitenverhältnis.
@@ -195,6 +198,43 @@ Kollision niemals nur aus einer alten Greybox übernehmen.
 Ein sichtbares Hindernis ohne passende Kollision und eine Kollision ohne
 sichtbares Hindernis sind beide Stop-Gate-Fehler.
 
+#### Reparaturregeln aus Helix, Temple und Foundry
+
+Die drei nachträglichen Kollisionskorrekturen haben zusätzliche verbindliche
+Regeln ergeben:
+
+- `geometry.bounds` am Bildrand ersetzt keine Arenamaske. Wenn Wasser, Glas,
+  Maschinen oder Vegetation innerhalb des Masters nur Dekoration sind, müssen
+  sie mit einer geschlossenen Solid-Maske aus der Spielfläche ausgeschlossen
+  werden.
+- Nicht einzelne auffällige Büsche oder Randlöcher flicken. Zuerst die gesamte
+  erwartete begehbare Silhouette festlegen und daraus eine zusammenhängende,
+  symmetrische Außenmaske bauen.
+- Diagonale Bildkanten mit mehreren überlappenden, achsenparallelen Stufen
+  annähern. Die Stufen bleiben innerhalb der sichtbaren festen Silhouette und
+  dürfen keine scheinbar offenen Durchgänge zuschieben.
+- Bei jedem Durchgang zählt die um `WORLD_MAP_ACTOR_RADIUS` erweiterte
+  effektive Sperrzone, nicht nur das rohe Solid-Rechteck. Ein optisch breiter
+  Durchgang kann sonst spielerisch eng oder hakelig sein.
+- Bei einem integrierten Master Koordinaten möglichst im nativen Bildraum
+  erfassen und über einen gemeinsamen Master-zu-Welt-Transform umrechnen.
+  Unabhängig geratene Weltkoordinaten driften sichtbar vom Bild weg.
+- Rechtecke über projizierte linke/rechte und obere/untere Kanten berechnen.
+  Startpunkt und Breite nicht unabhängig runden; sonst können am
+  gegenüberliegenden Rand Ein-Pixel-Überläufe oder asymmetrische Boxen
+  entstehen.
+- Nach jeder neuen Rand- oder Hinderniskollision alle `botRoutes`, Spawns,
+  Pickups und Jump-Endpunkte erneut auf Actor-Clearance prüfen. Temple zeigte,
+  dass alte Bot-Wegpunkte selbst in dem Deko-Rand liegen können, der gerade
+  korrekt gesperrt wurde.
+- Für jeden Fix sowohl gesperrte Deko-Stichproben als auch ausdrücklich offene
+  Boden-Stichproben in Maptests festhalten. Nur „irgendwo gibt es blockierte
+  Samples“ ist als Regressionstest zu schwach.
+- `collisionDebug=1` dient zum Vergleich von rohem Solid und effektiver
+  Actor-Sperrzone. `clearanceHeatmap=1` zeigt zusätzlich, ob sichtbarer Boden
+  unbeabsichtigt eng wird. Beide Ansichten und ein normaler Matchstart gehören
+  zur Abnahme.
+
 ### Phase F – echter Größenumbau
 
 Wenn eine Map später mehr Platz benötigt, nicht einfach das Bild oder einzelne
@@ -223,7 +263,7 @@ Pflichtprüfungen:
 - bevorzugte Teamgrößen sowie technischer 4v4-Smoke,
 - Spawn- und Basissicherheit,
 - Pickup-Erreichbarkeit,
-- Botbewegung und Bot-Routen,
+- Botbewegung und Bot-Routen, besonders nach jeder neuen Außenmaske,
 - alle Jump Links,
 - Kamera bei normalen und kompakten Desktop-Viewports,
 - menschlicher Schnellspiel-Test auf Lesbarkeit.
@@ -279,7 +319,7 @@ Aktueller technischer Stand:
 - Map-ID: `helix-canopy-v2`
 - Welt: `2208×1104`
 - Master: `public/assets/helix-canopy/arena-master.png`
-- 24 Solids
+- 30 innere Solids plus 20 Solids für die geschlossene Kuppel-/Gartenmaske
 - keine Gaps
 - 4 authored Vault-Links
 - 8 Spawnslots
@@ -302,12 +342,20 @@ Erfolgreicher Aufbau:
 8. Kollisionsrechtecke ausschließlich innerhalb sichtbarer Pflanzeninseln.
 9. Reversible einheitliche Größenprüfung auf 115 Prozent.
 10. Collision-Debug und Clearance-Heatmap als dauerhafte Diagnosewerkzeuge.
+11. Die komplette äußere Kuppel, alle Randgärten und die zuvor begehbaren
+    Basisbüsche wurden als eine geschlossene Maske behandelt statt als
+    voneinander unabhängige Einzelfehler.
+12. Große diagonale Inselboxen wurden in kleinere, Actor-Radius-bewusste
+    Teilrechtecke zerlegt, damit die sichtbaren schrägen Durchgänge wieder
+    zuverlässig benutzbar sind.
 
 Wichtigste Helix-Lektion:
 
 > Wenn die Gesamtkomposition nicht stimmt, beheben mehr Module und mehr
 > Dekoration das Problem nicht. Ein starkes Gesamtbild mit daran angepasster
-> Kollision ist besser als viele einzeln gute Assets.
+> Kollision ist besser als viele einzeln gute Assets. Bei Reparaturen muss die
+> erwartete begehbare Silhouette als Ganzes korrigiert werden, nicht nur das
+> zuerst gemeldete Randloch.
 
 ## 5. Referenz: Temple of the Drowned Sun
 
@@ -318,7 +366,8 @@ Aktueller technischer Stand nach der Flächenerweiterung:
 - Master: `public/assets/jungle-temple/arena-master-v2.png`
 - Übersicht:
   `public/assets/map-previews/drowned-sun-temple-v2-overview.png`
-- 27 Solids für 25 sichtbare Coverinseln
+- 27 innere Solids für 25 sichtbare Coverinseln plus 26 Solids für die
+  geschlossene äußere Stein-/Vegetationsmaske
 - 2 Cenoten
 - 4 authored Cenote-Links
 - 8 Spawnslots
@@ -346,6 +395,12 @@ Erfolgreicher Aufbau:
 12. Die Map wurde mit zusätzlichem nativen Boden auf `2280×980` erweitert.
 13. Kollisionen wurden am neuen Masterbild neu nachgezeichnet.
 14. Die engsten Passagen wurden als Clearance-Regressionspunkte abgesichert.
+15. Wasser, Wurzeln und hohe Randarchitektur wurden mit einer geschlossenen,
+    symmetrischen Außenmaske aus der begehbaren Arena ausgeschlossen.
+16. Die Außenmaske wird im nativen `1913×822`-Masterraum beschrieben und erst
+    danach kantenbasiert auf `2280×980` projiziert.
+17. Zwei alte Defender-Wegpunkte im Seitenrand wurden auf die sichtbare
+    Basenfläche verschoben und anschließend erneut auf Clearance geprüft.
 
 Wichtigste Temple-Lektion:
 
@@ -357,7 +412,57 @@ Wichtigste Temple-Lektion:
 Der genaue Prompt für die vorherige dichte Temple-Fassung steht in
 `docs/drowned-sun-temple-master-prompt.md`.
 
-## 6. Hindernis- und Lesbarkeitsregeln
+## 6. Referenz: Foundry Circuit
+
+Aktueller technischer Stand nach dem Premium-Rebuild:
+
+- Map-ID: `flow-circuit-v2`
+- Welt: `2440×1046`
+- Master: `public/assets/foundry-circuit/arena-master-v2.png`
+- Übersicht:
+  `public/assets/map-previews/flow-circuit-v2-overview.png`
+- 20 Solids
+- 2 Wartungsgruben
+- 4 authored Wartungsgruben-Links
+- 8 Spawnslots
+- 13 Pickups
+- TDM, Classic CTF und One Flag von 1v1 bis 4v4
+
+Erfolgreicher Aufbau:
+
+1. Die alte modulare Industriekarte wurde durch ein zusammenhängendes,
+   proportionales `1915×821`-Masterbild ersetzt.
+2. Weltgröße, Basen, Spawns, Pickups, Combat Zone, Bot-Routen und Jump Links
+   wurden gemeinsam an die neue `2440×1046`-Arena angepasst.
+3. Die drei Routenrollen bleiben klar: offenes Precision Deck, vierseitiger
+   Forge Heart und breiter geschützter Coolant-Weg.
+4. Die Quick-Play-Übersicht ist bitidentisch mit dem freigegebenen Master und
+   zeigt deshalb keine abweichende Geometrie.
+5. Die ersten inneren Collider waren manuell in Weltkoordinaten platziert und
+   lagen sichtbar um etwa 10 bis 60 Einheiten neben den gemalten Metallkörpern.
+6. Alle inneren Coverboxen wurden daraufhin aus nativen Masterkoordinaten über
+   einen gemeinsamen Transform abgeleitet.
+7. Die Rohboxen wurden innerhalb der sichtbaren Metallkörper platziert, damit
+   ihre um den Spielerradius erweiterte Sperrzone die sichtbare Kante trifft,
+   ohne offenen Boden zu überdecken.
+8. Die beiden Wartungsgruben und alle vier Sprungendpunkte wurden auf die
+   tatsächlich gemalten Öffnungen zentriert.
+9. Maptests sichern die effektive Kollision gegen konkrete Bild-Bounding-Boxen
+   mit einer Toleranz von höchstens fünf Welt-Einheiten ab.
+10. Längere 2v2-Botläufe in allen drei Modi prüfen, dass beide Teams nach dem
+    Geometrieumbau weiter dauerhaft navigieren und Objectives erreichen.
+
+Wichtigste Foundry-Lektion:
+
+> Bei einem integrierten Master sind Bildkoordinaten die belastbarste Quelle
+> für Kollision und Traversal. Ein optisch plausibles, aber separat geratenes
+> Rechtecksystem driftet zwangsläufig und erzeugt genau die unsichtbaren
+> Kanten, die sich für Spieler wie Bugs anfühlen.
+
+Prompt, Entwurfsstände und technische Entscheidungen stehen in
+`docs/foundry-circuit-rebuild-design.md` und unter `docs/concepts/`.
+
+## 7. Hindernis- und Lesbarkeitsregeln
 
 ### Verbindliche visuelle Semantik
 
@@ -408,7 +513,7 @@ Wenn Projektile an Cover stoppen:
 
 So lernt der Spieler die Regel schneller als durch zusätzliche Konturen.
 
-## 7. Was bei zukünftigen Maps vermieden werden muss
+## 8. Was bei zukünftigen Maps vermieden werden muss
 
 - Keine zufälligen Hindernisse nur zur Flächenfüllung.
 - Kein Imagegen vor einem belastbaren Layoutvertrag.
@@ -428,7 +533,7 @@ So lernt der Spieler die Regel schneller als durch zusätzliche Konturen.
 - Keine frühe Feinplanung für jede aktuelle Waffenkennzahl. Stattdessen
   robuste Abstände, mehrere Ausgänge und verschiebbare Pickup-Zonen planen.
 
-## 8. Noch nicht umgesetzte Mapkonzepte
+## 9. Noch nicht umgesetzte Mapkonzepte
 
 Die ursprüngliche Konzeptphase enthielt fünf Vorschläge. Temple und Helix sind
 umgesetzt. Die folgenden drei bleiben als Backlog erhalten.
@@ -532,7 +637,7 @@ Geschätzter Aufwand:
 
 - etwa 12 bis 18 Arbeitstage.
 
-## 9. Empfehlung für die nächste neue Map
+## 10. Empfehlung für die nächste neue Map
 
 Empfohlene Reihenfolge:
 
@@ -551,13 +656,14 @@ Unabhängig vom Konzept gilt:
 - danach integriertes Master,
 - zuletzt Kollision, Clearance und Vollbild-Iteration.
 
-## 10. Aktueller Integrationsstand der Premium-Maps
+## 11. Aktueller Integrationsstand der Premium-Maps
 
-Die beiden Premium-Maps stehen an erster Stelle in der Registry und in Quick
+Die drei Premium-Maps stehen an erster Stelle in der Registry und in Quick
 Play:
 
 1. `Helix Canopy`
 2. `Temple of the Drowned Sun`
+3. `Foundry Circuit`
 
 Die Founders-Circuit-Liga verwendet:
 
@@ -571,11 +677,13 @@ Direkte Test-URLs:
   `http://127.0.0.1:5173/CTF-3.0/?scene=v2&mode=tdm&map=helix-canopy-v2&players=bot&controls=keyboard&teamSize=2`
 - Temple:
   `http://127.0.0.1:5173/CTF-3.0/?scene=v2&mode=tdm&map=drowned-sun-temple-v2&players=bot&controls=keyboard&teamSize=2`
+- Foundry:
+  `http://127.0.0.1:5173/CTF-3.0/?scene=v2&mode=tdm&map=flow-circuit-v2&players=bot&controls=keyboard&teamSize=2`
 - Collision Debug: an eine URL `&collisionDebug=1` anhängen.
 - Clearance Heatmap: an eine URL `&clearanceHeatmap=1` anhängen.
 - Saubere Übersicht: an eine URL `&mapPreview=1` anhängen.
 
-## 11. Checkliste für einen neuen Chat
+## 12. Checkliste für einen neuen Chat
 
 Vor Beginn:
 
@@ -606,12 +714,13 @@ Vor Commit:
 - `npm run build` grün,
 - Quick Play und gegebenenfalls Liga geprüft,
 - Übersicht aktualisiert,
+- README-Übersichten bei neuem Premium-Status aktualisiert,
 - nur mapbezogene Dateien gestaged.
 
-## 12. Geschützte fremde WIP-Dateien
+## 13. Geschützte fremde WIP-Dateien
 
-Diese Dateien gehörten während der Helix-/Temple-Arbeit nicht zum Mapumfang und
-dürfen nicht versehentlich in einen Map-Commit geraten:
+Diese Dateien gehörten während der Helix-/Temple-/Foundry-Arbeit nicht zum
+Mapumfang und dürfen nicht versehentlich in einen Map-Commit geraten:
 
 - `public/assets/ax9-mantis-idle-special-pilot-spritesheet-6x4.png`
 - `public/assets/ui/portraits/xeno-runner-portrait.png`

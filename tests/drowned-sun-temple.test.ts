@@ -24,7 +24,7 @@ test("Temple of the Drowned Sun registers its complete gameplay contract", () =>
     maxX: 2280,
     maxY: 980,
   });
-  assert.equal(map?.geometry.solids.length, 27);
+  assert.equal(map?.geometry.solids.length, 53);
   assert.equal(map?.geometry.gaps.length, 2);
   assert.equal(map?.navigation.jumpLinks.length, 4);
   assert.equal(map?.spawnPoints.length, 8);
@@ -34,7 +34,7 @@ test("Temple of the Drowned Sun registers its complete gameplay contract", () =>
 
 test("Temple gameplay art uses one universal low-cover visual language", () => {
   const visuals = DROWNED_SUN_TEMPLE_V2.presentation.walls.map((wall) => wall.visual);
-  assert.equal(visuals.length, 27);
+  assert.equal(visuals.length, 53);
   assert.ok(visuals.every((visual) => visual === "temple-integrated-cover"));
   assert.ok(DROWNED_SUN_TEMPLE_V2.presentation.gaps.every((gap) => gap.visual === "cenote-pilot"));
 });
@@ -129,6 +129,71 @@ test("Temple collision follows visible cover and keeps authored routes clear", (
   assert.ok(samples.some((sample) => sample.band === "blocked"));
   assert.ok(samples.some((sample) => sample.band === "tight"));
   assert.ok(samples.some((sample) => sample.band === "open"));
+});
+
+test("Temple scenery rim is a closed collision mask around the playable court", () => {
+  const map = DROWNED_SUN_TEMPLE_V2;
+  const solids = new Map(map.geometry.solids.map((solid) => [solid.id, solid]));
+
+  for (const id of [
+    "temple-rim-north",
+    "temple-rim-south",
+    "temple-rim-side-blue",
+    "temple-rim-side-red",
+  ]) {
+    assert.ok(solids.has(id), `${id} must close the decorative arena edge.`);
+  }
+
+  for (const side of ["blue", "red"] as const) {
+    for (let step = 1; step <= 5; step += 1) {
+      assert.ok(
+        solids.has(`temple-rim-north-step-${step}-${side}`),
+        `north ${side} corner step ${step} is missing.`,
+      );
+    }
+    for (let step = 1; step <= 6; step += 1) {
+      assert.ok(
+        solids.has(`temple-rim-south-step-${step}-${side}`),
+        `south ${side} corner step ${step} is missing.`,
+      );
+    }
+  }
+
+  const blockedScenerySamples = [
+    { x: 1140, y: 40 },
+    { x: 1140, y: 950 },
+    { x: 55, y: 490 },
+    { x: 2225, y: 490 },
+    { x: 150, y: 115 },
+    { x: 2130, y: 115 },
+    { x: 150, y: 825 },
+    { x: 2130, y: 825 },
+  ];
+  for (const sample of blockedScenerySamples) {
+    const clearance = measureWorldMapClearance(map, sample);
+    assert.ok(
+      clearance.clearance <= 0,
+      `decorative rim sample ${sample.x},${sample.y} must be blocked.`,
+    );
+  }
+
+  const openCourtSamples = [
+    { x: 1140, y: 90 },
+    { x: 1140, y: 890 },
+    { x: 150, y: 490 },
+    { x: 2130, y: 490 },
+    { x: 300, y: 185 },
+    { x: 1980, y: 185 },
+    { x: 360, y: 805 },
+    { x: 1920, y: 805 },
+  ];
+  for (const sample of openCourtSamples) {
+    const clearance = measureWorldMapClearance(map, sample);
+    assert.ok(
+      clearance.clearance >= WORLD_MAP_ACTOR_RADIUS,
+      `visible court sample ${sample.x},${sample.y} is blocked by ${clearance.obstacleId}.`,
+    );
+  }
 });
 
 test("projectile impacts teach the low-cover rule with neutral feedback", () => {

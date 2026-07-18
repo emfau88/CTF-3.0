@@ -4,6 +4,64 @@ import type { WorldMapData } from "./worldMapData";
 const INTEGRATED_COVER = "temple-integrated-cover" as const;
 const WORLD_WIDTH = 2280;
 const WORLD_HEIGHT = 980;
+const MASTER_WIDTH = 1913;
+const MASTER_HEIGHT = 822;
+const MASTER_SCALE = WORLD_HEIGHT / MASTER_HEIGHT;
+const MASTER_OFFSET_X = (WORLD_WIDTH - MASTER_WIDTH * MASTER_SCALE) / 2;
+
+const masterRect = (
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => {
+  const left = Math.max(0, Math.round(MASTER_OFFSET_X + x * MASTER_SCALE));
+  const top = Math.max(0, Math.round(y * MASTER_SCALE));
+  const right = Math.min(
+    WORLD_WIDTH,
+    Math.round(MASTER_OFFSET_X + (x + width) * MASTER_SCALE),
+  );
+  const bottom = Math.min(
+    WORLD_HEIGHT,
+    Math.round((y + height) * MASTER_SCALE),
+  );
+  return {
+    x: left,
+    y: top,
+    width: right - left,
+    height: bottom - top,
+  };
+};
+
+const masterCover = (
+  id: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => ({
+  id,
+  ...masterRect(x, y, width, height),
+  visual: INTEGRATED_COVER,
+} as const);
+
+const mirroredMasterCover = (
+  id: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => {
+  const west = masterCover(`${id}-blue`, x, y, width, height);
+  return [
+    west,
+    {
+      ...west,
+      id: `${id}-red`,
+      x: WORLD_WIDTH - west.x - west.width,
+    },
+  ] as const;
+};
 
 // The arena gains native floor between architectural groups. Exact seam points
 // use half of the inserted width so mirrored authored points stay mirrored.
@@ -59,6 +117,28 @@ const mirroredCover = (
 };
 
 const walls = [
+  // The master paints water, roots and high masonry around the playable
+  // courtyard. A closed stepped mask follows that visible inner stone edge so
+  // actors and bots cannot enter scenery that reads as outside the arena.
+  masterCover("temple-rim-north", 0, 0, MASTER_WIDTH, 48),
+  masterCover("temple-rim-south", 0, 780, MASTER_WIDTH, 42),
+  ...mirroredMasterCover("temple-rim-side", 0, 0, 75, MASTER_HEIGHT),
+
+  // The four corners are diagonal in the artwork. Axis-aligned steps keep the
+  // collision inside the stone/vegetation silhouette without cutting into the
+  // broad north and south routes.
+  ...mirroredMasterCover("temple-rim-north-step-1", 75, 0, 30, 170),
+  ...mirroredMasterCover("temple-rim-north-step-2", 105, 0, 35, 145),
+  ...mirroredMasterCover("temple-rim-north-step-3", 140, 0, 35, 115),
+  ...mirroredMasterCover("temple-rim-north-step-4", 175, 0, 35, 85),
+  ...mirroredMasterCover("temple-rim-north-step-5", 210, 0, 35, 60),
+  ...mirroredMasterCover("temple-rim-south-step-1", 75, 630, 40, 192),
+  ...mirroredMasterCover("temple-rim-south-step-2", 115, 655, 50, 167),
+  ...mirroredMasterCover("temple-rim-south-step-3", 165, 680, 50, 142),
+  ...mirroredMasterCover("temple-rim-south-step-4", 215, 705, 50, 117),
+  ...mirroredMasterCover("temple-rim-south-step-5", 265, 730, 50, 92),
+  ...mirroredMasterCover("temple-rim-south-step-6", 315, 755, 45, 67),
+
   // Every interior solid traces a visible low planter or the central lion-head altar.
   ...mirroredCover("outer-north", 450, 225, 60, 115),
   ...mirroredCover("outer-south", 450, 595, 60, 115),
@@ -219,8 +299,8 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
         point(180, 460),
       ],
       defender: [
-        point(180, 260), point(80, 340),
-        point(80, 580), point(180, 660),
+        point(180, 260), point(130, 340),
+        point(130, 580), point(180, 660),
         point(360, 640), point(360, 280),
       ],
     },

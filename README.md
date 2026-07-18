@@ -63,23 +63,34 @@ only the Proving Circuit is currently playable.
 
 ![League HQ with match dossier, squad and standings](docs/screenshots/league-hq.jpg)
 
-## Flagship arenas
+## Premium arenas
 
-The current arena roster contains seven playable maps. **Helix Canopy** and
-**Temple of the Drowned Sun** are the two flagship arenas and define the visual
-and competitive quality target for future map work. The remaining arenas are
-playable iteration and prototype spaces.
+The current arena roster contains seven playable maps. **Helix Canopy**,
+**Temple of the Drowned Sun** and **Foundry Circuit** are the three premium
+arenas and define the visual, collision and competitive quality target for
+future map work. The remaining arenas are playable iteration and prototype
+spaces.
 
-<table>
-  <tr>
-    <td width="50%"><img src="docs/screenshots/helix-canopy-gameplay.jpg" alt="Team Deathmatch gameplay on Helix Canopy"></td>
-    <td width="50%"><img src="docs/screenshots/temple-drowned-sun-gameplay.jpg" alt="Classic Capture the Flag gameplay in the Temple of the Drowned Sun"></td>
-  </tr>
-  <tr>
-    <td><strong>Helix Canopy</strong><br>A bright mirrored orbital biodome with clean lanes, readable flanks and a luminous central helix.</td>
-    <td><strong>Temple of the Drowned Sun</strong><br>A darker tactical arena built around layered cover, distinct flank routes and jumpable cenotes.</td>
-  </tr>
-</table>
+### Helix Canopy
+
+![Full overview of Helix Canopy](public/assets/map-previews/helix-canopy-v2-overview.png)
+
+A bright mirrored orbital biodome with clean lanes, readable flanks and a
+luminous central helix.
+
+### Temple of the Drowned Sun
+
+![Full overview of the Temple of the Drowned Sun](public/assets/map-previews/drowned-sun-temple-v2-overview.png)
+
+A darker tactical arena built around layered cover, distinct flank routes and
+jumpable cenotes.
+
+### Foundry Circuit
+
+![Full overview of Foundry Circuit](public/assets/map-previews/flow-circuit-v2-overview.png)
+
+An orbital steelworks arena with broad combat routes, maintenance-pit
+shortcuts and the contested Forge Heart at its center.
 
 ## Arena systems
 
@@ -140,11 +151,15 @@ npm run test:typecheck
 npm run build
 ```
 
+Map authors and reviewers should read the
+[premium-map production guide](docs/HIGH_QUALITY_MAP_PRODUCTION_GUIDE.md)
+before creating a new arena or changing collision on an existing one.
+
 ## Current direction
 
 Development is focused on:
 
-- bringing future arenas up to the Helix and Temple quality bar
+- bringing future arenas up to the Helix, Temple and Foundry quality bar
 - expanding League progression beyond the Proving Circuit
 - deepening presentation and usability without sacrificing visible map space
 - continuing bot, responsive-layout and experimental touch-control refinement
