@@ -64,25 +64,43 @@ const mirroredCover = (
 };
 
 const walls = [
-  // The master art contains the complete oval dome. These boundary blocks keep
-  // play inside the visible station shell without drawing a second frame over it.
-  ...mirroredCover("dome-void", 0, 0, 170, DESIGN_HEIGHT),
-  centeredCover("dome-rim-north", 170, 0, 112),
-  centeredCover("dome-rim-south", 170, 848, 112),
-  ...mirroredCover("dome-shoulder-north", 170, 112, 100, 92),
-  ...mirroredCover("dome-shoulder-south", 170, 756, 100, 92),
+  // The arena edge is one closed stepped mask: broad top/bottom bands, full
+  // side voids, and the four gardens above and below the team bases. This keeps
+  // the complete glass/decorative rim outside play instead of patching isolated
+  // bushes while preserving the approved inner-arena collision unchanged.
+  ...mirroredCover("dome-void", 0, 0, 250, DESIGN_HEIGHT),
+  centeredCover("dome-rim-north", 250, 0, 135),
+  centeredCover("dome-rim-south", 250, 800, 160),
+  ...mirroredCover("dome-base-garden-north", 250, 135, 150, 180),
+  ...mirroredCover("dome-base-garden-south", 250, 645, 150, 155),
 
-  // Each collision rect stays inside a botanical island from the approved
-  // target image. Compound pairs approximate its curved silhouette while the
-  // authored art remains the single visual source of truth.
-  ...mirroredCover("canopy-island-core", 520, 265, 155, 95),
-  ...mirroredCover("canopy-island-tip", 495, 292, 55, 55),
-  ...mirroredCover("exchange-island-core", 625, 390, 120, 105),
-  ...mirroredCover("exchange-island-tip", 608, 420, 42, 52),
-  ...mirroredCover("root-island-core", 520, 525, 145, 98),
-  ...mirroredCover("root-island-tip", 492, 548, 52, 55),
-  ...mirroredCover("helix-pod-upper", 755, 278, 65, 105),
-  ...mirroredCover("helix-pod-lower", 750, 522, 70, 105),
+  // These inset planter groups join the top/bottom bands and follow the two
+  // mirrored botanical recesses closest to the central helix.
+  ...mirroredCover("dome-planter-north-outer", 690, 135, 65, 55),
+  ...mirroredCover("dome-planter-north-mid", 745, 115, 65, 55),
+  ...mirroredCover("dome-planter-north-inner", 800, 105, 40, 45),
+  ...mirroredCover("dome-planter-south-outer", 700, 735, 65, 65),
+  ...mirroredCover("dome-planter-south-mid", 745, 770, 65, 55),
+  ...mirroredCover("dome-planter-south-inner", 800, 810, 40, 45),
+
+  // Insets of roughly one actor radius make the effective collision, rather
+  // than the raw AABB, follow each diagonal botanical silhouette. The stepped
+  // groups preserve the four clearly visible passages around the exchange.
+  ...mirroredCover("canopy-island-outer", 495, 300, 65, 50),
+  ...mirroredCover("canopy-island-mid", 545, 285, 85, 55),
+  ...mirroredCover("canopy-island-inner", 615, 270, 55, 50),
+  ...mirroredCover("exchange-island-outer", 600, 405, 60, 50),
+  ...mirroredCover("exchange-island-mid", 640, 420, 80, 60),
+  ...mirroredCover("exchange-island-inner", 690, 445, 55, 45),
+  ...mirroredCover("root-island-outer", 495, 540, 65, 50),
+  ...mirroredCover("root-island-mid", 545, 555, 85, 55),
+  ...mirroredCover("root-island-inner", 615, 575, 55, 50),
+  ...mirroredCover("helix-pod-upper-cap", 782, 280, 30, 26),
+  ...mirroredCover("helix-pod-upper-core", 768, 306, 46, 58),
+  ...mirroredCover("helix-pod-upper-foot", 780, 364, 32, 18),
+  ...mirroredCover("helix-pod-lower-cap", 785, 530, 30, 20),
+  ...mirroredCover("helix-pod-lower-core", 770, 550, 45, 55),
+  ...mirroredCover("helix-pod-lower-foot", 785, 605, 30, 20),
 ] as const;
 
 export const HELIX_CANOPY_V2: WorldMapData = {
@@ -174,8 +192,8 @@ export const HELIX_CANOPY_V2: WorldMapData = {
         point(300, 480),
       ],
       defender: [
-        point(300, 350), point(410, 300),
-        point(460, 480), point(410, 660),
+        point(300, 350), point(430, 300),
+        point(460, 480), point(430, 660),
         point(300, 610),
       ],
     },

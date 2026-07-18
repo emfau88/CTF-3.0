@@ -29,7 +29,7 @@ test("Helix Canopy registers its rebuilt gameplay contract", () => {
     maxX: 2208,
     maxY: 1104,
   });
-  assert.equal(map?.geometry.solids.length, 24);
+  assert.equal(map?.geometry.solids.length, 50);
   assert.equal(map?.geometry.gaps.length, 0);
   assert.equal(map?.navigation.jumpLinks.length, 4);
   assert.equal(map?.spawnPoints.length, 8);
@@ -141,6 +141,107 @@ test("Helix Canopy collision is traced from the integrated master art", () => {
   assert.ok(visuals.every((visual) => visual === "helix-integrated-cover"));
   assert.deepEqual(HELIX_CANOPY_V2.presentation.gaps, []);
   assert.deepEqual(HELIX_CANOPY_V2.presentation.decorations, undefined);
+});
+
+test("Helix Canopy keeps every marked dome garden outside the playable arena", () => {
+  const map = HELIX_CANOPY_V2;
+  const westSamples = [
+    { id: "north outer garden", position: point(313, 217) },
+    { id: "south outer garden", position: point(313, 739) },
+    { id: "north inner planter", position: point(739, 174) },
+    { id: "south inner planter", position: point(739, 739) },
+  ];
+
+  for (const sample of westSamples) {
+    for (const [side, x] of [
+      ["west", sample.position.x],
+      ["east", map.geometry.bounds.maxX - sample.position.x],
+    ] as const) {
+      const clearance = measureWorldMapClearance(map, {
+        x,
+        y: sample.position.y,
+      });
+      assert.equal(clearance.obstacleKind, "solid");
+      assert.ok(
+        clearance.clearance < WORLD_MAP_ACTOR_RADIUS,
+        `${sample.id} ${side} must be outside the actor-safe arena.`,
+      );
+    }
+  }
+});
+
+test("Helix Canopy exposes no actor-sized opening through the stepped outer mask", () => {
+  const map = HELIX_CANOPY_V2;
+  const boundarySamples = [
+    { id: "west side", position: point(220, 480) },
+    { id: "east side", position: point(1700, 480) },
+    { id: "north west", position: point(480, 120) },
+    { id: "north center", position: point(960, 120) },
+    { id: "north east", position: point(1440, 120) },
+    { id: "south west", position: point(480, 840) },
+    { id: "south center", position: point(960, 840) },
+    { id: "south east", position: point(1440, 840) },
+    { id: "blue upper recess", position: point(325, 250) },
+    { id: "red upper recess", position: point(1595, 250) },
+    { id: "blue lower recess", position: point(325, 700) },
+    { id: "red lower recess", position: point(1595, 700) },
+  ];
+
+  for (const sample of boundarySamples) {
+    const clearance = measureWorldMapClearance(map, sample.position);
+    assert.equal(clearance.obstacleKind, "solid", sample.id);
+    assert.ok(
+      clearance.clearance < WORLD_MAP_ACTOR_RADIUS,
+      `${sample.id} must remain outside the actor-safe arena.`,
+    );
+  }
+});
+
+test("Helix Canopy preserves forgiving diagonal passages around the exchange", () => {
+  const map = HELIX_CANOPY_V2;
+  const minimumRawPassage = WORLD_MAP_ACTOR_RADIUS * 4;
+  const passagePairs = [
+    ["canopy-island", "exchange-island"],
+    ["exchange-island", "root-island"],
+    ["exchange-island", "helix-pod-upper"],
+    ["exchange-island", "helix-pod-lower"],
+  ] as const;
+
+  const rectGap = (
+    left: (typeof map.geometry.solids)[number],
+    right: (typeof map.geometry.solids)[number],
+  ) =>
+    Math.hypot(
+      Math.max(
+        left.x - right.x - right.width,
+        right.x - left.x - left.width,
+        0,
+      ),
+      Math.max(
+        left.y - right.y - right.height,
+        right.y - left.y - left.height,
+        0,
+      ),
+    );
+
+  for (const side of ["west", "east"] as const) {
+    for (const [firstPrefix, secondPrefix] of passagePairs) {
+      const first = map.geometry.solids.filter((solid) =>
+        solid.id.startsWith(firstPrefix) && solid.id.endsWith(`-${side}`)
+      );
+      const second = map.geometry.solids.filter((solid) =>
+        solid.id.startsWith(secondPrefix) && solid.id.endsWith(`-${side}`)
+      );
+      assert.ok(first.length > 0 && second.length > 0);
+      const rawPassage = Math.min(
+        ...first.flatMap((left) => second.map((right) => rectGap(left, right))),
+      );
+      assert.ok(
+        rawPassage >= minimumRawPassage,
+        `${firstPrefix}/${secondPrefix} ${side} leaves only ${rawPassage.toFixed(1)}px raw clearance.`,
+      );
+    }
+  }
 });
 
 test("Helix Canopy exposes actor-accurate collision diagnostics", () => {
