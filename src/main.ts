@@ -2,11 +2,6 @@ import "@fontsource-variable/inter";
 import "@fontsource/barlow-condensed/latin-700.css";
 import "@fontsource/barlow-condensed/latin-800.css";
 import "@fontsource/barlow-condensed/latin-900.css";
-import Phaser from "phaser";
-import {
-  GameplayV2HudScene,
-  GameplayV2Scene,
-} from "./adapters/phaser";
 import { shouldUseGameplayV2Shell } from "./bootSceneSelection";
 import {
   getWorldMap,
@@ -15,7 +10,10 @@ import {
   type ScoreEntry,
   validateWorldMapForMode,
 } from "./core";
-import { ArenaScene } from "./scenes/ArenaScene";
+import {
+  showArenaLoadingError,
+  showArenaLoadingUi,
+} from "./arenaLoadingUi";
 import {
   buildLeagueHubSearch,
   completeLeagueRound,
@@ -367,21 +365,20 @@ if (showV2Menu) {
       });
     });
   }
-  new Phaser.Game({
-    type: Phaser.AUTO,
-    parent: "game",
-    backgroundColor: useGameplayV2Shell ? "#050b12" : "#edf5ee",
-    scale: {
-      mode: Phaser.Scale.RESIZE,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
-      width: window.innerWidth,
-      height: window.innerHeight,
-    },
-    render: { antialias: true },
-    scene: useGameplayV2Shell
-      ? [GameplayV2Scene, GameplayV2HudScene]
-      : [ArenaScene],
-  });
+  if (useGameplayV2Shell) {
+    showArenaLoadingUi(
+      activeRoute
+        ? getWorldMap(activeRoute.map)?.displayName ?? "Arena"
+        : "Arena",
+      "Starting arena engine",
+    );
+  }
+  void import("./phaserBootstrap")
+    .then(({ createPhaserGame }) => createPhaserGame(useGameplayV2Shell))
+    .catch((error: unknown) => {
+      console.error("Could not start Phaser", error);
+      if (useGameplayV2Shell) showArenaLoadingError();
+    });
 }
 
 function modeIdForRoute(mode: "tdm" | "ctf" | "one-flag") {

@@ -51,6 +51,8 @@ import {
   GAMEPLAY_V2_HUD_SCENE_KEY,
   GameplayV2HudScene,
 } from "./GameplayV2HudScene";
+import { requiredV2CharacterSkinIds } from "../v2CharacterPresentation";
+import { bindArenaLoadingUi } from "../../../arenaLoadingUi";
 
 export class GameplayV2Scene extends Phaser.Scene {
   private bridge?: PhaserGameBridge;
@@ -70,12 +72,27 @@ export class GameplayV2Scene extends Phaser.Scene {
   }
 
   preload(): void {
-    const route = readV2Route(new URLSearchParams(window.location.search));
+    const search = new URLSearchParams(window.location.search);
+    const route = readV2Route(search);
     const map = resolveWorldMap(route.map);
+    bindArenaLoadingUi(this, map.displayName);
+    const leagueRosterPresentation = readLeagueMatchRosterPresentation(search);
+    const captainSkinId = leagueRosterPresentation?.captainSkinId ?? route.skin;
+    const characterRosterPresentation = leagueRosterPresentation
+      ? {
+          blueBotSkinIds: [leagueRosterPresentation.playerWingmanSkinId],
+          redSkinIds: leagueRosterPresentation.opponentSkinIds,
+        }
+      : undefined;
     preloadArenaAssets(this, {
-      includeJungleTemple: map.presentation.theme === "jungle-temple",
-      includeHelixCanopy: map.presentation.theme === "helix-canopy",
-      playerHudPortraitAssetStem: playerSkinPortraitAssetStem(route.skin),
+      mapId: map.id,
+      mapTheme: map.presentation.theme,
+      characterSkinIds: requiredV2CharacterSkinIds(
+        route.teamSize,
+        captainSkinId,
+        characterRosterPresentation,
+      ),
+      playerHudPortraitAssetStem: playerSkinPortraitAssetStem(captainSkinId),
     });
   }
 

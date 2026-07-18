@@ -1,12 +1,24 @@
 import type Phaser from "phaser";
+import type { V2PlayerSkinId } from "./v2Route";
 
-const assetUrl = (file: string) => `${import.meta.env.BASE_URL}assets/${file}`;
+const assetUrl = (file: string) =>
+  `${import.meta.env?.BASE_URL ?? "/"}assets/${file}`;
 
 export interface ArenaAssetPreloadOptions {
   readonly includeJungleTemple?: boolean;
   readonly includeHelixCanopy?: boolean;
+  readonly mapId?: string;
+  readonly mapTheme?: ArenaMapTheme;
+  readonly characterSkinIds?: readonly V2PlayerSkinId[];
   readonly playerHudPortraitAssetStem?: string;
 }
+
+export type ArenaMapTheme =
+  | "ruins"
+  | "library"
+  | "industrial"
+  | "jungle-temple"
+  | "helix-canopy";
 
 export function preloadArenaAssets(
   scene: Phaser.Scene,
@@ -67,100 +79,29 @@ export function preloadArenaAssets(
     frameWidth: 128,
     frameHeight: 128,
   });
-  scene.load.spritesheet("briarhornRunner", assetUrl("briarhorn-spritesheet-6x4.png"), {
-    frameWidth: 128,
-    frameHeight: 128,
-  });
-  scene.load.spritesheet("ax9MantisRunner", assetUrl("ax9-mantis-spritesheet-6x4.png"), {
-    frameWidth: 128,
-    frameHeight: 128,
-  });
-  scene.load.spritesheet("nullCourierRunner", assetUrl("null-courier-spritesheet-6x4.png"), {
-    frameWidth: 128,
-    frameHeight: 128,
-  });
-  scene.load.spritesheet("aegisVanguardRunner", assetUrl("aegis-vanguard-spritesheet-6x4.png"), {
-    frameWidth: 128,
-    frameHeight: 128,
-  });
-  scene.load.spritesheet("xenoRunner", assetUrl("xeno-runner-spritesheet-6x4.png"), {
-    frameWidth: 128,
-    frameHeight: 128,
-  });
-  scene.load.spritesheet("voltHoundRunner", assetUrl("volt-hound-spritesheet-6x4.png"), {
-    frameWidth: 128,
-    frameHeight: 128,
-  });
-  scene.load.spritesheet("mirejawRunner", assetUrl("mirejaw-spritesheet-6x4.png"), {
-    frameWidth: 128,
-    frameHeight: 128,
-  });
-  scene.load.spritesheet("scrapwingRunner", assetUrl("scrapwing-spritesheet-6x4.png"), {
-    frameWidth: 128,
-    frameHeight: 128,
-  });
-  scene.load.spritesheet("prismBastionRunner", assetUrl("prism-bastion-spritesheet-6x4.png"), {
-    frameWidth: 128,
-    frameHeight: 128,
-  });
-  scene.load.image("ruinsFloorStone", assetUrl("ruins/floor-stone.png"));
-  scene.load.image("ruinsWallHorizontal", assetUrl("ruins/wall-horizontal.png"));
-  scene.load.image("ruinsWallVertical", assetUrl("ruins/wall-vertical.png"));
-  scene.load.image("ruinsGapChasm", assetUrl("ruins/gap-chasm.png"));
-  scene.load.image("ruinsBaseRed", assetUrl("ruins/base-red.png"));
-  scene.load.image("ruinsBaseBlue", assetUrl("ruins/base-blue.png"));
-  scene.load.image("ruinsCombatCourt", assetUrl("ruins/combat-court.png"));
-  scene.load.image("ruinsColumnBroken", assetUrl("ruins/column-broken.png"));
-  scene.load.image("ruinsOvergrownRemains", assetUrl("ruins/overgrown-remains.png"));
-  scene.load.spritesheet("ruinsBannerRedLegacy", assetUrl("ruins/banner-red.png"), {
-    frameWidth: 192,
-    frameHeight: 256,
-  });
-  scene.load.spritesheet("ruinsBannerBlueLegacy", assetUrl("ruins/banner-blue.png"), {
-    frameWidth: 192,
-    frameHeight: 256,
-  });
-  scene.load.image("ruinsBannerStandV2", assetUrl("ruins/banner-stand-v2.png"));
-  scene.load.spritesheet("ruinsBannerClothRedV2", assetUrl("ruins/banner-cloth-red-v2.png"), {
-    frameWidth: 192,
-    frameHeight: 256,
-  });
-  scene.load.spritesheet("ruinsBannerClothBlueV2", assetUrl("ruins/banner-cloth-blue-v2.png"), {
-    frameWidth: 192,
-    frameHeight: 256,
-  });
-  scene.load.image("libraryFloorStone", assetUrl("library/floor-stone.png"));
-  scene.load.image("libraryFloorWood", assetUrl("library/floor-wood.png"));
-  scene.load.image("libraryFloorCarpet", assetUrl("library/floor-carpet.png"));
-  scene.load.image("libraryShelfHorizontal", assetUrl("library/shelf-horizontal.png"));
-  scene.load.image("libraryShelfVertical", assetUrl("library/shelf-vertical.png"));
-  scene.load.image("libraryShelfDamaged", assetUrl("library/shelf-damaged.png"));
-  scene.load.image("libraryRoundTable", assetUrl("library/round-table.png"));
-  scene.load.image("libraryCollapsedFloor", assetUrl("library/collapsed-floor.png"));
-  scene.load.image("libraryRug", assetUrl("library/rug.png"));
-  scene.load.image("libraryBooks", assetUrl("library/book-pile.png"));
-  scene.load.image("libraryCobweb", assetUrl("library/cobweb.png"));
-  scene.load.image("librarySpider", assetUrl("library/spider.png"));
-  scene.load.spritesheet("libraryCandleFlame", assetUrl("library/candle-flame.png"), {
-    frameWidth: 128,
-    frameHeight: 128,
-  });
-  scene.load.image("industrialFloorMetal", assetUrl("industrial/floor-metal.png"));
-  scene.load.image("industrialBaseRed", assetUrl("industrial/base-red.png"));
-  scene.load.image("industrialBaseBlue", assetUrl("industrial/base-blue.png"));
-  scene.load.image("industrialWallHorizontal", assetUrl("industrial/wall-horizontal.png"));
-  scene.load.image("industrialWallVertical", assetUrl("industrial/wall-vertical.png"));
-  scene.load.image("industrialMaintenancePit", assetUrl("industrial/maintenance-pit.png"));
-  scene.load.image("industrialEnergyJunction", assetUrl("industrial/energy-junction.png"));
-  scene.load.image("industrialEnergyConduitRed", assetUrl("industrial/energy-conduit-red.png"));
-  scene.load.image("industrialEnergyConduitBlue", assetUrl("industrial/energy-conduit-blue.png"));
-  scene.load.image("industrialEnergyPulse", assetUrl("industrial/energy-pulse.png"));
-  scene.load.image("industrialSwitchGate", assetUrl("industrial/switch-gate.png"));
-  scene.load.image("industrialEdgePipes", assetUrl("industrial/edge-pipe-manifold.png"));
-  scene.load.image("industrialEdgeTank", assetUrl("industrial/edge-tank-valve.png"));
-  scene.load.image("industrialEdgeTurbine", assetUrl("industrial/edge-turbine.png"));
-  if (options.includeJungleTemple) preloadJungleTempleAssets(scene);
-  if (options.includeHelixCanopy) preloadHelixCanopyAssets(scene);
+  preloadCharacterAssets(scene, options.characterSkinIds);
+  const loadAllThemes = options.mapTheme === undefined;
+  if (
+    loadAllThemes || options.mapTheme === "ruins" ||
+    options.mapTheme === "library"
+  ) {
+    preloadRuinsAssets(scene);
+  }
+  if (loadAllThemes || options.mapTheme === "library") {
+    preloadLibraryAssets(scene);
+  }
+  if (loadAllThemes || options.mapTheme === "industrial") {
+    preloadIndustrialAssets(scene);
+  }
+  if (options.includeJungleTemple || options.mapTheme === "jungle-temple") {
+    preloadJungleTempleAssets(
+      scene,
+      options.mapId === "drowned-sun-temple-v2",
+    );
+  }
+  if (options.includeHelixCanopy || options.mapTheme === "helix-canopy") {
+    preloadHelixCanopyAssets(scene);
+  }
   scene.load.audio("step1", assetUrl("sounds/step1.wav"));
   scene.load.audio("step2", assetUrl("sounds/step2.wav"));
   scene.load.audio("step3", assetUrl("sounds/step3.wav"));
@@ -180,8 +121,155 @@ export function preloadArenaAssets(
   scene.load.audio("whipHit", assetUrl("sounds/slap_hit4.wav"));
 }
 
-function preloadJungleTempleAssets(scene: Phaser.Scene) {
+const CHARACTER_ASSETS: Record<
+  V2PlayerSkinId,
+  { readonly key: string; readonly file: string }
+> = {
+  briarhorn: { key: "briarhornRunner", file: "briarhorn-spritesheet-6x4.png" },
+  "ax9-mantis": {
+    key: "ax9MantisRunner",
+    file: "ax9-mantis-spritesheet-6x4.png",
+  },
+  "null-courier": {
+    key: "nullCourierRunner",
+    file: "null-courier-spritesheet-6x4.png",
+  },
+  "aegis-vanguard": {
+    key: "aegisVanguardRunner",
+    file: "aegis-vanguard-spritesheet-6x4.png",
+  },
+  "alien-runner": { key: "xenoRunner", file: "xeno-runner-spritesheet-6x4.png" },
+  "volt-hound": { key: "voltHoundRunner", file: "volt-hound-spritesheet-6x4.png" },
+  mirejaw: { key: "mirejawRunner", file: "mirejaw-spritesheet-6x4.png" },
+  scrapwing: { key: "scrapwingRunner", file: "scrapwing-spritesheet-6x4.png" },
+  "prism-bastion": {
+    key: "prismBastionRunner",
+    file: "prism-bastion-spritesheet-6x4.png",
+  },
+};
+
+function preloadRuinsAssets(scene: Phaser.Scene): void {
+  scene.load.image("ruinsFloorStone", assetUrl("ruins/floor-stone.png"));
+  scene.load.image("ruinsWallHorizontal", assetUrl("ruins/wall-horizontal.png"));
+  scene.load.image("ruinsWallVertical", assetUrl("ruins/wall-vertical.png"));
+  scene.load.image("ruinsGapChasm", assetUrl("ruins/gap-chasm.png"));
+  scene.load.image("ruinsBaseRed", assetUrl("ruins/base-red.png"));
+  scene.load.image("ruinsBaseBlue", assetUrl("ruins/base-blue.png"));
+  scene.load.image("ruinsCombatCourt", assetUrl("ruins/combat-court.png"));
+  scene.load.image("ruinsColumnBroken", assetUrl("ruins/column-broken.png"));
+  scene.load.image(
+    "ruinsOvergrownRemains",
+    assetUrl("ruins/overgrown-remains.png"),
+  );
+  scene.load.spritesheet(
+    "ruinsBannerRedLegacy",
+    assetUrl("ruins/banner-red.png"),
+    { frameWidth: 192, frameHeight: 256 },
+  );
+  scene.load.spritesheet(
+    "ruinsBannerBlueLegacy",
+    assetUrl("ruins/banner-blue.png"),
+    { frameWidth: 192, frameHeight: 256 },
+  );
+  scene.load.image("ruinsBannerStandV2", assetUrl("ruins/banner-stand-v2.png"));
+  scene.load.spritesheet(
+    "ruinsBannerClothRedV2",
+    assetUrl("ruins/banner-cloth-red-v2.png"),
+    { frameWidth: 192, frameHeight: 256 },
+  );
+  scene.load.spritesheet(
+    "ruinsBannerClothBlueV2",
+    assetUrl("ruins/banner-cloth-blue-v2.png"),
+    { frameWidth: 192, frameHeight: 256 },
+  );
+}
+
+function preloadLibraryAssets(scene: Phaser.Scene): void {
+  scene.load.image("libraryFloorStone", assetUrl("library/floor-stone.png"));
+  scene.load.image("libraryFloorWood", assetUrl("library/floor-wood.png"));
+  scene.load.image("libraryFloorCarpet", assetUrl("library/floor-carpet.png"));
+  scene.load.image(
+    "libraryShelfHorizontal",
+    assetUrl("library/shelf-horizontal.png"),
+  );
+  scene.load.image("libraryShelfVertical", assetUrl("library/shelf-vertical.png"));
+  scene.load.image("libraryShelfDamaged", assetUrl("library/shelf-damaged.png"));
+  scene.load.image("libraryRoundTable", assetUrl("library/round-table.png"));
+  scene.load.image(
+    "libraryCollapsedFloor",
+    assetUrl("library/collapsed-floor.png"),
+  );
+  scene.load.image("libraryRug", assetUrl("library/rug.png"));
+  scene.load.image("libraryBooks", assetUrl("library/book-pile.png"));
+  scene.load.image("libraryCobweb", assetUrl("library/cobweb.png"));
+  scene.load.image("librarySpider", assetUrl("library/spider.png"));
+  scene.load.spritesheet(
+    "libraryCandleFlame",
+    assetUrl("library/candle-flame.png"),
+    { frameWidth: 128, frameHeight: 128 },
+  );
+}
+
+function preloadIndustrialAssets(scene: Phaser.Scene): void {
+  scene.load.image("industrialFloorMetal", assetUrl("industrial/floor-metal.png"));
+  scene.load.image("industrialBaseRed", assetUrl("industrial/base-red.png"));
+  scene.load.image("industrialBaseBlue", assetUrl("industrial/base-blue.png"));
+  scene.load.image(
+    "industrialWallHorizontal",
+    assetUrl("industrial/wall-horizontal.png"),
+  );
+  scene.load.image(
+    "industrialWallVertical",
+    assetUrl("industrial/wall-vertical.png"),
+  );
+  scene.load.image(
+    "industrialMaintenancePit",
+    assetUrl("industrial/maintenance-pit.png"),
+  );
+  scene.load.image(
+    "industrialEnergyJunction",
+    assetUrl("industrial/energy-junction.png"),
+  );
+  scene.load.image(
+    "industrialEnergyConduitRed",
+    assetUrl("industrial/energy-conduit-red.png"),
+  );
+  scene.load.image(
+    "industrialEnergyConduitBlue",
+    assetUrl("industrial/energy-conduit-blue.png"),
+  );
+  scene.load.image("industrialEnergyPulse", assetUrl("industrial/energy-pulse.png"));
+  scene.load.image("industrialSwitchGate", assetUrl("industrial/switch-gate.png"));
+  scene.load.image(
+    "industrialEdgePipes",
+    assetUrl("industrial/edge-pipe-manifold.png"),
+  );
+  scene.load.image("industrialEdgeTank", assetUrl("industrial/edge-tank-valve.png"));
+  scene.load.image("industrialEdgeTurbine", assetUrl("industrial/edge-turbine.png"));
+}
+
+function preloadCharacterAssets(
+  scene: Phaser.Scene,
+  characterSkinIds?: readonly V2PlayerSkinId[],
+): void {
+  const selectedSkinIds = characterSkinIds
+    ? [...new Set(characterSkinIds)]
+    : Object.keys(CHARACTER_ASSETS) as V2PlayerSkinId[];
+  for (const skinId of selectedSkinIds) {
+    const asset = CHARACTER_ASSETS[skinId];
+    scene.load.spritesheet(asset.key, assetUrl(asset.file), {
+      frameWidth: 128,
+      frameHeight: 128,
+    });
+  }
+}
+
+function preloadJungleTempleAssets(
+  scene: Phaser.Scene,
+  masterOnly = false,
+) {
   scene.load.image("templeArenaMasterV2", assetUrl("jungle-temple/arena-master-v2.png"));
+  if (masterOnly) return;
   scene.load.image("templeFloorBasaltPilot", assetUrl("jungle-temple/floor-basalt-pilot.png"));
   scene.load.image("templeWallHorizontalPilot", assetUrl("jungle-temple/wall-horizontal-pilot.png"));
   scene.load.image("templeWallVerticalPilot", assetUrl("jungle-temple/wall-vertical-pilot.png"));

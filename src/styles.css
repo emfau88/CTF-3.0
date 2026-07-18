@@ -635,6 +635,96 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   padding: 20px;
   background: rgb(8 18 16 / .56);
 }
+.v2-arena-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% 35%, rgb(24 75 88 / .34), transparent 46%),
+    #050b12;
+  color: #eaf8fa;
+  font-family: var(--font-ui);
+}
+.v2-arena-loading-card {
+  width: min(520px, calc(100vw - 40px));
+  display: grid;
+  gap: 13px;
+  padding: clamp(28px, 6vw, 46px);
+  border: 1px solid rgb(97 198 235 / .3);
+  background: linear-gradient(145deg, rgb(17 37 46 / .97), rgb(6 17 25 / .97));
+  box-shadow: 0 28px 90px rgb(0 0 0 / .55), inset 0 1px rgb(255 255 255 / .06);
+  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
+  text-align: center;
+}
+.v2-arena-loading-kicker {
+  color: #61c6eb;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .22em;
+}
+.v2-arena-loading h1 {
+  margin: 0;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: clamp(32px, 8vw, 54px);
+  font-weight: 900;
+  letter-spacing: .04em;
+  line-height: .95;
+  text-transform: uppercase;
+}
+.v2-arena-loading p {
+  min-height: 1.4em;
+  margin: 0;
+  color: #98b5bc;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.v2-arena-loading-meter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  align-items: center;
+  gap: 12px;
+  margin-top: 7px;
+  color: #eaf8fa;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+}
+.v2-arena-loading progress {
+  width: 100%;
+  height: 8px;
+  border: 0;
+  border-radius: 0;
+  background: rgb(255 255 255 / .09);
+  overflow: hidden;
+}
+.v2-arena-loading progress::-webkit-progress-bar { background: rgb(255 255 255 / .09); }
+.v2-arena-loading progress::-webkit-progress-value { background: linear-gradient(90deg, #3a94ad, #75dcf1); }
+.v2-arena-loading progress::-moz-progress-bar { background: linear-gradient(90deg, #3a94ad, #75dcf1); }
+.v2-arena-loading-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.v2-arena-loading-actions button {
+  min-width: 120px;
+  padding: 10px 16px;
+  border: 1px solid rgb(97 198 235 / .38);
+  background: rgb(97 198 235 / .15);
+  color: #eaf8fa;
+  font: 900 11px var(--font-ui);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.v2-arena-loading-actions button.v2-menu-secondary { background: transparent; color: #9db2b8; }
+.v2-arena-loading.has-error .v2-arena-loading-kicker { color: #ff8c7d; }
+.v2-arena-loading.has-error progress { opacity: .35; }
 .v2-flow-card {
   width: min(420px, calc(100vw - 28px));
   display: grid;

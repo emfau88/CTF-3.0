@@ -83,7 +83,9 @@ export class PhaserArenaRendererPort implements RendererPort {
     this.pickupRenderer = new PhaserArenaPickupRenderer(scene);
     this.objectiveRenderer = new PhaserArenaObjectiveRenderer(scene);
     const level = toPresentationLevel(map);
-    ensureLibraryCandleAnimation(scene);
+    if (map.presentation.theme === "library") {
+      ensureLibraryCandleAnimation(scene);
+    }
     renderArena(scene, level, (x, y) => this.addLibraryCandles(x, y));
     if (collisionDiagnostics !== "off") {
       this.collisionDiagnosticGraphics = scene.add.graphics().setDepth(88);

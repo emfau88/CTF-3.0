@@ -101,6 +101,39 @@ export const V2_LEGACY_ARENA_CHARACTER_ORIGIN: V2CharacterOrigin = {
   y: .5,
 };
 
+const DEFAULT_BLUE_BOT_SKINS: readonly V2PlayerSkinId[] = [
+  "prism-bastion",
+  "briarhorn",
+  "null-courier",
+];
+const DEFAULT_RED_SKINS: readonly V2PlayerSkinId[] = [
+  "mirejaw",
+  "scrapwing",
+  "volt-hound",
+  "ax9-mantis",
+];
+
+export function requiredV2CharacterSkinIds(
+  teamSize: number,
+  playerSkinId: V2PlayerSkinId,
+  rosterPresentation?: V2CharacterRosterPresentation,
+): readonly V2PlayerSkinId[] {
+  const skinIds: V2PlayerSkinId[] = [playerSkinId];
+  for (let rosterIndex = 0; rosterIndex < teamSize - 1; rosterIndex += 1) {
+    skinIds.push(
+      rosterPresentation?.blueBotSkinIds?.[rosterIndex] ??
+        DEFAULT_BLUE_BOT_SKINS[rosterIndex % DEFAULT_BLUE_BOT_SKINS.length],
+    );
+  }
+  for (let rosterIndex = 0; rosterIndex < teamSize; rosterIndex += 1) {
+    skinIds.push(
+      rosterPresentation?.redSkinIds?.[rosterIndex] ??
+        DEFAULT_RED_SKINS[rosterIndex % DEFAULT_RED_SKINS.length],
+    );
+  }
+  return [...new Set(skinIds)];
+}
+
 function sixColumnSkin(
   id: V2PlayerSkinId,
   texture: string,
@@ -168,24 +201,15 @@ function resolveV2CharacterSkinId(
     const rosterIndex = Math.max(0, actorRosterSlot(actor.id) - 2);
     const assignedSkinId = rosterPresentation?.blueBotSkinIds?.[rosterIndex];
     if (assignedSkinId) return assignedSkinId;
-    const blueRoster: readonly V2PlayerSkinId[] = [
-      "prism-bastion",
-      "briarhorn",
-      "null-courier",
+    return DEFAULT_BLUE_BOT_SKINS[
+      rosterIndex % DEFAULT_BLUE_BOT_SKINS.length
     ];
-    return blueRoster[rosterIndex % blueRoster.length];
   }
   if (actor.teamId === "red") {
     const rosterIndex = actorRosterSlot(actor.id) - 1;
     const assignedSkinId = rosterPresentation?.redSkinIds?.[rosterIndex];
     if (assignedSkinId) return assignedSkinId;
-    const redRoster: readonly V2PlayerSkinId[] = [
-      "mirejaw",
-      "scrapwing",
-      "volt-hound",
-      "ax9-mantis",
-    ];
-    return redRoster[rosterIndex % redRoster.length];
+    return DEFAULT_RED_SKINS[rosterIndex % DEFAULT_RED_SKINS.length];
   }
   return null;
 }

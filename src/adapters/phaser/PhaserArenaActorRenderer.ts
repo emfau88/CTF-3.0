@@ -432,6 +432,7 @@ function updatePlayerSkinSprite(
 
 function ensurePlayerSkinAnimations(scene: Phaser.Scene): void {
   for (const skin of Object.values(V2_CHARACTER_SKINS)) {
+    if (!scene.textures.exists(skin.texture)) continue;
     for (const direction of V2_CHARACTER_DIRECTIONS) {
       for (const state of ["idle", "walk", "jump"] as const) {
         if (v2CharacterColumns(skin, state, direction).length > 1) {
