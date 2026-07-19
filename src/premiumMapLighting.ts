@@ -26,26 +26,6 @@ export interface PremiumMapLightState {
 
 export const PREMIUM_MAP_LIGHTING = [
   {
-    mapId: "helix-canopy-v2",
-    kind: "helix-grow-lamp",
-    assetKey: "helixGrowLamp",
-    assetFile: "premium-cosmetics/helix-grow-lamp.png",
-    displaySize: 74,
-    glowColor: 0xb8ffe2,
-    glowRadius: 52,
-    interactionRadius: 100,
-    positions: [
-      { x: 220, y: 220 },
-      { x: 220, y: 410 },
-      { x: 220, y: 690 },
-      { x: 220, y: 880 },
-      { x: 1_988, y: 220 },
-      { x: 1_988, y: 410 },
-      { x: 1_988, y: 690 },
-      { x: 1_988, y: 880 },
-    ],
-  },
-  {
     mapId: "drowned-sun-temple-v2",
     kind: "temple-sun-brazier",
     assetKey: "templeSunBrazier",

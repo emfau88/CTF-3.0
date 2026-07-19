@@ -1,229 +1,137 @@
 # Bot Simulation Testing
 
-## Zweck
+Stand: 2026-07-19
 
-Dieses Testprogramm prueft die V2-Bots headless im echten
-`GameplayCoreRuntime`-Loop, ohne Browser, Renderer oder HUD.
+Die Bot-Tests laufen headless im echten `GameplayCoreRuntime`. Sie prüfen
+Entscheidung, Navigation, Kollision, Pickups, Waffen, Objectives, Tod und
+Respawn ohne Browser oder Renderer.
 
-Ziel ist nicht Balancing, sondern fruehe technische Evidenz:
+## Schnelle Testebenen
 
-- laufen Bots ueberhaupt stabil durch den Runtime-Loop
-- machen sie in verschiedenen Modi messbaren Fortschritt
-- entstehen offensichtliche Stalls oder Totalausfaelle
-- gibt es Navigationsprobleme bei echten Zielpunkten
+### KI-v2-Mikroszenarien
 
-## Aktueller Ort
+```bash
+node --import tsx --test tests/bot-ai-v2.test.ts
+```
 
-- Testdatei: `tests/bot-simulation.test.ts`
-- Navigator-Diagnostik: `src/core/bots/GridBotNavigator.ts`
+Geprüft werden:
 
-## Was aktuell getestet wird
+- gemeinsame Waffen- und Distanzbewertung,
+- Utility-Bindung und Notfall-Override,
+- CTF-Rollen und menschliche Kommandos,
+- One-Flag-Runner, Escort, Screen, Interceptor und Cutoff,
+- begrenzte Wahrnehmung und kurze Gegnererinnerung,
+- kein Schuss auf reines Teamwissen,
+- Team-Separation und Projektilausweichen,
+- Zielprojektion und dreistufige Stuck-Recovery,
+- Anlauf und Ausführung autorisierter Jump-Links,
+- Bot-Vertrag und Erreichbarkeit jeder registrierten Map,
+- Auditmatrix mehrerer Teamgrößen.
 
-### 1. Kleine Modus-Matrix
+### Runtime-Simulationen
 
-Folgende Szenarien laufen im Headless-Simulationsmodus:
+```bash
+node --import tsx --test tests/bot-simulation.test.ts
+```
 
-- `Team Deathmatch` auf `Training Crossing` in `2v2`
-- `Team Deathmatch` auf `Training Crossing` in `4v4`
-- `Classic CTF` auf `Flank Switch` in `2v2`
-- `Classic CTF` auf `Flank Switch` in `4v4`
-- `One Flag` auf `Grand Archive` in `2v2`
-- `One Flag` auf `Grand Archive` in `4v4`
+Enthalten sind:
 
-Dabei werden unter anderem beobachtet:
+- repräsentative Langläufe in TDM, Classic CTF und One Flag,
+- jeder Modus auf jeder Map von 1v1 bis 4v4 als Start-/Aktivitäts-Smoke,
+- längere Foundry-Circuit-2v2-Läufe,
+- TDM-Pickup- und Standoff-Szenarien,
+- CTF-Flaggen-Notfall,
+- One-Flag-Carrier-/Escort-Situationen,
+- Navigator-Telemetrie.
 
-- Frames ohne Bot-Actions
-- invalide Positionen
-- gesamte Laufstrecke pro Bot
-- laengste Stationaerphase pro Bot
-- modusspezifischer Fortschritt zum naechsten sinnvollen Ziel
-- Flag-Pickups, Flag-Captures und Score-Events
+### Sprungverbindungen
 
-### 2. Enge One-Flag-Diagnostik
+```bash
+node --import tsx --test tests/bot-traversal-smoke.test.ts
+```
 
-Fuer `One Flag x Grand Archive x 2v2` gibt es zusaetzlich einen gezielten
-Diagnoselauf mit echten `OneFlagBotController`-Instanzen und eigenen
-`GridBotNavigator`-Instanzen.
+Jeder in einer Map autorisierte Jump-Link muss:
 
-Zusatzmetriken:
+- aus dem Aktivierungsbereich starten,
+- mindestens 50 Prozent Fortschritt melden,
+- außerhalb einer Gap landen,
+- ohne Fallzustand abgeschlossen werden.
 
-- `repathCount`
-- `repathReason`
-- `pathLength`
-- `pathFound`
-- `pathMissCount`
-- `longestPathMissStreak`
-- `goalBlocked`
-- Start-/Zielzelle
-- Jump-Link-Aktivitaet
-
-Zusatzanalyse fuer Zieltypen:
-
-- bei welchem `OneFlagBotGoalKind` blockierte Zielpunkte auftreten
-- in welchen Zielzellen das passiert
-- ob `take-center-flag` blockiert wird
-- ob `chase-enemy-carrier` blockiert wird
-
-## Aktuelle Parameter
-
-- Framedelta: `34 ms`
-- Simulationsdauer:
-  - meist `18 s` fuer `TDM` und `One Flag`
-  - `22 s` fuer `Classic CTF`
-
-Diese Werte sind absichtlich pragmatisch:
-
-- kurz genug fuer schnelle Testlaeufe
-- lang genug fuer Repaths, erste Objective-Wechsel und erkennbare Stalls
-
-## Warum die Gates pro Modus unterschiedlich sind
-
-Die Gates sind bewusst nicht in allen Modi gleich.
-
-### TDM
-
-`TDM` wird aktuell nicht hart ueber Kills oder Score gegatet.
-
-Grund:
-
-- Combat-Standoff ist dort legitimes aktuelles Verhalten
-- dadurch sind reine Score-Gates fuer Headless-Sims zu fragil
-
-Darum wird bei `TDM` aktuell eher auf Folgendes geprueft:
-
-- Distanzgewinn zum naechsten aktiven Gegner
-- Travel statt kompletter Bewegungslosigkeit
-- Basic-Auto-Fire fuer alle simulierten Bot-Slots
-- bewusstes Combat-Hold getrennt von Stillstand trotz Move-Intent
-- Tod/Respawn getrennt von aktiver Bewegung
-- Simulationsende sofort nach echtem Matchende
-
-Das regulaere TDM-Killziel liegt aktuell bei `10`.
-
-### Classic CTF / One Flag
-
-Hier sind Objective-nahe Metriken aussagekraeftiger:
-
-- Distanzreduktion zum relevanten Objective
-- Flag-Pickup / Capture-Druck
-- begrenzte laengere Stalls
-
-## Aktueller Befund
-
-Stand dieses Dokuments:
-
-- alle aktuellen Tests und der Build laufen gruen
-- Bots sind in allen drei Modi und in `2v2`/`4v4` headless aktiv
-- es gibt keinen offensichtlichen Totalausfall der Bot-Runtime
-
-Aktueller TDM-Befund:
-
-- die frueheren hohen Stall-Werte waren ueberwiegend bewusstes
-  `CombatStandoff` und teilweise eingefrorene Zeit nach Matchende
-- mit produktionsnaher Auto-Fire-Konfiguration entstehen im aktuellen
-  `2v2`- und `4v4`-Lauf `0 ms` echte Move-Intent-Stalls
-- `2v2` erzeugt in `18 s` zwei Kill-Scores und `4v4` neun Kill-Scores
-- langes statisches Combat-Hold bleibt eine sichtbare Qualitaetsfrage, aber
-  kein belegter Navigator-Defekt
-
-Wichtigster Befund fuer `One Flag x Grand Archive`:
-
-- der Center-Flag-Approach selbst wirkt nicht als primaerer Fehler
-- `take-center-flag` wird in der aktuellen Diagnostik nicht als blockiertes
-  Ziel beobachtet
-- blockierte Ziele treten dagegen bei spaeteren dynamischen Zieltypen auf,
-  vor allem im Bereich `chase-enemy-carrier`
-
-Praktische Schlussfolgerung:
-
-- der Verdacht verschiebt sich weg von
-  `Center Flag Zielzelle ist falsch oder im Padding`
-- der Verdacht geht eher Richtung
-  dynamische Carrier-Verfolgung, Combat-Standoff oder Repath-Verhalten bei
-  bewegten Zielen in Hindernisnaehe
-
-## Was dieses Testprogramm noch nicht kann
-
-- keine Browser-/HUD-/Mobile-Aussagen
-- kein reales Nutzer- oder Visuell-QA
-- kein echtes Performance-Profiling
-- keine deterministische Replay-Datei
-- keine Langzeitserie mit Seeds und Streuung
-- keine Aussage, ob langes legitimes Combat-Halten im Browser spielerisch gut
-  wirkt
-
-## Sinnvolle naechste Ausbaustufen
-
-### Kurzfristig
-
-- Text- oder JSON-Report separat erzeugen, nicht nur im Assertion-Pfad
-- Goal-Wechsel ueber Zeit mitschreiben
-- Navigator-Zielzellen und Pfadlaengen als Verlauf mitschreiben
-- `One Flag` separat fuer
-  `take-center-flag`, `escort-carrier`, `chase-enemy-carrier` auswerten
-
-### Mittelfristig
-
-- kleine Replay-/Trace-Artefakte fuer einzelne problematische Simulationslaeufe
-- semantische Stuck-Erkennung statt nur Distanz/Stillstand
-- mehrere Seeds bzw. Startlagen fuer robustere Streuungsanalyse
-- Testmatrix spaeter auf mehr Maps oder laengere Laufzeiten erweitern
-
-## Architekturempfehlung
-
-Aus Architektursicht ist jetzt kein grosser KI-Umbau sinnvoll.
-
-Sinnvoller naechster Pfad:
-
-1. Beobachtbarkeit weiter ausbauen
-2. daraus eng begrenzte lokale Fixes ableiten
-3. erst danach Entscheidungslogik oder Rollenlogik umbauen
-
-Konkret:
-
-- die Navigator-Diagnostik beibehalten und erweitern
-- Zielwahl, Navigation und Combat-Standoff getrennt beobachtbar halten
-- keine One-Flag-Sonderregeln tief in den Navigator schieben
-- keine Map-ID-Hacks
-- spaetere Fixes moeglichst lokal in
-  `GridBotNavigator`, `BotCombatStandoff` oder klar abgegrenzter
-  Zielprojektion halten
-
-Der aktuell sinnvollste naechste technische Slice waere:
-
-- `chase-enemy-carrier` in `One Flag x Grand Archive` isoliert untersuchen
-- pruefen, ob bewegte Carrier-Ziele vor Navigation auf erreichbare Rasterzellen
-  projiziert werden sollten
-- erst dann entscheiden, ob ein minimaler lokaler Navigator-Fix reicht
-
-## Ausfuehrung
-
-Tests starten:
+### Gesamtsuite
 
 ```bash
 npm.cmd test
-```
-
-Build pruefen:
-
-```bash
+npm.cmd run test:typecheck
 npm.cmd run build
 ```
 
-## Premium-Map-Mehrfachaudit
-
-Fuer Helix Canopy, Temple of the Drowned Sun und Foundry Circuit existiert
-zusaetzlich ein wiederholbarer Langlauf-Audit:
+## Gespeicherter Premium-Audit
 
 ```bash
 npm.cmd run bot:audit:premium
 ```
 
-Er vergleicht standardmaessig 54 Laeufe (3 Maps, 3 Modi, 6 Laeufe),
-speichert JSON und Markdown unter `diagnostics/bots/premium/` und trennt
-Move-Stalls, absichtliches Standoff, waffenloses Standoff, Objective-Fortschritt
-sowie CTF-Kommandowirkung.
+Standard:
 
-Die vollstaendige Logik- und Ergebnisbeschreibung steht in:
+- Helix Canopy, Temple of the Drowned Sun, Foundry Circuit,
+- TDM, Classic CTF und One Flag,
+- 1v1, 2v2 und 4v4,
+- 10 Läufe je Kombination,
+- 60 Sekunden je Lauf,
+- 270 Matches.
 
-- `docs/PREMIUM_MAP_BOT_BEHAVIOR_AUDIT.md`
+Schneller Entwicklungsvergleich:
+
+```bash
+npm.cmd run bot:audit:premium -- --runs 5 --duration-ms 10000 --team-sizes 1,2,4
+```
+
+Ausgaben:
+
+- `diagnostics/bots/premium/latest.json`
+- `diagnostics/bots/premium/latest.md`
+- `diagnostics/bots/premium/history/<timestamp>.json`
+
+Die vollständige Metrik- und Ergebnisbeschreibung steht in
+`docs/PREMIUM_MAP_BOT_BEHAVIOR_AUDIT.md`.
+
+## Map-Abnahme
+
+Jede registrierte Map besitzt einen `botProfile`-Vertrag. Der Test
+`validateWorldMapBotSupport(map)` prüft:
+
+- gültige taktische Zonen,
+- sichere Jump-Link-Endpunkte,
+- spielbare Pickups und Objectives,
+- Erreichbarkeit von beiden Teamstarts.
+
+Neue oder stark umgebaute Maps gelten erst als botfähig, wenn:
+
+1. die statische Map-Prüfung grün ist,
+2. alle Jump-Link-Smokes grün sind,
+3. die 1v1-bis-4v4-Runtime-Matrix grün ist,
+4. ein Premium-Audit oder gleichwertiger Mehrfachlauf keine kritischen
+   Befunde erzeugt,
+5. ein Mensch das Verhalten in allen unterstützten Modi visuell geprüft hat.
+
+## Metriken richtig lesen
+
+- Tot-/Respawnzeit ist keine Inaktivität.
+- Ein bewusstes Combat-Hold ist kein Move-Stall.
+- Ein blockiertes Rohziel ist kein Fehler, wenn es projiziert wird und der
+  Bot weiterläuft.
+- Ein kurzer Stall bis zur ersten oder zweiten Recovery-Stufe ist ein
+  Informationshinweis.
+- Ein Stall bis zur dritten Recovery-Stufe ist eine Warnung.
+- CPU-Zeiten aus Node sind für Vergleiche geeignet, aber kein Ersatz für
+  Browser-Profiling auf dem Zielgerät.
+
+## Bewusste Grenzen
+
+Headless-Tests beantworten nicht:
+
+- ob Bewegung optisch menschlich genug wirkt,
+- ob eine taktische Entscheidung Spaß macht,
+- ob HUD und Touch verständlich sind,
+- wie GPU, Rendering und Effekte auf kleinen Geräten performen,
+- ob Waffen und Objectives gegen Menschen ausgewogen sind.

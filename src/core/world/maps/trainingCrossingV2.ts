@@ -104,6 +104,15 @@ export const TRAINING_CROSSING_V2: WorldMapData = {
     blueBase: { x: 1240, y: 280, width: 190, height: 260 },
     combatZone: { x: 600, y: 288, width: 300, height: 244 },
   },
+  botProfile: {
+    version: 1,
+    navigation: "auto-grid",
+    tacticalZones: [
+      { id: "central-court", kind: "control", position: { x: 750, y: 410 }, radius: 150 },
+      { id: "north-flank", kind: "flank", position: { x: 750, y: 220 }, radius: 100 },
+      { id: "south-flank", kind: "flank", position: { x: 750, y: 600 }, radius: 100 },
+    ],
+  },
   presentation: {
     theme: "ruins",
     plan: "Balanced starter arena with a contested central power-up court and clear jump flanks.",

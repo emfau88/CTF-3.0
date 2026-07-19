@@ -5,14 +5,20 @@ import {
   V2_BOT_COMBAT_CONFIG,
   type BotCombatConfig,
 } from "./BotCombatConfig";
+import type { ArenaWeaponId } from "../weapons";
 import {
-  ARENA_WEAPON_CATALOG,
-  weaponAmmo,
-  weaponCooldown,
-  type ArenaWeaponId,
-} from "../weapons";
+  assessCombatOpportunity,
+  distanceBetween,
+  hasLineOfSight,
+} from "./BotCombatOpportunity";
+import {
+  BOT_DIFFICULTY_PROFILES,
+  type BotDifficultyProfile,
+} from "./BotDifficulty";
 
 type BotWeaponId = ArenaWeaponId;
+
+export { distanceBetween, hasLineOfSight } from "./BotCombatOpportunity";
 
 export class TdmBotCombatController {
   private rocketDecisionCooldownMs = 0;
@@ -23,6 +29,8 @@ export class TdmBotCombatController {
 
   constructor(
     private readonly config: BotCombatConfig = V2_BOT_COMBAT_CONFIG,
+    private readonly difficulty: BotDifficultyProfile =
+      BOT_DIFFICULTY_PROFILES.normal,
   ) {}
 
   readAction(
@@ -30,6 +38,7 @@ export class TdmBotCombatController {
     target: Readonly<ActorState>,
     snapshot: WorldSnapshot,
     deltaMs: number,
+    targetPerceived = true,
   ): CoreActionIntent | null {
     this.rocketDecisionCooldownMs = Math.max(
       0,
@@ -41,6 +50,7 @@ export class TdmBotCombatController {
       snapshot.geometry.solids,
     );
     if (
+      !targetPerceived ||
       actor.lifeState !== "active" ||
       target.lifeState !== "active" ||
       !actor.teamId ||
@@ -58,9 +68,7 @@ export class TdmBotCombatController {
     const weaponId = this.chooseWeapon(
       actor,
       target,
-      distance,
-      snapshot.map?.weaponRoster ?? ["whip", "rocket", "rail"],
-      lineOfSight,
+      snapshot,
     );
     if (!weaponId) {
       return null;
@@ -98,7 +106,9 @@ export class TdmBotCombatController {
     const targetKey = `${target.id}:${target.lifeId}`;
     if (this.railTargetKey !== targetKey) {
       this.railTargetKey = targetKey;
-      this.railReactionRemainingMs = this.config.railReactionMs;
+      this.railReactionRemainingMs = this.config.railReactionMs *
+        this.difficulty.reactionMs /
+        BOT_DIFFICULTY_PROFILES.normal.reactionMs;
       return;
     }
     this.railReactionRemainingMs = Math.max(
@@ -130,7 +140,10 @@ export class TdmBotCombatController {
       (this.config.railLongRangeJitterMultiplier - 1);
     return rotateDirection(
       directAim,
-      sample * this.config.railAimJitterRadians * jitterMultiplier,
+      sample *
+        this.config.railAimJitterRadians *
+        jitterMultiplier *
+        this.difficulty.aimJitterMultiplier,
     );
   }
 
@@ -148,8 +161,10 @@ export class TdmBotCombatController {
       this.config.rocketMaxLeadMs / 1000,
     );
     const predictedTarget = {
-      x: target.position.x + target.velocity.x * leadSeconds,
-      y: target.position.y + target.velocity.y * leadSeconds,
+      x: target.position.x +
+        target.velocity.x * leadSeconds * this.difficulty.predictionMultiplier,
+      y: target.position.y +
+        target.velocity.y * leadSeconds * this.difficulty.predictionMultiplier,
     };
     const surfaceSample = deterministicSignedUnit(
       `${actor.id}:${actor.lifeId}:${target.id}:${target.lifeId}:${sequence}:surface`,
@@ -173,61 +188,40 @@ export class TdmBotCombatController {
     );
     return rotateDirection(
       aim,
-      jitterSample * this.config.rocketAimJitterRadians,
+      jitterSample *
+        this.config.rocketAimJitterRadians *
+        this.difficulty.aimJitterMultiplier,
     );
   }
 
   private chooseWeapon(
     actor: Readonly<ActorState>,
     target: Readonly<ActorState>,
-    distance: number,
-    roster: readonly ArenaWeaponId[],
-    lineOfSight: boolean,
+    snapshot: WorldSnapshot,
   ): BotWeaponId | null {
-    const available = (weaponId: ArenaWeaponId): boolean =>
-      roster.includes(weaponId) &&
-      weaponCooldown(actor.weapons, weaponId) <= 0 &&
-      (weaponAmmo(actor.weapons, weaponId) ?? 1) > 0 &&
-      distance <= ARENA_WEAPON_CATALOG[weaponId].range;
-    if (!lineOfSight) {
-      return available("grenade") && distance >= 220 ? "grenade" : null;
-    }
+    const assessment = assessCombatOpportunity(
+      actor,
+      target,
+      snapshot,
+      this.config,
+    );
+    const readyOpportunities = assessment.opportunities.filter((opportunity) =>
+      opportunity.ready &&
+      opportunity.geometryAllowsShot &&
+      opportunity.inTacticalRange
+    );
     if (
-      roster.includes("whip") &&
-      actor.weapons.whipCooldownMs <= 0 &&
-      distance <= this.config.whipRange + target.radius
+      readyOpportunities[0]?.weaponId === "rail" &&
+      this.railReactionRemainingMs > 0
     ) {
-      return "whip";
+      return null;
     }
-    const railAvailable =
-      roster.includes("rail") &&
-      actor.weapons.railAmmo > 0 &&
-      actor.weapons.railCooldownMs <= 0 &&
-      distance <= this.config.railRange;
-    if (railAvailable && distance >= this.config.railPreferredMinRange) {
-      return this.railReactionRemainingMs <= 0 ? "rail" : null;
-    }
-    if (
-      roster.includes("rocket") &&
-      actor.weapons.rocketAmmo > 0 &&
-      this.rocketDecisionCooldownMs <= 0 &&
-      distance >= this.config.rocketMinRange &&
-      distance <= this.config.rocketMaxRange
-    ) {
-      return "rocket";
-    }
-    if (available("disc") && distance >= 170) return "disc";
-    if (available("pulse")) return "pulse";
-    if (available("shard")) return "shard";
-    if (available("grenade") && distance >= 280) return "grenade";
-    if (
-      railAvailable &&
-      this.railReactionRemainingMs <= 0 &&
-      distance < this.config.railPreferredMinRange
-    ) {
-      return "rail";
-    }
-    return null;
+    return readyOpportunities.find((opportunity) =>
+      (
+        opportunity.weaponId !== "rocket" ||
+        this.rocketDecisionCooldownMs <= 0
+      )
+    )?.weaponId ?? null;
   }
 }
 
@@ -332,18 +326,6 @@ export function directionBetween(
   const dy = to.y - from.y;
   const length = Math.hypot(dx, dy);
   return length > .0001 ? { x: dx / length, y: dy / length } : { x: 0, y: 0 };
-}
-
-export function distanceBetween(a: WorldPosition, b: WorldPosition): number {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-export function hasLineOfSight(
-  from: WorldPosition,
-  to: WorldPosition,
-  solids: readonly WorldRect[],
-): boolean {
-  return !solids.some((solid) => lineIntersectsRect(from, to, solid));
 }
 
 function lineIntersectsRect(

@@ -211,26 +211,26 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
     jumpLinks: [
       {
         id: "cenote-west-north-south",
-        from: { x: 1030, y: 205 },
+        from: { x: 1030, y: 225 },
         to: { x: 1030, y: 350 },
         activationRadius: 44,
       },
       {
         id: "cenote-west-south-north",
         from: { x: 1030, y: 350 },
-        to: { x: 1030, y: 205 },
+        to: { x: 1030, y: 225 },
         activationRadius: 44,
       },
       {
         id: "cenote-east-north-south",
-        from: { x: 1250, y: 205 },
+        from: { x: 1250, y: 225 },
         to: { x: 1250, y: 350 },
         activationRadius: 44,
       },
       {
         id: "cenote-east-south-north",
         from: { x: 1250, y: 350 },
-        to: { x: 1250, y: 205 },
+        to: { x: 1250, y: 225 },
         activationRadius: 44,
       },
     ],
@@ -283,6 +283,15 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
       width: 320,
       height: 260,
     },
+  },
+  botProfile: {
+    version: 1,
+    navigation: "auto-grid",
+    tacticalZones: [
+      { id: "drowned-sun", kind: "control", position: point(1080, 460), radius: 170 },
+      { id: "jaguar-gallery", kind: "flank", position: point(1080, 205), radius: 115 },
+      { id: "rootwater-run", kind: "flank", position: point(1080, 715), radius: 115 },
+    ],
   },
   presentation: {
     theme: "jungle-temple",

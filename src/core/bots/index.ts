@@ -22,6 +22,7 @@ export {
   type ClassicCtfBotGoal,
   type ClassicCtfBotGoalKind,
   type ClassicCtfBotRole,
+  type ClassicCtfBotTacticalAssignment,
   type ClassicCtfManualTeamCommand,
   type ClassicCtfTeamCommand,
 } from "./ClassicCtfBotDecisionController";
@@ -40,6 +41,8 @@ export {
 } from "./OneFlagBotController";
 export {
   GridBotNavigator,
+  navigationPathExists,
+  projectToNavigablePosition,
   type BotNavigationDecision,
   type GridBotNavigatorDebugState,
   type GridBotRepathReason,
@@ -51,3 +54,38 @@ export {
   type TdmBotIntent,
 } from "./TdmBotController";
 export { TdmBotCombatController } from "./TdmBotCombatController";
+export {
+  assessCombatOpportunity,
+  directionBetween,
+  distanceBetween,
+  hasLineOfSight,
+  hasUsableAmmoWeapon,
+  type BotCombatAssessment,
+  type BotCombatPosture,
+  type BotWeaponOpportunity,
+} from "./BotCombatOpportunity";
+export {
+  BotUtilityArbiter,
+  type BotDecisionTrace,
+  type BotUtilityCandidate,
+} from "./BotDecisionUtility";
+export {
+  BOT_DIFFICULTY_PROFILES,
+  createBotPersonality,
+  type BotDifficultyId,
+  type BotDifficultyProfile,
+  type BotPersonality,
+} from "./BotDifficulty";
+export {
+  ArenaBotTeamCoordinator,
+  type BotTeamAssignment,
+  type OneFlagBotTacticalRole,
+} from "./BotTeamCoordinator";
+export {
+  planLocalBotSteering,
+  type BotLocalSteering,
+} from "./BotLocalMovement";
+export {
+  BotTargetSelector,
+  type BotTargetSelection,
+} from "./BotTargetSelector";

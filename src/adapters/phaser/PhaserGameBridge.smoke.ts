@@ -3096,13 +3096,14 @@ function checkBotStandoffBehavior(): void {
   if (
     retreatMove?.magnitude !== 1 ||
     retreatMove.direction?.x !== 1 ||
-    capturedTargets[0]?.x !== 180
+    capturedTargets[0] === undefined ||
+    capturedTargets[0].x >= red.position.x
   ) {
     throw new Error("TDM bots must back away toward a standoff target when too close.");
   }
 
   capturedTargets.length = 0;
-  red.position = { x: 120, y: 200 };
+  red.position = { x: 192, y: 200 };
   blue.position = { x: 300, y: 200 };
   actions = controller.readActions(createWorldSnapshot(world), 34);
   const holdMove = actions.find((action) => action.action === "move");

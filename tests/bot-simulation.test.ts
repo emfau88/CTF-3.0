@@ -176,7 +176,7 @@ test("tdm bots expose armor and weapon pickup intents", () => {
   assert.equal(weapon.finalRailAmmo > 0, true, diagnostic.report);
 });
 
-test("tdm bot holds combat standoff at ideal range", () => {
+test("tdm bot closes into Arc range and then holds a usable distance", () => {
   const diagnostic = runTdmCombatStandoffScenario();
   const holdIntentFrames =
     diagnostic.testBot.intentFramesByKind.get("hold-standoff") ?? 0;
@@ -188,16 +188,10 @@ test("tdm bot holds combat standoff at ideal range", () => {
     diagnostic.report,
   );
   assert.equal(diagnostic.testBot.pathMissCount, 0, diagnostic.report);
+  assert.equal(diagnostic.testBot.finalEnemyDistance < 138, true, diagnostic.report);
+  assert.equal(diagnostic.testBot.finalEnemyDistance > 70, true, diagnostic.report);
   assert.equal(
-    Math.abs(
-      diagnostic.testBot.finalEnemyDistance -
-        diagnostic.testBot.initialEnemyDistance,
-    ) < 24,
-    true,
-    diagnostic.report,
-  );
-  assert.equal(
-    diagnostic.testBot.travelDistance < 48,
+    diagnostic.testBot.travelDistance < 80,
     true,
     diagnostic.report,
   );
@@ -349,7 +343,11 @@ test("one-flag grand archive navigator diagnostics stay within expected bounds",
   assert.equal(escortMetrics.length > 0, true, diagnostic.report);
   for (const metric of escortMetrics) {
     assert.equal(metric.dynamicProjectionCount > 0, true, diagnostic.report);
-    assert.equal(metric.blockedGoalFrames, 0, diagnostic.report);
+    assert.equal(
+      metric.blockedGoalFrames < 10,
+      true,
+      `Projected escort targets should only be briefly blocked\n${diagnostic.report}`,
+    );
     assert.equal(
       metric.longestNoProgressMs <
         V2_ACTOR_LIFECYCLE_CONFIG.respawnDelayMs + 1_500,

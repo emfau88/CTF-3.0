@@ -18,6 +18,7 @@ import {
 import {
   advancePremiumMapLightState,
   createPremiumMapLightState,
+  getPremiumMapLighting,
   PREMIUM_MAP_LIGHTING,
 } from "../src/premiumMapLighting";
 
@@ -27,17 +28,23 @@ const PREMIUM_MAPS = [
   FLOW_CIRCUIT_V2,
 ] as const;
 
+const LIT_PREMIUM_MAPS = [
+  DROWNED_SUN_TEMPLE_V2,
+  FLOW_CIRCUIT_V2,
+] as const;
+
 test("only the approved premium arenas preload a creature overlay", () => {
-  assert.equal(PREMIUM_MAP_COSMETICS.length, 2);
+  assert.equal(PREMIUM_MAP_COSMETICS.length, 1);
   assert.deepEqual(
     PREMIUM_MAP_COSMETICS.map((cosmetic) => cosmetic.mapId),
-    [HELIX_CANOPY_V2.id, DROWNED_SUN_TEMPLE_V2.id],
+    [DROWNED_SUN_TEMPLE_V2.id],
   );
   assert.equal(
     new Set(PREMIUM_MAP_COSMETICS.map((cosmetic) => cosmetic.assetKey)).size,
     PREMIUM_MAP_COSMETICS.length,
   );
   assert.equal(getPremiumMapCosmetic("training-crossing-v2"), undefined);
+  assert.equal(getPremiumMapCosmetic(HELIX_CANOPY_V2.id), undefined);
   assert.equal(getPremiumMapCosmetic(FLOW_CIRCUIT_V2.id), undefined);
 });
 
@@ -134,9 +141,10 @@ test("the temple frog is smaller and stays hidden for at least ten seconds", () 
   assert.ok(frog.rearmDelayMs >= frog.reactionDurationMs);
 });
 
-test("premium edge lighting uses eight blocked, neutral fixtures per map", () => {
-  assert.equal(PREMIUM_MAP_LIGHTING.length, PREMIUM_MAPS.length);
-  for (const map of PREMIUM_MAPS) {
+test("approved premium edge lighting uses eight blocked, neutral fixtures", () => {
+  assert.equal(PREMIUM_MAP_LIGHTING.length, LIT_PREMIUM_MAPS.length);
+  assert.equal(getPremiumMapLighting(HELIX_CANOPY_V2.id), undefined);
+  for (const map of LIT_PREMIUM_MAPS) {
     const lighting = PREMIUM_MAP_LIGHTING.find((entry) =>
       entry.mapId === map.id
     );

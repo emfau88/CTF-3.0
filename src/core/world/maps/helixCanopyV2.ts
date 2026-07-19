@@ -178,6 +178,15 @@ export const HELIX_CANOPY_V2: WorldMapData = {
     redBase: rect(1540, 350, 200, 260),
     combatZone: rect(880, 400, 160, 160),
   },
+  botProfile: {
+    version: 1,
+    navigation: "auto-grid",
+    tacticalZones: [
+      { id: "helix-core", kind: "control", position: point(960, 480), radius: scale(150) },
+      { id: "canopy-north", kind: "flank", position: point(960, 245), radius: scale(105) },
+      { id: "canopy-south", kind: "flank", position: point(960, 715), radius: scale(105) },
+    ],
+  },
   presentation: {
     theme: "helix-canopy",
     plan: "A coherent orbital biodome whose integrated botanical islands form three readable routes around a luminous vertical helix.",

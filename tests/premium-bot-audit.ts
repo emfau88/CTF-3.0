@@ -1,7 +1,8 @@
 import {
   ClassicCtfBotController,
   ClassicCtfMode,
-  ARENA_WEAPON_CATALOG,
+  ArenaBotTeamCoordinator,
+  assessCombatOpportunity,
   createArenaRoster,
   createClassicCtfWorldState,
   createOneFlagWorldState,
@@ -16,10 +17,9 @@ import {
   OneFlagMode,
   TeamDeathmatchMode,
   TdmBotController,
-  V2_BOT_COMBAT_CONFIG,
+  V2_BOT_NAVIGATION_CONFIG,
+  V2_V1_WEAPON_PARITY_CONFIG,
   classicCtfRoleForSlot,
-  weaponAmmo,
-  weaponCooldown,
   type ArenaParticipant,
   type ArenaTeamId,
   type ArenaTeamSize,
@@ -38,9 +38,13 @@ import {
 } from "../src/core";
 
 export const PREMIUM_BOT_AUDIT_FRAME_MS = 34;
-export const PREMIUM_BOT_AUDIT_DEFAULT_RUNS = 6;
-export const PREMIUM_BOT_AUDIT_DEFAULT_DURATION_MS = 18_000;
+export const PREMIUM_BOT_AUDIT_DEFAULT_RUNS = 10;
+export const PREMIUM_BOT_AUDIT_DEFAULT_DURATION_MS = 60_000;
 export const PREMIUM_BOT_AUDIT_DEFAULT_TEAM_SIZE: ArenaTeamSize = 2;
+export const PREMIUM_BOT_AUDIT_DEFAULT_TEAM_SIZES =
+  [1, 2, 4] as const satisfies readonly ArenaTeamSize[];
+const SILENT_COMBAT_HOLD_WARNING_MS =
+  V2_V1_WEAPON_PARITY_CONFIG.railCooldownMs + 1_000;
 
 export const PREMIUM_BOT_AUDIT_MAPS = [
   HELIX_CANOPY_V2,
@@ -65,6 +69,7 @@ export interface PremiumBotAuditOptions {
   readonly runsPerMapMode?: number;
   readonly durationMs?: number;
   readonly teamSize?: ArenaTeamSize;
+  readonly teamSizes?: readonly ArenaTeamSize[];
 }
 
 export interface PremiumBotAuditRunProfile {
@@ -81,6 +86,7 @@ export interface PremiumBotAuditIssue {
   readonly code: string;
   readonly mapId: string;
   readonly modeId: AuditModeId;
+  readonly teamSize: ArenaTeamSize;
   readonly runIndex: number;
   readonly actorId?: string;
   readonly detail: string;
@@ -131,13 +137,37 @@ export interface PremiumBotAuditRunResult {
   readonly flagCaptures: number;
   readonly noActionFrames: number;
   readonly invalidPositionFrames: number;
+  readonly averageDecisionCpuMsPerFrame: number;
+  readonly p95DecisionCpuMsPerFrame: number;
+  readonly maximumDecisionCpuMsPerFrame: number;
+  readonly decisionTrace: readonly PremiumBotDecisionTraceSample[];
   readonly actors: readonly PremiumBotAuditActorMetric[];
   readonly issues: readonly PremiumBotAuditIssue[];
+}
+
+export interface PremiumBotDecisionTraceSample {
+  readonly timeMs: number;
+  readonly actorId: string;
+  readonly position: WorldPosition;
+  readonly decisionKind: string;
+  readonly targetKey: string;
+  readonly holdPosition: boolean;
+  readonly combatTargetId: string | null;
+  readonly navigationTarget: WorldPosition | null;
+  readonly waypoint: WorldPosition | null;
+  readonly pathFound: boolean;
+  readonly goalBlocked: boolean;
+  readonly recoveryStage: 0 | 1 | 2 | 3;
+  readonly selectedWeaponId: string | null;
+  readonly decisionReason: string;
+  readonly steeringReason: string;
+  readonly teamReason: string;
 }
 
 export interface PremiumBotAuditAggregate {
   readonly mapId: string;
   readonly modeId: AuditModeId;
+  readonly teamSize: ArenaTeamSize;
   readonly runCount: number;
   readonly criticalIssues: number;
   readonly warnings: number;
@@ -150,6 +180,7 @@ export interface PremiumBotAuditAggregate {
   readonly maximumWeaponlessStandoffMs: number;
   readonly blockedGoalFrameRatio: number;
   readonly pathMissFrameRatio: number;
+  readonly maximumP95DecisionCpuMsPerFrame: number;
   readonly commandProfiles: Readonly<Record<string, {
     readonly runs: number;
     readonly measuredFrames: number;
@@ -162,12 +193,13 @@ export interface PremiumBotAuditAggregate {
 }
 
 export interface PremiumBotAuditReport {
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly config: {
     readonly frameDeltaMs: number;
     readonly runsPerMapMode: number;
     readonly durationMs: number;
-    readonly teamSize: ArenaTeamSize;
+    readonly teamSize: ArenaTeamSize | null;
+    readonly teamSizes: readonly ArenaTeamSize[];
     readonly maps: readonly string[];
     readonly modes: readonly AuditModeId[];
     readonly deterministicVariation: string;
@@ -282,28 +314,37 @@ export function runPremiumBotAudit(
     1_000,
     Math.floor(options.durationMs ?? PREMIUM_BOT_AUDIT_DEFAULT_DURATION_MS),
   );
-  const teamSize = options.teamSize ?? PREMIUM_BOT_AUDIT_DEFAULT_TEAM_SIZE;
+  const teamSizes = normalizeTeamSizes(
+    options.teamSizes ??
+      (options.teamSize ? [options.teamSize] : PREMIUM_BOT_AUDIT_DEFAULT_TEAM_SIZES),
+  );
   const runs = PREMIUM_BOT_AUDIT_MAPS.flatMap((map) =>
     PREMIUM_BOT_AUDIT_MODES.flatMap((modeId) =>
-      createPremiumBotAuditRunProfiles(modeId, map.id, runsPerMapMode).map(
-        (profile) =>
-          runPremiumBotAuditScenario({
-            map,
-            modeId,
-            teamSize,
-            durationMs,
-            profile,
-          }),
+      teamSizes.flatMap((teamSize) =>
+        createPremiumBotAuditRunProfiles(modeId, map.id, runsPerMapMode).map(
+          (profile) =>
+            runPremiumBotAuditScenario({
+              map,
+              modeId,
+              teamSize,
+              durationMs,
+              profile: {
+                ...profile,
+                seed: `${profile.seed}:team-${teamSize}`,
+              },
+            }),
+        )
       )
     )
   );
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     config: {
       frameDeltaMs: PREMIUM_BOT_AUDIT_FRAME_MS,
       runsPerMapMode,
       durationMs,
-      teamSize,
+      teamSize: teamSizes.length === 1 ? teamSizes[0]! : null,
+      teamSizes,
       maps: PREMIUM_BOT_AUDIT_MAPS.map((map) => map.id),
       modes: PREMIUM_BOT_AUDIT_MODES,
       deterministicVariation:
@@ -342,8 +383,27 @@ export function runPremiumBotAuditScenario(input: {
     },
   });
   runtime.initialize();
+  const coordinatorParticipants = input.profile.usesHumanProxy
+    ? participants.filter((participant) =>
+      participant.actorId !== "blue-player"
+    )
+    : participants;
+  const coordinator = new ArenaBotTeamCoordinator(
+    input.modeId,
+    input.map,
+    coordinatorParticipants,
+    input.profile.usesHumanProxy ? ["blue-player"] : [],
+  );
   const harnesses = participants.map((participant) =>
-    createHarness(input.modeId, input.map, participant, input.profile)
+    createHarness(
+      input.modeId,
+      input.map,
+      participant,
+      input.profile,
+      input.profile.usesHumanProxy && participant.actorId === "blue-player"
+        ? undefined
+        : coordinator,
+    )
   );
   const metrics = new Map(
     participants.map((participant) => [
@@ -358,6 +418,8 @@ export function runPremiumBotAuditScenario(input: {
   let noActionFrames = 0;
   let invalidPositionFrames = 0;
   let simulatedDurationMs = 0;
+  const decisionCpuMs: number[] = [];
+  const decisionTraceSamples: PremiumBotDecisionTraceSample[] = [];
   const frameCount = Math.ceil(input.durationMs / PREMIUM_BOT_AUDIT_FRAME_MS);
 
   for (let frame = 1; frame <= frameCount; frame += 1) {
@@ -374,9 +436,11 @@ export function runPremiumBotAuditScenario(input: {
         activeCommand,
       );
     }
+    const decisionStartedAt = performance.now();
     const actions = harnesses.flatMap((harness) =>
       harness.controller.readActions(before, PREMIUM_BOT_AUDIT_FRAME_MS)
     );
+    decisionCpuMs.push(performance.now() - decisionStartedAt);
     if (actions.length === 0) noActionFrames += 1;
     const result = runtime.advance({
       sequence: frame,
@@ -421,8 +485,26 @@ export function runPremiumBotAuditScenario(input: {
         decision: normalizedDecision(harness.controller),
         navigator: harness.navigator.debugSnapshot(),
         snapshot: before,
-        command: harness.receivesHumanCommand ? activeCommand : null,
+        command: harness.receivesHumanCommand
+          ? metricCommandFor(harness.controller, activeCommand)
+          : null,
       });
+      const navigatorDebug = harness.navigator.debugSnapshot();
+      if (
+        frame % Math.max(
+          1,
+          Math.round(1_000 / PREMIUM_BOT_AUDIT_FRAME_MS),
+        ) === 0 ||
+        navigatorDebug.recoveryStage > 0 ||
+        metric.currentMoveIntentStallMs > 0
+      ) {
+        decisionTraceSamples.push(createDecisionTraceSample(
+          simulatedDurationMs,
+          current,
+          harness.controller,
+          navigatorDebug,
+        ));
+      }
     }
     if (result.snapshot.match?.phase === "ended") break;
   }
@@ -444,11 +526,32 @@ export function runPremiumBotAuditScenario(input: {
     flagCaptures,
     noActionFrames,
     invalidPositionFrames,
+    averageDecisionCpuMsPerFrame: round(
+      decisionCpuMs.reduce((sum, value) => sum + value, 0) /
+        Math.max(1, decisionCpuMs.length),
+      4,
+    ),
+    p95DecisionCpuMsPerFrame: round(percentile(decisionCpuMs, .95), 4),
+    maximumDecisionCpuMsPerFrame: round(Math.max(0, ...decisionCpuMs), 4),
     actors,
   };
+  const issues = detectRunIssues(baseResult);
+  const actionableIssues = issues.filter((issue) =>
+    issue.severity !== "info"
+  );
+  const actorIssues = new Set(
+    actionableIssues.flatMap((issue) =>
+      issue.actorId ? [issue.actorId] : actors.map((actor) => actor.actorId)
+    ),
+  );
   return {
     ...baseResult,
-    issues: detectRunIssues(baseResult),
+    decisionTrace: actionableIssues.length > 0
+      ? decisionTraceSamples.filter((sample) =>
+        actorIssues.has(sample.actorId)
+      )
+      : [],
+    issues,
   };
 }
 
@@ -457,6 +560,7 @@ function createHarness(
   map: WorldMapData,
   participant: ArenaParticipant,
   profile: PremiumBotAuditRunProfile,
+  coordinator?: ArenaBotTeamCoordinator,
 ): BotHarness {
   const navigator = new GridBotNavigator();
   if (modeId === "team-deathmatch") {
@@ -471,6 +575,9 @@ function createHarness(
         undefined,
         participant.slot,
         [],
+        undefined,
+        undefined,
+        coordinator,
       ),
       receivesHumanCommand: false,
     };
@@ -484,6 +591,10 @@ function createHarness(
         map,
         undefined,
         navigator,
+        undefined,
+        undefined,
+        undefined,
+        coordinator,
       ),
       receivesHumanCommand: false,
     };
@@ -497,6 +608,10 @@ function createHarness(
       map,
       undefined,
       navigator,
+      undefined,
+      undefined,
+      undefined,
+      coordinator,
     ),
     receivesHumanCommand:
       profile.usesHumanProxy &&
@@ -705,6 +820,15 @@ function captureCommandMetric(
   else metric.commandConflictFrames += 1;
 }
 
+function metricCommandFor(
+  controller: BotController,
+  fallback: ClassicCtfTeamCommand,
+): ClassicCtfTeamCommand {
+  if (!(controller instanceof ClassicCtfBotController)) return fallback;
+  return controller.debugSnapshot().teamAssignment?.classicCtfCommand ??
+    fallback;
+}
+
 function captureEventMetrics(
   metrics: ReadonlyMap<string, MutableActorMetric>,
   events: readonly GameEvent[],
@@ -765,6 +889,72 @@ function normalizedDecision(controller: BotController): NormalizedDecision {
     targetKey: debug.navigationTargetKey,
     holdPosition: debug.holdPosition,
     combatTargetId: debug.combatTargetId,
+  };
+}
+
+function createDecisionTraceSample(
+  timeMs: number,
+  actor: Readonly<{
+    readonly id: string;
+    readonly position: WorldPosition;
+  }>,
+  controller: BotController,
+  navigator: GridBotNavigatorDebugState,
+): PremiumBotDecisionTraceSample {
+  const decision = normalizedDecision(controller);
+  if (controller instanceof TdmBotController) {
+    const debug = controller.debugSnapshot();
+    return {
+      timeMs,
+      actorId: actor.id,
+      position: { ...actor.position },
+      decisionKind: decision.kind,
+      targetKey: decision.targetKey,
+      holdPosition: decision.holdPosition,
+      combatTargetId: decision.combatTargetId,
+      navigationTarget: navigator.projectedTarget
+        ? { ...navigator.projectedTarget }
+        : null,
+      waypoint: navigator.currentWaypoint
+        ? { ...navigator.currentWaypoint }
+        : null,
+      pathFound: navigator.pathFound,
+      goalBlocked: navigator.goalBlocked,
+      recoveryStage: navigator.recoveryStage,
+      selectedWeaponId:
+        debug.combatAssessment?.selectedWeaponId ??
+        debug.combatAssessment?.movementWeaponId ??
+        null,
+      decisionReason: debug.intentTrace?.selectedReason ?? debug.intent,
+      steeringReason: debug.steering.reason,
+      teamReason: debug.teamAssignment?.reason ?? "individual",
+    };
+  }
+  const debug = controller.debugSnapshot();
+  return {
+    timeMs,
+    actorId: actor.id,
+    position: { ...actor.position },
+    decisionKind: decision.kind,
+    targetKey: decision.targetKey,
+    holdPosition: decision.holdPosition,
+    combatTargetId: decision.combatTargetId,
+    navigationTarget: navigator.projectedTarget
+      ? { ...navigator.projectedTarget }
+      : null,
+    waypoint: navigator.currentWaypoint
+      ? { ...navigator.currentWaypoint }
+      : null,
+    pathFound: navigator.pathFound,
+    goalBlocked: navigator.goalBlocked,
+    recoveryStage: navigator.recoveryStage,
+    selectedWeaponId:
+      debug.combatAssessment?.selectedWeaponId ??
+      debug.combatAssessment?.movementWeaponId ??
+      null,
+    decisionReason: debug.targetTrace?.selectedReason ?? decision.kind,
+    steeringReason: debug.steering.reason,
+    teamReason: debug.teamAssignment?.reason ?? "individual",
   };
 }
 
@@ -872,7 +1062,7 @@ function freezeMetric(
 }
 
 function detectRunIssues(
-  run: Omit<PremiumBotAuditRunResult, "issues">,
+  run: Omit<PremiumBotAuditRunResult, "issues" | "decisionTrace">,
 ): readonly PremiumBotAuditIssue[] {
   const issues: PremiumBotAuditIssue[] = [];
   const add = (
@@ -885,6 +1075,7 @@ function detectRunIssues(
     code,
     mapId: run.mapId,
     modeId: run.modeId,
+    teamSize: run.teamSize,
     runIndex: run.runIndex,
     actorId,
     detail,
@@ -901,6 +1092,13 @@ function detectRunIssues(
       "critical",
       "no-actions",
       `${run.noActionFrames} Frames hatten keinerlei Bot-Aktionen.`,
+    );
+  }
+  if (run.p95DecisionCpuMsPerFrame > 4) {
+    add(
+      "warning",
+      "decision-performance",
+      `Die Botentscheidungen benoetigten im p95 ${run.p95DecisionCpuMsPerFrame} ms pro Frame.`,
     );
   }
   if (
@@ -942,16 +1140,25 @@ function detectRunIssues(
       1,
       Math.round(actor.activeMs / PREMIUM_BOT_AUDIT_FRAME_MS),
     );
-    if (actor.longestMoveIntentStallMs >= 1_000) {
+    const recoveryWarningThreshold =
+      V2_BOT_NAVIGATION_CONFIG.stuckEscapeMs ?? 1_800;
+    if (actor.longestMoveIntentStallMs >= recoveryWarningThreshold) {
       add(
         "warning",
         "move-intent-stall",
         `Trotz Bewegungsabsicht ${actor.longestMoveIntentStallMs} ms ohne Fortschritt.`,
         actor.actorId,
       );
+    } else if (actor.longestMoveIntentStallMs >= 1_000) {
+      add(
+        "info",
+        "transient-move-stall",
+        `Kurzer, innerhalb der gestuften Recovery liegender Bewegungsstall von ${actor.longestMoveIntentStallMs} ms.`,
+        actor.actorId,
+      );
     }
     if (
-      actor.longestSilentHoldMs >= 2_500 &&
+      actor.longestSilentHoldMs >= SILENT_COMBAT_HOLD_WARNING_MS &&
       actor.longestWeaponlessStandoffMs < 1_500
     ) {
       add(
@@ -979,7 +1186,7 @@ function detectRunIssues(
     }
     if (actor.blockedGoalFrames / activeFrames >= .08) {
       const blockingHasConsequence =
-        actor.longestMoveIntentStallMs >= 1_000 ||
+        actor.longestMoveIntentStallMs >= recoveryWarningThreshold ||
         actor.pathMissFrames / activeFrames >= .08;
       add(
         blockingHasConsequence ? "warning" : "info",
@@ -1026,9 +1233,16 @@ function createAggregates(
   runs: readonly PremiumBotAuditRunResult[],
 ): readonly PremiumBotAuditAggregate[] {
   return PREMIUM_BOT_AUDIT_MAPS.flatMap((map) =>
-    PREMIUM_BOT_AUDIT_MODES.map((modeId) => {
+    PREMIUM_BOT_AUDIT_MODES.flatMap((modeId) =>
+      [...new Set(
+        runs.filter((run) =>
+          run.mapId === map.id && run.modeId === modeId
+        ).map((run) => run.teamSize),
+      )].sort().map((teamSize) => {
       const selected = runs.filter((run) =>
-        run.mapId === map.id && run.modeId === modeId
+        run.mapId === map.id &&
+        run.modeId === modeId &&
+        run.teamSize === teamSize
       );
       const actors = selected.flatMap((run) => run.actors);
       const activeFrames = actors.reduce(
@@ -1093,6 +1307,7 @@ function createAggregates(
       return {
         mapId: map.id,
         modeId,
+        teamSize,
         runCount: selected.length,
         criticalIssues: selected.flatMap((run) => run.issues).filter(
           (issue) => issue.severity === "critical",
@@ -1133,9 +1348,13 @@ function createAggregates(
           actors.reduce((sum, actor) => sum + actor.pathMissFrames, 0),
           activeFrames,
         ), 4),
+        maximumP95DecisionCpuMsPerFrame: Math.max(
+          0,
+          ...selected.map((run) => run.p95DecisionCpuMsPerFrame),
+        ),
         commandProfiles,
       };
-    })
+    }))
   );
 }
 
@@ -1155,17 +1374,18 @@ export function formatPremiumBotAuditMarkdown(
     `- Lauf: ${metadata?.runId ?? "in-memory"}`,
     `- Zeitpunkt: ${metadata?.timestamp ?? "nicht gespeichert"}`,
     `- Git: ${metadata?.gitCommit ?? "unbekannt"}${metadata?.gitDirty ? " (dirty)" : ""}`,
-    `- Matrix: 3 Maps x 3 Modi x ${report.config.runsPerMapMode} Laeufe`,
-    `- Teamgroesse: ${report.config.teamSize}v${report.config.teamSize}`,
+    `- Matrix: 3 Maps x 3 Modi x ${report.config.teamSizes.length} Teamgroessen x ${report.config.runsPerMapMode} Laeufe`,
+    `- Teamgroessen: ${report.config.teamSizes.map((size) => `${size}v${size}`).join(", ")}`,
     `- Dauer je Lauf: ${report.config.durationMs} ms bei ${report.config.frameDeltaMs} ms/Frame`,
     "",
     "## Aggregierte Ergebnisse",
     "",
-    "| Map | Modus | Laeufe | Kritisch | Warnungen | Score Avg | Flag-Pickups Avg | Captures Avg | Weg/s | max. Move-Stall | max. stiller Hold | max. waffenloser Hold | blockierte Ziele | Pfadfehler |",
-    "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    "| Map | Modus | Team | Laeufe | Kritisch | Warnungen | Score Avg | Flag-Pickups Avg | Captures Avg | Weg/s | max. Move-Stall | max. stiller Hold | max. waffenloser Hold | blockierte Ziele | Pfadfehler | KI p95 |",
+    "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ...report.aggregates.map((aggregate) => [
       aggregate.mapId,
       labelForMode(aggregate.modeId),
+      `${aggregate.teamSize}v${aggregate.teamSize}`,
       aggregate.runCount,
       aggregate.criticalIssues,
       aggregate.warnings,
@@ -1178,18 +1398,20 @@ export function formatPremiumBotAuditMarkdown(
       `${aggregate.maximumWeaponlessStandoffMs} ms`,
       percent(aggregate.blockedGoalFrameRatio),
       percent(aggregate.pathMissFrameRatio),
+      `${aggregate.maximumP95DecisionCpuMsPerFrame} ms`,
     ].join(" | ").replace(/^/, "| ").replace(/$/, " |")),
     "",
     "## CTF-Kommandowirkung",
     "",
-    "| Map | Profil | Laeufe | Befolgt | Notfall-Override | Konflikt | Pickups Avg | Captures Avg |",
-    "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+    "| Map | Team | Profil | Laeufe | Befolgt | Notfall-Override | Konflikt | Pickups Avg | Captures Avg |",
+    "| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
     ...report.aggregates.filter((aggregate) =>
       aggregate.modeId === "classic-ctf"
     ).flatMap((aggregate) =>
       Object.entries(aggregate.commandProfiles).map(([profile, command]) =>
         [
           aggregate.mapId,
+          `${aggregate.teamSize}v${aggregate.teamSize}`,
           profile,
           command.runs,
           command.measuredFrames > 0 ? percent(command.complianceRatio) : "n/a",
@@ -1224,7 +1446,7 @@ export function formatPremiumBotAuditMarkdown(
     "## Einordnung",
     "",
     "- `intentionalHoldMs` ist eine bewusste Standoff-Entscheidung und kein Navigatorfehler.",
-    "- `silent-combat-hold` markiert erst einen langen Standoff ohne erfolgreichen Schuss.",
+    `- \`silent-combat-hold\` markiert erst einen Standoff von mindestens ${SILENT_COMBAT_HOLD_WARNING_MS} ms ohne erfolgreichen Schuss; der normale Rail-Cooldown allein ist kein Fehler.`,
     "- `respawnInactiveMs` ist Tot-/Respawnzeit und wird nicht als Bot-Leerlauf gewertet.",
     "- CTF-Notfaelle (eigene Flagge verloren oder selbst Flagge getragen) duerfen menschliche Kommandos ueberstimmen.",
     "- Die Laeufe sind reproduzierbar, variieren aber kontrolliert die Startpositionen. Sie sind kein Ersatz fuer visuelles Spielgefuehl-QA.",
@@ -1237,39 +1459,44 @@ function createLogicInventory() {
   return {
     shared: {
       navigation:
-        "A* auf 40er Raster; Repath alle 420 ms, bei Zielwechsel oder Pfadende; Solids und Gaps mit 18 Einheiten Padding; diagonale Schritte und authorierte Jump-Links.",
+        "A* auf 40er Raster; 420 ms Basis-Repath plus deterministische Entzerrung; Zielprojektion, Pfadglaettung, Eckenregel, Jump-Anlauf und dreistufige Stuck-Recovery.",
+      perception:
+        "Begrenzte Sichtweite, 165er Nahwahrnehmung, 1.250 ms Erinnerung; reines Team- oder Objective-Wissen erlaubt Suche, aber keinen Schuss.",
       combat:
-        "Naechster aktiver Gegner; Aim auf Gegner; Waffenprioritaet nach Sichtlinie, Distanz, Roster, Munition und Cooldown.",
+        "Gemeinsame Combat-Opportunity fuer Bewegung und Feuer nach Sicht, Distanz, Roster, Munition und Cooldown; Rocket-Vorhalt, Rail-Reaktion und waffenspezifische Distanzbaender.",
       standoff:
-        "Bei Sichtlinie und ohne Gap wird zwischen 96 und 210 Abstand gehalten; unter 96 Rueckzug, ueber 210 Annaeherung.",
+        "Halten nur mit einer an der aktuellen Distanz taktisch einsetzbaren Waffe; sonst Annaeherung, Verfolgung oder Rueckzug fuer die beste verfuegbare Waffe.",
+      localMovement:
+        "Lokale Team-Separation und deterministisches Seitwaertsausweichen vor gefaehrlichen gegnerischen Projektilen.",
     },
     teamDeathmatch: {
-      target: "Naechster aktiver Gegner, bei Gleichstand stabile Actor-ID.",
+      target:
+        "Utility-Zielwahl aus Sicht, Entfernung, Health und Gefahr; Teamkoordinator verteilt Reservierungen auf mehrere Gegner.",
       pickups:
-        "Health ab 55 %, Armor nur Slot 4 ab 50 %, bevorzugte Pickup-Waffe bei 0 Munition; Radius 720; unter 230 Gegnerdistanz Abbruch, sofern Health >25; 850 ms Ziel-Stickiness; menschennaher Waffenpickup kann reserviert sein.",
+        "Health, Armor und fehlende bevorzugte Roster-Waffe werden gegen die aktuelle Kampfoption bewertet; 850 ms Zielbindung; menschennaher Waffenpickup kann reserviert sein.",
       formation:
-        "Slotbasierte Lane-Ziele und Cluster-Separation; Standoff nur ohne Pickup- oder Separation-Prioritaet.",
+        "Slotbasierte Lane-Ziele, Team-Separation und verteilte Kampfziele; Standoff nur mit realer Waffenoption.",
     },
     classicCtf: {
       priority:
-        "Eigene getragene Flagge heimbringen > eigene gedroppte/gestohlene Flagge bergen > Human-Kommando > Carrier eskortieren/Drop sichern > Rollenlogik.",
+        "Selbst getragene Flagge heimbringen > zugewiesene Flaggen-Notfallreaktion > verteiltes Human-Kommando > Carrier/Drop > dynamische Rollenlogik.",
       roles:
-        "Slot 1/4 Angreifer, Slot 2 Verteidiger, Slot 3 Support. 2v2-Verteidiger ankert kurz und schwenkt danach adaptiv zur Mitte.",
+        "Teamgroessenabhaengige Angreifer-, Verteidiger- und Supportrollen mit 3.000 ms Bindung; hoechstens ein beziehungsweise in 4v4 zwei Notfallhelfer.",
       commands:
-        "Defend patrouilliert/verteidigt die Basis; Follow haelt 80–145 Abstand zum Human; Attack greift die Flagge an oder eskortiert. Gleiches Kommando erneut schaltet auf Auto. Flaggen-Notfaelle haben Vorrang.",
+        "Follow bindet genau einen Bot; Defend und Attack sinnvolle Rollengruppen. Flaggen-Notfaelle werden getrennt als erlaubter Override gemessen.",
     },
     oneFlag: {
       priority:
-        "Eigene neutrale Flagge capturen > gegnerischen Carrier jagen > eigenen Carrier eskortieren > Flagge in der Mitte aufnehmen > Mitte kontrollieren.",
+        "Ein Runner bei Home-Flag; Carrier mit Escort/Screen; Gegner-Carrier mit Interceptor/Cutoff; weitere Bots kontrollieren Raum.",
       dynamicTargets:
-        "Carrier-/Escort-Ziele werden bei blockierter Zielposition bis 240 Einheiten auf freie Punkte projiziert.",
+        "Carrier-/Escort-Ziele werden lokal auf freie Punkte projiziert; Formationen bleiben bei gleicher Situation 2.000 ms gebunden.",
     },
     knownConflictCandidates: [
-      "Standoff kann Bewegung stoppen, obwohl wegen Cooldown, Munition oder Sichtwechsel gerade kein Schuss entsteht.",
-      "Dynamische Zielkeys koennen Repaths ausloesen, waehrend Carrier oder Human zwischen 80er Positionszellen wechseln.",
-      "CTF-Kommandos werden absichtlich von Flaggen-Notfaellen ueberstimmt; das kann ohne getrennte Messung wie Nichtbefolgung wirken.",
+      "Dynamische Carrier- oder Kampfziele koennen trotz Bindung zusaetzliche Repaths ausloesen.",
+      "CTF-Kommandos werden absichtlich von zugewiesenen Flaggen-Notfaellen ueberstimmt.",
       "Ein erreichbarer Zielpunkt kann in der Navigator-Padding-Sicht blockiert sein, obwohl die Gameplay-Kollision ihn optisch zulaesst.",
-      "Pickup-Stickiness kann kurzfristig einen inzwischen naeheren Kampf- oder Pickup-Impuls ueberstimmen.",
+      "Pickup- und Zielbindung koennen eine inzwischen knapp bessere Alternative kurzfristig ueberstimmen.",
+      "Node-CPU-Messungen reagieren auf Systemlast und ersetzen kein Browserprofil auf dem Zielgeraet.",
     ],
   } as const;
 }
@@ -1296,24 +1523,11 @@ function canPotentiallyAttack(
   snapshot: WorldSnapshot,
 ): boolean {
   if (!target || target.lifeState !== "active") return false;
-  const roster = snapshot.map?.weaponRoster ?? ["whip", "rocket", "rail"];
-  const targetDistance = distance(actor.position, target.position);
-  return roster.some((weaponId) => {
-    const definition = ARENA_WEAPON_CATALOG[weaponId];
-    const effectiveRange = definition.range +
-      (weaponId === "whip" ? target.radius : 0);
-    const minimumRange = weaponId === "rocket"
-      ? V2_BOT_COMBAT_CONFIG.rocketMinRange
-      : weaponId === "disc"
-      ? 170
-      : weaponId === "grenade"
-      ? 280
-      : 0;
-    return targetDistance >= minimumRange &&
-      targetDistance <= effectiveRange &&
-      weaponCooldown(actor.weapons, weaponId) <= 0 &&
-      (weaponAmmo(actor.weapons, weaponId) ?? 1) > 0;
-  });
+  return assessCombatOpportunity(
+    actor,
+    target,
+    snapshot,
+  ).canAttackAtCurrentRange;
 }
 
 function distance(left: WorldPosition, right: WorldPosition): number {
@@ -1346,6 +1560,30 @@ function hashText(value: string): number {
 
 function ratio(numerator: number, denominator: number): number {
   return denominator > 0 ? numerator / denominator : 0;
+}
+
+function normalizeTeamSizes(
+  values: readonly ArenaTeamSize[],
+): readonly ArenaTeamSize[] {
+  const normalized = [...new Set(values)].filter((value) =>
+    value === 1 || value === 2 || value === 3 || value === 4
+  ).sort() as ArenaTeamSize[];
+  return normalized.length > 0
+    ? normalized
+    : [...PREMIUM_BOT_AUDIT_DEFAULT_TEAM_SIZES];
+}
+
+function percentile(values: readonly number[], percentileRank: number): number {
+  if (values.length === 0) return 0;
+  const ordered = [...values].sort((left, right) => left - right);
+  const index = Math.max(
+    0,
+    Math.min(
+      ordered.length - 1,
+      Math.ceil(percentileRank * ordered.length) - 1,
+    ),
+  );
+  return ordered[index] ?? 0;
 }
 
 function average(values: readonly number[]): number {

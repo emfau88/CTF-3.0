@@ -103,7 +103,8 @@ shortcuts and the contested Forge Heart at its center.
 - Team rings, fighter outlines and a dedicated player marker for combat clarity
 - Fullscreen support, scalable HUD, match feed and hold-to-view statistics
 - Nine cosmetic fighter skins with identical gameplay rules
-- Purpose-built bots with mode-aware objectives, navigation and combat behavior
+- Coordinated bots with limited perception, mode-aware roles, weapon-aware
+  movement, local evasion and staged navigation recovery
 
 ## Controls
 
@@ -157,11 +158,16 @@ Open [http://127.0.0.1:5173/CTF-3.0/](http://127.0.0.1:5173/CTF-3.0/).
 npm test
 npm run test:typecheck
 npm run build
+npm run bot:audit:premium
 ```
 
 Map authors and reviewers should read the
 [premium-map production guide](docs/HIGH_QUALITY_MAP_PRODUCTION_GUIDE.md)
 before creating a new arena or changing collision on an existing one.
+The reusable bot architecture and mandatory map contract are documented in
+[Bot-KI v2](docs/BOT_AI_V2_ARCHITECTURE.md); the saved Premium-Map matrix is
+described in the
+[bot audit guide](docs/PREMIUM_MAP_BOT_BEHAVIOR_AUDIT.md).
 
 ## Current direction
 

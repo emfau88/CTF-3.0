@@ -17,13 +17,37 @@ import {
   directionBetween,
   TdmBotCombatController,
 } from "./TdmBotCombatController";
-import { planCombatStandoff } from "./BotCombatStandoff";
+import { planWeaponAwareCombatStandoff } from "./BotCombatStandoff";
 import {
   isAmmoWeaponId,
   weaponAmmo,
   type AmmoWeaponId,
   type ArenaWeaponId,
 } from "../weapons";
+import {
+  BOT_DIFFICULTY_PROFILES,
+  createBotPersonality,
+  type BotDifficultyProfile,
+  type BotPersonality,
+} from "./BotDifficulty";
+import {
+  BotUtilityArbiter,
+  type BotDecisionTrace,
+  type BotUtilityCandidate,
+} from "./BotDecisionUtility";
+import {
+  assessCombatOpportunity,
+  type BotCombatAssessment,
+} from "./BotCombatOpportunity";
+import { BotTargetSelector } from "./BotTargetSelector";
+import {
+  planLocalBotSteering,
+  type BotLocalSteering,
+} from "./BotLocalMovement";
+import {
+  type ArenaBotTeamCoordinator,
+  type BotTeamAssignment,
+} from "./BotTeamCoordinator";
 
 export type TdmBotIntent =
   | "fight-enemy"
@@ -41,6 +65,11 @@ export interface TdmBotControllerDebugState {
   readonly navigationTargetKey: string;
   readonly standoffKey: string | null;
   readonly holdPosition: boolean;
+  readonly combatAssessment: BotCombatAssessment | null;
+  readonly intentTrace: BotDecisionTrace<TdmBotIntent> | null;
+  readonly targetTrace: BotDecisionTrace<"combat-target"> | null;
+  readonly steering: BotLocalSteering;
+  readonly teamAssignment: BotTeamAssignment | null;
 }
 
 const PICKUP_TARGET_STICKINESS_MS = 850;
@@ -50,6 +79,9 @@ export class TdmBotController {
   private stickyPickupId: string | null = null;
   private stickyPickupRemainingMs = 0;
   private lastDebugState: TdmBotControllerDebugState;
+  private readonly targetSelector: BotTargetSelector;
+  private readonly intentArbiter = new BotUtilityArbiter<TdmBotIntent>();
+  private readonly combat: TdmBotCombatController;
 
   constructor(
     private readonly actorId: string,
@@ -57,12 +89,18 @@ export class TdmBotController {
     private readonly movement: BotMovementConfig =
       V2_BOT_MOVEMENT_CONFIG,
     private readonly navigator: BotNavigator = new GridBotNavigator(),
-    private readonly combat: TdmBotCombatController =
-      new TdmBotCombatController(),
+    combat: TdmBotCombatController | undefined = undefined,
     private readonly slot: ArenaTeamSlot = 1,
     private readonly humanActorIds: readonly string[] = [],
+    private readonly difficulty: BotDifficultyProfile =
+      BOT_DIFFICULTY_PROFILES.normal,
+    private readonly personality: BotPersonality =
+      createBotPersonality(actorId, slot),
+    private readonly coordinator?: ArenaBotTeamCoordinator,
   ) {
+    this.combat = combat ?? new TdmBotCombatController(undefined, difficulty);
     this.lastDebugState = createEmptyDebugState(actorId);
+    this.targetSelector = new BotTargetSelector(difficulty, personality);
   }
 
   readActions(
@@ -70,17 +108,33 @@ export class TdmBotController {
     deltaMs: number,
   ): readonly CoreActionIntent[] {
     const actor = findActiveActor(snapshot, this.actorId);
-    const requestedTarget = this.targetActorId
-      ? findActiveActor(snapshot, this.targetActorId)
+    const teamAssignment = actor
+      ? this.coordinator?.assignmentFor(actor.id, snapshot) ?? null
       : null;
-    const target = actor
-      ? requestedTarget ?? nearestActiveEnemy(snapshot, actor)
-      : null;
+    const requestedTargetId = this.targetActorId ??
+      teamAssignment?.combatTargetActorId;
+    const targetSelection = actor
+      ? this.targetSelector.select(
+        actor,
+        snapshot,
+        deltaMs,
+        requestedTargetId,
+      )
+      : {
+        target: null,
+        trace: null,
+        targetPerceived: false,
+        perceptionReason: "none" as const,
+      };
+    const target = targetSelection.target;
     if (!actor || !target || snapshot.match?.phase === "ended") {
+      this.navigator.reset();
       this.combat.reset();
       this.jumpHeld = false;
       this.stickyPickupId = null;
       this.stickyPickupRemainingMs = 0;
+      this.targetSelector.reset();
+      this.intentArbiter.reset();
       this.lastDebugState = createEmptyDebugState(this.actorId);
       return [this.stopIntent()];
     }
@@ -90,40 +144,59 @@ export class TdmBotController {
       this.stickyPickupRemainingMs - Math.max(0, deltaMs),
     );
     const enemyDistance = distance(actor.position, target.position);
+    const combatAssessment = assessCombatOpportunity(actor, target, snapshot);
     const pickup = selectPickupGoal(
       snapshot,
       actor,
       this.slot,
       enemyDistance,
+      combatAssessment.canAttackAtCurrentRange,
       this.stickyPickupRemainingMs > 0 ? this.stickyPickupId : null,
       this.humanActorIds,
     );
-    if (pickup) {
-      this.stickyPickupId = pickup.id;
+    const intentTrace = this.intentArbiter.choose(
+      createIntentCandidates(
+        actor,
+        target,
+        pickup,
+        combatAssessment,
+        this.personality,
+      ),
+      deltaMs,
+      this.difficulty.intentCommitMs,
+    );
+    const selectedPickup = pickup && intentTrace.selectedKey === `pickup:${pickup.id}`
+      ? pickup
+      : null;
+    if (selectedPickup) {
+      this.stickyPickupId = selectedPickup.id;
       this.stickyPickupRemainingMs = PICKUP_TARGET_STICKINESS_MS;
     } else {
       this.stickyPickupId = null;
       this.stickyPickupRemainingMs = 0;
     }
-    const engagement = planCombatStandoff(
-      actor.position,
-      target.position,
+    const engagement = planWeaponAwareCombatStandoff(
+      actor,
+      target,
       snapshot,
       this.movement,
+      targetSelection.targetPerceived,
     );
-    const separationTarget = pickup
+    const separationTarget = selectedPickup
       ? null
       : clusteredSeparationTarget(snapshot, actor, this.slot);
-    const navigationTarget = pickup?.position ?? separationTarget ?? laneBiasedTarget(
+    const navigationTarget = selectedPickup?.position ?? separationTarget ?? laneBiasedTarget(
       snapshot,
       actor,
       target,
       this.slot,
       engagement.targetPosition,
     );
-    const holdPosition = !pickup && !separationTarget && engagement.holdPosition;
-    const navigationTargetKey = pickup
-      ? `pickup:${pickup.id}`
+    const holdPosition = !selectedPickup &&
+      !separationTarget &&
+      engagement.holdPosition;
+    const navigationTargetKey = selectedPickup
+      ? `pickup:${selectedPickup.id}`
       : separationTarget
       ? `spread:${actor.lifeId}:lane-${this.slot}`
       : `${target.id}:${target.lifeId}:${engagement.key}:lane-${this.slot}`;
@@ -131,6 +204,7 @@ export class TdmBotController {
       ? {
         direction: { x: 0, y: 0 } as const,
         jump: false,
+        recoveryStage: 0 as const,
       }
       : this.navigator.navigate(
         actor.position,
@@ -139,25 +213,44 @@ export class TdmBotController {
         snapshot,
         deltaMs,
       );
+    const steering = navigation.recoveryStage
+      ? {
+        direction: navigation.direction,
+        overrideHold: true,
+        reason: "stuck-recovery" as const,
+      }
+      : planLocalBotSteering(
+        actor,
+        navigation.direction,
+        snapshot,
+        this.personality,
+      );
     this.lastDebugState = {
       actorId: actor.id,
-      intent: pickup
-        ? intentForPickup(pickup)
+      intent: selectedPickup
+        ? intentForPickup(selectedPickup)
         : holdPosition
         ? "hold-standoff"
         : "fight-enemy",
       targetActorId: target.id,
-      pickupId: pickup?.id ?? null,
+      pickupId: selectedPickup?.id ?? null,
       navigationTargetKey,
-      standoffKey: pickup ? null : engagement.key,
+      standoffKey: selectedPickup ? null : engagement.key,
       holdPosition,
+      combatAssessment,
+      intentTrace,
+      targetTrace: targetSelection.trace,
+      steering,
+      teamAssignment,
     };
     const actions: CoreActionIntent[] = [{
       action: "move",
       phase: "held",
       actorId: actor.id,
-      direction: navigation.direction,
-      magnitude: holdPosition ? 0 : this.movement.inputMagnitude,
+      direction: steering.direction,
+      magnitude: holdPosition && !steering.overrideHold
+        ? 0
+        : this.movement.inputMagnitude,
     }, {
       action: "aim",
       phase: "held",
@@ -169,12 +262,16 @@ export class TdmBotController {
       target,
       snapshot,
       deltaMs,
+      targetSelection.targetPerceived,
     );
     if (weaponAction) {
       actions.push(weaponAction);
     }
-    if (navigation.jump) {
+    const continueHeldJump = this.jumpHeld && !actor.jump.grounded;
+    if (navigation.jump || continueHeldJump) {
+      let requestedJumpStart = false;
       if (
+        navigation.jump &&
         !this.jumpHeld &&
         actor.jump.grounded &&
         actor.jump.cooldownRemainingMs <= 0
@@ -184,13 +281,15 @@ export class TdmBotController {
           phase: "pressed",
           actorId: actor.id,
         });
+        requestedJumpStart = true;
       }
       actions.push({
         action: "jump",
         phase: "held",
         actorId: actor.id,
       });
-      this.jumpHeld = true;
+      this.jumpHeld = requestedJumpStart ||
+        continueHeldJump;
     } else if (this.jumpHeld) {
       actions.push({
         action: "jump",
@@ -209,6 +308,8 @@ export class TdmBotController {
   reset(): void {
     this.navigator.reset();
     this.combat.reset();
+    this.targetSelector.reset();
+    this.intentArbiter.reset();
     this.jumpHeld = false;
     this.stickyPickupId = null;
     this.stickyPickupRemainingMs = 0;
@@ -231,6 +332,7 @@ function selectPickupGoal(
   actor: Readonly<ActorState>,
   slot: ArenaTeamSlot,
   enemyDistance: number,
+  canAttackAtCurrentRange: boolean,
   preferredPickupId: string | null,
   humanActorIds: readonly string[],
 ): Readonly<PickupState> | null {
@@ -256,7 +358,8 @@ function selectPickupGoal(
   if (
     !preferredPickupId &&
     enemyDistance < 230 &&
-    actor.health > 25
+    actor.health > 25 &&
+    canAttackAtCurrentRange
   ) {
     return null;
   }
@@ -308,7 +411,68 @@ function createEmptyDebugState(actorId: string): TdmBotControllerDebugState {
     navigationTargetKey: "",
     standoffKey: null,
     holdPosition: false,
+    combatAssessment: null,
+    intentTrace: null,
+    targetTrace: null,
+    steering: {
+      direction: { x: 0, y: 0 },
+      overrideHold: false,
+      reason: "none",
+    },
+    teamAssignment: null,
   };
+}
+
+function createIntentCandidates(
+  actor: Readonly<ActorState>,
+  target: Readonly<ActorState>,
+  pickup: Readonly<PickupState> | null,
+  assessment: BotCombatAssessment,
+  personality: BotPersonality,
+): readonly BotUtilityCandidate<TdmBotIntent>[] {
+  const healthRatio = actor.health / Math.max(1, actor.maxHealth);
+  const candidates: BotUtilityCandidate<TdmBotIntent>[] = [{
+    key: `fight:${target.id}:${target.lifeId}`,
+    kind: assessment.canAttackAtCurrentRange ? "fight-enemy" : "fight-enemy",
+    score: .42 +
+      personality.aggression * .28 +
+      (assessment.canAttackAtCurrentRange ? .24 : -.06) -
+      Math.max(0, .45 - healthRatio) * personality.selfPreservation,
+    reason: assessment.canAttackAtCurrentRange
+      ? `usable-${assessment.movementWeaponId ?? "weapon"}`
+      : `reposition-for-${assessment.movementWeaponId ?? "weapon"}`,
+  }];
+  if (!pickup) return candidates;
+  const pickupDistance = distance(actor.position, pickup.position);
+  const distancePenalty = Math.min(.28, pickupDistance / 2_800);
+  const isHealth = pickup.type === "health";
+  const isArmor = pickup.type === "armor";
+  const armorRatio = actor.maxArmor > 0
+    ? actor.armor / actor.maxArmor
+    : 1;
+  const score = isHealth
+    ? .46 + (1 - healthRatio) * .82 * personality.selfPreservation
+    : isArmor
+    ? .56 +
+      (1 - armorRatio) * .4 +
+      personality.selfPreservation * .12
+    : .5 +
+      (assessment.canAttackAtCurrentRange ? 0 : .3) +
+      personality.selfPreservation * .08;
+  candidates.push({
+    key: `pickup:${pickup.id}`,
+    kind: intentForPickup(pickup),
+    score: score - distancePenalty,
+    reason: isHealth
+      ? "restore-health"
+      : isArmor
+      ? "restore-armor"
+      : assessment.canAttackAtCurrentRange
+      ? "refill-preferred-weapon"
+      : "obtain-usable-ranged-weapon",
+    emergency: isHealth && actor.health <= 25,
+  });
+  return candidates;
 }
 
 function laneBiasedTarget(
@@ -406,35 +570,6 @@ function distance(
   return Math.hypot(right.x - left.x, right.y - left.y);
 }
 
-function nearestActiveEnemy(
-  snapshot: WorldSnapshot,
-  actor: Readonly<ActorState>,
-): Readonly<ActorState> | null {
-  let nearest: Readonly<ActorState> | null = null;
-  let nearestDistance = Infinity;
-  for (const candidate of snapshot.actors) {
-    if (
-      candidate.lifeState !== "active" ||
-      !candidate.teamId ||
-      candidate.teamId === actor.teamId
-    ) {
-      continue;
-    }
-    const distance = Math.hypot(
-      candidate.position.x - actor.position.x,
-      candidate.position.y - actor.position.y,
-    );
-    if (
-      distance < nearestDistance ||
-      (distance === nearestDistance &&
-        (!nearest || candidate.id.localeCompare(nearest.id) < 0))
-    ) {
-      nearest = candidate;
-      nearestDistance = distance;
-    }
-  }
-  return nearest;
-}
 
 function findActiveActor(
   snapshot: WorldSnapshot,

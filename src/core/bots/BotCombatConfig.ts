@@ -23,7 +23,7 @@ export interface BotCombatConfig {
 export const V2_BOT_COMBAT_CONFIG: BotCombatConfig = {
   rocketMinRange: 190,
   rocketMaxRange: 700,
-  rocketDecisionCooldownMs: V2_BASIC_AUTOSHOOT_PARITY_CONFIG.cooldownMs,
+  rocketDecisionCooldownMs: V2_V1_WEAPON_PARITY_CONFIG.rocketCooldownMs,
   rocketProjectileSpeed: V2_V1_WEAPON_PARITY_CONFIG.rocketSpeed,
   rocketSplashRadius: V2_V1_WEAPON_PARITY_CONFIG.rocketSplashRadius,
   rocketMaxLeadMs: 900,

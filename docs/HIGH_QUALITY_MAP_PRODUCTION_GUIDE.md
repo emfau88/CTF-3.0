@@ -65,6 +65,7 @@ Jede Map definiert:
 - `pickupSpawns`: Health, Armor und Waffen,
 - `gameplay.blueBase` und `gameplay.redBase`,
 - `gameplay.combatZone`: unter anderem die neutrale One-Flag-Mitte,
+- `botProfile`: versionierter Botvertrag mit spielbaren taktischen Zonen,
 - `presentation`: Theme, sichtbare Geometrie und Bot-Routen,
 - `diagnosticSpawn`: reproduzierbarer Teststart.
 
@@ -75,6 +76,7 @@ Wichtige Verbraucher:
 - `src/core/world/maps/worldMapQuality.ts`
 - `src/core/world/maps/worldMapClearance.ts`
 - Botnavigation und modusabhängige Botcontroller unter `src/core/`
+- `docs/BOT_AI_V2_ARCHITECTURE.md` für Botvertrag und Map-Abnahme
 - `src/arenaRenderer.ts`
 - `src/adapters/phaser/PhaserArenaRendererPort.ts`
 - `src/adapters/phaser/scenes/GameplayV2Scene.ts`
@@ -264,7 +266,10 @@ Pflichtprüfungen:
 - Spawn- und Basissicherheit,
 - Pickup-Erreichbarkeit,
 - Botbewegung und Bot-Routen, besonders nach jeder neuen Außenmaske,
+- `validateWorldMapBotSupport(map)` ohne Befund,
 - alle Jump Links,
+- Runtime-Smoke von 1v1 bis 4v4 in allen drei Modi,
+- bei Premium-Status ein gespeicherter Mehrfachaudit,
 - Kamera bei normalen und kompakten Desktop-Viewports,
 - menschlicher Schnellspiel-Test auf Lesbarkeit.
 
@@ -701,6 +706,7 @@ Vor Asset-Produktion:
 - Spawns/Pickups/Objectives frei,
 - Routen messbar,
 - Bot-Routen frei,
+- `botProfile` mit mindestens einer sinnvollen Control- oder Flank-Zone,
 - Jump Links grün,
 - Rail/Rocket/Arc-Lash-Risiken geprüft.
 
@@ -712,6 +718,8 @@ Vor Commit:
 - `npm test` grün,
 - `npm run test:typecheck` grün,
 - `npm run build` grün,
+- `npm run bot:audit:premium` bei einer neuen oder grundlegend umgebauten
+  Premium-Map geprüft,
 - Quick Play und gegebenenfalls Liga geprüft,
 - Übersicht aktualisiert,
 - README-Übersichten bei neuem Premium-Status aktualisiert,

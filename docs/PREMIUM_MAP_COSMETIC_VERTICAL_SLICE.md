@@ -3,16 +3,18 @@
 Stand: 2026-07-19
 
 Status: Technisch implementiert. Temple und Foundry wurden nach Sichttest
-korrigiert; die genaue Helix-Platzierung bleibt zur gemeinsamen Markierung
-offen.
+korrigiert. Helix-Lampen und -Pflanze sind seit 2026-07-19 vollstaendig aus
+Preload und Laufzeit ausgeblendet, bis passende Positionen gemeinsam markiert
+und neu freigegeben wurden.
 Die Elemente sind rein kosmetische, transparente Overlays am blockierten
 Kartenrand. Masterbilder, Kollision, Laufwege, Pickups, Objectives,
 Waffenwerte und Sound bleiben unveraendert.
 
 ## Verbindlicher Follow-up
 
-Helix Canopy benoetigt noch eine vom Nutzer markierte Lampen- und
-Pflanzenplatzierung. Die Zielpunkte sollen am besten in einem Screenshot
+Helix Canopy besitzt aktuell bewusst keine separate Laufzeitdekoration.
+Eine spaetere Rueckkehr benoetigt vom Nutzer markierte Lampen- und
+Pflanzenpositionen. Die Zielpunkte sollen am besten in einem Screenshot
 nummeriert oder als relative Stellen in einer Randzone angegeben werden.
 Temple und Foundry besitzen bereits die korrigierte Randverteilung.
 
@@ -25,13 +27,12 @@ Verifizierter Stand:
   Premium-Map-Starts bestanden.
 - Technische Kartenuebersicht und Browserfehlerpruefung: bestanden.
 - Temple und Foundry wurden erneut aus der normalen Spielkamera geprueft.
-  Die Helix-Abnahme ist weiterhin offen.
+  Helix laedt und rendert bewusst weder die Bluete noch die Grow-Lampen.
 
 ## Enthaltene Elemente
 
 | Map | Element | Position | Leerlauf | Lokale Reaktion |
 | --- | --- | --- | --- | --- |
-| Helix Canopy | neugierige biolumineszente Kelchpflanze | vorlaeufig `(220, 600)`; neue Zielposition noch offen | ruhiges Atmen, leichtes Schaukeln, vier kleine Lichtsporen | duckt sich erschrocken, wenn ein aktiver Actor oder Projektil auf 150 px herankommt |
 | Temple of the Drowned Sun | kleiner Tempelfrosch | `(52, 650)` im westlichen, blockierten Wurzel-/Wasserrand | kaum sichtbares Atmen und Wippen | huepft weg, bleibt mindestens 10,5 Sekunden unsichtbar und kehrt dann mit lokalen Wasserringen zurueck |
 
 Die Frosch-Reaktion besitzt eine lange Sperrzeit. Ein Actor, der am Rand
@@ -60,7 +61,7 @@ stehen bleibt, erzeugt daher keine dauernde Effektkette.
 
 ## Lesbarkeit und Gameplay-Sicherheit
 
-- Beide verbliebenen Mittelpunkte liegen in bereits blockierter Aussenkulisse und
+- Der verbliebene Mittelpunkt liegt in bereits blockierter Aussenkulisse und
   hoechstens 115 px vom Weltrand entfernt.
 - Die Elemente besitzen keine eigene Kollision und suggerieren keinen neuen
   begehbaren oder blockierenden Bereich.
@@ -74,9 +75,11 @@ stehen bleibt, erzeugt daher keine dauernde Effektkette.
 
 ## Asset-Provenienz
 
-Die beiden verbliebenen Motive wurden am 2026-07-18 speziell fuer Core Arena mit dem in
+Die beiden erzeugten Motive wurden am 2026-07-18 speziell fuer Core Arena mit dem in
 Codex integrierten OpenAI-`imagegen`-Werkzeug erzeugt. Es wurden keine
 Fremdassets, Asset-Pakete, Markenmotive oder Kenney-Bausteine verwendet.
+Das Helix-Motiv bleibt aus Provenienz- und Wiederverwendungsgruenden im
+Repository, ist aber nicht Teil des aktuellen Preloads oder der Laufzeit.
 
 | Enddatei | Generierte Quelldatei | Promptkern | SHA-256 |
 | --- | --- | --- | --- |
@@ -115,7 +118,8 @@ zu verteilen.
 
 ## Testabdeckung
 
-- genau zwei freigegebene Einzelwesen; Foundry besitzt bewusst keines,
+- genau ein aktives Einzelwesen auf Temple; Helix und Foundry besitzen
+  bewusst keines,
 - eindeutige Asset-Keys und selektives Preloading,
 - alle Positionen liegen in blockierter Randkulisse,
 - PNG-Dateien sind 256 x 256, RGBA und kleiner als 300 KB,
@@ -160,18 +164,16 @@ blockierter Kulisse:
 
 | Map | Element | neue Position |
 | --- | --- | --- |
-| Helix Canopy | neugierige Bluete | `(220, 600)` |
 | Temple of the Drowned Sun | Tempelfrosch | `(52, 650)` |
 
-Zusaetzlich besitzt jede Premium-Map nun genau acht kleine Randlichter.
-Helix und Temple nutzen die durchgehend blockierten Seitenraender; Foundry
+Temple und Foundry besitzen nun genau acht kleine Randlichter.
+Temple nutzt die durchgehend blockierten Seitenraender; Foundry
 nutzt wegen seiner offenen Seiteneingaenge je vier Leuchten am oberen und
 unteren Rand. Pro Map wird nur eine 256-x-256-RGBA-Textur geladen und achtmal
 instanziert:
 
 | Map | Lichttyp | Lichtfarbe | Instanzen |
 | --- | --- | --- | ---: |
-| Helix Canopy | botanische Grow-Lamp | neutrales Mintweiss | 8 |
 | Temple of the Drowned Sun | antike Sonnenbrazier | warmes Antikgold | 8 |
 | Foundry Circuit | gekaefigte Servicelampe | warmes Arbeitsamber | 8 |
 
@@ -203,9 +205,9 @@ damit fuer 1v1 bis 4v4 konstant.
 
 ## Korrektur nach Sichttest am 2026-07-19
 
-- Helix Canopy bleibt fuer eine gemeinsam markierte Lampen- und
-  Pflanzenplatzierung offen. Bis zu diesem Feedback wurden dort keine
-  weiteren Positionsannahmen getroffen.
+- Helix Canopy laedt und rendert weder Grow-Lampen noch die neugierige
+  Bluete. Beide Assets bleiben fuer eine spaetere, gemeinsam markierte und
+  erneut freigegebene Platzierung erhalten.
 - Temple verteilt seine acht Sonnenbrazier nun gleichmaessig auf die beiden
   langen Kanten: je vier bei `x = 420, 900, 1380, 1860`, oben bei `y = 42`
   und unten bei `y = 938`.

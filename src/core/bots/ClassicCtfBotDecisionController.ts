@@ -40,6 +40,12 @@ export interface ClassicCtfBotGoal {
   readonly targetKey: string;
 }
 
+export interface ClassicCtfBotTacticalAssignment {
+  readonly role: ClassicCtfBotRole;
+  readonly command: ClassicCtfTeamCommand;
+  readonly emergencyDuty: boolean;
+}
+
 export class ClassicCtfBotDecisionController {
   private patrolIndex = 0;
   private command: ClassicCtfTeamCommand = "auto";
@@ -55,7 +61,10 @@ export class ClassicCtfBotDecisionController {
   chooseGoal(
     actor: Readonly<ActorState>,
     snapshot: WorldSnapshot,
+    tacticalAssignment?: ClassicCtfBotTacticalAssignment,
   ): ClassicCtfBotGoal {
+    const activeRole = tacticalAssignment?.role ?? this.role;
+    const emergencyDuty = tacticalAssignment?.emergencyDuty ?? true;
     const ownFlag = teamFlag(snapshot, actor.teamId);
     const enemyFlag = snapshot.objectives.find((objective) =>
       isTeamFlag(objective) &&
@@ -70,7 +79,7 @@ export class ClassicCtfBotDecisionController {
       );
     }
 
-    if (ownFlag?.state.status === "dropped") {
+    if (emergencyDuty && ownFlag?.state.status === "dropped") {
       return goal(
         "recover-own-flag",
         ownFlag.position,
@@ -82,7 +91,7 @@ export class ClassicCtfBotDecisionController {
       snapshot,
       ownFlag?.state.interactingActorId,
     );
-    if (ownFlagCarrier) {
+    if (emergencyDuty && ownFlagCarrier) {
       return goal(
         "recover-own-flag",
         ownFlagCarrier.position,
@@ -90,9 +99,12 @@ export class ClassicCtfBotDecisionController {
       );
     }
 
-    const activeCommand = actor.teamId === this.commandTeamId
-      ? this.command
-      : "auto";
+    const activeCommand = tacticalAssignment?.command ??
+      (
+        actor.teamId === this.commandTeamId
+          ? this.command
+          : "auto"
+      );
     if (activeCommand === "defend") {
       return this.chooseDefenseGoal(actor, snapshot);
     }
@@ -114,16 +126,16 @@ export class ClassicCtfBotDecisionController {
       snapshot,
       enemyFlag?.state.interactingActorId,
     );
-    const adaptiveTwoActorDefense = this.role === "defender" &&
+    const adaptiveTwoActorDefense = activeRole === "defender" &&
       isTwoActorTeam(snapshot, actor.teamId);
-    const defenderJoinsReturn = this.role === "defender" &&
+    const defenderJoinsReturn = activeRole === "defender" &&
       alliedCarrier?.teamId === actor.teamId &&
       flagReturnProgress(this.map, actor.teamId, alliedCarrier.position) >=
         (adaptiveTwoActorDefense ? .25 : .45);
     if (
       alliedCarrier?.teamId === actor.teamId &&
       (activeCommand === "attack" ||
-        this.role !== "defender" ||
+        activeRole !== "defender" ||
         defenderJoinsReturn)
     ) {
       return goal(
@@ -136,13 +148,13 @@ export class ClassicCtfBotDecisionController {
       );
     }
 
-    const defenderCanSecureDrop = this.role === "defender" &&
+    const defenderCanSecureDrop = activeRole === "defender" &&
       enemyFlag?.state.status === "dropped" &&
       flagReturnProgress(this.map, actor.teamId, enemyFlag.position) >= .55;
     if (
       enemyFlag?.state.status === "dropped" &&
       (activeCommand === "attack" ||
-        this.role !== "defender" ||
+        activeRole !== "defender" ||
         defenderCanSecureDrop)
     ) {
       return goal(
@@ -152,7 +164,7 @@ export class ClassicCtfBotDecisionController {
       );
     }
 
-    if (activeCommand === "attack" || this.role === "attacker") {
+    if (activeCommand === "attack" || activeRole === "attacker") {
       return goal(
         "attack-flag",
         enemyFlag?.position ??
@@ -161,7 +173,7 @@ export class ClassicCtfBotDecisionController {
       );
     }
 
-    if (this.role === "defender") {
+    if (activeRole === "defender") {
       return this.chooseAdaptiveDefenderGoal(actor, snapshot);
     }
 

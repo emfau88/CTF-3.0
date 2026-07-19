@@ -6,6 +6,7 @@ import {
   PREMIUM_BOT_AUDIT_DEFAULT_DURATION_MS,
   PREMIUM_BOT_AUDIT_DEFAULT_RUNS,
   PREMIUM_BOT_AUDIT_DEFAULT_TEAM_SIZE,
+  PREMIUM_BOT_AUDIT_DEFAULT_TEAM_SIZES,
   runPremiumBotAudit,
 } from "../tests/premium-bot-audit";
 import type { ArenaTeamSize } from "../src/core";
@@ -15,10 +16,15 @@ const durationMs = readIntegerOption(
   "--duration-ms",
   PREMIUM_BOT_AUDIT_DEFAULT_DURATION_MS,
 );
-const teamSize = readIntegerOption(
-  "--team-size",
-  PREMIUM_BOT_AUDIT_DEFAULT_TEAM_SIZE,
-) as ArenaTeamSize;
+const teamSizes = process.argv.includes("--team-size")
+  ? [readIntegerOption(
+    "--team-size",
+    PREMIUM_BOT_AUDIT_DEFAULT_TEAM_SIZE,
+  ) as ArenaTeamSize]
+  : readTeamSizesOption(
+    "--team-sizes",
+    PREMIUM_BOT_AUDIT_DEFAULT_TEAM_SIZES,
+  );
 
 if (runs < 5 || runs > 10) {
   throw new Error("--runs must be between 5 and 10 for a saved audit.");
@@ -26,8 +32,8 @@ if (runs < 5 || runs > 10) {
 if (durationMs < 5_000 || durationMs > 120_000) {
   throw new Error("--duration-ms must be between 5000 and 120000.");
 }
-if (![1, 2, 3, 4].includes(teamSize)) {
-  throw new Error("--team-size must be 1, 2, 3 or 4.");
+if (teamSizes.some((teamSize) => ![1, 2, 3, 4].includes(teamSize))) {
+  throw new Error("--team-size/--team-sizes only accepts 1, 2, 3 or 4.");
 }
 
 const timestamp = new Date().toISOString();
@@ -36,7 +42,7 @@ const git = readGitMetadata();
 const report = runPremiumBotAudit({
   runsPerMapMode: runs,
   durationMs,
-  teamSize,
+  teamSizes,
 });
 const artifact = {
   runId,
@@ -86,6 +92,23 @@ function readIntegerOption(name: string, fallback: number): number {
     throw new Error(`${name} requires an integer value.`);
   }
   return parsed;
+}
+
+function readTeamSizesOption(
+  name: string,
+  fallback: readonly ArenaTeamSize[],
+): readonly ArenaTeamSize[] {
+  const index = process.argv.indexOf(name);
+  if (index < 0) return [...fallback];
+  const raw = process.argv[index + 1] ?? "";
+  const values = raw.split(",").map((value) => Number(value.trim()));
+  if (
+    values.length === 0 ||
+    values.some((value) => !Number.isInteger(value))
+  ) {
+    throw new Error(`${name} requires comma-separated integer values.`);
+  }
+  return [...new Set(values)] as ArenaTeamSize[];
 }
 
 function readGitMetadata(): {

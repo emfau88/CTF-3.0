@@ -12,6 +12,7 @@ export {
 export {
   assertWorldMapSupportsMode,
   validateWorldMapForMode,
+  validateWorldMapBotSupport,
   type WorldMapValidationIssue,
 } from "./worldMapValidation";
 export {
@@ -37,6 +38,9 @@ export {
 export type {
   WorldMapData,
   WorldMapGameplay,
+  WorldMapBotProfile,
+  WorldMapBotTacticalZone,
+  WorldMapBotZoneKind,
   WorldMapDecoration,
   WorldMapDecorationKind,
   WorldMapGapPresentation,

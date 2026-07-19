@@ -12,6 +12,7 @@ import type {
 } from "./ClassicCtfBotDecisionController";
 import { OneFlagBotController } from "./OneFlagBotController";
 import { TdmBotController } from "./TdmBotController";
+import { ArenaBotTeamCoordinator } from "./BotTeamCoordinator";
 
 export interface BotActionSource {
   readActions(
@@ -26,7 +27,10 @@ export interface BotActionSource {
 }
 
 export class ArenaBotControllerGroup implements BotActionSource {
-  constructor(private readonly controllers: readonly BotActionSource[]) {}
+  constructor(
+    private readonly controllers: readonly BotActionSource[],
+    private readonly coordinator?: ArenaBotTeamCoordinator,
+  ) {}
 
   get size(): number {
     return this.controllers.length;
@@ -42,10 +46,13 @@ export class ArenaBotControllerGroup implements BotActionSource {
   }
 
   reset(): void {
+    this.coordinator?.reset();
     for (const controller of this.controllers) controller.reset();
   }
 
   setTeamCommand(teamId: TeamId, command: ClassicCtfTeamCommand): void {
+    this.coordinator?.setTeamCommand(teamId, command);
+    if (this.coordinator) return;
     for (const controller of this.controllers) {
       controller.setTeamCommand?.(teamId, command);
     }
@@ -58,6 +65,12 @@ export function createArenaBotControllerGroup(
   participants: readonly ArenaParticipant[],
   humanActorIds: readonly string[] = [],
 ): ArenaBotControllerGroup {
+  const coordinator = new ArenaBotTeamCoordinator(
+    modeId,
+    map,
+    participants,
+    humanActorIds,
+  );
   return new ArenaBotControllerGroup(participants.map((participant) => {
     if (modeId === "team-deathmatch") {
       return new TdmBotController(
@@ -68,6 +81,9 @@ export function createArenaBotControllerGroup(
         undefined,
         participant.slot,
         humanActorIds,
+        undefined,
+        undefined,
+        coordinator,
       );
     }
     if (modeId === "classic-ctf") {
@@ -75,13 +91,28 @@ export function createArenaBotControllerGroup(
         participant.actorId,
         classicCtfRoleForSlot(participant.slot),
         map,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        coordinator,
       );
     }
     if (modeId === "one-flag") {
-      return new OneFlagBotController(participant.actorId, map);
+      return new OneFlagBotController(
+        participant.actorId,
+        map,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        coordinator,
+      );
     }
     throw new Error(`Unsupported arena bot mode: ${modeId}.`);
-  }));
+  }), coordinator);
 }
 
 export function classicCtfRoleForSlot(

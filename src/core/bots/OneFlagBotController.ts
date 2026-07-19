@@ -10,12 +10,29 @@ import {
   type BotNavigator,
 } from "./GridBotNavigator";
 import { V2_BOT_NAVIGATION_CONFIG } from "./BotNavigationConfig";
-import { planCombatStandoff } from "./BotCombatStandoff";
+import { planWeaponAwareCombatStandoff } from "./BotCombatStandoff";
 import {
   OneFlagBotDecisionController,
   type OneFlagBotGoal,
 } from "./OneFlagBotDecisionController";
 import { TdmBotCombatController } from "./TdmBotCombatController";
+import {
+  BOT_DIFFICULTY_PROFILES,
+  createBotPersonality,
+  type BotDifficultyProfile,
+  type BotPersonality,
+} from "./BotDifficulty";
+import type { BotDecisionTrace } from "./BotDecisionUtility";
+import type { BotCombatAssessment } from "./BotCombatOpportunity";
+import { BotTargetSelector } from "./BotTargetSelector";
+import {
+  planLocalBotSteering,
+  type BotLocalSteering,
+} from "./BotLocalMovement";
+import {
+  type ArenaBotTeamCoordinator,
+  type BotTeamAssignment,
+} from "./BotTeamCoordinator";
 
 export interface OneFlagBotControllerDebugState {
   readonly actorId: string;
@@ -28,22 +45,34 @@ export interface OneFlagBotControllerDebugState {
   readonly combatTargetId: string | null;
   readonly standoffKey: string | null;
   readonly holdPosition: boolean;
+  readonly combatAssessment: BotCombatAssessment | null;
+  readonly targetTrace: BotDecisionTrace<"combat-target"> | null;
+  readonly steering: BotLocalSteering;
+  readonly teamAssignment: BotTeamAssignment | null;
 }
 
 export class OneFlagBotController {
   private jumpHeld = false;
   private readonly decision: OneFlagBotDecisionController;
   private lastDebugState: OneFlagBotControllerDebugState;
+  private readonly targetSelector: BotTargetSelector;
+  private readonly combat: TdmBotCombatController;
 
   constructor(
     private readonly actorId: string,
     map: WorldMapData,
     private readonly movement: BotMovementConfig = V2_BOT_MOVEMENT_CONFIG,
     private readonly navigator: BotNavigator = new GridBotNavigator(),
-    private readonly combat: TdmBotCombatController =
-      new TdmBotCombatController(),
+    combat: TdmBotCombatController | undefined = undefined,
+    private readonly difficulty: BotDifficultyProfile =
+      BOT_DIFFICULTY_PROFILES.normal,
+    private readonly personality: BotPersonality =
+      createBotPersonality(actorId),
+    private readonly coordinator?: ArenaBotTeamCoordinator,
   ) {
+    this.combat = combat ?? new TdmBotCombatController(undefined, difficulty);
     this.decision = new OneFlagBotDecisionController(map);
+    this.targetSelector = new BotTargetSelector(difficulty, personality);
     this.lastDebugState = createEmptyDebugState(actorId);
   }
 
@@ -53,22 +82,36 @@ export class OneFlagBotController {
   ): readonly CoreActionIntent[] {
     const actor = findActiveActor(snapshot, this.actorId);
     if (!actor || snapshot.match?.phase === "ended") {
+      this.navigator.reset();
       this.resetTransientState();
       this.lastDebugState = createEmptyDebugState(this.actorId);
       return [this.stopIntent()];
     }
 
-    const goal = this.decision.chooseGoal(actor, snapshot);
-    const combatTarget = nearestActiveEnemy(snapshot, actor);
+    const teamAssignment =
+      this.coordinator?.assignmentFor(actor.id, snapshot) ?? null;
+    const goal = this.decision.chooseGoal(
+      actor,
+      snapshot,
+      teamAssignment?.oneFlagRole ?? undefined,
+    );
+    const targetSelection = this.targetSelector.select(
+      actor,
+      snapshot,
+      deltaMs,
+      teamAssignment?.combatTargetActorId,
+    );
+    const combatTarget = targetSelection.target;
     const shouldApplyStandoff = combatTarget &&
       isCombatChaseGoal(goal.kind) &&
       positionsMatch(goal.position, combatTarget.position);
     const navigationTarget = shouldApplyStandoff
-      ? planCombatStandoff(
-        actor.position,
-        combatTarget.position,
+      ? planWeaponAwareCombatStandoff(
+        actor,
+        combatTarget,
         snapshot,
         this.movement,
+        targetSelection.targetPerceived,
       )
       : null;
     const desiredTarget = navigationTarget?.targetPosition ?? goal.position;
@@ -89,6 +132,7 @@ export class OneFlagBotController {
       ? {
         direction: { x: 0, y: 0 } as const,
         jump: false,
+        recoveryStage: 0 as const,
       }
       : this.navigator.navigate(
         actor.position,
@@ -98,6 +142,18 @@ export class OneFlagBotController {
           : goal.targetKey,
         snapshot,
         deltaMs,
+      );
+    const steering = navigation.recoveryStage
+      ? {
+        direction: navigation.direction,
+        overrideHold: true,
+        reason: "stuck-recovery" as const,
+      }
+      : planLocalBotSteering(
+        actor,
+        navigation.direction,
+        snapshot,
+        this.personality,
       );
     this.lastDebugState = {
       actorId: actor.id,
@@ -112,6 +168,10 @@ export class OneFlagBotController {
       combatTargetId: combatTarget?.id ?? null,
       standoffKey: navigationTarget?.key ?? null,
       holdPosition: navigationTarget?.holdPosition ?? false,
+      combatAssessment: navigationTarget?.assessment ?? null,
+      targetTrace: targetSelection.trace,
+      steering,
+      teamAssignment,
     };
     const aimDirection = combatTarget
       ? directionBetween(actor.position, combatTarget.position)
@@ -120,8 +180,10 @@ export class OneFlagBotController {
       action: "move",
       phase: "held",
       actorId: actor.id,
-      direction: navigation.direction,
-      magnitude: navigationTarget?.holdPosition ? 0 : this.movement.inputMagnitude,
+      direction: steering.direction,
+      magnitude: navigationTarget?.holdPosition && !steering.overrideHold
+        ? 0
+        : this.movement.inputMagnitude,
     }, {
       action: "aim",
       phase: "held",
@@ -134,6 +196,7 @@ export class OneFlagBotController {
         combatTarget,
         snapshot,
         deltaMs,
+        targetSelection.targetPerceived,
       );
       if (weaponAction) actions.push(weaponAction);
     }
@@ -162,6 +225,7 @@ export class OneFlagBotController {
 
   private resetTransientState(): void {
     this.combat.reset();
+    this.targetSelector.reset();
     this.jumpHeld = false;
   }
 
@@ -170,8 +234,11 @@ export class OneFlagBotController {
     actor: Readonly<ActorState>,
     jump: boolean,
   ): void {
-    if (jump) {
+    const continueHeldJump = this.jumpHeld && !actor.jump.grounded;
+    if (jump || continueHeldJump) {
+      let requestedJumpStart = false;
       if (
+        jump &&
         !this.jumpHeld &&
         actor.jump.grounded &&
         actor.jump.cooldownRemainingMs <= 0
@@ -181,13 +248,15 @@ export class OneFlagBotController {
           phase: "pressed",
           actorId: actor.id,
         });
+        requestedJumpStart = true;
       }
       actions.push({
         action: "jump",
         phase: "held",
         actorId: actor.id,
       });
-      this.jumpHeld = true;
+      this.jumpHeld = requestedJumpStart ||
+        continueHeldJump;
     } else if (this.jumpHeld) {
       actions.push({
         action: "jump",
@@ -216,32 +285,6 @@ function findActiveActor(
   return snapshot.actors.find((actor) =>
     actor.id === actorId && actor.lifeState === "active"
   ) ?? null;
-}
-
-function nearestActiveEnemy(
-  snapshot: WorldSnapshot,
-  actor: Readonly<ActorState>,
-): Readonly<ActorState> | null {
-  let best: Readonly<ActorState> | null = null;
-  let bestDistance = Infinity;
-  for (const candidate of snapshot.actors) {
-    if (
-      candidate.lifeState !== "active" ||
-      !candidate.teamId ||
-      candidate.teamId === actor.teamId
-    ) {
-      continue;
-    }
-    const distance = Math.hypot(
-      candidate.position.x - actor.position.x,
-      candidate.position.y - actor.position.y,
-    );
-    if (distance < bestDistance) {
-      best = candidate;
-      bestDistance = distance;
-    }
-  }
-  return best;
 }
 
 function directionBetween(
@@ -343,6 +386,14 @@ function createEmptyDebugState(actorId: string): OneFlagBotControllerDebugState 
     combatTargetId: null,
     standoffKey: null,
     holdPosition: false,
+    combatAssessment: null,
+    targetTrace: null,
+    steering: {
+      direction: { x: 0, y: 0 },
+      overrideHold: false,
+      reason: "none",
+    },
+    teamAssignment: null,
   };
 }
 

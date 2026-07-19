@@ -80,14 +80,14 @@ export const FLOW_LAB_V2: WorldMapData = {
       },
       {
         id: "lower-gap-north-south",
-        from: { x: 1100, y: 650 },
-        to: { x: 1100, y: 800 },
+        from: { x: 1100, y: 680 },
+        to: { x: 1100, y: 842 },
         activationRadius: 44,
       },
       {
         id: "lower-gap-south-north",
-        from: { x: 1100, y: 800 },
-        to: { x: 1100, y: 650 },
+        from: { x: 1100, y: 842 },
+        to: { x: 1100, y: 680 },
         activationRadius: 44,
       },
     ],
@@ -125,6 +125,15 @@ export const FLOW_LAB_V2: WorldMapData = {
     blueBase: { x: 55, y: 300, width: 230, height: 300 },
     redBase: { x: 1915, y: 300, width: 230, height: 300 },
     combatZone: { x: 930, y: 330, width: 340, height: 240 },
+  },
+  botProfile: {
+    version: 1,
+    navigation: "auto-grid",
+    tacticalZones: [
+      { id: "ruins-mid", kind: "control", position: { x: 1100, y: 450 }, radius: 170 },
+      { id: "north-vault", kind: "flank", position: { x: 1100, y: 120 }, radius: 100 },
+      { id: "south-vault", kind: "flank", position: { x: 1100, y: 710 }, radius: 120 },
+    ],
   },
   presentation: {
     theme: "ruins",

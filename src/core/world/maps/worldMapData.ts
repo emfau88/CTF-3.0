@@ -85,6 +85,25 @@ export interface WorldMapGameplay {
   readonly combatZone?: WorldMapPresentationRect;
 }
 
+export type WorldMapBotZoneKind =
+  | "control"
+  | "flank"
+  | "cover"
+  | "pickup";
+
+export interface WorldMapBotTacticalZone {
+  readonly id: string;
+  readonly kind: WorldMapBotZoneKind;
+  readonly position: WorldPosition;
+  readonly radius: number;
+}
+
+export interface WorldMapBotProfile {
+  readonly version: 1;
+  readonly navigation: "auto-grid";
+  readonly tacticalZones: readonly WorldMapBotTacticalZone[];
+}
+
 export interface WorldMapPresentation {
   readonly theme: WorldMapTheme;
   readonly plan: string;
@@ -112,6 +131,7 @@ export interface WorldMapData {
   readonly pickupSpawns: readonly WorldMapPickupSpawn[];
   readonly weaponRoster?: readonly ArenaWeaponId[];
   readonly gameplay: WorldMapGameplay;
+  readonly botProfile: WorldMapBotProfile;
   readonly presentation: WorldMapPresentation;
   readonly diagnosticSpawn: WorldPosition;
 }

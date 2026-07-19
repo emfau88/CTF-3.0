@@ -129,6 +129,15 @@ export const FLANK_SWITCH_V2: WorldMapData = {
     blueBase: { x: 2235, y: 275, width: 190, height: 270 },
     combatZone: { x: 1050, y: 274, width: 400, height: 272 },
   },
+  botProfile: {
+    version: 1,
+    navigation: "auto-grid",
+    tacticalZones: [
+      { id: "switchyard-mid", kind: "control", position: { x: 1250, y: 410 }, radius: 190 },
+      { id: "north-switch", kind: "flank", position: { x: 1250, y: 190 }, radius: 120 },
+      { id: "south-switch", kind: "flank", position: { x: 1250, y: 630 }, radius: 120 },
+    ],
+  },
   presentation: {
     theme: "industrial",
     plan: "Fast rotation-focused switchyard with three distinct routes, protected spawn exits, cross-lane switches, and four exposed maintenance-pit shortcuts for high-momentum flag runs.",

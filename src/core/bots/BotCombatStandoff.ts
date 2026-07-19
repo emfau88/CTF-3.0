@@ -1,16 +1,73 @@
-import type { WorldPosition } from "../actors";
+import type { ActorState, WorldPosition } from "../actors";
 import type { WorldRect, WorldSnapshot } from "../world";
-import type { BotMovementConfig } from "./BotMovementConfig";
 import {
+  assessCombatOpportunity,
   directionBetween,
   distanceBetween,
   hasLineOfSight,
-} from "./TdmBotCombatController";
+  type BotCombatAssessment,
+} from "./BotCombatOpportunity";
+import type { BotMovementConfig } from "./BotMovementConfig";
 
 export interface CombatStandoffPlan {
   readonly holdPosition: boolean;
   readonly key: string;
   readonly targetPosition: WorldPosition;
+  readonly assessment?: BotCombatAssessment;
+}
+
+export function planWeaponAwareCombatStandoff(
+  actor: Readonly<ActorState>,
+  target: Readonly<ActorState>,
+  snapshot: Pick<WorldSnapshot, "geometry" | "map">,
+  movement: BotMovementConfig,
+  targetPerceived = true,
+): CombatStandoffPlan {
+  const assessment = assessCombatOpportunity(actor, target, snapshot);
+  if (!targetPerceived) {
+    return {
+      holdPosition: false,
+      key: `search:${assessment.movementWeaponId ?? "none"}`,
+      targetPosition: { ...target.position },
+      assessment,
+    };
+  }
+  const gapBetween = crossesGap(
+    actor.position,
+    target.position,
+    snapshot.geometry.gaps,
+    movement.standoffMinRange * .5,
+  );
+  if (assessment.posture === "pursue" || gapBetween) {
+    return {
+      holdPosition: false,
+      key: `pursue:${assessment.movementWeaponId ?? "none"}`,
+      targetPosition: { ...target.position },
+      assessment,
+    };
+  }
+  if (assessment.posture === "hold") {
+    return {
+      holdPosition: true,
+      key: `hold:${assessment.movementWeaponId ?? "none"}`,
+      targetPosition: { ...actor.position },
+      assessment,
+    };
+  }
+  const axis = directionBetween(actor.position, target.position);
+  const fallbackAxis = axis.x === 0 && axis.y === 0 ? { x: -1, y: 0 } : axis;
+  const desiredRange = assessment.desiredRange > 0
+    ? assessment.desiredRange
+    : movement.standoffDesiredRange;
+  return {
+    holdPosition: false,
+    key: `${assessment.posture}:${assessment.movementWeaponId ?? "none"}`,
+    targetPosition: {
+      x: target.position.x - fallbackAxis.x * desiredRange,
+      y: target.position.y - fallbackAxis.y * desiredRange,
+    },
+    assessment,
+  };
 }
 
 export function planCombatStandoff(

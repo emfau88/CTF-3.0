@@ -135,6 +135,15 @@ export const GRAND_ARCHIVE_V2: WorldMapData = {
     blueBase: { x: 2240, y: 285, width: 195, height: 250 },
     combatZone: { x: 970, y: 270, width: 560, height: 280 },
   },
+  botProfile: {
+    version: 1,
+    navigation: "auto-grid",
+    tacticalZones: [
+      { id: "reading-hall", kind: "control", position: { x: 1250, y: 410 }, radius: 220 },
+      { id: "north-gallery", kind: "flank", position: { x: 1250, y: 180 }, radius: 120 },
+      { id: "south-gallery", kind: "flank", position: { x: 1250, y: 650 }, radius: 120 },
+    ],
+  },
   presentation: {
     theme: "library",
     plan: "Wide tactical library arena with protected base exits, long but interruptible galleries, a four-entry reading hall, and collapsed-floor shortcuts that reward committed movement.",

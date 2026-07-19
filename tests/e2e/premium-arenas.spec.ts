@@ -5,10 +5,12 @@ const premiumArenas = [
     name: "Helix Canopy",
     mapId: "helix-canopy-v2",
     expectedAsset: "assets/helix-canopy/arena-master.png",
-    expectedCosmetic: "assets/premium-cosmetics/helix-curious-bloom.png",
-    expectedLighting: "assets/premium-cosmetics/helix-grow-lamp.png",
+    expectedCosmetic: null,
+    expectedLighting: null,
     forbiddenAssetFolders: ["assets/jungle-temple/", "assets/library/", "assets/industrial/"],
     forbiddenCosmetics: [
+      "helix-curious-bloom.png",
+      "helix-grow-lamp.png",
       "temple-grumpy-frog.png",
       "foundry-grumpy-maintenance-bot.png",
     ],
@@ -67,9 +69,11 @@ for (const arena of premiumArenas) {
         requestedUrls.some((url) => url.includes(arena.expectedCosmetic)),
       ).toBe(true);
     }
-    expect(
-      requestedUrls.some((url) => url.includes(arena.expectedLighting)),
-    ).toBe(true);
+    if (arena.expectedLighting) {
+      expect(
+        requestedUrls.some((url) => url.includes(arena.expectedLighting)),
+      ).toBe(true);
+    }
     for (const folder of arena.forbiddenAssetFolders) {
       expect(
         requestedUrls.some((url) => url.includes(folder)),

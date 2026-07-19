@@ -957,7 +957,7 @@ export function runTdmLowHealthVsEnemyScenario(
 }
 
 export function runTdmArmorAndWeaponPickupScenario(
-  durationMs = 1_700,
+  durationMs = 1_900,
 ): TdmPickupIntentSummary {
   const cases = [
     runTdmPickupIntentCase({

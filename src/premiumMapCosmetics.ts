@@ -30,17 +30,6 @@ export interface PremiumMapCosmeticState {
 
 export const PREMIUM_MAP_COSMETICS = [
   {
-    mapId: "helix-canopy-v2",
-    kind: "curious-bloom",
-    assetKey: "helixCuriousBloom",
-    assetFile: "premium-cosmetics/helix-curious-bloom.png",
-    position: { x: 220, y: 600 },
-    displaySize: 100,
-    reactionRadius: 150,
-    reactionDurationMs: 1_200,
-    rearmDelayMs: 3_500,
-  },
-  {
     mapId: "drowned-sun-temple-v2",
     kind: "grumpy-frog",
     assetKey: "templeGrumpyFrog",

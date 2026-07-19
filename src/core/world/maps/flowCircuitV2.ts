@@ -219,6 +219,15 @@ export const FLOW_CIRCUIT_V2: WorldMapData = {
     redBase: { x: 2135, y: 245, width: 260, height: 556 },
     combatZone: { x: 1040, y: 393, width: 360, height: 260 },
   },
+  botProfile: {
+    version: 1,
+    navigation: "auto-grid",
+    tacticalZones: [
+      { id: "forge-heart", kind: "control", position: { x: 1220, y: 523 }, radius: 180 },
+      { id: "precision-deck", kind: "flank", position: { x: 1220, y: 205 }, radius: 120 },
+      { id: "coolant-route", kind: "flank", position: { x: 1220, y: 835 }, radius: 120 },
+    ],
+  },
   presentation: {
     theme: "foundry-circuit",
     plan: "A rebuilt premium steelworks arena with an exposed precision deck, a four-entry Forge Heart and a wide coolant route for protected splash rotations.",
