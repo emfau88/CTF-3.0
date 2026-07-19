@@ -106,6 +106,33 @@ shortcuts and the contested Forge Heart at its center.
 - Coordinated bots with limited perception, mode-aware roles, weapon-aware
   movement, local evasion and staged navigation recovery
 
+## Weapons
+
+Every arena gives each fighter the unlimited **Arc Lash** as a dependable
+standard weapon, then adds at most three contested pickup weapons. This keeps
+the HUD compact while allowing every map to have its own combat rhythm.
+
+| Weapon | In-game art | Combat role |
+| --- | --- | --- |
+| **Arc Lash** (`F`) | <img src="public/assets/arc-lash-v2.png" width="72" alt="Arc Lash"> | Unlimited short-range automatic targeting. Reliable fallback, but opponents can keep their distance. |
+| **Rocket Launcher** (`Q`) | <img src="public/assets/pickup-rocket.png" width="64" alt="Rocket pickup"> <img src="public/assets/rocket-projectile.png" width="64" alt="Rocket projectile"> | Slow, readable splash projectile with knockback. Direct hits are strongest; walls and spacing provide counterplay. |
+| **Railgun** (`E`) | <img src="public/assets/pickup-rail.png" width="72" alt="Railgun"> <img src="public/assets/rail-impact.png" width="56" alt="Rail impact"> | Long-range hitscan precision weapon. High impact, scarce ammunition and a long cooldown reward deliberate aim. |
+| **Pulse Repeater** (`R`) | <img src="public/assets/weapons/pulse-repeater.png" width="72" alt="Pulse Repeater"> <img src="public/assets/weapons/pulse-bolt.png" width="56" alt="Pulse bolt"> | Fast mid-range tracking weapon. Sustained accuracy matters more than a single burst hit. |
+| **Ricochet Disc** (`C`) | <img src="public/assets/weapons/ricochet-disc-launcher.png" width="72" alt="Ricochet Disc launcher"> <img src="public/assets/weapons/ricochet-disc-projectile.png" width="56" alt="Ricochet Disc projectile"> | Banks up to three times from walls and gains damage after a bounce. It stops immediately when it hits an opponent. |
+| **Lob Grenade** (`G`) | <img src="public/assets/weapons/lob-energy-grenade.png" width="64" alt="Lob Grenade"> | Arcs over walls toward the cursor, lands with a visible fuse and controls a local area without affecting terrain. |
+| **Shardcaster** (`X`) | Runtime-drawn violet shard icon and homing trail | Fires low-damage seeking shards. Six hits from the same attacker trigger a local resonance burst on that target. |
+
+Premium-map weapon rosters:
+
+| Arena | Weapons available in the match |
+| --- | --- |
+| **Helix Canopy** | Arc Lash, Railgun, Pulse Repeater, Shardcaster |
+| **Temple of the Drowned Sun** | Arc Lash, Rocket Launcher, Lob Grenade, Ricochet Disc |
+| **Foundry Circuit** | Arc Lash, Rocket Launcher, Railgun, Ricochet Disc |
+
+Pickup weapons require ammunition and only appear on maps whose roster includes
+them. Arc Lash is always available and never consumes ammunition.
+
 ## Controls
 
 | Input | Action |
