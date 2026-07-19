@@ -1,5 +1,10 @@
 import Phaser from "phaser";
-import { V2_ACTOR_LIFECYCLE_CONFIG } from "../../core";
+import {
+  ARENA_WEAPON_CATALOG,
+  ARENA_WEAPON_IDS,
+  V2_ACTOR_LIFECYCLE_CONFIG,
+  type ArenaWeaponId,
+} from "../../core";
 import type {
   ActorState,
   ClassicCtfManualTeamCommand,
@@ -9,20 +14,17 @@ import type {
   WorldSnapshot,
 } from "../../core";
 import { UI_FONT_FAMILY } from "../../uiTypography";
-import {
-  V2_V1_WEAPON_PARITY_CONFIG,
-} from "../../core";
 import type { InputAdapterPort } from "../input";
 import { drawRadialCooldownWipe } from "./PhaserRadialCooldown";
 import { resolveDesktopAimDirection } from "./desktopAim";
 import {
-  calculateDesktopWeaponLayout,
   calculateWeaponStripLayout,
   formatCooldownSeconds,
   type WeaponStripLayout,
   weaponIconScale,
 } from "./weaponHudLayout";
 import { drawWeaponStrip } from "./hudVisualDesign";
+import { ensureArenaWeaponTextures } from "./PhaserArenaWeaponTextures";
 
 interface DiagnosticKeys {
   readonly up: Phaser.Input.Keyboard.Key;
@@ -34,6 +36,11 @@ interface DiagnosticKeys {
   readonly rocket: Phaser.Input.Keyboard.Key;
   readonly rail: Phaser.Input.Keyboard.Key;
   readonly whip: Phaser.Input.Keyboard.Key;
+  readonly pulse: Phaser.Input.Keyboard.Key;
+  readonly disc: Phaser.Input.Keyboard.Key;
+  readonly grenade: Phaser.Input.Keyboard.Key;
+  readonly shard: Phaser.Input.Keyboard.Key;
+  readonly shift: Phaser.Input.Keyboard.Key;
   readonly teamDefend: Phaser.Input.Keyboard.Key;
   readonly teamFollow: Phaser.Input.Keyboard.Key;
   readonly teamAttack: Phaser.Input.Keyboard.Key;
@@ -49,8 +56,8 @@ interface DiagnosticKeys {
 
 export type PhaserInputProfile = "diagnostic" | "tdm" | "tdm-solo";
 
-type WeaponId = "rocket" | "rail" | "whip";
-const WEAPON_IDS = ["rocket", "rail", "whip"] as const;
+type WeaponId = ArenaWeaponId;
+const WEAPON_IDS = ARENA_WEAPON_IDS;
 
 interface DesktopWeaponControl {
   x: number;
@@ -89,6 +96,10 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   private rocketWasHeld = false;
   private railWasHeld = false;
   private whipWasHeld = false;
+  private pulseWasHeld = false;
+  private discWasHeld = false;
+  private grenadeWasHeld = false;
+  private shardWasHeld = false;
   private teamDefendWasHeld = false;
   private teamFollowWasHeld = false;
   private teamAttackWasHeld = false;
@@ -96,6 +107,10 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     rocket: createDesktopWeaponControl(),
     rail: createDesktopWeaponControl(),
     whip: createDesktopWeaponControl(),
+    pulse: createDesktopWeaponControl(),
+    disc: createDesktopWeaponControl(),
+    grenade: createDesktopWeaponControl(),
+    shard: createDesktopWeaponControl(),
   };
   private weaponStripLayout: WeaponStripLayout =
     calculateWeaponStripLayout(1280, 720, WEAPON_IDS.length);
@@ -127,6 +142,11 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       rocket: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q),
       rail: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),
       whip: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F),
+      pulse: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R),
+      disc: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C),
+      grenade: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.G),
+      shard: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X),
+      shift: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT),
       teamDefend: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ONE),
       teamFollow: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO),
       teamAttack: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.THREE),
@@ -143,10 +163,15 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     this.cooldownGraphics = uiScene.add.graphics()
       .setScrollFactor(0)
       .setDepth(1102);
+    ensureArenaWeaponTextures(uiScene);
     this.weaponViews = {
       rocket: uiScene.add.image(0, 0, "uiRocketButton"),
       rail: uiScene.add.image(0, 0, "uiRailButton"),
       whip: uiScene.add.image(0, 0, "uiWhipButton"),
+      pulse: uiScene.add.image(0, 0, "uiPulseButton"),
+      disc: uiScene.add.image(0, 0, "uiDiscButton"),
+      grenade: uiScene.add.image(0, 0, "uiGrenadeButton"),
+      shard: uiScene.add.image(0, 0, "uiShardButton"),
     };
     for (const view of Object.values(this.weaponViews)) {
       view.setScrollFactor(0).setDepth(1101).setVisible(false);
@@ -155,16 +180,28 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       rocket: this.createWeaponBadge("uiAmmoBadge", "#17211f"),
       rail: this.createWeaponBadge("uiRailBadge", "#10281a"),
       whip: this.createWeaponBadge("uiAmmoBadge", "#2b1c36"),
+      pulse: this.createWeaponBadge("uiRailBadge", "#06283a"),
+      disc: this.createWeaponBadge("uiAmmoBadge", "#332607"),
+      grenade: this.createWeaponBadge("uiAmmoBadge", "#082b45"),
+      shard: this.createWeaponBadge("uiRailBadge", "#28103a"),
     };
     this.weaponCooldownLabels = {
       rocket: this.createCooldownLabel(),
       rail: this.createCooldownLabel(),
       whip: this.createCooldownLabel(),
+      pulse: this.createCooldownLabel(),
+      disc: this.createCooldownLabel(),
+      grenade: this.createCooldownLabel(),
+      shard: this.createCooldownLabel(),
     };
     this.weaponKeyLabels = {
       rocket: this.createKeyLabel("Q"),
       rail: this.createKeyLabel("E"),
       whip: this.createKeyLabel("F"),
+      pulse: this.createKeyLabel("R"),
+      disc: this.createKeyLabel("C"),
+      grenade: this.createKeyLabel("G"),
+      shard: this.createKeyLabel("X"),
     };
     uiScene.scale.on("resize", this.layout, this);
     this.layout(uiScene.scale.gameSize);
@@ -173,7 +210,8 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   readFrame(deltaMs: number): CoreInputFrame {
     const actions: CoreActionIntent[] = [];
     const move = this.readMoveDirection();
-    const aim = this.readAimDirection();
+    const aimTarget = this.readAimTarget();
+    const aim = this.readAimDirection(aimTarget);
     const jumpHeld = this.keys.jump.isDown;
     const pointer = this.scene.input.activePointer;
     const fireSpecial =
@@ -208,7 +246,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     if (this.profile === "diagnostic" && fireSpecial) {
       actions.push({ action: "fireSpecial", phase: "held" });
     }
-    this.appendWeaponActions(actions, blueActorId, aim);
+    this.appendWeaponActions(actions, blueActorId, aim, aimTarget);
     this.readTeamCommand();
     if (
       this.profile === "diagnostic" &&
@@ -228,7 +266,8 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     ) {
       actions.push({ action: "debugScore", phase: "pressed" });
     }
-    if (this.keys.restartMatch.isDown && !this.restartWasHeld) {
+    const restartHeld = this.keys.restartMatch.isDown && this.keys.shift.isDown;
+    if (restartHeld && !this.restartWasHeld) {
       actions.push({ action: "restartMatch", phase: "pressed" });
     }
     if (this.profile === "tdm") {
@@ -238,11 +277,15 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     this.jumpWasHeld = jumpHeld;
     this.damageWasHeld = this.keys.debugDamage.isDown;
     this.scoreWasHeld = this.keys.debugScore.isDown;
-    this.restartWasHeld = this.keys.restartMatch.isDown;
+    this.restartWasHeld = restartHeld;
     this.redJumpWasHeld = this.keys.redJump.isDown;
     this.rocketWasHeld = this.keys.rocket.isDown;
     this.railWasHeld = this.keys.rail.isDown;
     this.whipWasHeld = this.keys.whip.isDown;
+    this.pulseWasHeld = this.keys.pulse.isDown;
+    this.discWasHeld = this.keys.disc.isDown;
+    this.grenadeWasHeld = this.keys.grenade.isDown;
+    this.shardWasHeld = this.keys.shard.isDown;
     this.draw();
     return {
       sequence: ++this.sequence,
@@ -262,6 +305,10 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     this.rocketWasHeld = false;
     this.railWasHeld = false;
     this.whipWasHeld = false;
+    this.pulseWasHeld = false;
+    this.discWasHeld = false;
+    this.grenadeWasHeld = false;
+    this.shardWasHeld = false;
     this.teamDefendWasHeld = false;
     this.teamFollowWasHeld = false;
     this.teamAttackWasHeld = false;
@@ -298,10 +345,14 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     return length > 1 ? { x: x / length, y: y / length } : { x, y };
   }
 
-  private readAimDirection(): WorldPosition {
+  private readAimTarget(): WorldPosition {
     const pointer = this.scene.input.activePointer;
     const camera = this.scene.cameras.main;
-    const pointerWorld = camera.getWorldPoint(pointer.x, pointer.y);
+    return camera.getWorldPoint(pointer.x, pointer.y);
+  }
+
+  private readAimDirection(pointerWorld = this.readAimTarget()): WorldPosition {
+    const camera = this.scene.cameras.main;
     const actor = this.controlledActor();
     const aimOrigin = actor?.lifeState === "active"
       ? actor.position
@@ -360,19 +411,29 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     actions: CoreActionIntent[],
     actorId: string | undefined,
     direction: WorldPosition,
+    targetPosition: WorldPosition,
   ): void {
     for (const [weaponId, held, wasHeld] of [
       ["rocket", this.keys.rocket.isDown, this.rocketWasHeld],
       ["rail", this.keys.rail.isDown, this.railWasHeld],
       ["whip", this.keys.whip.isDown, this.whipWasHeld],
+      [
+        "pulse",
+        this.keys.pulse.isDown && !this.keys.shift.isDown,
+        this.pulseWasHeld,
+      ],
+      ["disc", this.keys.disc.isDown, this.discWasHeld],
+      ["grenade", this.keys.grenade.isDown, this.grenadeWasHeld],
+      ["shard", this.keys.shard.isDown, this.shardWasHeld],
     ] as const) {
-      if (held && !wasHeld) {
+      const automatic = weaponId === "pulse" || weaponId === "shard";
+      if (held && (automatic || !wasHeld)) {
         const action: CoreActionIntent = {
           action: "fireWeapon",
           phase: "pressed",
           actorId,
           ...(weaponId === "whip" ? {} : { direction }),
-          payload: { weaponId },
+          payload: { weaponId, targetPosition },
         };
         actions.push(action);
       }
@@ -389,31 +450,30 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   }
 
   private layout(gameSize: Phaser.Structs.Size): void {
+    const activeWeaponIds = this.activeWeaponIds();
     this.weaponStripLayout = calculateWeaponStripLayout(
       gameSize.width,
       gameSize.height,
-      WEAPON_IDS.length,
+      activeWeaponIds.length,
     );
-    const positions = calculateDesktopWeaponLayout(
-      gameSize.width,
-      gameSize.height,
-    );
-    const micro = positions.rocket.r <= 18;
-    const compact = positions.rocket.r <= 25;
-    for (const weaponId of WEAPON_IDS) {
-      Object.assign(this.weaponControls[weaponId], positions[weaponId], {
-        radius: positions[weaponId].r,
+    const first = this.weaponStripLayout.slots[0]!;
+    const micro = first.r <= 18;
+    const compact = first.r <= 25;
+    for (const [index, weaponId] of activeWeaponIds.entries()) {
+      const position = this.weaponStripLayout.slots[index]!;
+      Object.assign(this.weaponControls[weaponId], position, {
+        radius: position.r,
       });
       this.weaponViews[weaponId]
-        .setPosition(positions[weaponId].x, positions[weaponId].y)
-        .setScale(weaponIconScale(weaponId, positions[weaponId].r));
+        .setPosition(position.x, position.y)
+        .setScale(weaponIconScale(weaponId, position.r));
       this.weaponCooldownLabels[weaponId]
-        .setPosition(positions[weaponId].x, positions[weaponId].y)
+        .setPosition(position.x, position.y)
         .setFontSize(micro ? 11 : compact ? 14 : 16);
       this.weaponKeyLabels[weaponId]
         .setPosition(
-          positions[weaponId].x - positions[weaponId].r * .68,
-          positions[weaponId].y - positions[weaponId].r * .68,
+          position.x - position.r * .68,
+          position.y - position.r * .68,
         )
         .setFontSize(micro ? 8 : compact ? 11 : 12);
     }
@@ -421,11 +481,13 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   }
 
   private draw(): void {
+    const activeWeaponIds = this.activeWeaponIds();
+    const active = new Set(activeWeaponIds);
     this.graphics.clear();
     this.cooldownGraphics.clear();
     drawWeaponStrip(this.graphics, {
       ...this.weaponStripLayout,
-      slots: WEAPON_IDS.map((weaponId) => {
+      slots: activeWeaponIds.map((weaponId) => {
         const control = this.weaponControls[weaponId];
         return {
           x: control.x,
@@ -436,6 +498,14 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       }),
     });
     for (const weaponId of WEAPON_IDS) {
+      if (!active.has(weaponId)) {
+        this.weaponViews[weaponId].setVisible(false);
+        this.weaponBadges[weaponId].image.setVisible(false);
+        this.weaponBadges[weaponId].text.setVisible(false);
+        this.weaponKeyLabels[weaponId].setVisible(false);
+        this.weaponCooldownLabels[weaponId].setVisible(false);
+        continue;
+      }
       const status = this.weaponStatus?.(weaponId) ?? {
         ammo: weaponId === "whip" ? null : 0,
         cooldownMs: 0,
@@ -480,11 +550,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     if (cooldownMs <= 0) {
       return;
     }
-    const total = weaponId === "rocket"
-      ? V2_V1_WEAPON_PARITY_CONFIG.rocketCooldownMs
-      : weaponId === "rail"
-      ? V2_V1_WEAPON_PARITY_CONFIG.railCooldownMs
-      : V2_V1_WEAPON_PARITY_CONFIG.whipCooldownMs;
+    const total = ARENA_WEAPON_CATALOG[weaponId].cooldownMs;
     drawRadialCooldownWipe(
       this.cooldownGraphics,
       control.x,
@@ -498,6 +564,11 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   private weaponAvailable(weaponId: WeaponId): boolean {
     const ammo = this.weaponStatus?.(weaponId).ammo;
     return weaponId === "whip" || (ammo ?? 0) > 0;
+  }
+
+  private activeWeaponIds(): readonly WeaponId[] {
+    return this.snapshotProvider?.().map?.weaponRoster ??
+      ["whip", "rocket", "rail"];
   }
 
   private controlledActor(

@@ -5,6 +5,10 @@ export interface PickupConfig {
   readonly armorValue: number;
   readonly rocketValue: number;
   readonly railValue: number;
+  readonly pulseValue: number;
+  readonly discValue: number;
+  readonly grenadeValue: number;
+  readonly shardValue: number;
 }
 
 export const V2_DIAGNOSTIC_PICKUP_CONFIG: PickupConfig = {
@@ -14,6 +18,10 @@ export const V2_DIAGNOSTIC_PICKUP_CONFIG: PickupConfig = {
   armorValue: 20,
   rocketValue: 5,
   railValue: 5,
+  pulseValue: 36,
+  discValue: 8,
+  grenadeValue: 3,
+  shardValue: 18,
 };
 
 export const V2_ARENA_PICKUP_PARITY_CONFIG: PickupConfig = {
@@ -23,4 +31,8 @@ export const V2_ARENA_PICKUP_PARITY_CONFIG: PickupConfig = {
   armorValue: 25,
   rocketValue: 5,
   railValue: 4,
+  pulseValue: 36,
+  discValue: 8,
+  grenadeValue: 3,
+  shardValue: 18,
 };

@@ -28,7 +28,8 @@ test("Temple of the Drowned Sun registers its complete gameplay contract", () =>
   assert.equal(map?.geometry.gaps.length, 2);
   assert.equal(map?.navigation.jumpLinks.length, 4);
   assert.equal(map?.spawnPoints.length, 8);
-  assert.equal(map?.pickupSpawns.length, 11);
+  assert.equal(map?.pickupSpawns.length, 13);
+  assert.deepEqual(map?.weaponRoster, ["whip", "rocket", "grenade", "disc"]);
   assert.equal(map?.presentation.theme, "jungle-temple");
 });
 
@@ -312,7 +313,7 @@ test("Temple pickup economy is mirrored and blocks objective weapon spam", () =>
   }
 
   const counts = Object.fromEntries(
-    ["health", "armor", "rocket", "rail"].map((type) => [
+    ["health", "armor", "rocket", "disc", "grenade"].map((type) => [
       type,
       map.pickupSpawns.filter((pickup) => pickup.type === type).length,
     ]),
@@ -321,7 +322,8 @@ test("Temple pickup economy is mirrored and blocks objective weapon spam", () =>
     health: 6,
     armor: 2,
     rocket: 2,
-    rail: 1,
+    disc: 1,
+    grenade: 2,
   });
   for (const rocket of map.pickupSpawns.filter((pickup) =>
     pickup.type === "rocket"

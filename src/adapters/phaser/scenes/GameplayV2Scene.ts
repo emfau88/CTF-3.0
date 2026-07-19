@@ -19,6 +19,9 @@ import {
   resolveWorldMap,
   TeamDeathmatchMode,
   toggleClassicCtfTeamCommand,
+  weaponAmmo,
+  weaponCooldown,
+  type ArenaWeaponId,
   type ClassicCtfManualTeamCommand,
   type ClassicCtfTeamCommand,
   type WorldMapData,
@@ -181,26 +184,14 @@ export class GameplayV2Scene extends Phaser.Scene {
       },
       humanActorIds,
     });
-    const readBlueWeaponStatus = (weaponId: "rocket" | "rail" | "whip") => {
+    const readBlueWeaponStatus = (weaponId: ArenaWeaponId) => {
       const actor = (this.bridge?.snapshot ?? runtime.snapshot).actors.find(
         (candidate) => candidate.id === "blue-player",
       );
       if (!actor) return { ammo: 0, cooldownMs: 0 };
-      if (weaponId === "rocket") {
-        return {
-          ammo: actor.weapons.rocketAmmo,
-          cooldownMs: actor.weapons.rocketCooldownMs,
-        };
-      }
-      if (weaponId === "rail") {
-        return {
-          ammo: actor.weapons.railAmmo,
-          cooldownMs: actor.weapons.railCooldownMs,
-        };
-      }
       return {
-        ammo: null,
-        cooldownMs: actor.weapons.whipCooldownMs,
+        ammo: weaponAmmo(actor.weapons, weaponId),
+        cooldownMs: weaponCooldown(actor.weapons, weaponId),
       };
     };
     const mobileInput = useMobileControls

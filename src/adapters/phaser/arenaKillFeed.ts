@@ -4,6 +4,10 @@ export type ArenaKillCause =
   | "rocket"
   | "rail"
   | "whip"
+  | "pulse"
+  | "disc"
+  | "grenade"
+  | "shard"
   | "fall"
   | "suicide"
   | "unknown";
@@ -28,8 +32,11 @@ export function readArenaKillNotice(
     ? "suicide"
     : reason === "fall"
     ? "fall"
-    : weaponId === "rocket" || weaponId === "rail" || weaponId === "whip"
-    ? weaponId
+    : weaponId === "rocket" || weaponId === "rail" || weaponId === "whip" ||
+        weaponId === "pulse" || weaponId === "disc" ||
+        weaponId === "grenade" || weaponId === "shard" ||
+        weaponId === "shard-resonance"
+    ? weaponId === "shard-resonance" ? "shard" : weaponId
     : "unknown";
   return {
     eventId: event.id,

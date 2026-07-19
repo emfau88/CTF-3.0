@@ -822,6 +822,10 @@ function killFeedWeaponTexture(cause: ArenaKillCause): string | null {
   if (cause === "rocket") return "uiRocketButton";
   if (cause === "rail") return "uiRailButton";
   if (cause === "whip") return "uiWhipButton";
+  if (cause === "pulse") return "uiPulseButton";
+  if (cause === "disc") return "uiDiscButton";
+  if (cause === "grenade") return "uiGrenadeButton";
+  if (cause === "shard") return "uiShardButton";
   return null;
 }
 

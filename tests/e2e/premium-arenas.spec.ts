@@ -6,6 +6,7 @@ const premiumArenas = [
     mapId: "helix-canopy-v2",
     expectedAsset: "assets/helix-canopy/arena-master.png",
     expectedCosmetic: "assets/premium-cosmetics/helix-curious-bloom.png",
+    expectedLighting: "assets/premium-cosmetics/helix-grow-lamp.png",
     forbiddenAssetFolders: ["assets/jungle-temple/", "assets/library/", "assets/industrial/"],
     forbiddenCosmetics: [
       "temple-grumpy-frog.png",
@@ -17,6 +18,7 @@ const premiumArenas = [
     mapId: "drowned-sun-temple-v2",
     expectedAsset: "assets/jungle-temple/arena-master-v2.png",
     expectedCosmetic: "assets/premium-cosmetics/temple-grumpy-frog.png",
+    expectedLighting: "assets/premium-cosmetics/temple-sun-brazier.png",
     forbiddenAssetFolders: ["assets/helix-canopy/", "assets/library/", "assets/industrial/"],
     forbiddenCosmetics: [
       "helix-curious-bloom.png",
@@ -27,11 +29,13 @@ const premiumArenas = [
     name: "Foundry Circuit",
     mapId: "flow-circuit-v2",
     expectedAsset: "assets/foundry-circuit/arena-master-v2.png",
-    expectedCosmetic: "assets/premium-cosmetics/foundry-grumpy-maintenance-bot.png",
+    expectedCosmetic: null,
+    expectedLighting: "assets/premium-cosmetics/foundry-service-lamp.png",
     forbiddenAssetFolders: ["assets/helix-canopy/", "assets/jungle-temple/", "assets/library/", "assets/industrial/"],
     forbiddenCosmetics: [
       "helix-curious-bloom.png",
       "temple-grumpy-frog.png",
+      "foundry-grumpy-maintenance-bot.png",
     ],
   },
 ] as const;
@@ -58,8 +62,13 @@ for (const arena of premiumArenas) {
     expect(requestedUrls.some((url) => url.includes(arena.expectedAsset))).toBe(
       true,
     );
+    if (arena.expectedCosmetic) {
+      expect(
+        requestedUrls.some((url) => url.includes(arena.expectedCosmetic)),
+      ).toBe(true);
+    }
     expect(
-      requestedUrls.some((url) => url.includes(arena.expectedCosmetic)),
+      requestedUrls.some((url) => url.includes(arena.expectedLighting)),
     ).toBe(true);
     for (const folder of arena.forbiddenAssetFolders) {
       expect(

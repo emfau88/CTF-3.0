@@ -1,6 +1,7 @@
 import type { WorldPosition } from "../../actors";
 import type { PickupType } from "../../pickups";
 import type { SpawnPoint } from "../../spawning";
+import type { ArenaWeaponId } from "../../weapons";
 import type { WorldGeometry } from "../worldGeometry";
 import type { WorldNavigation } from "../worldNavigation";
 
@@ -109,6 +110,7 @@ export interface WorldMapData {
   readonly navigation: WorldNavigation;
   readonly spawnPoints: readonly SpawnPoint[];
   readonly pickupSpawns: readonly WorldMapPickupSpawn[];
+  readonly weaponRoster?: readonly ArenaWeaponId[];
   readonly gameplay: WorldMapGameplay;
   readonly presentation: WorldMapPresentation;
   readonly diagnosticSpawn: WorldPosition;
@@ -117,4 +119,5 @@ export interface WorldMapData {
 export interface WorldMapInfo {
   readonly id: string;
   readonly displayName: string;
+  readonly weaponRoster: readonly ArenaWeaponId[];
 }

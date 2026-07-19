@@ -15,6 +15,11 @@ import {
   getPremiumMapCosmetic,
   PREMIUM_MAP_COSMETICS,
 } from "../src/premiumMapCosmetics";
+import {
+  advancePremiumMapLightState,
+  createPremiumMapLightState,
+  PREMIUM_MAP_LIGHTING,
+} from "../src/premiumMapLighting";
 
 const PREMIUM_MAPS = [
   HELIX_CANOPY_V2,
@@ -22,23 +27,26 @@ const PREMIUM_MAPS = [
   FLOW_CIRCUIT_V2,
 ] as const;
 
-test("every premium arena has one selective cosmetic overlay", () => {
-  assert.equal(PREMIUM_MAP_COSMETICS.length, PREMIUM_MAPS.length);
+test("only the approved premium arenas preload a creature overlay", () => {
+  assert.equal(PREMIUM_MAP_COSMETICS.length, 2);
   assert.deepEqual(
     PREMIUM_MAP_COSMETICS.map((cosmetic) => cosmetic.mapId),
-    PREMIUM_MAPS.map((map) => map.id),
+    [HELIX_CANOPY_V2.id, DROWNED_SUN_TEMPLE_V2.id],
   );
   assert.equal(
     new Set(PREMIUM_MAP_COSMETICS.map((cosmetic) => cosmetic.assetKey)).size,
     PREMIUM_MAP_COSMETICS.length,
   );
   assert.equal(getPremiumMapCosmetic("training-crossing-v2"), undefined);
+  assert.equal(getPremiumMapCosmetic(FLOW_CIRCUIT_V2.id), undefined);
 });
 
-test("premium cosmetics stay in blocked map-edge scenery", () => {
-  for (const map of PREMIUM_MAPS) {
-    const cosmetic = getPremiumMapCosmetic(map.id);
-    assert.ok(cosmetic, `${map.displayName} needs a cosmetic config.`);
+test("premium cosmetics stay in blocked or immediately adjacent edge scenery", () => {
+  for (const cosmetic of PREMIUM_MAP_COSMETICS) {
+    const map = PREMIUM_MAPS.find((candidate) =>
+      candidate.id === cosmetic.mapId
+    );
+    assert.ok(map, `${cosmetic.mapId} needs a premium map.`);
     const bounds = map.geometry.bounds;
     const edgeDistance = Math.min(
       cosmetic.position.x - bounds.minX,
@@ -47,7 +55,7 @@ test("premium cosmetics stay in blocked map-edge scenery", () => {
       bounds.maxY - cosmetic.position.y,
     );
     assert.ok(
-      edgeDistance <= 115,
+      edgeDistance <= 260,
       `${map.displayName} cosmetic is ${edgeDistance}px from the edge.`,
     );
     const clearance = measureWorldMapClearance(map, cosmetic.position);
@@ -114,4 +122,65 @@ test("cosmetic reactions are local, rate-limited, and resettable", () => {
   );
   assert.equal(retriggered.reactionCount, 2);
   assert.deepEqual(createPremiumMapCosmeticState(), idle);
+});
+
+test("the temple frog is smaller and stays hidden for at least ten seconds", () => {
+  const frog = getPremiumMapCosmetic(DROWNED_SUN_TEMPLE_V2.id);
+  assert.ok(frog);
+  assert.equal(frog.kind, "grumpy-frog");
+  assert.equal(frog.displaySize, 66);
+  assert.ok((frog.reactionReturnDelayMs ?? 0) >= 10_000);
+  assert.ok(frog.reactionDurationMs > (frog.reactionReturnDelayMs ?? 0));
+  assert.ok(frog.rearmDelayMs >= frog.reactionDurationMs);
+});
+
+test("premium edge lighting uses eight blocked, neutral fixtures per map", () => {
+  assert.equal(PREMIUM_MAP_LIGHTING.length, PREMIUM_MAPS.length);
+  for (const map of PREMIUM_MAPS) {
+    const lighting = PREMIUM_MAP_LIGHTING.find((entry) =>
+      entry.mapId === map.id
+    );
+    assert.ok(lighting, `${map.displayName} needs an edge-light config.`);
+    assert.equal(lighting.positions.length, 8);
+    assert.notEqual(lighting.glowColor, 0xff0000);
+    assert.notEqual(lighting.glowColor, 0x0000ff);
+    for (const position of lighting.positions) {
+      const bounds = map.geometry.bounds;
+      const edgeDistance = Math.min(
+        position.x - bounds.minX,
+        bounds.maxX - position.x,
+        position.y - bounds.minY,
+        bounds.maxY - position.y,
+      );
+      assert.ok(edgeDistance <= 230);
+      assert.equal(
+        measureWorldMapClearance(map, position).obstacleKind,
+        "solid",
+      );
+    }
+    const png = readFileSync(resolve("public/assets", lighting.assetFile));
+    assert.equal(png.subarray(1, 4).toString("ascii"), "PNG");
+    assert.equal(png.readUInt32BE(16), 256);
+    assert.equal(png.readUInt32BE(20), 256);
+    assert.equal(png[25], 6, `${lighting.assetFile} must contain alpha.`);
+    assert.ok(png.byteLength < 120_000);
+  }
+});
+
+test("projectile-dimmed premium lights recover and rearm locally", () => {
+  const idle = createPremiumMapLightState();
+  const dimmed = advancePremiumMapLightState(idle, 16, true);
+  assert.equal(dimmed.dimRemainingMs, 1_150);
+  assert.equal(dimmed.reactionCount, 1);
+  const held = advancePremiumMapLightState(dimmed, 100, true);
+  assert.equal(held.reactionCount, 1);
+  let recovered = held;
+  while (recovered.rearmRemainingMs > 0) {
+    recovered = advancePremiumMapLightState(recovered, 100, false);
+  }
+  assert.equal(recovered.dimRemainingMs, 0);
+  assert.equal(
+    advancePremiumMapLightState(recovered, 16, true).reactionCount,
+    2,
+  );
 });

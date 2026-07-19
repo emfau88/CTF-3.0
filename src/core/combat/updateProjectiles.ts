@@ -16,6 +16,7 @@ type ProjectileCollision =
   | {
     readonly kind: "solid" | "bounds";
     readonly ratio: number;
+    readonly normal: Readonly<{ x: number; y: number }>;
   }
   | {
     readonly kind: "actor";
@@ -39,6 +40,21 @@ export function updateProjectiles(
   for (const projectile of projectiles) {
     if (projectile.lifeState !== "active") {
       continue;
+    }
+    if (projectile.weaponId === "grenade" && projectile.lob) {
+      updateLobGrenade(
+        projectile,
+        actors,
+        geometry,
+        ms,
+        timeMs,
+        events,
+        lifecycleConfig,
+      );
+      continue;
+    }
+    if (projectile.weaponId === "shard" && projectile.homing) {
+      updateHomingVelocity(projectile, actors, geometry, dt);
     }
 
     const start = { ...projectile.position };
@@ -81,6 +97,35 @@ export function updateProjectiles(
     );
 
     if (collision?.kind === "solid" || collision?.kind === "bounds") {
+      if (
+        projectile.weaponId === "disc" &&
+        (projectile.ricochetsRemaining ?? 0) > 0
+      ) {
+        const dot = projectile.velocity.x * collision.normal.x +
+          projectile.velocity.y * collision.normal.y;
+        projectile.velocity.x -= 2 * dot * collision.normal.x;
+        projectile.velocity.y -= 2 * dot * collision.normal.y;
+        projectile.position.x += collision.normal.x * 2;
+        projectile.position.y += collision.normal.y * 2;
+        projectile.ricochetsRemaining =
+          Math.max(0, (projectile.ricochetsRemaining ?? 0) - 1);
+        projectile.ricochetCount = (projectile.ricochetCount ?? 0) + 1;
+        events.push({
+          id: `weapon-disc-ricochet-${projectile.id}-${timeMs}`,
+          type: "weapon.discRicochet",
+          timeMs,
+          sourceActorId: projectile.ownerActorId,
+          teamId: projectile.teamId ?? undefined,
+          payload: {
+            projectileId: projectile.id,
+            position: { ...projectile.position },
+            normal: { ...collision.normal },
+            ricochetCount: projectile.ricochetCount,
+            remainingRicochets: projectile.ricochetsRemaining,
+          },
+        });
+        continue;
+      }
       if (projectile.weaponId === "rocket") {
         explodeRocket(projectile, actors, geometry, timeMs, events, lifecycleConfig);
       }
@@ -90,6 +135,10 @@ export function updateProjectiles(
 
     const target = collision?.kind === "actor" ? collision.actor : null;
     if (target) {
+      const hitDamage = projectile.weaponId === "disc" &&
+          (projectile.ricochetCount ?? 0) > 0
+        ? projectile.ricochetDamage ?? projectile.damage
+        : projectile.damage;
       projectile.lifeState = "hit";
       events.push({
         id: `projectile-hit-${projectile.id}-${timeMs}`,
@@ -102,7 +151,7 @@ export function updateProjectiles(
           projectileId: projectile.id,
           weaponId: projectile.weaponId,
           position: { ...projectile.position },
-          damage: projectile.damage,
+          damage: hitDamage,
         },
       });
       if (projectile.weaponId === "rocket") {
@@ -116,15 +165,26 @@ export function updateProjectiles(
           target.id,
         );
       } else {
-        const damage = applyDamage(
-          target,
-          projectile.damage,
-          timeMs,
-          lifecycleConfig,
-          projectile.ownerActorId,
-          projectile.weaponId,
-        );
-        events.push(...damage.events);
+        if (projectile.weaponId === "shard") {
+          applyShardHit(
+            projectile,
+            target,
+            hitDamage,
+            timeMs,
+            events,
+            lifecycleConfig,
+          );
+        } else {
+          const damage = applyDamage(
+            target,
+            hitDamage,
+            timeMs,
+            lifecycleConfig,
+            projectile.ownerActorId,
+            projectile.weaponId,
+          );
+          events.push(...damage.events);
+        }
       }
       continue;
     }
@@ -159,6 +219,233 @@ export function updateProjectiles(
   }
 
   return { events };
+}
+
+function updateLobGrenade(
+  projectile: ProjectileState,
+  actors: ActorState[],
+  geometry: WorldGeometry,
+  ms: number,
+  timeMs: number,
+  events: GameEvent[],
+  lifecycleConfig: ActorLifecycleConfig,
+): void {
+  const lob = projectile.lob;
+  if (!lob) return;
+  lob.elapsedMs += ms;
+  projectile.remainingLifetimeMs = Math.max(
+    0,
+    projectile.remainingLifetimeMs - ms,
+  );
+  const progress = Math.min(1, lob.elapsedMs / lob.flightMs);
+  projectile.position.x = lob.origin.x +
+    (lob.target.x - lob.origin.x) * progress;
+  projectile.position.y = lob.origin.y +
+    (lob.target.y - lob.origin.y) * progress;
+  projectile.visualHeight = Math.sin(progress * Math.PI) * lob.arcHeight;
+  projectile.remainingRange = Math.max(
+    0,
+    Math.hypot(
+      lob.target.x - projectile.position.x,
+      lob.target.y - projectile.position.y,
+    ),
+  );
+  if (progress < 1) return;
+  projectile.position.x = lob.target.x;
+  projectile.position.y = lob.target.y;
+  projectile.velocity.x = 0;
+  projectile.velocity.y = 0;
+  projectile.visualHeight = 0;
+  if (!lob.landed) {
+    lob.landed = true;
+    events.push({
+      id: `weapon-grenade-landed-${projectile.id}-${timeMs}`,
+      type: "weapon.grenadeLanded",
+      timeMs,
+      sourceActorId: projectile.ownerActorId,
+      teamId: projectile.teamId ?? undefined,
+      payload: {
+        projectileId: projectile.id,
+        position: { ...projectile.position },
+        fuseMs: lob.fuseMs,
+      },
+    });
+  }
+  if (
+    lob.elapsedMs < lob.flightMs + lob.fuseMs &&
+    projectile.remainingLifetimeMs > 0
+  ) {
+    return;
+  }
+  explodeGrenade(
+    projectile,
+    actors,
+    geometry,
+    timeMs,
+    events,
+    lifecycleConfig,
+  );
+  expireProjectile(projectile, timeMs, events, "detonation");
+}
+
+function updateHomingVelocity(
+  projectile: ProjectileState,
+  actors: ActorState[],
+  geometry: WorldGeometry,
+  dt: number,
+): void {
+  const homing = projectile.homing;
+  if (!homing || dt <= 0) return;
+  const target = actors.find((actor) =>
+    actor.id === homing.targetActorId &&
+    actor.lifeState === "active" &&
+    actor.teamId !== projectile.teamId
+  );
+  if (
+    !target ||
+    geometry.solids.some((solid) =>
+      lineIntersectsRect(projectile.position, target.position, solid)
+    )
+  ) {
+    return;
+  }
+  const speed = Math.hypot(projectile.velocity.x, projectile.velocity.y);
+  if (speed <= .0001) return;
+  const current = Math.atan2(projectile.velocity.y, projectile.velocity.x);
+  const desired = Math.atan2(
+    target.position.y - projectile.position.y,
+    target.position.x - projectile.position.x,
+  );
+  const difference = normalizeAngle(desired - current);
+  const maximumTurn = homing.turnRateRadiansPerSecond * dt;
+  const angle = current + clamp(difference, -maximumTurn, maximumTurn);
+  projectile.velocity.x = Math.cos(angle) * speed;
+  projectile.velocity.y = Math.sin(angle) * speed;
+}
+
+function applyShardHit(
+  projectile: ProjectileState,
+  target: ActorState,
+  hitDamage: number,
+  timeMs: number,
+  events: GameEvent[],
+  lifecycleConfig: ActorLifecycleConfig,
+): void {
+  const direct = applyDamage(
+    target,
+    hitDamage,
+    timeMs,
+    lifecycleConfig,
+    projectile.ownerActorId,
+    projectile.weaponId,
+  );
+  events.push(...direct.events);
+  if (direct.blockedBySpawnProtection || target.lifeState !== "active") {
+    return;
+  }
+  if (
+    target.weapons.shardStackSourceActorId !== projectile.ownerActorId
+  ) {
+    target.weapons.shardStacks = 0;
+  }
+  target.weapons.shardStackSourceActorId = projectile.ownerActorId;
+  target.weapons.shardStacks += 1;
+  target.weapons.shardStackRemainingMs = 2_800;
+  events.push({
+    id: `weapon-shard-embedded-${projectile.id}-${timeMs}`,
+    type: "weapon.shardEmbedded",
+    timeMs,
+    sourceActorId: projectile.ownerActorId,
+    targetActorId: target.id,
+    teamId: projectile.teamId ?? undefined,
+    payload: {
+      projectileId: projectile.id,
+      stacks: target.weapons.shardStacks,
+      expiresInMs: target.weapons.shardStackRemainingMs,
+    },
+  });
+  if (target.weapons.shardStacks < 6) return;
+  target.weapons.shardStacks = 0;
+  target.weapons.shardStackSourceActorId = null;
+  target.weapons.shardStackRemainingMs = 0;
+  events.push({
+    id: `weapon-shard-resonance-${projectile.id}-${timeMs}`,
+    type: "weapon.shardResonance",
+    timeMs,
+    sourceActorId: projectile.ownerActorId,
+    targetActorId: target.id,
+    teamId: projectile.teamId ?? undefined,
+    payload: {
+      position: { ...target.position },
+      bonusDamage: 25,
+    },
+  });
+  const resonance = applyDamage(
+    target,
+    25,
+    timeMs,
+    lifecycleConfig,
+    projectile.ownerActorId,
+    "shard-resonance",
+  );
+  events.push(...resonance.events);
+}
+
+function explodeGrenade(
+  projectile: ProjectileState,
+  actors: ActorState[],
+  geometry: WorldGeometry,
+  timeMs: number,
+  events: GameEvent[],
+  lifecycleConfig: ActorLifecycleConfig,
+): void {
+  const splashRadius = projectile.splashRadius ?? 0;
+  const knockback = projectile.knockback ?? 0;
+  events.push({
+    id: `weapon-grenade-exploded-${projectile.id}-${timeMs}`,
+    type: "weapon.grenadeExploded",
+    timeMs,
+    sourceActorId: projectile.ownerActorId,
+    teamId: projectile.teamId ?? undefined,
+    payload: {
+      projectileId: projectile.id,
+      position: { ...projectile.position },
+      splashRadius,
+    },
+  });
+  for (const actor of actors) {
+    if (
+      actor.lifeState !== "active" ||
+      actor.teamId === projectile.teamId
+    ) {
+      continue;
+    }
+    const dx = actor.position.x - projectile.position.x;
+    const dy = actor.position.y - projectile.position.y;
+    const distance = Math.hypot(dx, dy);
+    if (
+      distance > splashRadius + actor.radius ||
+      geometry.solids.some((solid) =>
+        lineIntersectsRect(projectile.position, actor.position, solid)
+      )
+    ) {
+      continue;
+    }
+    const falloff = clamp(1 - distance / splashRadius, .25, 1);
+    const damage = applyDamage(
+      actor,
+      projectile.damage * falloff,
+      timeMs,
+      lifecycleConfig,
+      projectile.ownerActorId,
+      projectile.weaponId,
+    );
+    events.push(...damage.events);
+    if (damage.blockedBySpawnProtection) continue;
+    const normal = distance || 1;
+    actor.velocity.x += dx / normal * knockback * falloff;
+    actor.velocity.y += dy / normal * knockback * falloff;
+  }
 }
 
 function expireProjectile(
@@ -265,14 +552,21 @@ function findEarliestCollision(
   };
 
   for (const solid of geometry.solids) {
-    const ratio = segmentRectIntersectionRatio(start, end, {
+    const expanded = {
       id: solid.id,
       x: solid.x - projectile.radius,
       y: solid.y - projectile.radius,
       width: solid.width + projectile.radius * 2,
       height: solid.height + projectile.radius * 2,
-    });
-    consider(ratio === null ? null : { kind: "solid", ratio });
+    };
+    const ratio = segmentRectIntersectionRatio(start, end, expanded);
+    consider(ratio === null
+      ? null
+      : {
+        kind: "solid",
+        ratio,
+        normal: rectImpactNormal(start, end, expanded, ratio),
+      });
   }
 
   const boundsRatio = segmentBoundsExitRatio(start, end, {
@@ -283,7 +577,11 @@ function findEarliestCollision(
   });
   consider(boundsRatio === null
     ? null
-    : { kind: "bounds", ratio: boundsRatio });
+    : {
+      kind: "bounds",
+      ratio: boundsRatio,
+      normal: boundsImpactNormal(start, end, geometry, boundsRatio),
+    });
 
   for (const actor of actors) {
     if (
@@ -389,6 +687,61 @@ function segmentBoundsExitRatio(
     ratio = ratio === null ? yRatio : Math.min(ratio, yRatio);
   }
   return ratio === null ? null : clamp(ratio, 0, 1);
+}
+
+function rectImpactNormal(
+  start: Readonly<{ x: number; y: number }>,
+  end: Readonly<{ x: number; y: number }>,
+  rect: WorldRect,
+  ratio: number,
+): Readonly<{ x: number; y: number }> {
+  const point = {
+    x: start.x + (end.x - start.x) * ratio,
+    y: start.y + (end.y - start.y) * ratio,
+  };
+  const edges = [
+    { distance: Math.abs(point.x - rect.x), x: -1, y: 0 },
+    { distance: Math.abs(point.x - (rect.x + rect.width)), x: 1, y: 0 },
+    { distance: Math.abs(point.y - rect.y), x: 0, y: -1 },
+    { distance: Math.abs(point.y - (rect.y + rect.height)), x: 0, y: 1 },
+  ].sort((left, right) => left.distance - right.distance);
+  const selected = edges[0];
+  if (selected && selected.distance <= 2) {
+    return { x: selected.x, y: selected.y };
+  }
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  return Math.abs(dx) >= Math.abs(dy)
+    ? { x: dx > 0 ? -1 : 1, y: 0 }
+    : { x: 0, y: dy > 0 ? -1 : 1 };
+}
+
+function boundsImpactNormal(
+  start: Readonly<{ x: number; y: number }>,
+  end: Readonly<{ x: number; y: number }>,
+  geometry: WorldGeometry,
+  ratio: number,
+): Readonly<{ x: number; y: number }> {
+  const point = {
+    x: start.x + (end.x - start.x) * ratio,
+    y: start.y + (end.y - start.y) * ratio,
+  };
+  const bounds = geometry.bounds;
+  const edges = [
+    { distance: Math.abs(point.x - bounds.minX), x: 1, y: 0 },
+    { distance: Math.abs(point.x - bounds.maxX), x: -1, y: 0 },
+    { distance: Math.abs(point.y - bounds.minY), x: 0, y: 1 },
+    { distance: Math.abs(point.y - bounds.maxY), x: 0, y: -1 },
+  ].sort((left, right) => left.distance - right.distance);
+  const selected = edges[0];
+  return selected ? { x: selected.x, y: selected.y } : { x: 0, y: 0 };
+}
+
+function normalizeAngle(value: number): number {
+  let angle = value;
+  while (angle > Math.PI) angle -= Math.PI * 2;
+  while (angle < -Math.PI) angle += Math.PI * 2;
+  return angle;
 }
 
 function lineIntersectsRect(

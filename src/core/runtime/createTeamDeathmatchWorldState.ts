@@ -20,6 +20,7 @@ import {
   DEFAULT_ARENA_TEAM_SIZE,
   type ArenaWorldOptions,
 } from "../spawning/arenaRoster";
+import { DEFAULT_ARENA_WEAPON_ROSTER } from "../weapons";
 
 export function createTeamDeathmatchWorldState(
   map: WorldMapData = TRAINING_CROSSING_V2,
@@ -44,6 +45,9 @@ export function createTeamDeathmatchWorldState(
   world.map = {
     id: map.id,
     displayName: map.displayName,
+    weaponRoster: [
+      ...(map.weaponRoster ?? DEFAULT_ARENA_WEAPON_ROSTER),
+    ],
   };
   world.spawnPoints = map.spawnPoints.map((spawnPoint) => ({
     ...spawnPoint,

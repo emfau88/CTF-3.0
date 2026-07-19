@@ -55,11 +55,7 @@ export class PhaserPremiumMapCosmetics {
       this.renderCuriousBloom();
       return;
     }
-    if (this.config.kind === "grumpy-frog") {
-      this.renderGrumpyFrog();
-      return;
-    }
-    this.renderMaintenanceBot();
+    this.renderGrumpyFrog();
   }
 
   reset(): void {
@@ -131,6 +127,7 @@ export class PhaserPremiumMapCosmetics {
     let rotation = Math.sin(idle * .9) * .018;
 
     if (this.state.reactionRemainingMs > 0) {
+      const returnDelayMs = this.config.reactionReturnDelayMs ?? 1_520;
       if (elapsedReactionMs < 180) {
         const progress = elapsedReactionMs / 180;
         offsetY -= Math.sin(progress * Math.PI) * 20;
@@ -141,14 +138,14 @@ export class PhaserPremiumMapCosmetics {
         offsetY += progress * 42;
         scale = 1 - progress * .78;
         alpha = 1 - progress;
-      } else if (elapsedReactionMs < 1_520) {
+      } else if (elapsedReactionMs < returnDelayMs) {
         offsetY = 42;
         scale = .2;
         alpha = 0;
       } else {
         const progress = easeOut(
-          (elapsedReactionMs - 1_520) /
-            (this.config.reactionDurationMs - 1_520),
+          (elapsedReactionMs - returnDelayMs) /
+            (this.config.reactionDurationMs - returnDelayMs),
         );
         offsetY = (1 - progress) * 42 -
           Math.sin(progress * Math.PI) * 12;
@@ -172,7 +169,8 @@ export class PhaserPremiumMapCosmetics {
       return;
     }
     const { x, y } = this.config.position;
-    for (const startMs of [170, 1_500]) {
+    const returnDelayMs = this.config.reactionReturnDelayMs ?? 1_520;
+    for (const startMs of [170, returnDelayMs - 20]) {
       const progress = Phaser.Math.Clamp(
         (elapsedReactionMs - startMs) / 760,
         0,
@@ -186,99 +184,6 @@ export class PhaserPremiumMapCosmetics {
         .strokeEllipse(x, y + 26, 22 + progress * 58, 7 + progress * 18)
         .lineStyle(1, 0x667d49, (1 - progress) * .28)
         .strokeEllipse(x, y + 26, 10 + progress * 38, 4 + progress * 12);
-    }
-  }
-
-  private renderMaintenanceBot(): void {
-    if (!this.config || !this.view || !this.graphics) {
-      return;
-    }
-    const { x, y } = this.config.position;
-    const baseScale = this.baseScale;
-    const idle = this.state.elapsedMs / 1_000;
-    const elapsedReactionMs = this.elapsedReactionMs;
-    let offsetY = Math.sin(idle * 2.2) * 2;
-    let scaleX = 1 + Math.sin(idle * 1.7) * .018;
-    let scaleY = 1 - Math.sin(idle * 1.7) * .012;
-    let rotation = Math.sin(idle * .95) * .028;
-    let alpha = 1;
-
-    if (this.state.reactionRemainingMs > 0) {
-      if (elapsedReactionMs < 220) {
-        const progress = easeIn(elapsedReactionMs / 220);
-        offsetY += progress * 38;
-        scaleX += progress * .1;
-        scaleY *= 1 - progress * .6;
-        rotation += Math.sin(progress * Math.PI * 3) * .08;
-      } else if (elapsedReactionMs < 920) {
-        offsetY = 38;
-        scaleX = 1.1;
-        scaleY = .4;
-        alpha = .72;
-      } else {
-        const progress = easeOut(
-          (elapsedReactionMs - 920) /
-            (this.config.reactionDurationMs - 920),
-        );
-        offsetY = (1 - progress) * 38 -
-          Math.sin(progress * Math.PI) * 8;
-        scaleX = 1.1 - progress * .1;
-        scaleY = .4 + progress * .6;
-        alpha = .72 + progress * .28;
-      }
-      this.renderMaintenancePuff(elapsedReactionMs);
-    }
-
-    const workLightAlpha = .035 + (Math.sin(idle * 3.5) + 1) * .014;
-    this.graphics
-      .fillStyle(0xffad42, workLightAlpha)
-      .fillCircle(x, y + 4, 42);
-    this.view
-      .setPosition(x, y + offsetY)
-      .setScale(baseScale * scaleX, baseScale * scaleY)
-      .setRotation(rotation)
-      .setAlpha(alpha);
-  }
-
-  private renderMaintenancePuff(elapsedReactionMs: number): void {
-    if (!this.config || !this.graphics || elapsedReactionMs > 720) {
-      return;
-    }
-    const { x, y } = this.config.position;
-    const progress = elapsedReactionMs / 720;
-    for (let index = 0; index < 4; index += 1) {
-      const delayed = Phaser.Math.Clamp(progress * 1.7 - index * .17, 0, 1);
-      if (delayed <= 0 || delayed >= 1) {
-        continue;
-      }
-      this.graphics
-        .fillStyle(0xbfc2bd, (1 - delayed) * .22)
-        .fillCircle(
-          x - 31 + index * 9 - delayed * 18,
-          y + 9 - delayed * (28 + index * 3),
-          4 + delayed * 7,
-        );
-    }
-    for (let index = 0; index < 3; index += 1) {
-      const sparkProgress = Phaser.Math.Clamp(
-        progress * 2.1 - index * .22,
-        0,
-        1,
-      );
-      if (sparkProgress <= 0 || sparkProgress >= 1) {
-        continue;
-      }
-      const angle = -2.5 + index * .42;
-      const inner = 18 + sparkProgress * 7;
-      const outer = inner + (1 - sparkProgress) * 11;
-      this.graphics
-        .lineStyle(1.5, 0xffb04b, (1 - sparkProgress) * .62)
-        .lineBetween(
-          x + Math.cos(angle) * inner,
-          y + Math.sin(angle) * inner,
-          x + Math.cos(angle) * outer,
-          y + Math.sin(angle) * outer,
-        );
     }
   }
 

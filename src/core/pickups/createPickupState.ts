@@ -33,5 +33,9 @@ function valueForType(type: PickupType, config: PickupConfig): number {
   if (type === "health") return config.healthValue;
   if (type === "armor") return config.armorValue;
   if (type === "rocket") return config.rocketValue;
-  return config.railValue;
+  if (type === "rail") return config.railValue;
+  if (type === "pulse") return config.pulseValue;
+  if (type === "disc") return config.discValue;
+  if (type === "grenade") return config.grenadeValue;
+  return config.shardValue;
 }

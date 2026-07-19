@@ -18,9 +18,21 @@ import {
 import { planCombatStandoff } from "./BotCombatStandoff";
 import { TdmBotCombatController } from "./TdmBotCombatController";
 
+export interface ClassicCtfBotControllerDebugState {
+  readonly actorId: string;
+  readonly goalKind: ClassicCtfBotGoal["kind"] | null;
+  readonly goalTarget: WorldPosition | null;
+  readonly navigationTarget: WorldPosition | null;
+  readonly navigationTargetKey: string;
+  readonly combatTargetId: string | null;
+  readonly standoffKey: string | null;
+  readonly holdPosition: boolean;
+}
+
 export class ClassicCtfBotController {
   private jumpHeld = false;
   private readonly decision: ClassicCtfBotDecisionController;
+  private lastDebugState: ClassicCtfBotControllerDebugState;
 
   constructor(
     private readonly actorId: string,
@@ -33,6 +45,7 @@ export class ClassicCtfBotController {
       new TdmBotCombatController(),
   ) {
     this.decision = new ClassicCtfBotDecisionController(role, map);
+    this.lastDebugState = createEmptyDebugState(actorId);
   }
 
   readActions(
@@ -42,6 +55,7 @@ export class ClassicCtfBotController {
     const actor = findActiveActor(snapshot, this.actorId);
     if (!actor || snapshot.match?.phase === "ended") {
       this.resetTransientState();
+      this.lastDebugState = createEmptyDebugState(this.actorId);
       return [this.stopIntent()];
     }
 
@@ -72,6 +86,20 @@ export class ClassicCtfBotController {
         snapshot,
         deltaMs,
       );
+    this.lastDebugState = {
+      actorId: actor.id,
+      goalKind: goal.kind,
+      goalTarget: { ...goal.position },
+      navigationTarget: {
+        ...(navigationTarget?.targetPosition ?? goal.position),
+      },
+      navigationTargetKey: navigationTarget
+        ? `${goal.targetKey}:${navigationTarget.key}`
+        : goal.targetKey,
+      combatTargetId: combatTarget?.id ?? null,
+      standoffKey: navigationTarget?.key ?? null,
+      holdPosition: navigationTarget?.holdPosition ?? false,
+    };
     const aimDirection = combatTarget
       ? directionBetween(actor.position, combatTarget.position)
       : directionBetween(actor.position, goal.position);
@@ -104,10 +132,23 @@ export class ClassicCtfBotController {
     this.navigator.reset();
     this.decision.reset();
     this.resetTransientState();
+    this.lastDebugState = createEmptyDebugState(this.actorId);
   }
 
   setTeamCommand(teamId: TeamId, command: ClassicCtfTeamCommand): void {
     this.decision.setTeamCommand(teamId, command);
+  }
+
+  debugSnapshot(): ClassicCtfBotControllerDebugState {
+    return {
+      ...this.lastDebugState,
+      goalTarget: this.lastDebugState.goalTarget
+        ? { ...this.lastDebugState.goalTarget }
+        : null,
+      navigationTarget: this.lastDebugState.navigationTarget
+        ? { ...this.lastDebugState.navigationTarget }
+        : null,
+    };
   }
 
   private resetTransientState(): void {
@@ -157,6 +198,21 @@ export class ClassicCtfBotController {
       magnitude: 0,
     };
   }
+}
+
+function createEmptyDebugState(
+  actorId: string,
+): ClassicCtfBotControllerDebugState {
+  return {
+    actorId,
+    goalKind: null,
+    goalTarget: null,
+    navigationTarget: null,
+    navigationTargetKey: "",
+    combatTargetId: null,
+    standoffKey: null,
+    holdPosition: false,
+  };
 }
 
 function findActiveActor(

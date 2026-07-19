@@ -1,15 +1,15 @@
 # Waffenkatalog und Aenderungsplan
 
-Stand: 2026-07-18
+Stand: 2026-07-19
 
-Status: Phasen 1 bis 4 sind implementiert. Das technische Gate aus Phase 5
-ist am 2026-07-18 bestanden. Phase 6, der kleine Premium-Map-Dekorations-
-Vertical-Slice, ist ebenfalls implementiert. Manuelle Langzeit-Balance-,
-Spielgefuehl- und Sichttests bleiben offen.
+Status: Phasen 1 bis 6 sind implementiert. Am 2026-07-19 wurden ausserdem
+die vier freigegebenen Waffenprototypen, map-spezifische Vierer-Roster,
+Desktop-HUD und Desktop-Eingabe umgesetzt. Manuelle Langzeit-Balance-,
+Spielgefuehl-, Touch- und Sichttests bleiben offen.
 
 Verifizierter Stand:
 
-- `npm.cmd test`: 162 von 162 Tests bestanden.
+- `npm.cmd test`: 177 von 177 Tests bestanden.
 - `npm.cmd run test:typecheck`: bestanden.
 - `npm.cmd run build`: bestanden.
 - `npm.cmd run test:e2e`: 3 von 3 Premium-Map-Starts bestanden.
@@ -38,7 +38,8 @@ Empfohlene Gesamtfolge:
 6. Alle drei Bestandswaffen gemeinsam in allen Modi und Teamgroessen pruefen.
 7. Den kleinen Premium-Map-Dekorations-Vertical-Slice umsetzen.
 8. Pulse Repeater als erste neue Testwaffe prototypisieren.
-9. Erst nach diesen Tests ueber eine Ricochet Disc entscheiden.
+9. Pulse, Ricochet Disc, Lob Grenade und Shardcaster als klar getrennte
+   Testwaffen implementieren und gemeinsam balancieren.
 
 Touch-Eingabe ist ein eigenes, groesseres Thema und gehoert ausdruecklich
 nicht in das erste Waffen-Aenderungspaket.
@@ -567,29 +568,93 @@ Pickup-Positionen.
 
 ### Phase 7: Pulse-Repeater-Prototyp
 
-Erst nach stabilen Bestandswaffen und Dekoration wird Pulse als erste neue
-Testwaffe gebaut.
+Pulse ist als erste neue Testwaffe implementiert.
 
 Vorlaeufige, noch nicht endgueltig freigegebene Testidentitaet:
 
 - manuell gerichtete, schmale Projektile,
 - mittlere Reichweite,
 - kontinuierliches Tracking statt Splash, Hitscan oder Autoziel,
-- etwa 10 Schaden, 160 ms Feuerrhythmus, Geschwindigkeit 720,
-- etwa 600 bis 650 Reichweite,
-- Pickup etwa +10, Maximum etwa 20,
+- 10 Schaden, 160 ms Feuerrhythmus, Geschwindigkeit 760,
+- Reichweite 640,
+- Pickup +36, Maximum 54,
 - kein Splash, kein Homing und kein Knockback.
 
 Die ehemaligen Arc-Pickup-Positionen sind Kandidaten, aber keine automatische
 Zuweisung. Pro Map werden Anzahl, Symmetrie, Moduswege und bestehende
 Rocket-/Rail-Oekonomie zuerst neu bewertet.
 
-### Phase 8: Optionale Ricochet Disc
+### Phase 8: Ricochet Disc
 
-Eine einmal abprallende Disc bleibt eine spaetere Option. Sie wird erst
-prototypisiert, wenn Pulse getestet ist und weiterhin eine klare Luecke fuer
-indirekte Winkelangriffe besteht. Sie wird nicht gleichzeitig mit Pulse
-vollstaendig ausgerollt.
+Die Ricochet Disc ist implementiert: 38 Schaden direkt, bis zu drei
+Abpraller, nach dem ersten Abpraller 50 Schaden, 850 ms Cooldown, Pickup +8
+und Maximum 12. Ein Kontakt mit einem gegnerischen Actor beendet das
+Projektil sofort; es fliegt nach einem Treffer nicht weiter.
+
+Die Disc bleibt auf `C`. Der zuvor ebenfalls auf `C` liegende Reset der
+manuell verschobenen Kamera wurde auf `Home` verlegt, damit ein Disc-Schuss
+keine Kamerabewegung beziehungsweise Neuzentrierung mehr ausloest.
+
+### Produktionsgrafiken fuer Pulse, Disc und Lob Grenade
+
+Pulse Repeater und Ricochet Disc verwenden seit dem 2026-07-19 eigene
+Waffen- und Projektilgrafiken. HUD und Pickup zeigen jeweils die komplette
+Waffe; im Flug werden ein eigener Cyan-Bolzen beziehungsweise eine rotierende
+goldene Disc gerendert. Die Lob Grenade besitzt zusaetzlich eine eigene
+blau-weisse Energiekugel. Nach der Landung pulsiert ihr Kern immer heller;
+die Detonation verwendet eine eigene blau-weisse Ring-, Blitz- und
+Energieexplosion statt der orangefarbenen Rocket-Explosion. Die vorherigen
+prozeduralen Icons bleiben lediglich als technischer Fallback fuer isolierte
+Phaser-Tests erhalten.
+
+Alle fuenf Motive wurden mit dem integrierten OpenAI-ImageGen-Werkzeug als
+neue Projektassets erzeugt. Es wurden keine Fremdassets, Markenwaffen oder
+Asset-Pakete verwendet. Die Prompts verlangten einzelne, freigestellte
+Sci-Fi-Objekte, klare Lesbarkeit in der Top-down-Arena, keine Teammarkierung,
+keinen Text und einen gleichmaessigen magentafarbenen Chroma-Key-Hintergrund.
+
+| finales Asset | ImageGen-Original | Promptkern | SHA-256 |
+| --- | --- | --- | --- |
+| `public/assets/weapons/pulse-repeater.png` | `call_vxMorQy6HD6A5CjDJYlTyNyG.png` | kompakter Graphit-/Keramik-Energiekarabiner mit zwei Cyan-Zellen | `E1FB615024F3A3AA2A87F8A5718E1A4E917C290B6DE707DF23900B73035D044A` |
+| `public/assets/weapons/pulse-bolt.png` | `call_gIQb2xHhm3Uyr4vugF0kgYoK.png` | kurzer gerichteter Cyan-Energiebolzen mit weissem Kern | `0846DA5832B32CAD351FE93CC06A39C8FE5726DAD377D3C26860F4525C6419B8` |
+| `public/assets/weapons/ricochet-disc-launcher.png` | `call_roC62ecsZ8TBn6phYxmJitNp.png` | magnetischer Graphit-Scheibenwerfer mit sichtbarem Goldmagazin | `2AE10FF368E9600C0E59A61C179C6C37EF0E9D98C376C507239EF71E886243B0` |
+| `public/assets/weapons/ricochet-disc-projectile.png` | `call_LRw86LgvmUKunMgcQAoXweD6.png` | direkt von oben sichtbare segmentierte Stahl-/Gold-Rotorscheibe | `3C7F7E9808E3577F340E737501D13D12CE629343BBFB94E36C07359E4927BA5C` |
+| `public/assets/weapons/lob-energy-grenade.png` | `call_taKzpM3ykCJ5kD1AxB7UN5Jv.png` | direkt von oben sichtbare Graphit-Energiekugel mit segmentierter Huelle und blau-weissem Kern | `E9CF43A2ACE79205BD05B7CDEE9C881C5A9A3FC6D64FD641667F5CCF48519496` |
+
+Die Originale liegen im lokalen Codex-Ordner
+`C:\Users\madde\.codex\generated_images\019f76d1-a6d9-7d30-8b70-1d593f5dd387`.
+Der Chroma-Key wurde mit `remove_chroma_key.py`, Soft-Matte und Despill
+entfernt. Danach wurden die sichtbaren Alpha-Grenzen proportional auf
+transparente 256-x-256-PNGs gesetzt. Tests pruefen Format, Alpha,
+Abmessungen und ein Dateibudget unter 200 KB.
+
+### Phase 9: Lob Grenade
+
+Die Lob Grenade ist implementiert: Zielpunkt am Cursor bis Reichweite 850,
+Flug ueber Solids und Actors, sichtbare Flugkurve, kurze Landefuse,
+60 Zentrumsschaden mit Radius 120, Pickup +3 und Maximum 9. Der Zielpunkt
+wird auf Weltgrenzen und begehbaren Boden zurueckgezogen. Projektil,
+Ladetelegraph und Explosion besitzen eine gemeinsame blau-weisse
+Energieidentitaet.
+
+### Phase 10: Shardcaster
+
+Der Shardcaster ist implementiert: 5 Direktschaden, begrenzte Zielsuche in
+einem engen Kegel, langsame Kurskorrektur nur bei Sichtlinie und eine lokale
+Resonanz von 25 Bonusschaden nach sechs Treffern desselben Schuetzen.
+Pickup +18, Maximum 54. Die Resonanz erzeugt keinen Flaechenschaden.
+
+### Aktuelle Premium-Map-Roster
+
+| Map | Vier gleichzeitig verfuegbare Waffen |
+| --- | --- |
+| Helix Canopy | Arc Lash, Rail, Pulse Repeater, Shardcaster |
+| Temple of the Drowned Sun | Arc Lash, Rocket, Lob Grenade, Ricochet Disc |
+| Foundry Circuit | Arc Lash, Rocket, Rail, Ricochet Disc |
+
+Das Roster ist Teil des World-Snapshots. Feuerfreigabe, Desktop-HUD,
+Bot-Wahl und Pickup-Oekonomie lesen dieselbe Mapliste. Arc Lash steht immer
+ohne Pickup bereit; eine Premium-Map hat hoechstens drei Pickup-Waffen.
 
 ## Relevante Testabdeckung
 
@@ -622,6 +687,17 @@ Neu oder gezielt zu erweitern:
 - Rail-Wandende wird im Event vom freien Reichweitenende unterschieden.
 - HUD-Slots bleiben ohne Munition sichtbar.
 - 4v4-Stresstest mit maximal sinnvollem Rocket-Vorrat.
+- Pulse-Projektil verursacht 10 Schaden und respektiert das Map-Roster.
+- Disc kann genau dreimal abprallen, erhaelt nach dem ersten Abpraller
+  50 Schaden und endet bei jedem gegnerischen Treffer sofort.
+- Pulse-Pickup gibt 36 Schuss, Disc-Pickup 8; beide respektieren weiter ihr
+  bestehendes Maximum.
+- Disc-Feuer auf `C` und Kamera-Reset auf `Home` sind konfliktfrei.
+- Fuenf Waffen-/Projektilassets besitzen 256 x 256 Pixel, Alpha und bleiben
+  unter dem Dateibudget.
+- Grenade ueberquert Solids, landet, telegraphiert und detoniert lokal.
+- Shardcaster loest genau nach sechs Treffern eine einzelne Resonanz aus.
+- Jede Premium-Map enthaelt Arc plus genau drei Pickup-Waffen.
 
 ## Bewusst nicht Teil des ersten Pakets
 
@@ -632,8 +708,10 @@ Neu oder gezielt zu erweitern:
 - kein eigener Selbstschaden oder Selbst-Knockback,
 - keine Aenderung der Masterbilder oder Kollisionsdaten,
 - keine sofortige Belegung aller entfernten Arc-Pickup-Positionen,
-- keine gleichzeitige Einfuehrung von Pulse und Ricochet Disc,
-- keine umfassende universelle Waffen-Engine,
+- kein vierter oder zufaellig zusaetzlicher Disc-Abpraller,
+- keine frei um Hindernisse kurvenden Shard-Projektile,
+- keine umfassende universelle Waffen-Engine ausserhalb des benoetigten
+  gemeinsamen Katalogs,
 - keine Wiederaufnahme des vertagten Soundthemas.
 
 ## Quellreferenzen des Ist-Katalogs

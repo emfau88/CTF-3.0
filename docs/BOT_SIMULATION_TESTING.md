@@ -209,3 +209,21 @@ Build pruefen:
 ```bash
 npm.cmd run build
 ```
+
+## Premium-Map-Mehrfachaudit
+
+Fuer Helix Canopy, Temple of the Drowned Sun und Foundry Circuit existiert
+zusaetzlich ein wiederholbarer Langlauf-Audit:
+
+```bash
+npm.cmd run bot:audit:premium
+```
+
+Er vergleicht standardmaessig 54 Laeufe (3 Maps, 3 Modi, 6 Laeufe),
+speichert JSON und Markdown unter `diagnostics/bots/premium/` und trennt
+Move-Stalls, absichtliches Standoff, waffenloses Standoff, Objective-Fortschritt
+sowie CTF-Kommandowirkung.
+
+Die vollstaendige Logik- und Ergebnisbeschreibung steht in:
+
+- `docs/PREMIUM_MAP_BOT_BEHAVIOR_AUDIT.md`

@@ -39,7 +39,9 @@ interface ExplosionEffect extends Point {
   lifeMs: number;
   readonly maxLifeMs: number;
   readonly splashRadius: number;
-  readonly view: Phaser.GameObjects.Image;
+  readonly kind: "rocket" | "grenade";
+  readonly phase: number;
+  readonly view?: Phaser.GameObjects.Image;
 }
 
 type RailImpactKind = "actor" | "solid" | "range";
@@ -158,7 +160,19 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
         this.addExplosion(
           readPoint(event.payload, "position"),
           readNumber(event.payload, "splashRadius"),
+          "rocket",
         );
+      } else if (event.type === "weapon.grenadeExploded") {
+        this.addExplosion(
+          readPoint(event.payload, "position"),
+          readNumber(event.payload, "splashRadius"),
+          "grenade",
+        );
+      } else if (
+        event.type === "weapon.discRicochet" ||
+        event.type === "weapon.shardResonance"
+      ) {
+        this.addCoverImpact(readPoint(event.payload, "position"));
       } else if (
         event.type === "projectile.expired" &&
         readString(event.payload, "reason") === "solid" &&
@@ -183,7 +197,7 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
     this.trail = [];
     this.rocketSmokeTimers.clear();
     for (const particle of this.rocketSmoke) particle.view.destroy();
-    for (const effect of this.explosions) effect.view.destroy();
+    for (const effect of this.explosions) effect.view?.destroy();
     for (const effect of this.railEffects) effect.impact?.destroy();
     this.rocketSmoke = [];
     this.explosions = [];
@@ -296,7 +310,7 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
   private updateTimedEffects(ms: number): void {
     for (const effect of this.explosions) effect.lifeMs -= ms;
     for (const effect of this.explosions.filter((item) => item.lifeMs <= 0)) {
-      effect.view.destroy();
+      effect.view?.destroy();
     }
     this.explosions = this.explosions.filter((effect) => effect.lifeMs > 0);
 
@@ -375,21 +389,66 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
     for (const effect of this.explosions) {
       const progress = 1 - effect.lifeMs / effect.maxLifeMs;
       const alpha = effect.lifeMs / effect.maxLifeMs;
-      effect.view
-        .setFrame(Phaser.Math.Clamp(Math.floor(progress * 6), 0, 5))
-        .setScale(.30 + progress * .16)
-        .setAlpha(Math.min(1, alpha * 1.25));
-      this.effectsGraphics.fillStyle(0xf59f2f, .08 * alpha)
-        .fillCircle(
-          effect.x,
-          effect.y,
-          effect.splashRadius * Math.min(1, progress * 1.25),
-        );
-      this.effectsGraphics.lineStyle(2, 0xffd36c, .3 * alpha)
-        .strokeCircle(
-          effect.x,
-          effect.y,
-          effect.splashRadius * Math.min(1, progress * 1.1),
+      if (effect.kind === "grenade") {
+        this.renderEnergyGrenadeExplosion(effect, progress, alpha);
+      } else {
+        effect.view
+          ?.setFrame(Phaser.Math.Clamp(Math.floor(progress * 6), 0, 5))
+          .setScale(.30 + progress * .16)
+          .setAlpha(Math.min(1, alpha * 1.25));
+        this.effectsGraphics.fillStyle(0xf59f2f, .08 * alpha)
+          .fillCircle(
+            effect.x,
+            effect.y,
+            effect.splashRadius * Math.min(1, progress * 1.25),
+          );
+        this.effectsGraphics.lineStyle(2, 0xffd36c, .3 * alpha)
+          .strokeCircle(
+            effect.x,
+            effect.y,
+            effect.splashRadius * Math.min(1, progress * 1.1),
+          );
+      }
+    }
+  }
+
+  private renderEnergyGrenadeExplosion(
+    effect: ExplosionEffect,
+    progress: number,
+    alpha: number,
+  ): void {
+    const expansion = 1 - Math.pow(1 - progress, 3);
+    const flashAlpha = Math.max(0, 1 - progress * 3.2);
+    const outerRadius = effect.splashRadius * Math.min(1, expansion * 1.08);
+    this.effectsGraphics
+      .fillStyle(0xf5feff, .92 * flashAlpha)
+      .fillCircle(effect.x, effect.y, 12 + expansion * 29)
+      .fillStyle(0x65d5ff, .18 * alpha)
+      .fillCircle(effect.x, effect.y, outerRadius)
+      .lineStyle(5 - progress * 2.5, 0xeafbff, .86 * alpha)
+      .strokeCircle(effect.x, effect.y, outerRadius)
+      .lineStyle(2, 0x53bfff, .72 * alpha)
+      .strokeCircle(
+        effect.x,
+        effect.y,
+        effect.splashRadius * Math.min(1, expansion * .76),
+      );
+    const rotation = effect.phase + progress * 1.8;
+    for (let index = 0; index < 10; index += 1) {
+      const angle = rotation + index * Math.PI / 5;
+      const inner = 13 + expansion * effect.splashRadius * .28;
+      const outer = inner + 15 + expansion * 35;
+      this.effectsGraphics
+        .lineStyle(
+          index % 2 === 0 ? 3 : 2,
+          index % 2 === 0 ? 0xf1fdff : 0x63caff,
+          alpha * .82,
+        )
+        .lineBetween(
+          effect.x + Math.cos(angle) * inner,
+          effect.y + Math.sin(angle) * inner,
+          effect.x + Math.cos(angle) * outer,
+          effect.y + Math.sin(angle) * outer,
         );
     }
   }
@@ -614,7 +673,11 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
     });
   }
 
-  private addExplosion(position: Point | null, splashRadius: number): void {
+  private addExplosion(
+    position: Point | null,
+    splashRadius: number,
+    kind: "rocket" | "grenade",
+  ): void {
     if (!position || splashRadius <= 0) return;
     this.explosions.push({
       x: position.x,
@@ -622,12 +685,16 @@ export class PhaserWeaponEffectsPort implements EffectsPort {
       splashRadius,
       lifeMs: 420,
       maxLifeMs: 420,
-      view: this.scene.add.image(
-        position.x,
-        position.y,
-        "rocketExplosion",
-        0,
-      ).setDepth(70).setScale(.38),
+      kind,
+      phase: Phaser.Math.FloatBetween(0, Math.PI * 2),
+      view: kind === "rocket"
+        ? this.scene.add.image(
+          position.x,
+          position.y,
+          "rocketExplosion",
+          0,
+        ).setDepth(70).setScale(.38)
+        : undefined,
     });
   }
 

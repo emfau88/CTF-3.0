@@ -27,6 +27,11 @@ test("v2 preload selects only the active premium map and match roster", () => {
   assert.equal(loader.keys.has("helixArenaMaster"), false);
   assert.equal(loader.keys.has("ruinsFloorStone"), false);
   assert.equal(loader.keys.has("industrialFloorMetal"), false);
+  assert.equal(loader.keys.has("uiPulseButton"), true);
+  assert.equal(loader.keys.has("pulseProjectile"), true);
+  assert.equal(loader.keys.has("uiDiscButton"), true);
+  assert.equal(loader.keys.has("discProjectile"), true);
+  assert.equal(loader.keys.has("grenadeProjectile"), true);
   assert.deepEqual(
     [...loader.keys].filter((key) => key.endsWith("Runner")).sort(),
     ["mirejawRunner", "prismBastionRunner", "scrapwingRunner", "xenoRunner"],

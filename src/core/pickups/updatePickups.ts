@@ -1,7 +1,13 @@
 import type { ActorState } from "../actors";
 import type { GameEvent } from "../events";
 import type { PickupState } from "./pickup";
-import { V2_V1_WEAPON_PARITY_CONFIG } from "../combat";
+import {
+  ARENA_WEAPON_CATALOG,
+  isAmmoWeaponId,
+  setWeaponAmmo,
+  weaponAmmo,
+  type ArenaWeaponId,
+} from "../weapons";
 
 export interface PickupUpdateResult {
   readonly events: readonly GameEvent[];
@@ -81,12 +87,10 @@ function canApplyPickup(actor: ActorState, pickup: PickupState): boolean {
   if (pickup.type === "armor") {
     return actor.armor < actor.maxArmor;
   }
-  if (pickup.type === "rocket") {
-    return actor.weapons.rocketAmmo <
-      V2_V1_WEAPON_PARITY_CONFIG.rocketMaxAmmo;
-  }
-  return actor.weapons.railAmmo <
-    V2_V1_WEAPON_PARITY_CONFIG.railMaxAmmo;
+  const weaponId = pickup.type as ArenaWeaponId;
+  if (!isAmmoWeaponId(weaponId)) return false;
+  return (weaponAmmo(actor.weapons, weaponId) ?? 0) <
+    ARENA_WEAPON_CATALOG[weaponId].maxAmmo!;
 }
 
 function applyPickup(actor: ActorState, pickup: PickupState): number {
@@ -101,20 +105,15 @@ function applyPickup(actor: ActorState, pickup: PickupState): number {
     actor.armor = Math.min(actor.maxArmor, actor.armor + pickup.value);
     return actor.armor - before;
   }
-  if (pickup.type === "rocket") {
-    const before = actor.weapons.rocketAmmo;
-    actor.weapons.rocketAmmo = Math.min(
-      V2_V1_WEAPON_PARITY_CONFIG.rocketMaxAmmo,
-      actor.weapons.rocketAmmo + pickup.value,
-    );
-    return actor.weapons.rocketAmmo - before;
-  }
-  const before = actor.weapons.railAmmo;
-  actor.weapons.railAmmo = Math.min(
-    V2_V1_WEAPON_PARITY_CONFIG.railMaxAmmo,
-    actor.weapons.railAmmo + pickup.value,
+  const weaponId = pickup.type as ArenaWeaponId;
+  if (!isAmmoWeaponId(weaponId)) return 0;
+  const before = weaponAmmo(actor.weapons, weaponId) ?? 0;
+  const after = Math.min(
+    ARENA_WEAPON_CATALOG[weaponId].maxAmmo!,
+    before + pickup.value,
   );
-  return actor.weapons.railAmmo - before;
+  setWeaponAmmo(actor.weapons, weaponId, after);
+  return after - before;
 }
 
 function circlesOverlap(actor: ActorState, pickup: PickupState): boolean {

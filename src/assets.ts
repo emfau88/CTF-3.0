@@ -1,6 +1,7 @@
 import type Phaser from "phaser";
 import type { V2PlayerSkinId } from "./v2Route";
 import { getPremiumMapCosmetic } from "./premiumMapCosmetics";
+import { getPremiumMapLighting } from "./premiumMapLighting";
 
 const assetUrl = (file: string) =>
   `${import.meta.env?.BASE_URL ?? "/"}assets/${file}`;
@@ -50,6 +51,34 @@ export function preloadArenaAssets(
   scene.load.image("uiRailButton", assetUrl("ui-rail-button.png"));
   scene.load.image("uiRailBadge", assetUrl("ui-rail-badge.png"));
   scene.load.image("uiWhipButton", assetUrl("arc-lash-v2.png"));
+  scene.load.image(
+    "uiPulseButton",
+    assetUrl("weapons/pulse-repeater.png"),
+  );
+  scene.load.image(
+    "pickupPulse",
+    assetUrl("weapons/pulse-repeater.png"),
+  );
+  scene.load.image(
+    "pulseProjectile",
+    assetUrl("weapons/pulse-bolt.png"),
+  );
+  scene.load.image(
+    "uiDiscButton",
+    assetUrl("weapons/ricochet-disc-launcher.png"),
+  );
+  scene.load.image(
+    "pickupDisc",
+    assetUrl("weapons/ricochet-disc-launcher.png"),
+  );
+  scene.load.image(
+    "discProjectile",
+    assetUrl("weapons/ricochet-disc-projectile.png"),
+  );
+  scene.load.image(
+    "grenadeProjectile",
+    assetUrl("weapons/lob-energy-grenade.png"),
+  );
   if (options.playerHudPortraitAssetStem) {
     scene.load.image(
       "playerHudPortrait",
@@ -102,6 +131,13 @@ export function preloadArenaAssets(
     scene.load.image(
       premiumMapCosmetic.assetKey,
       assetUrl(premiumMapCosmetic.assetFile),
+    );
+  }
+  const premiumMapLighting = getPremiumMapLighting(options.mapId);
+  if (premiumMapLighting) {
+    scene.load.image(
+      premiumMapLighting.assetKey,
+      assetUrl(premiumMapLighting.assetFile),
     );
   }
   scene.load.audio("step1", assetUrl("sounds/step1.wav"));

@@ -38,6 +38,7 @@ export {
   createArenaBotControllerGroup,
   type BotActionSource,
   type BotCombatConfig,
+  type ClassicCtfBotControllerDebugState,
   type ClassicCtfBotGoal,
   type ClassicCtfBotGoalKind,
   type ClassicCtfBotRole,
@@ -52,6 +53,8 @@ export {
   type OneFlagBotGoal,
   type OneFlagBotGoalKind,
   type OneFlagBotControllerDebugState,
+  type TdmBotControllerDebugState,
+  type TdmBotIntent,
 } from "./bots";
 export {
   fireDiagnosticProjectile,
@@ -71,6 +74,8 @@ export {
   type ProjectileLifeState,
   type ProjectileState,
   type ProjectileWeaponId,
+  type LobProjectileState,
+  type HomingProjectileState,
   type ProjectileUpdateResult,
 } from "./combat";
 export type {
@@ -233,3 +238,17 @@ export {
   type WorldSnapshot,
   type WorldState,
 } from "./world";
+export {
+  ARENA_WEAPON_CATALOG,
+  ARENA_WEAPON_IDS,
+  DEFAULT_ARENA_WEAPON_ROSTER,
+  isAmmoWeaponId,
+  isArenaWeaponId,
+  setWeaponAmmo,
+  setWeaponCooldown,
+  weaponAmmo,
+  weaponCooldown,
+  type AmmoWeaponId,
+  type ArenaWeaponDefinition,
+  type ArenaWeaponId,
+} from "./weapons";

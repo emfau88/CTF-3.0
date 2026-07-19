@@ -171,6 +171,17 @@ function updateFalling(
   actor.weapons.railAmmo = 0;
   actor.weapons.railCooldownMs = 0;
   actor.weapons.whipCooldownMs = 0;
+  actor.weapons.pulseAmmo = 0;
+  actor.weapons.pulseCooldownMs = 0;
+  actor.weapons.discAmmo = 0;
+  actor.weapons.discCooldownMs = 0;
+  actor.weapons.grenadeAmmo = 0;
+  actor.weapons.grenadeCooldownMs = 0;
+  actor.weapons.shardAmmo = 0;
+  actor.weapons.shardCooldownMs = 0;
+  actor.weapons.shardStacks = 0;
+  actor.weapons.shardStackSourceActorId = null;
+  actor.weapons.shardStackRemainingMs = 0;
   actor.spawnProtectionRemainingMs = 0;
   actor.lifeState = "dead";
   actor.respawn = {

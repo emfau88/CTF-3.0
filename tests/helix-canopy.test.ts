@@ -33,7 +33,8 @@ test("Helix Canopy registers its rebuilt gameplay contract", () => {
   assert.equal(map?.geometry.gaps.length, 0);
   assert.equal(map?.navigation.jumpLinks.length, 4);
   assert.equal(map?.spawnPoints.length, 8);
-  assert.equal(map?.pickupSpawns.length, 9);
+  assert.equal(map?.pickupSpawns.length, 11);
+  assert.deepEqual(map?.weaponRoster, ["whip", "rail", "pulse", "shard"]);
   assert.equal(map?.presentation.theme, "helix-canopy");
 });
 

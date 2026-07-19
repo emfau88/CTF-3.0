@@ -52,6 +52,17 @@ export interface ActorWeaponState {
   railAmmo: number;
   railCooldownMs: number;
   whipCooldownMs: number;
+  pulseAmmo: number;
+  pulseCooldownMs: number;
+  discAmmo: number;
+  discCooldownMs: number;
+  grenadeAmmo: number;
+  grenadeCooldownMs: number;
+  shardAmmo: number;
+  shardCooldownMs: number;
+  shardStacks: number;
+  shardStackSourceActorId: string | null;
+  shardStackRemainingMs: number;
 }
 
 export interface ActorState {
@@ -158,6 +169,18 @@ export function createActorState(input: CreateActorStateInput): ActorState {
       railAmmo: input.weapons?.railAmmo ?? 0,
       railCooldownMs: input.weapons?.railCooldownMs ?? 0,
       whipCooldownMs: input.weapons?.whipCooldownMs ?? 0,
+      pulseAmmo: input.weapons?.pulseAmmo ?? 0,
+      pulseCooldownMs: input.weapons?.pulseCooldownMs ?? 0,
+      discAmmo: input.weapons?.discAmmo ?? 0,
+      discCooldownMs: input.weapons?.discCooldownMs ?? 0,
+      grenadeAmmo: input.weapons?.grenadeAmmo ?? 0,
+      grenadeCooldownMs: input.weapons?.grenadeCooldownMs ?? 0,
+      shardAmmo: input.weapons?.shardAmmo ?? 0,
+      shardCooldownMs: input.weapons?.shardCooldownMs ?? 0,
+      shardStacks: input.weapons?.shardStacks ?? 0,
+      shardStackSourceActorId:
+        input.weapons?.shardStackSourceActorId ?? null,
+      shardStackRemainingMs: input.weapons?.shardStackRemainingMs ?? 0,
     },
     respawn: input.respawn ? { ...input.respawn } : null,
   };

@@ -189,6 +189,7 @@ const gaps = [
 export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
   id: "drowned-sun-temple-v2",
   displayName: "Temple of the Drowned Sun",
+  weaponRoster: ["whip", "rocket", "grenade", "disc"],
   geometry: {
     bounds: { minX: 0, minY: 0, maxX: WORLD_WIDTH, maxY: WORLD_HEIGHT },
     solids: walls.map((wall) => ({
@@ -259,7 +260,9 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
     { id: "armor-sun-east", type: "armor", position: point(1180, 460) },
     { id: "rocket-roots-west", type: "rocket", position: point(800, 800) },
     { id: "rocket-roots-east", type: "rocket", position: point(1360, 800) },
-    { id: "rail-gallery-center", type: "rail", position: point(1080, 80) },
+    { id: "disc-gallery-center", type: "disc", position: point(1080, 80) },
+    { id: "grenade-sun-west", type: "grenade", position: point(1010, 460) },
+    { id: "grenade-sun-east", type: "grenade", position: point(1150, 460) },
   ],
   gameplay: {
     blueBase: {

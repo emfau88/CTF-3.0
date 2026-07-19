@@ -92,6 +92,17 @@ export function applyDamage(
     actor.weapons.railAmmo = 0;
     actor.weapons.railCooldownMs = 0;
     actor.weapons.whipCooldownMs = 0;
+    actor.weapons.pulseAmmo = 0;
+    actor.weapons.pulseCooldownMs = 0;
+    actor.weapons.discAmmo = 0;
+    actor.weapons.discCooldownMs = 0;
+    actor.weapons.grenadeAmmo = 0;
+    actor.weapons.grenadeCooldownMs = 0;
+    actor.weapons.shardAmmo = 0;
+    actor.weapons.shardCooldownMs = 0;
+    actor.weapons.shardStacks = 0;
+    actor.weapons.shardStackSourceActorId = null;
+    actor.weapons.shardStackRemainingMs = 0;
     actor.spawnProtectionRemainingMs = 0;
     actor.respawn = {
       reason: "death",
@@ -155,6 +166,9 @@ export function updateActorLifecycle(
   actor.armor = Math.min(actor.maxArmor, config.respawnArmor);
   actor.spawnProtectionRemainingMs = config.spawnProtectionMs;
   actor.weapons.whipCooldownMs = 0;
+  actor.weapons.shardStacks = 0;
+  actor.weapons.shardStackSourceActorId = null;
+  actor.weapons.shardStackRemainingMs = 0;
   actor.lifeId += 1;
   actor.lifeState = "active";
   actor.respawn = null;

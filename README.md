@@ -96,7 +96,9 @@ shortcuts and the contested Forge Heart at its center.
 
 - Fast directional movement, deliberate jumping and gap traversal
 - Health, armor, respawns and short spawn protection
-- Pickup-controlled **Rocket**, **Rail** and auto-targeting **Arc Lash** weapons
+- Map-specific four-weapon rosters with an unlimited **Arc Lash** plus
+  contested **Rocket**, **Rail**, **Pulse Repeater**, **Ricochet Disc**,
+  **Lob Grenade** and **Shardcaster** pickups
 - Team commands for **Defend**, **Follow** and **Attack**
 - Team rings, fighter outlines and a dedicated player marker for combat clarity
 - Fullscreen support, scalable HUD, match feed and hold-to-view statistics
@@ -113,6 +115,12 @@ shortcuts and the contested Forge Heart at its center.
 | `Q` | Fire Rocket when available |
 | `E` | Fire Rail when available |
 | `F` | Use Arc Lash when available |
+| `R` | Fire Pulse Repeater when available |
+| `C` | Throw Ricochet Disc when available |
+| `G` | Lob Grenade at the cursor |
+| `X` | Fire Shardcaster when available |
+| `Home` | Re-center the manually panned spectator camera |
+| `Shift` + `R` | Restart a finished match |
 | `1` / `2` / `3` | Defend / Follow / Attack squad command |
 | Hold `Tab` | Match statistics |
 | `M` | Pause and match menu |

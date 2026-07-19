@@ -488,7 +488,7 @@ function checkWorldMapRegistry(): void {
       world.actors.length !== 8 ||
       world.geometry.solids.length !== 20 ||
       world.geometry.gaps.length !== 2 ||
-      world.pickups.length !== 11 ||
+      world.pickups.length !== 13 ||
       world.navigation.jumpLinks.length !== 4 ||
       world.match?.phase !== "running"
     ) {

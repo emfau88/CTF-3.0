@@ -25,7 +25,10 @@ export {
   type ClassicCtfManualTeamCommand,
   type ClassicCtfTeamCommand,
 } from "./ClassicCtfBotDecisionController";
-export { ClassicCtfBotController } from "./ClassicCtfBotController";
+export {
+  ClassicCtfBotController,
+  type ClassicCtfBotControllerDebugState,
+} from "./ClassicCtfBotController";
 export {
   OneFlagBotDecisionController,
   type OneFlagBotGoal,
@@ -42,5 +45,9 @@ export {
   type GridBotRepathReason,
   type BotNavigator,
 } from "./GridBotNavigator";
-export { TdmBotController } from "./TdmBotController";
+export {
+  TdmBotController,
+  type TdmBotControllerDebugState,
+  type TdmBotIntent,
+} from "./TdmBotController";
 export { TdmBotCombatController } from "./TdmBotCombatController";

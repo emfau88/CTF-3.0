@@ -21,6 +21,7 @@ import {
   pickupPadColor,
 } from "./PhaserArenaPickupRenderer";
 import { PhaserPremiumMapCosmetics } from "./PhaserPremiumMapCosmetics";
+import { PhaserPremiumMapLighting } from "./PhaserPremiumMapLighting";
 
 interface SpawnPadParticle {
   x: number;
@@ -47,11 +48,13 @@ export type ArenaCollisionDiagnostics = "off" | "solids" | "heatmap";
 export class PhaserArenaRendererPort implements RendererPort {
   private readonly projectileViews =
     new Map<ProjectileId, Phaser.GameObjects.Ellipse | Phaser.GameObjects.Image>();
+  private readonly projectileChargeGraphics: Phaser.GameObjects.Graphics;
   private readonly actorRenderer: PhaserArenaActorRenderer;
   private readonly cameraController: PhaserArenaCameraController;
   private readonly pickupRenderer: PhaserArenaPickupRenderer;
   private readonly objectiveRenderer: PhaserArenaObjectiveRenderer;
   private readonly premiumMapCosmetics: PhaserPremiumMapCosmetics;
+  private readonly premiumMapLighting: PhaserPremiumMapLighting;
   private readonly spawnPadParticleGraphics: Phaser.GameObjects.Graphics;
   private readonly libraryDustGraphics?: Phaser.GameObjects.Graphics;
   private readonly libraryDust: LibraryDustParticle[] = [];
@@ -90,6 +93,7 @@ export class PhaserArenaRendererPort implements RendererPort {
     }
     renderArena(scene, level, (x, y) => this.addLibraryCandles(x, y));
     this.premiumMapCosmetics = new PhaserPremiumMapCosmetics(scene, map.id);
+    this.premiumMapLighting = new PhaserPremiumMapLighting(scene, map.id);
     if (collisionDiagnostics !== "off") {
       this.collisionDiagnosticGraphics = scene.add.graphics().setDepth(88);
       this.renderCollisionDiagnostics(
@@ -104,11 +108,13 @@ export class PhaserArenaRendererPort implements RendererPort {
       this.addLibrarySpiders(map);
     }
     this.spawnPadParticleGraphics = scene.add.graphics().setDepth(19);
+    this.projectileChargeGraphics = scene.add.graphics().setDepth(51);
   }
 
   render(snapshot: WorldSnapshot): void {
     this.cameraController.update(snapshot);
     this.premiumMapCosmetics.render(snapshot);
+    this.premiumMapLighting.render(snapshot);
     this.actorRenderer.render(snapshot);
     this.renderProjectiles(snapshot);
     this.pickupRenderer.render(snapshot);
@@ -121,8 +127,10 @@ export class PhaserArenaRendererPort implements RendererPort {
     this.cameraController.reset();
     this.lastLibraryTimeMs = 0;
     this.premiumMapCosmetics.reset();
+    this.premiumMapLighting.reset();
     this.actorRenderer.reset();
     this.destroyProjectileViews();
+    this.projectileChargeGraphics.clear();
     this.pickupRenderer.reset();
     this.objectiveRenderer.reset();
     this.resetSpawnPadParticles();
@@ -131,8 +139,10 @@ export class PhaserArenaRendererPort implements RendererPort {
   dispose(): void {
     this.cameraController.dispose();
     this.premiumMapCosmetics.dispose();
+    this.premiumMapLighting.dispose();
     this.actorRenderer.dispose();
     this.destroyProjectileViews();
+    this.projectileChargeGraphics.destroy();
     this.pickupRenderer.dispose();
     this.objectiveRenderer.dispose();
     this.spawnPadParticleGraphics.destroy();
@@ -238,6 +248,7 @@ export class PhaserArenaRendererPort implements RendererPort {
   }
 
   private renderProjectiles(snapshot: WorldSnapshot): void {
+    this.projectileChargeGraphics.clear();
     const visibleIds = new Set(
       snapshot.projectiles.map((projectile) => projectile.id),
     );
@@ -248,22 +259,47 @@ export class PhaserArenaRendererPort implements RendererPort {
       }
     }
     for (const projectile of snapshot.projectiles) {
+      this.renderGrenadeCharge(projectile);
       this.renderProjectile(projectile);
     }
   }
 
   private renderProjectile(projectile: Readonly<ProjectileState>): void {
-    const color = projectile.teamId === "blue" ? 0x79a9ff : 0xff806f;
+    const color = projectileColor(projectile);
     const view = this.projectileViews.get(projectile.id) ??
       this.createProjectileView(projectile, color);
     view
-      .setPosition(projectile.position.x, projectile.position.y)
-      .setRotation(Math.atan2(projectile.velocity.y, projectile.velocity.x));
+      .setPosition(
+        projectile.position.x,
+        projectile.position.y - (projectile.visualHeight ?? 0),
+      )
+      .setRotation(
+        projectile.weaponId === "disc"
+          ? this.scene.time.now * .018
+          : projectile.weaponId === "grenade"
+          ? this.scene.time.now * .0045
+          : Math.atan2(projectile.velocity.y, projectile.velocity.x),
+      );
     if (view instanceof Phaser.GameObjects.Ellipse) {
-      view.setDisplaySize(projectile.radius * 2.7, projectile.radius * .9);
+      const size = projectileDisplaySize(projectile);
+      view.setDisplaySize(size.width, size.height);
       view.setFillStyle(color, .98);
-    } else {
+    } else if (projectile.weaponId === "rocket") {
       view.setScale(.46);
+    } else if (projectile.weaponId === "pulse") {
+      view.setDisplaySize(34, 34);
+    } else if (projectile.weaponId === "grenade") {
+      const charge = grenadeChargeProgress(projectile);
+      view
+        .setDisplaySize(32 + charge * 8, 32 + charge * 8)
+        .setAlpha(.94 + charge * .06);
+      if (charge > .62) {
+        view.setTint(0xe7f8ff);
+      } else {
+        view.clearTint();
+      }
+    } else {
+      view.setDisplaySize(40, 40);
     }
     this.projectileViews.set(projectile.id, view);
   }
@@ -280,6 +316,27 @@ export class PhaserArenaRendererPort implements RendererPort {
         2,
       ).setScale(.46).setDepth(52);
     }
+    if (projectile.weaponId === "pulse") {
+      return this.scene.add.image(
+        projectile.position.x,
+        projectile.position.y,
+        "pulseProjectile",
+      ).setDisplaySize(34, 34).setDepth(52);
+    }
+    if (projectile.weaponId === "disc") {
+      return this.scene.add.image(
+        projectile.position.x,
+        projectile.position.y,
+        "discProjectile",
+      ).setDisplaySize(40, 40).setDepth(52);
+    }
+    if (projectile.weaponId === "grenade") {
+      return this.scene.add.image(
+        projectile.position.x,
+        projectile.position.y,
+        "grenadeProjectile",
+      ).setDisplaySize(32, 32).setDepth(52);
+    }
     return this.scene.add.ellipse(
       projectile.position.x,
       projectile.position.y,
@@ -288,6 +345,43 @@ export class PhaserArenaRendererPort implements RendererPort {
       color,
       .98,
     ).setDepth(52);
+  }
+
+  private renderGrenadeCharge(
+    projectile: Readonly<ProjectileState>,
+  ): void {
+    const charge = grenadeChargeProgress(projectile);
+    if (charge <= 0) return;
+    const pulse = .72 + Math.sin(this.scene.time.now * .018) * .28;
+    const radius = 17 + charge * 14;
+    this.projectileChargeGraphics
+      .fillStyle(0x55cfff, (.07 + charge * .12) * pulse)
+      .fillCircle(projectile.position.x, projectile.position.y, radius)
+      .fillStyle(0xf3fdff, (.16 + charge * .34) * pulse)
+      .fillCircle(
+        projectile.position.x,
+        projectile.position.y,
+        5 + charge * 5,
+      )
+      .lineStyle(2, 0xaeeaff, (.28 + charge * .48) * pulse)
+      .strokeCircle(
+        projectile.position.x,
+        projectile.position.y,
+        13 + charge * 12,
+      );
+    if (charge < .55) return;
+    const rotation = this.scene.time.now * .006;
+    for (let index = 0; index < 4; index += 1) {
+      const angle = rotation + index * Math.PI / 2;
+      const inner = 11 + charge * 8;
+      const outer = inner + 5 + charge * 7;
+      this.projectileChargeGraphics.lineBetween(
+        projectile.position.x + Math.cos(angle) * inner,
+        projectile.position.y + Math.sin(angle) * inner,
+        projectile.position.x + Math.cos(angle) * outer,
+        projectile.position.y + Math.sin(angle) * outer,
+      );
+    }
   }
 
   private destroyProjectileViews(): void {
@@ -443,6 +537,41 @@ export class PhaserArenaRendererPort implements RendererPort {
     }
   }
 
+}
+
+function projectileColor(projectile: Readonly<ProjectileState>): number {
+  if (projectile.weaponId === "pulse") return 0x35d9ff;
+  if (projectile.weaponId === "disc") return 0xffd34a;
+  if (projectile.weaponId === "grenade") return 0x79caff;
+  if (projectile.weaponId === "shard") return 0xc674ff;
+  return projectile.teamId === "blue" ? 0x79a9ff : 0xff806f;
+}
+
+function grenadeChargeProgress(
+  projectile: Readonly<ProjectileState>,
+): number {
+  const lob = projectile.lob;
+  if (projectile.weaponId !== "grenade" || !lob?.landed) return 0;
+  return Phaser.Math.Clamp(
+    (lob.elapsedMs - lob.flightMs) / Math.max(1, lob.fuseMs),
+    .001,
+    1,
+  );
+}
+
+function projectileDisplaySize(
+  projectile: Readonly<ProjectileState>,
+): Readonly<{ width: number; height: number }> {
+  if (projectile.weaponId === "disc") {
+    return { width: projectile.radius * 2.4, height: projectile.radius * .75 };
+  }
+  if (projectile.weaponId === "grenade") {
+    return { width: projectile.radius * 2, height: projectile.radius * 2 };
+  }
+  if (projectile.weaponId === "shard") {
+    return { width: projectile.radius * 3.5, height: projectile.radius * .8 };
+  }
+  return { width: projectile.radius * 2.7, height: projectile.radius * .9 };
 }
 
 function toPresentationLevel(map: WorldMapData): ArenaPresentationData {

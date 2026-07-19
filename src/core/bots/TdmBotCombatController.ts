@@ -5,8 +5,14 @@ import {
   V2_BOT_COMBAT_CONFIG,
   type BotCombatConfig,
 } from "./BotCombatConfig";
+import {
+  ARENA_WEAPON_CATALOG,
+  weaponAmmo,
+  weaponCooldown,
+  type ArenaWeaponId,
+} from "../weapons";
 
-type BotWeaponId = "rocket" | "rail" | "whip";
+type BotWeaponId = ArenaWeaponId;
 
 export class TdmBotCombatController {
   private rocketDecisionCooldownMs = 0;
@@ -29,22 +35,33 @@ export class TdmBotCombatController {
       0,
       this.rocketDecisionCooldownMs - Math.max(0, deltaMs),
     );
+    const lineOfSight = hasLineOfSight(
+      actor.position,
+      target.position,
+      snapshot.geometry.solids,
+    );
     if (
       actor.lifeState !== "active" ||
       target.lifeState !== "active" ||
       !actor.teamId ||
       !target.teamId ||
-      actor.teamId === target.teamId ||
-      !hasLineOfSight(actor.position, target.position, snapshot.geometry.solids)
+      actor.teamId === target.teamId
     ) {
       this.resetRailTarget();
       return null;
     }
 
-    this.updateRailTarget(target, deltaMs);
+    if (lineOfSight) this.updateRailTarget(target, deltaMs);
+    else this.resetRailTarget();
     const directAim = directionBetween(actor.position, target.position);
     const distance = distanceBetween(actor.position, target.position);
-    const weaponId = this.chooseWeapon(actor, target, distance);
+    const weaponId = this.chooseWeapon(
+      actor,
+      target,
+      distance,
+      snapshot.map?.weaponRoster ?? ["whip", "rocket", "rail"],
+      lineOfSight,
+    );
     if (!weaponId) {
       return null;
     }
@@ -61,7 +78,9 @@ export class TdmBotCombatController {
       phase: "pressed",
       actorId: actor.id,
       direction,
-      payload: { weaponId },
+      payload: weaponId === "grenade"
+        ? { weaponId, targetPosition: { ...target.position } }
+        : { weaponId },
     };
   }
 
@@ -162,14 +181,26 @@ export class TdmBotCombatController {
     actor: Readonly<ActorState>,
     target: Readonly<ActorState>,
     distance: number,
+    roster: readonly ArenaWeaponId[],
+    lineOfSight: boolean,
   ): BotWeaponId | null {
+    const available = (weaponId: ArenaWeaponId): boolean =>
+      roster.includes(weaponId) &&
+      weaponCooldown(actor.weapons, weaponId) <= 0 &&
+      (weaponAmmo(actor.weapons, weaponId) ?? 1) > 0 &&
+      distance <= ARENA_WEAPON_CATALOG[weaponId].range;
+    if (!lineOfSight) {
+      return available("grenade") && distance >= 220 ? "grenade" : null;
+    }
     if (
+      roster.includes("whip") &&
       actor.weapons.whipCooldownMs <= 0 &&
       distance <= this.config.whipRange + target.radius
     ) {
       return "whip";
     }
     const railAvailable =
+      roster.includes("rail") &&
       actor.weapons.railAmmo > 0 &&
       actor.weapons.railCooldownMs <= 0 &&
       distance <= this.config.railRange;
@@ -177,6 +208,7 @@ export class TdmBotCombatController {
       return this.railReactionRemainingMs <= 0 ? "rail" : null;
     }
     if (
+      roster.includes("rocket") &&
       actor.weapons.rocketAmmo > 0 &&
       this.rocketDecisionCooldownMs <= 0 &&
       distance >= this.config.rocketMinRange &&
@@ -184,6 +216,10 @@ export class TdmBotCombatController {
     ) {
       return "rocket";
     }
+    if (available("disc") && distance >= 170) return "disc";
+    if (available("pulse")) return "pulse";
+    if (available("shard")) return "shard";
+    if (available("grenade") && distance >= 280) return "grenade";
     if (
       railAvailable &&
       this.railReactionRemainingMs <= 0 &&

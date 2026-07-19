@@ -1,11 +1,13 @@
 import Phaser from "phaser";
 import type { PickupId, PickupState, WorldSnapshot } from "../../core";
 import { UI_FONT_FAMILY } from "../../uiTypography";
+import { ensureArenaWeaponTextures } from "./PhaserArenaWeaponTextures";
 
 export class PhaserArenaPickupRenderer {
   private readonly views = new Map<PickupId, Phaser.GameObjects.Container>();
 
   constructor(private readonly scene: Phaser.Scene) {
+    ensureArenaWeaponTextures(scene);
     ensureSpawnPadAnimation(scene);
   }
 
@@ -101,11 +103,19 @@ function pickupTexture(type: PickupState["type"]): string {
   if (type === "health") return "pickupHealth";
   if (type === "armor") return "pickupArmor";
   if (type === "rocket") return "pickupRocket";
-  return "pickupRail";
+  if (type === "rail") return "pickupRail";
+  if (type === "pulse") return "pickupPulse";
+  if (type === "disc") return "pickupDisc";
+  if (type === "grenade") return "pickupGrenade";
+  return "pickupShard";
 }
 
 function pickupIconScale(type: PickupState["type"]): number {
   if (type === "rail") return .22;
+  if (type === "pulse" || type === "disc") return .15;
+  if (type === "grenade" || type === "shard") {
+    return .28;
+  }
   return .18;
 }
 
@@ -113,7 +123,11 @@ export function pickupPadColor(type: PickupState["type"]): number {
   if (type === "health") return 0x55d88a;
   if (type === "armor") return 0x6fc7ff;
   if (type === "rocket") return 0xff7048;
-  return 0x9cff67;
+  if (type === "rail") return 0x9cff67;
+  if (type === "pulse") return 0x35d9ff;
+  if (type === "disc") return 0xffd34a;
+  if (type === "grenade") return 0x79caff;
+  return 0xc674ff;
 }
 
 function drawPickupState(
@@ -141,7 +155,7 @@ function drawPickupState(
 }
 
 function isWeaponPickup(type: PickupState["type"]): boolean {
-  return type === "rocket" || type === "rail";
+  return type !== "health" && type !== "armor";
 }
 
 function ensureSpawnPadAnimation(scene: Phaser.Scene): void {

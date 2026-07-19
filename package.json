@@ -6,7 +6,8 @@
     "test:e2e": "playwright test",
     "test:typecheck": "tsc -p tsconfig.tests.json",
     "preview": "vite preview",
-    "bot:diagnostics": "node --import tsx ./scripts/run-bot-diagnostics.ts"
+    "bot:diagnostics": "node --import tsx ./scripts/run-bot-diagnostics.ts",
+    "bot:audit:premium": "node --import tsx ./scripts/run-premium-bot-audit.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",

@@ -94,6 +94,14 @@ export function createWorldSnapshot(world: WorldState): WorldSnapshot {
       ...projectile,
       position: { ...projectile.position },
       velocity: { ...projectile.velocity },
+      lob: projectile.lob
+        ? {
+          ...projectile.lob,
+          origin: { ...projectile.lob.origin },
+          target: { ...projectile.lob.target },
+        }
+        : undefined,
+      homing: projectile.homing ? { ...projectile.homing } : undefined,
     })),
     pickups: world.pickups.map((pickup) => ({
       ...pickup,
@@ -136,6 +144,8 @@ export function createWorldSnapshot(world: WorldState): WorldSnapshot {
         to: { ...link.to },
       })),
     },
-    map: world.map ? { ...world.map } : null,
+    map: world.map
+      ? { ...world.map, weaponRoster: [...world.map.weaponRoster] }
+      : null,
   };
 }

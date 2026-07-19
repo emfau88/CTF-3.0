@@ -18,6 +18,12 @@ import {
   TdmBotCombatController,
 } from "./TdmBotCombatController";
 import { planCombatStandoff } from "./BotCombatStandoff";
+import {
+  isAmmoWeaponId,
+  weaponAmmo,
+  type AmmoWeaponId,
+  type ArenaWeaponId,
+} from "../weapons";
 
 export type TdmBotIntent =
   | "fight-enemy"
@@ -234,12 +240,12 @@ function selectPickupGoal(
     : slot === 4 && actor.armor <= actor.maxArmor * .5
     ? "armor"
     : null;
-  const preferredWeapon = preferredWeaponForSlot(slot);
-  const needsPreferredWeapon = preferredWeapon === null
-    ? false
-    : preferredWeapon === "rocket"
-    ? actor.weapons.rocketAmmo <= 0
-    : actor.weapons.railAmmo <= 0;
+  const preferredWeapon = preferredWeaponForSlot(
+    slot,
+    snapshot.map?.weaponRoster ?? ["whip", "rocket", "rail"],
+  );
+  const needsPreferredWeapon = preferredWeapon !== null &&
+    (weaponAmmo(actor.weapons, preferredWeapon) ?? 0) <= 0;
   const desiredTypes = [
     urgentType,
     needsPreferredWeapon ? preferredWeapon : null,
@@ -279,10 +285,12 @@ function selectPickupGoal(
 
 function preferredWeaponForSlot(
   slot: ArenaTeamSlot,
-): "rocket" | "rail" | null {
-  if (slot === 1) return "rocket";
-  if (slot === 2) return "rail";
-  return null;
+  roster: readonly ArenaWeaponId[],
+): AmmoWeaponId | null {
+  const pickupWeapons = roster.filter((weaponId): weaponId is AmmoWeaponId =>
+    isAmmoWeaponId(weaponId)
+  );
+  return pickupWeapons[(slot - 1) % Math.max(1, pickupWeapons.length)] ?? null;
 }
 
 function intentForPickup(pickup: Readonly<PickupState>): TdmBotIntent {
@@ -367,12 +375,12 @@ function isWeaponPickupReservedForHuman(
   humanActorIds: readonly string[],
 ): boolean {
   if (
-    pickup.type !== "rocket" &&
-    pickup.type !== "rail"
+    pickup.type === "health" ||
+    pickup.type === "armor"
   ) {
     return false;
   }
-  const weapon = pickup.type as "rocket" | "rail";
+  const weapon = pickup.type as AmmoWeaponId;
   const actorAmmo = ammoFor(actor, weapon);
   const humans = new Set(humanActorIds);
   return snapshot.actors.some((candidate) =>
@@ -386,11 +394,9 @@ function isWeaponPickupReservedForHuman(
 
 function ammoFor(
   actor: Readonly<ActorState>,
-  weapon: "rocket" | "rail",
+  weapon: AmmoWeaponId,
 ): number {
-  return weapon === "rocket"
-    ? actor.weapons.rocketAmmo
-    : actor.weapons.railAmmo;
+  return weaponAmmo(actor.weapons, weapon) ?? 0;
 }
 
 function distance(

@@ -1,7 +1,15 @@
 import type { WorldPosition } from "../actors";
 
 export type PickupId = string;
-export type PickupType = "health" | "armor" | "rocket" | "rail";
+export type PickupType =
+  | "health"
+  | "armor"
+  | "rocket"
+  | "rail"
+  | "pulse"
+  | "disc"
+  | "grenade"
+  | "shard";
 export type PickupLifeState = "active" | "inactive";
 
 export interface PickupState {

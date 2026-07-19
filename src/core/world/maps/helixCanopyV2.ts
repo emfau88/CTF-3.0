@@ -106,6 +106,7 @@ const walls = [
 export const HELIX_CANOPY_V2: WorldMapData = {
   id: "helix-canopy-v2",
   displayName: "Helix Canopy",
+  weaponRoster: ["whip", "rail", "pulse", "shard"],
   geometry: {
     bounds: { minX: 0, minY: 0, maxX: WORLD_WIDTH, maxY: WORLD_HEIGHT },
     solids: walls.map((wall) => ({
@@ -166,9 +167,11 @@ export const HELIX_CANOPY_V2: WorldMapData = {
     { id: "health-red-root-exit", type: "health", position: point(1495, 610) },
     { id: "armor-exchange-west", type: "armor", position: point(780, 480) },
     { id: "armor-exchange-east", type: "armor", position: point(1140, 480) },
-    { id: "rocket-root-west", type: "rocket", position: point(675, 765) },
-    { id: "rocket-root-east", type: "rocket", position: point(1245, 765) },
+    { id: "pulse-root-west", type: "pulse", position: point(675, 765) },
+    { id: "pulse-root-east", type: "pulse", position: point(1245, 765) },
     { id: "rail-canopy-center", type: "rail", position: point(960, 175) },
+    { id: "shard-exchange-west", type: "shard", position: point(880, 480) },
+    { id: "shard-exchange-east", type: "shard", position: point(1040, 480) },
   ],
   gameplay: {
     blueBase: rect(180, 350, 200, 260),

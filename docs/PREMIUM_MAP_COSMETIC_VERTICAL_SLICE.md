@@ -1,49 +1,40 @@
 # Premium-Map-Dekoration: Vertical Slice
 
-Stand: 2026-07-18
+Stand: 2026-07-19
 
-Status: Technisch implementiert, visuelle Platzierung noch nicht abgenommen.
+Status: Technisch implementiert. Temple und Foundry wurden nach Sichttest
+korrigiert; die genaue Helix-Platzierung bleibt zur gemeinsamen Markierung
+offen.
 Die Elemente sind rein kosmetische, transparente Overlays am blockierten
 Kartenrand. Masterbilder, Kollision, Laufwege, Pickups, Objectives,
 Waffenwerte und Sound bleiben unveraendert.
 
-## Verbindlicher Follow-up fuer die naechste Sitzung
+## Verbindlicher Follow-up
 
-Feedback aus dem ersten manuellen Test:
-
-- Helix Canopy: Das Element ist nicht gut positioniert.
-- Temple of the Drowned Sun: Das Element ist im normalen Spiel nicht
-  auffindbar beziehungsweise nicht sichtbar genug.
-- Foundry Circuit: Das Element ist spontan ebenfalls nicht auffindbar
-  beziehungsweise nicht sichtbar genug.
-
-Vor jeder Erweiterung des Dekorationsumfangs werden daher zuerst alle drei
-Positionen im normalen Gameplay neu festgelegt. Die neuen Stellen sollen
-weiterhin am Kartenrand und ausserhalb wichtiger Laufwege liegen, aber aus
-der ueblichen Spielkamera klar erkennbar sein. Danach folgen eine erneute
-Sichtpruefung im echten Match und die ausdrueckliche visuelle Abnahme. Bis
-dahin gilt der Vertical Slice nicht als fertig abgenommen.
+Helix Canopy benoetigt noch eine vom Nutzer markierte Lampen- und
+Pflanzenplatzierung. Die Zielpunkte sollen am besten in einem Screenshot
+nummeriert oder als relative Stellen in einer Randzone angegeben werden.
+Temple und Foundry besitzen bereits die korrigierte Randverteilung.
 
 Verifizierter Stand:
 
-- `npm.cmd test`: 162 von 162 Tests bestanden.
+- `npm.cmd test`: 171 von 171 Tests bestanden.
 - `npm.cmd run test:typecheck`: bestanden.
 - `npm.cmd run build`: bestanden.
 - `npm.cmd run test:e2e -- tests/e2e/premium-arenas.spec.ts`: 3 von 3
   Premium-Map-Starts bestanden.
 - Technische Kartenuebersicht und Browserfehlerpruefung: bestanden.
-- Visuelle Abnahme aus der normalen Spielkamera: nicht bestanden; neue
-  Positionierung ist fuer die naechste Sitzung offen.
+- Temple und Foundry wurden erneut aus der normalen Spielkamera geprueft.
+  Die Helix-Abnahme ist weiterhin offen.
 
 ## Enthaltene Elemente
 
 | Map | Element | Position | Leerlauf | Lokale Reaktion |
 | --- | --- | --- | --- | --- |
-| Helix Canopy | neugierige biolumineszente Kelchpflanze | `(620, 115)` im noerdlichen, blockierten Gartenrand | ruhiges Atmen, leichtes Schaukeln, vier kleine Lichtsporen | duckt sich erschrocken, wenn ein aktiver Actor oder Projektil auf 150 px herankommt |
-| Temple of the Drowned Sun | muerrischer goldaeugiger Tempelfrosch | `(1140, 948)` im suedlichen, blockierten Wurzel-/Wasserrand | kaum sichtbares Atmen und Wippen | huepft und taucht mit zwei lokalen Wasserringen kurz ab, wenn Aktivitaet auf 150 px herankommt |
-| Foundry Circuit | ueberarbeiteter muerrischer Wartungsbot | `(1960, 992)` in der suedlichen, blockierten Maschinerie | schwebt und kippt leicht, warmes Arbeitslicht pulsiert | zieht sich bei Aktivitaet auf 160 px mit einem kleinen Dampf-/Funkenpuff zurueck |
+| Helix Canopy | neugierige biolumineszente Kelchpflanze | vorlaeufig `(220, 600)`; neue Zielposition noch offen | ruhiges Atmen, leichtes Schaukeln, vier kleine Lichtsporen | duckt sich erschrocken, wenn ein aktiver Actor oder Projektil auf 150 px herankommt |
+| Temple of the Drowned Sun | kleiner Tempelfrosch | `(52, 650)` im westlichen, blockierten Wurzel-/Wasserrand | kaum sichtbares Atmen und Wippen | huepft weg, bleibt mindestens 10,5 Sekunden unsichtbar und kehrt dann mit lokalen Wasserringen zurueck |
 
-Alle Reaktionen besitzen mehrere Sekunden Sperrzeit. Ein Actor, der am Rand
+Die Frosch-Reaktion besitzt eine lange Sperrzeit. Ein Actor, der am Rand
 stehen bleibt, erzeugt daher keine dauernde Effektkette.
 
 ## Technische Architektur
@@ -63,12 +54,13 @@ stehen bleibt, erzeugt daher keine dauernde Effektkette.
   `dispose()` zerstoert beide Game Objects zusammen mit der Arena.
 - Die Tiefe `-1.05` liegt ueber dem integrierten Master, aber weit unter
   Actors, Projektilen, Pickups und Objectives.
-- `preloadArenaAssets()` laedt nur das Asset der aktuell gewaehlten
-  Premium-Map. Andere Karten laden keines der drei Bilder.
+- `preloadArenaAssets()` laedt nur ein konfiguriertes Asset der aktuell
+  gewaehlten Premium-Map. Foundry laedt nach Entfernung des Wartungsbots kein
+  Einzelwesen.
 
 ## Lesbarkeit und Gameplay-Sicherheit
 
-- Alle drei Mittelpunkte liegen in bereits blockierter Aussenkulisse und
+- Beide verbliebenen Mittelpunkte liegen in bereits blockierter Aussenkulisse und
   hoechstens 115 px vom Weltrand entfernt.
 - Die Elemente besitzen keine eigene Kollision und suggerieren keinen neuen
   begehbaren oder blockierenden Bereich.
@@ -82,7 +74,7 @@ stehen bleibt, erzeugt daher keine dauernde Effektkette.
 
 ## Asset-Provenienz
 
-Alle drei Motive wurden am 2026-07-18 speziell fuer Core Arena mit dem in
+Die beiden verbliebenen Motive wurden am 2026-07-18 speziell fuer Core Arena mit dem in
 Codex integrierten OpenAI-`imagegen`-Werkzeug erzeugt. Es wurden keine
 Fremdassets, Asset-Pakete, Markenmotive oder Kenney-Bausteine verwendet.
 
@@ -90,7 +82,6 @@ Fremdassets, Asset-Pakete, Markenmotive oder Kenney-Bausteine verwendet.
 | --- | --- | --- | --- |
 | `public/assets/premium-cosmetics/helix-curious-bloom.png` | `call_EXVs3rOUT2rp2YkqdN05TCwn.png` | isolierte Top-down-Sci-Fi-Kelchpflanze, Smaragd/Jade/Tuerkis, neugierige Silhouette, keine Teamfarben, reines Magenta als Chroma-Key | `AA4DB6ECB85355BD4344C0E1743681B1F153387F83C4B30EFAFDB91E725F6D76` |
 | `public/assets/premium-cosmetics/temple-grumpy-frog.png` | `call_xv0asqmFj57iN1J8FDXTCkNl.png` | isolierter kleiner Top-down-Tempelfrosch, Moos/Oliv/Antikgold, muerrischer Ausdruck, keine Teamfarben, reines Magenta als Chroma-Key | `06B143EF65170322688396A082C7D5A98CFA4DA0E82FFB65C0A533A9B248E0A4` |
-| `public/assets/premium-cosmetics/foundry-grumpy-maintenance-bot.png` | `call_sksgTyRekHOXOT2tLSbT97jA.png` | isolierter kleiner Top-down-Wartungsbot, dunkler Stahl/Messing/Arbeitsorange, ueberarbeiteter Ausdruck, keine Teamfarben, reines Magenta als Chroma-Key | `E39DC0B543A292AB724EF6D6F8B03FEC43AE58A41E7EE09508FBD4CD6089E39A` |
 
 Die Originalgenerierungen liegen ausserhalb des Repositorys im lokalen
 Codex-Ordner
@@ -110,8 +101,8 @@ Lokale Nachbearbeitung:
 
 Pro Match entstehen:
 
-- eine selektiv geladene 256-x-256-RGBA-Textur,
-- ein `Phaser.GameObjects.Image`,
+- hoechstens eine selektiv geladene 256-x-256-RGBA-Textur,
+- hoechstens ein `Phaser.GameObjects.Image`,
 - ein wiederverwendetes `Phaser.GameObjects.Graphics`,
 - hoechstens vier gezeichnete Lichtsporen beziehungsweise wenige lokale
   Linien/Kreise im Reaktionsfenster,
@@ -124,7 +115,7 @@ zu verteilen.
 
 ## Testabdeckung
 
-- genau ein kosmetischer Eintrag fuer jede Premium-Map,
+- genau zwei freigegebene Einzelwesen; Foundry besitzt bewusst keines,
 - eindeutige Asset-Keys und selektives Preloading,
 - alle Positionen liegen in blockierter Randkulisse,
 - PNG-Dateien sind 256 x 256, RGBA und kleiner als 300 KB,
@@ -155,4 +146,76 @@ weiterer Randdetails beschlossen werden. Sinnvolle Kandidaten sind:
 - Temple: eine seltene kleine Spinne in einer bereits blockierten Ecke,
 - Foundry: ein einzelnes Ventil mit kurzem, lokalem Dampfablass.
 
-Diese Kandidaten sind nicht Teil des aktuellen Slices.
+Diese Kandidaten waren nicht Teil des ersten Slices. Die folgende,
+ausdruecklich freigegebene Erweiterung fuegt stattdessen einen kontrollierten
+Lichtkranz pro Map hinzu.
+
+## Erweiterung 2026-07-19: sichtbare Randpositionen und Lichtkranz
+
+Der erste manuelle Sichttest zeigte, dass die Einzelwesen zwar technisch
+korrekt in blockierter Randkulisse lagen, aber nicht gut auffindbar waren.
+Ihre Positionen wurden deshalb ohne Aenderung von Masterbild oder Kollision
+in normal sichtbare Randzonen verschoben. Bluete und Frosch bleiben in
+blockierter Kulisse:
+
+| Map | Element | neue Position |
+| --- | --- | --- |
+| Helix Canopy | neugierige Bluete | `(220, 600)` |
+| Temple of the Drowned Sun | Tempelfrosch | `(52, 650)` |
+
+Zusaetzlich besitzt jede Premium-Map nun genau acht kleine Randlichter.
+Helix und Temple nutzen die durchgehend blockierten Seitenraender; Foundry
+nutzt wegen seiner offenen Seiteneingaenge je vier Leuchten am oberen und
+unteren Rand. Pro Map wird nur eine 256-x-256-RGBA-Textur geladen und achtmal
+instanziert:
+
+| Map | Lichttyp | Lichtfarbe | Instanzen |
+| --- | --- | --- | ---: |
+| Helix Canopy | botanische Grow-Lamp | neutrales Mintweiss | 8 |
+| Temple of the Drowned Sun | antike Sonnenbrazier | warmes Antikgold | 8 |
+| Foundry Circuit | gekaefigte Servicelampe | warmes Arbeitsamber | 8 |
+
+Die Leuchten pulsieren mit versetzter Phase. Ein Projektil nahe der
+blockierten Randfassung dimmt nur die betroffene Leuchte fuer 1,15 Sekunden;
+danach erholt sie sich deterministisch. Die Reaktion erzeugt weder Schaden
+noch Event, Punkte, Loot, Kollision oder Sound und wird bei Reset vollstaendig
+zurueckgesetzt.
+
+### Herkunft der neuen Licht-Assets
+
+Alle drei Assets wurden am 2026-07-19 mit dem integrierten ImageGen-Werkzeug
+als neue, projektbezogene Top-down-Einzelobjekte erzeugt. Der Prompt verlangte
+jeweils eine einzelne maptypische Fassung, keine Teamfarben, keinen Text und
+einen exakt magentafarbenen Chroma-Key-Hintergrund. Anschliessend wurden die
+Ergebnisse mit `remove_chroma_key.py` weich freigestellt, Spill bereinigt und
+mit Pillow/Lanczos auf 256 x 256 Pixel skaliert.
+
+| finales Asset | ImageGen-Original | Promptkern | SHA-256 |
+| --- | --- | --- | --- |
+| `public/assets/premium-cosmetics/helix-grow-lamp.png` | `call_0GdEP1468TAKoFSs7JkASum9.png` | pale ceramic botanical grow lamp, mint-white core, leaf fins, strict top-down | `F371D97C5B17A6552C1F87360946A92B1FD12510315738AA048A85DF82934FC4` |
+| `public/assets/premium-cosmetics/temple-sun-brazier.png` | `call_clTw4e0OHUMThEwA2ecjzPYw.png` | basalt and antique-gold drowned-sun brazier, warm amber flame, strict top-down | `24A4E7AA9CDF0612B108E9CDAF7ABB2D82663F9E79D7A2BDC3930909B41E7276` |
+| `public/assets/premium-cosmetics/foundry-service-lamp.png` | `call_OWRFCmyiHCUGuNLf7MNegd5u.png` | caged steel service lamp, brass details, warm amber work light, strict top-down | `3C8BC60F1B8DBF37425470B890060FA25BF8812B20150B2FC825F0D133ACEA8F` |
+
+Das zusaetzliche Laufzeitbudget pro Match betraegt acht Images und ein
+gemeinsames Graphics-Objekt. Es gibt keine Emitter und keine wachsende
+Partikelliste. Zusammen mit dem Einzelwesen bleiben Objektzahl und Kosten
+damit fuer 1v1 bis 4v4 konstant.
+
+## Korrektur nach Sichttest am 2026-07-19
+
+- Helix Canopy bleibt fuer eine gemeinsam markierte Lampen- und
+  Pflanzenplatzierung offen. Bis zu diesem Feedback wurden dort keine
+  weiteren Positionsannahmen getroffen.
+- Temple verteilt seine acht Sonnenbrazier nun gleichmaessig auf die beiden
+  langen Kanten: je vier bei `x = 420, 900, 1380, 1860`, oben bei `y = 42`
+  und unten bei `y = 938`.
+- Der Tempelfrosch ist mit 66 statt 82 Pixeln rund 20 Prozent kleiner. Nach
+  dem Verscheuchen bleibt er bis 10,5 Sekunden vollstaendig verborgen und
+  kehrt erst danach zurueck. Die Reaktion kann fruehestens nach 14 Sekunden
+  erneut ausgeloest werden.
+- Der Foundry-Wartungsbot wurde vollstaendig aus Konfiguration, Preload und
+  Laufzeit entfernt.
+- Foundrys acht Servicelampen liegen nun vollstaendig in den blockierten
+  Maschinenstreifen: oben bei `y = 55`, unten bei `y = 991`. Sie reichen
+  nicht mehr auf den direkten Arena-Spielboden und lesen sich dadurch nicht
+  wie Pickups.

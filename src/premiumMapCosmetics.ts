@@ -1,7 +1,6 @@
 export type PremiumMapCosmeticKind =
   | "curious-bloom"
-  | "grumpy-frog"
-  | "maintenance-bot";
+  | "grumpy-frog";
 
 export interface PremiumMapCosmeticConfig {
   readonly mapId:
@@ -19,6 +18,7 @@ export interface PremiumMapCosmeticConfig {
   readonly reactionRadius: number;
   readonly reactionDurationMs: number;
   readonly rearmDelayMs: number;
+  readonly reactionReturnDelayMs?: number;
 }
 
 export interface PremiumMapCosmeticState {
@@ -34,7 +34,7 @@ export const PREMIUM_MAP_COSMETICS = [
     kind: "curious-bloom",
     assetKey: "helixCuriousBloom",
     assetFile: "premium-cosmetics/helix-curious-bloom.png",
-    position: { x: 620, y: 115 },
+    position: { x: 220, y: 600 },
     displaySize: 100,
     reactionRadius: 150,
     reactionDurationMs: 1_200,
@@ -45,22 +45,12 @@ export const PREMIUM_MAP_COSMETICS = [
     kind: "grumpy-frog",
     assetKey: "templeGrumpyFrog",
     assetFile: "premium-cosmetics/temple-grumpy-frog.png",
-    position: { x: 1_140, y: 948 },
-    displaySize: 82,
+    position: { x: 52, y: 650 },
+    displaySize: 66,
     reactionRadius: 150,
-    reactionDurationMs: 2_200,
-    rearmDelayMs: 4_800,
-  },
-  {
-    mapId: "flow-circuit-v2",
-    kind: "maintenance-bot",
-    assetKey: "foundryMaintenanceBot",
-    assetFile: "premium-cosmetics/foundry-grumpy-maintenance-bot.png",
-    position: { x: 1_960, y: 992 },
-    displaySize: 94,
-    reactionRadius: 160,
-    reactionDurationMs: 1_450,
-    rearmDelayMs: 3_600,
+    reactionDurationMs: 12_000,
+    rearmDelayMs: 14_000,
+    reactionReturnDelayMs: 10_500,
   },
 ] as const satisfies readonly PremiumMapCosmeticConfig[];
 

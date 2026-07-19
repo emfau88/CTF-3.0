@@ -1,7 +1,7 @@
 # Bot Diagnostics Baseline
 
-Timestamp: 2026-07-18T21:16:51.458Z
-Git: branch=main, commit=41a6c3a, dirty=true
+Timestamp: 2026-07-19T12:23:20.784Z
+Git: branch=main, commit=3b6c355, dirty=true
 
 ## Kurzurteil
 
@@ -13,8 +13,8 @@ Die Diagnose lief durch, markiert aber 3 Hotzone-Hinweis(e).
 |---|---|---|---:|---:|---:|---|---|---:|---:|
 | TDM Training Crossing 1v1 | team-deathmatch | training-crossing-v2 | 1v1 | 18020ms | 2 | 5/6 | 7/5 | 0 | 0 |
 | TDM Training Crossing 2v2 | team-deathmatch | training-crossing-v2 | 2v2 | 18020ms | 5 | 5/5 | 9/9 | 0 | 0 |
-| TDM Training Crossing 3v3 | team-deathmatch | training-crossing-v2 | 3v3 | 18020ms | 3 | 4/7 | 6/5 | 0 | 0 |
-| TDM Training Crossing 4v4 | team-deathmatch | training-crossing-v2 | 4v4 | 18020ms | 4 | 5/7 | 12/5 | 0 | 0 |
+| TDM Training Crossing 3v3 | team-deathmatch | training-crossing-v2 | 3v3 | 18020ms | 4 | 5/4 | 8/7 | 0 | 0 |
+| TDM Training Crossing 4v4 | team-deathmatch | training-crossing-v2 | 4v4 | 18020ms | 6 | 8/7 | 11/11 | 0 | 0 |
 | Classic CTF Flank Switch 1v1 | classic-ctf | flank-switch-v2 | 1v1 | 22032ms | 2 | 2/1 | 2/2 | 0 | 0 |
 | Classic CTF Flank Switch 2v2 | classic-ctf | flank-switch-v2 | 2v2 | 22032ms | 1 | 3/4 | 8/6 | 0 | 0 |
 | Classic CTF Flank Switch 3v3 | classic-ctf | flank-switch-v2 | 3v3 | 22032ms | 0 | 7/4 | 11/10 | 0 | 0 |

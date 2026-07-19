@@ -1,4 +1,6 @@
-export type WeaponHudId = "rocket" | "rail" | "whip";
+import type { ArenaWeaponId } from "../../core";
+
+export type WeaponHudId = ArenaWeaponId;
 
 export interface WeaponHudPosition {
   readonly x: number;
@@ -64,7 +66,7 @@ export function calculateWeaponStripLayout(
 export function calculateDesktopWeaponLayout(
   width: number,
   height: number,
-): Record<WeaponHudId, WeaponHudPosition> {
+): Record<"rocket" | "rail" | "whip", WeaponHudPosition> {
   const layout = calculateWeaponStripLayout(width, height, 3);
   const [rocket, rail, whip] = layout.slots;
 
@@ -79,7 +81,12 @@ export function weaponIconScale(
   weaponId: WeaponHudId,
   radius: number,
 ): number {
-  const sourceSize = weaponId === "whip" ? 512 : 256;
+  const sourceSize = weaponId === "whip"
+    ? 512
+    : weaponId === "rocket" || weaponId === "rail" ||
+        weaponId === "pulse" || weaponId === "disc"
+    ? 256
+    : 128;
   return radius * 2.15 / sourceSize;
 }
 

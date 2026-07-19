@@ -30,6 +30,9 @@ export function createDiagnosticWorldState(): WorldState {
   world.map = {
     id: TRAINING_CROSSING_V2.id,
     displayName: TRAINING_CROSSING_V2.displayName,
+    weaponRoster: [
+      ...(TRAINING_CROSSING_V2.weaponRoster ?? ["whip", "rocket", "rail"]),
+    ],
   };
   world.spawnPoints = TRAINING_CROSSING_V2.spawnPoints.map((spawnPoint) => ({
     ...spawnPoint,

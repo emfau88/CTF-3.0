@@ -2,6 +2,9 @@ import Phaser from "phaser";
 import type { ActorId, WorldSnapshot } from "../../core";
 import { calculateArenaFitZoom } from "./arenaCameraFit";
 
+export const ARENA_CAMERA_RESET_KEY_CODE =
+  Phaser.Input.Keyboard.KeyCodes.HOME;
+
 export class PhaserArenaCameraController {
   private initialized = false;
   private manualActive = false;
@@ -19,7 +22,7 @@ export class PhaserArenaCameraController {
     if (enableManualCamera && scene.input.keyboard) {
       this.cursorKeys = scene.input.keyboard.createCursorKeys();
       this.resetKey = scene.input.keyboard.addKey(
-        Phaser.Input.Keyboard.KeyCodes.C,
+        ARENA_CAMERA_RESET_KEY_CODE,
       );
     }
   }

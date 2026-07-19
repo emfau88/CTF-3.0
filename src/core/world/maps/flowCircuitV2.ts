@@ -139,6 +139,7 @@ const maintenancePitEastCenterX = WORLD_WIDTH - maintenancePitWestCenterX;
 export const FLOW_CIRCUIT_V2: WorldMapData = {
   id: "flow-circuit-v2",
   displayName: "Foundry Circuit",
+  weaponRoster: ["whip", "rocket", "rail", "disc"],
   geometry: {
     bounds: { minX: 0, minY: 0, maxX: WORLD_WIDTH, maxY: WORLD_HEIGHT },
     solids: walls.map((wall) => ({
@@ -210,6 +211,8 @@ export const FLOW_CIRCUIT_V2: WorldMapData = {
     { id: "rocket-coolant-west", type: "rocket", position: { x: 660, y: 800 } },
     { id: "rocket-coolant-east", type: "rocket", position: { x: 1780, y: 800 } },
     { id: "rail-precision-center", type: "rail", position: { x: 1220, y: 145 } },
+    { id: "disc-forge-west", type: "disc", position: { x: 1040, y: 523 } },
+    { id: "disc-forge-east", type: "disc", position: { x: 1400, y: 523 } },
   ],
   gameplay: {
     blueBase: { x: 45, y: 245, width: 260, height: 556 },

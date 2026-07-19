@@ -35,6 +35,30 @@ export function updateActorWorld(
       0,
       actor.weapons.whipCooldownMs - ms,
     );
+    actor.weapons.pulseCooldownMs = Math.max(
+      0,
+      actor.weapons.pulseCooldownMs - ms,
+    );
+    actor.weapons.discCooldownMs = Math.max(
+      0,
+      actor.weapons.discCooldownMs - ms,
+    );
+    actor.weapons.grenadeCooldownMs = Math.max(
+      0,
+      actor.weapons.grenadeCooldownMs - ms,
+    );
+    actor.weapons.shardCooldownMs = Math.max(
+      0,
+      actor.weapons.shardCooldownMs - ms,
+    );
+    actor.weapons.shardStackRemainingMs = Math.max(
+      0,
+      actor.weapons.shardStackRemainingMs - ms,
+    );
+    if (actor.weapons.shardStackRemainingMs <= 0) {
+      actor.weapons.shardStacks = 0;
+      actor.weapons.shardStackSourceActorId = null;
+    }
     const lifecycle = updateActorLifecycle(
       actor,
       ms,

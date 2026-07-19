@@ -15,6 +15,8 @@ export type {
   ProjectileLifeState,
   ProjectileState,
   ProjectileWeaponId,
+  LobProjectileState,
+  HomingProjectileState,
 } from "./projectile";
 export {
   updateProjectiles,
