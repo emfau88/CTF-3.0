@@ -6,6 +6,7 @@ import {
 import {
   fireDiagnosticProjectile,
   fireV1Weapons,
+  type V1WeaponDamageResolver,
   V2_DIAGNOSTIC_BLASTER_CONFIG,
 } from "../combat";
 import type { GameEvent } from "../events";
@@ -26,20 +27,44 @@ export function updateDiagnosticControlledActor(
   allowManualPrimaryFire = true,
 ): readonly GameEvent[] {
   const events: GameEvent[] = [];
+  events.push(...applyDiagnosticControlledActorDamage(world, actor, input));
+  if (actor.lifeState !== "active") {
+    return events;
+  }
+  events.push(...fireDiagnosticControlledActorWeapons(
+    world,
+    actor,
+    input,
+    allowManualPrimaryFire,
+  ));
+  events.push(...moveDiagnosticControlledActor(world, actor, input));
+  return events;
+}
+
+export function applyDiagnosticControlledActorDamage(
+  world: WorldState,
+  actor: ActorState,
+  input: CoreInputFrame,
+): readonly GameEvent[] {
   const damage = readDiagnosticDamage(input);
-  if (damage > 0) {
-    const damageResult = applyDamage(
+  return damage > 0
+    ? applyDamage(
       actor,
       damage,
       world.timeMs,
       V2_ACTOR_LIFECYCLE_CONFIG,
-    );
-    events.push(...damageResult.events);
-    if (damageResult.killed) {
-      return events;
-    }
-  }
+    ).events
+    : [];
+}
 
+export function fireDiagnosticControlledActorWeapons(
+  world: WorldState,
+  actor: ActorState,
+  input: CoreInputFrame,
+  allowManualPrimaryFire = true,
+  damageResolver?: V1WeaponDamageResolver,
+): readonly GameEvent[] {
+  const events: GameEvent[] = [];
   if (
     allowManualPrimaryFire &&
     hasAction(input, "firePrimary", "held")
@@ -56,8 +81,22 @@ export function updateDiagnosticControlledActor(
     }
     events.push(...fire.events);
   }
-  events.push(...fireV1Weapons(world, actor, input));
+  events.push(...fireV1Weapons(
+    world,
+    actor,
+    input,
+    undefined,
+    damageResolver,
+  ));
+  return events;
+}
 
+export function moveDiagnosticControlledActor(
+  world: WorldState,
+  actor: ActorState,
+  input: CoreInputFrame,
+): readonly GameEvent[] {
+  const events: GameEvent[] = [];
   updateLastMoveDirection(actor, input);
   const jumpResult = applyJumpMovement(
     actor,

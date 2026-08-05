@@ -1,4 +1,9 @@
-import type { ActorId, TeamId, WorldPosition } from "../actors";
+import type {
+  ActorId,
+  ActorState,
+  TeamId,
+  WorldPosition,
+} from "../actors";
 import type { GameEvent } from "../events";
 import { createFlagObjective, type Objective } from "../objectives";
 import {
@@ -83,36 +88,39 @@ export class OneFlagMode implements GameMode {
       if (carriedFlag) {
         if (pointInRect(actor.position, this.captureTargetFor(actor.teamId))) {
           events.push(...this.captureFlag(world, carriedFlag, actor.id));
-          if (world.match?.phase === "ended") break;
+          if (world.match?.phase === "ended") return events;
         }
-        continue;
-      }
-      const flag = neutralFlagAtHome(world);
-      if (
-        flag &&
-        distance(actor.position, flag.position) < this.config.pickupRadius
-      ) {
-        replaceObjective(world, flag.id, {
-          ...flag,
-          state: {
-            ...flag.state,
-            status: "carried",
-            interactingActorId: actor.id,
-          },
-        });
-        events.push({
-          id: `flag-picked-up-${flag.id}-${actor.id}-${world.timeMs}`,
-          type: "objective.flagPickedUp",
-          timeMs: world.timeMs,
-          sourceActorId: actor.id,
-          teamId: actor.teamId,
-          payload: {
-            objectiveId: flag.id,
-            flagTeamId: null,
-          },
-        });
       }
     }
+
+    const flag = neutralFlagAtHome(world);
+    const actor = flag
+      ? resolveNeutralFlagPickup(
+        world,
+        flag.position,
+        this.config.pickupRadius,
+      )
+      : undefined;
+    if (!flag || !actor?.teamId) return events;
+    replaceObjective(world, flag.id, {
+      ...flag,
+      state: {
+        ...flag.state,
+        status: "carried",
+        interactingActorId: actor.id,
+      },
+    });
+    events.push({
+      id: `flag-picked-up-${flag.id}-${actor.id}-${world.timeMs}`,
+      type: "objective.flagPickedUp",
+      timeMs: world.timeMs,
+      sourceActorId: actor.id,
+      teamId: actor.teamId,
+      payload: {
+        objectiveId: flag.id,
+        flagTeamId: null,
+      },
+    });
     return events;
   }
 
@@ -323,6 +331,36 @@ function neutralFlagAtHome(world: WorldState): Objective | undefined {
   return world.objectives.find((objective) =>
     isNeutralFlag(objective) && objective.state.status === "home"
   );
+}
+
+function resolveNeutralFlagPickup(
+  world: WorldState,
+  flagPosition: WorldPosition,
+  pickupRadius: number,
+): ActorState | undefined {
+  const contenders = world.actors
+    .filter((actor) =>
+      actor.lifeState === "active" &&
+      Boolean(actor.teamId) &&
+      distance(actor.position, flagPosition) < pickupRadius
+    )
+    .map((actor) => ({
+      actor,
+      distance: distance(actor.position, flagPosition),
+    }));
+  const nearestDistance = Math.min(
+    ...contenders.map((contender) => contender.distance),
+  );
+  if (!Number.isFinite(nearestDistance)) return undefined;
+  const nearest = contenders.filter((contender) =>
+    Math.abs(contender.distance - nearestDistance) <= 1e-6
+  );
+  if (new Set(nearest.map(({ actor }) => actor.teamId)).size > 1) {
+    return undefined;
+  }
+  return nearest
+    .sort((left, right) => left.actor.id.localeCompare(right.actor.id))[0]
+    ?.actor;
 }
 
 function flagCarriedBy(

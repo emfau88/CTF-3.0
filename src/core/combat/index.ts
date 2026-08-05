@@ -31,4 +31,8 @@ export {
   V2_V1_WEAPON_PARITY_CONFIG,
   type V1WeaponConfig,
 } from "./V1WeaponConfig";
-export { fireV1Weapons } from "./v1Weapons";
+export {
+  fireV1Weapons,
+  type V1WeaponDamageRequest,
+  type V1WeaponDamageResolver,
+} from "./v1Weapons";

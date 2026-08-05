@@ -60,9 +60,35 @@ export class TeamDeathmatchMode implements GameMode {
   }
 
   handleEvent(event: GameEvent, world: WorldState): readonly GameEvent[] {
+    return this.handleEvents([event], world);
+  }
+
+  handleEvents(
+    events: readonly GameEvent[],
+    world: WorldState,
+  ): readonly GameEvent[] {
+    if (world.match?.phase !== "running") {
+      return [];
+    }
+    const modeEvents = events.flatMap((event) =>
+      this.handleScoringEvent(event, world)
+    );
     if (
-      event.type !== "actor.died" ||
-      world.match?.phase !== "running"
+      world.scoreBoard.entries.some((entry) =>
+        entry.score >= this.config.scoreLimit
+      )
+    ) {
+      modeEvents.push(...this.endMatch(world, "score-limit"));
+    }
+    return modeEvents;
+  }
+
+  private handleScoringEvent(
+    event: GameEvent,
+    world: WorldState,
+  ): readonly GameEvent[] {
+    if (
+      event.type !== "actor.died"
     ) {
       return [];
     }
@@ -96,7 +122,7 @@ export class TeamDeathmatchMode implements GameMode {
       return [];
     }
 
-    const events: GameEvent[] = [{
+    return [{
       id: `score-awarded-${awardKey}`,
       type: "score.awarded",
       timeMs: event.timeMs,
@@ -112,10 +138,6 @@ export class TeamDeathmatchMode implements GameMode {
         awardKey,
       },
     }];
-    if (award.score >= this.config.scoreLimit) {
-      events.push(...this.endMatch(world, "score-limit"));
-    }
-    return events;
   }
 
   isComplete(world: WorldSnapshot): boolean {

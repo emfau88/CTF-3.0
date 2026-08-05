@@ -68,7 +68,7 @@ test("rebuilt Foundry Circuit keeps both bot teams progressing in long 2v2 match
   for (const scenario of scenarios) {
     const summary = runSimulationScenario({
       ...scenario,
-      durationMs: 18_000,
+      durationMs: scenario.modeId === "classic-ctf" ? 45_000 : 18_000,
       label: `${scenario.label} long-run`,
     });
     const progress = groupProgressByTeam(summary.movementByActor);
