@@ -11,20 +11,26 @@ export interface ArenaParticipant {
   readonly spawnPointId: string;
 }
 
+export interface ArenaTeamSizes {
+  readonly blue: ArenaTeamSize;
+  readonly red: ArenaTeamSize;
+}
+
 export interface ArenaWorldOptions {
   readonly teamSize?: ArenaTeamSize;
+  readonly teamSizes?: ArenaTeamSizes;
 }
 
 export const DEFAULT_ARENA_TEAM_SIZE: ArenaTeamSize = 1;
 export const MAX_ARENA_TEAM_SIZE: ArenaTeamSize = 4;
 
 export function createArenaRoster(
-  teamSize: ArenaTeamSize = DEFAULT_ARENA_TEAM_SIZE,
+  teamSizeOrSizes: ArenaTeamSize | ArenaTeamSizes = DEFAULT_ARENA_TEAM_SIZE,
 ): readonly ArenaParticipant[] {
-  assertArenaTeamSize(teamSize);
+  const teamSizes = resolveArenaTeamSizes(teamSizeOrSizes);
   const participants: ArenaParticipant[] = [];
   for (const teamId of ["blue", "red"] as const) {
-    for (let slot = 1; slot <= teamSize; slot++) {
+    for (let slot = 1; slot <= teamSizes[teamId]; slot++) {
       const teamSlot = slot as ArenaTeamSlot;
       participants.push({
         actorId: arenaActorId(teamId, teamSlot),
@@ -35,6 +41,22 @@ export function createArenaRoster(
     }
   }
   return participants;
+}
+
+export function resolveArenaTeamSizes(
+  teamSizeOrSizes: ArenaTeamSize | ArenaTeamSizes = DEFAULT_ARENA_TEAM_SIZE,
+): ArenaTeamSizes {
+  if (typeof teamSizeOrSizes === "number") {
+    assertArenaTeamSize(teamSizeOrSizes);
+    return { blue: teamSizeOrSizes, red: teamSizeOrSizes };
+  }
+  assertArenaTeamSize(teamSizeOrSizes.blue);
+  assertArenaTeamSize(teamSizeOrSizes.red);
+  return { blue: teamSizeOrSizes.blue, red: teamSizeOrSizes.red };
+}
+
+export function maximumArenaTeamSize(teamSizes: ArenaTeamSizes): ArenaTeamSize {
+  return Math.max(teamSizes.blue, teamSizes.red) as ArenaTeamSize;
 }
 
 export function arenaActorId(

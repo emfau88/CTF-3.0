@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-05T18:07:06.980Z",
+  "project": "Core Arena / CTF-3.0",
+  "variant": "Phase 3 synchronized start, mobile controls, and runtime QA",
+  "commit": "7a17c83231cb28992e5e39f6c3a166491bad2ea8",
+  "branch": "codex/gameplay-fairness-helix",
+  "dirtyAtCapture": true,
+  "baseUrl": "http://127.0.0.1:5190/CTF-3.0/",
+  "capturePolicy": {
+    "map": "helix-canopy-v2",
+    "mobileTeamSetup": "player + 2 hard bots versus 3 easy bots",
+    "imageFormat": "jpeg",
+    "imageQuality": 90,
+    "gameplayPausedImmediatelyBeforeCapture": true
+  },
+  "captures": [
+    {
+      "kind": "mobile-countdown",
+      "mode": "tdm",
+      "controls": "touch",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "waitMsAfterLoad": 120,
+      "file": "screenshots/mobile-countdown-844x390.jpg",
+      "bytes": 103525,
+      "sha256": "2498b749c6663c76d3a0d05f4d3d9a683f6f38bf4078e36621ec0370fb9ba70b",
+      "url": "http://127.0.0.1:5190/CTF-3.0/?scene=v2&mode=tdm&map=helix-canopy-v2&players=bot&teamSize=3&blueBots=2&redBots=3&blueBotDifficulty=strong&redBotDifficulty=casual&controls=touch&skin=alien-runner&sfx=off",
+      "utilityBox": {
+        "x": 726,
+        "y": 6,
+        "width": 112,
+        "height": 34
+      },
+      "loadedRebuiltHelix": true,
+      "loadedLegacyHelix": false,
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "kind": "mobile-tdm",
+      "mode": "tdm",
+      "controls": "touch",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "waitMsAfterLoad": 2800,
+      "file": "screenshots/mobile-tdm-844x390.jpg",
+      "bytes": 106787,
+      "sha256": "bcb49f21c6a39bed11281d53cb8ebeee470ede8750d8bb0993661776fee097b7",
+      "url": "http://127.0.0.1:5190/CTF-3.0/?scene=v2&mode=tdm&map=helix-canopy-v2&players=bot&teamSize=3&blueBots=2&redBots=3&blueBotDifficulty=strong&redBotDifficulty=casual&controls=touch&skin=alien-runner&sfx=off",
+      "utilityBox": {
+        "x": 726,
+        "y": 6,
+        "width": 112,
+        "height": 34
+      },
+      "loadedRebuiltHelix": true,
+      "loadedLegacyHelix": false,
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "kind": "mobile-ctf",
+      "mode": "ctf",
+      "controls": "touch",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "waitMsAfterLoad": 2800,
+      "file": "screenshots/mobile-ctf-844x390.jpg",
+      "bytes": 105816,
+      "sha256": "4a0241cdc137304a91f2e996cd9f54ef15a2d389b2eef29fe0ed433206f78bbf",
+      "url": "http://127.0.0.1:5190/CTF-3.0/?scene=v2&mode=ctf&map=helix-canopy-v2&players=bot&teamSize=3&blueBots=2&redBots=3&blueBotDifficulty=strong&redBotDifficulty=casual&controls=touch&skin=alien-runner&sfx=off",
+      "utilityBox": {
+        "x": 726,
+        "y": 6,
+        "width": 112,
+        "height": 34
+      },
+      "loadedRebuiltHelix": true,
+      "loadedLegacyHelix": false,
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "kind": "mobile-one-flag",
+      "mode": "one-flag",
+      "controls": "touch",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "waitMsAfterLoad": 2800,
+      "file": "screenshots/mobile-one-flag-844x390.jpg",
+      "bytes": 106148,
+      "sha256": "2bdbdaa54c01f539c522434ec6d07e71da7f3a8ea437a6af2766ab07b4b4d6c9",
+      "url": "http://127.0.0.1:5190/CTF-3.0/?scene=v2&mode=one-flag&map=helix-canopy-v2&players=bot&teamSize=3&blueBots=2&redBots=3&blueBotDifficulty=strong&redBotDifficulty=casual&controls=touch&skin=alien-runner&sfx=off",
+      "utilityBox": {
+        "x": 726,
+        "y": 6,
+        "width": 112,
+        "height": 34
+      },
+      "loadedRebuiltHelix": true,
+      "loadedLegacyHelix": false,
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "kind": "mobile-combat-log",
+      "mode": "tdm",
+      "controls": "touch",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "waitMsAfterLoad": 16000,
+      "file": "screenshots/mobile-combat-log-844x390.jpg",
+      "bytes": 104653,
+      "sha256": "246f6762b2833772780fc4ca385aaa37c402fb199edf4cf4512e49f91e5d1799",
+      "url": "http://127.0.0.1:5190/CTF-3.0/?scene=v2&mode=tdm&map=helix-canopy-v2&players=bot&teamSize=3&blueBots=2&redBots=3&blueBotDifficulty=strong&redBotDifficulty=casual&controls=touch&skin=alien-runner&sfx=off",
+      "utilityBox": {
+        "x": 726,
+        "y": 6,
+        "width": 112,
+        "height": 34
+      },
+      "loadedRebuiltHelix": true,
+      "loadedLegacyHelix": false,
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "kind": "desktop-regression",
+      "mode": "tdm",
+      "controls": "keyboard",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "waitMsAfterLoad": 2800,
+      "file": "screenshots/desktop-regression-1280x720.jpg",
+      "bytes": 225559,
+      "sha256": "1081740c715f3246d2418cfa7e1a33a8d7cb311fe619bc1180618d21ce9a5864",
+      "url": "http://127.0.0.1:5190/CTF-3.0/?scene=v2&mode=tdm&map=helix-canopy-v2&players=bot&teamSize=3&blueBots=2&redBots=3&blueBotDifficulty=strong&redBotDifficulty=casual&controls=keyboard&skin=alien-runner&sfx=off",
+      "utilityBox": null,
+      "loadedRebuiltHelix": true,
+      "loadedLegacyHelix": false,
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    }
+  ]
+}

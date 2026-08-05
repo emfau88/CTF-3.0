@@ -35,7 +35,8 @@ interface ArenaActorView {
   readonly teamRing: Phaser.GameObjects.Graphics;
   readonly shadow: Phaser.GameObjects.Ellipse;
   readonly container: Phaser.GameObjects.Container;
-  readonly shield: Phaser.GameObjects.Graphics;
+  readonly shieldBase: Phaser.GameObjects.Graphics;
+  readonly shieldProgress: Phaser.GameObjects.Graphics;
   readonly outlines: readonly Phaser.GameObjects.Sprite[];
   readonly sprite: Phaser.GameObjects.Sprite;
   readonly status: Phaser.GameObjects.Graphics;
@@ -43,6 +44,8 @@ interface ArenaActorView {
   readonly shieldLabel: Phaser.GameObjects.Text;
   readonly character: V2CharacterPresentation;
   idleStartedAtMs: number;
+  statusSignature: string;
+  shieldBucket: number;
 }
 
 const NEUTRAL_OUTLINE_COLOR = 0x061117;
@@ -161,7 +164,7 @@ export class PhaserArenaActorRenderer {
             : PLAYER_MARKER_OFFSET_Y),
       )
       .setVisible(active && controlled);
-    this.drawActorStatus(view.status, actor);
+    this.drawActorStatus(view, actor);
     this.drawSpawnProtection(view, actor);
   }
 
@@ -198,7 +201,9 @@ export class PhaserArenaActorRenderer {
         .setAlpha(.94)
     );
     const status = this.scene.add.graphics();
-    const shield = this.scene.add.graphics();
+    const shieldBase = this.scene.add.graphics().setVisible(false);
+    const shieldProgress = this.scene.add.graphics().setVisible(false);
+    drawSpawnProtectionBase(shieldBase, actor);
     const playerMarker = controlled
       ? this.scene.add.graphics().setDepth(76)
       : null;
@@ -214,13 +219,14 @@ export class PhaserArenaActorRenderer {
     const container = this.scene.add.container(
       actor.position.x,
       actor.position.y,
-      [shield, ...outlines, sprite, status, shieldLabel],
+      [shieldBase, shieldProgress, ...outlines, sprite, status, shieldLabel],
     ).setDepth(35);
     const view = {
       teamRing,
       shadow,
       container,
-      shield,
+      shieldBase,
+      shieldProgress,
       outlines,
       sprite,
       status,
@@ -228,15 +234,28 @@ export class PhaserArenaActorRenderer {
       shieldLabel,
       character,
       idleStartedAtMs: this.scene.time.now,
+      statusSignature: "",
+      shieldBucket: -1,
     };
     this.views.set(actor.id, view);
     return view;
   }
 
   private drawActorStatus(
-    graphics: Phaser.GameObjects.Graphics,
+    view: ArenaActorView,
     actor: Readonly<ActorState>,
   ): void {
+    const signature = [
+      actor.lifeState,
+      actor.health,
+      actor.maxHealth,
+      actor.armor,
+      actor.maxArmor,
+      actor.teamId,
+    ].join(":");
+    if (signature === view.statusSignature) return;
+    view.statusSignature = signature;
+    const graphics = view.status;
     graphics.clear();
     if (actor.lifeState !== "active") return;
     const healthRatio = actor.maxHealth > 0
@@ -261,36 +280,48 @@ export class PhaserArenaActorRenderer {
   ): void {
     const remainingMs = actor.spawnProtectionRemainingMs;
     const active = actor.lifeState === "active" && remainingMs > 0;
-    view.shield.clear().setVisible(active);
+    const bucket = active ? Math.ceil(remainingMs / 100) : -1;
+    view.shieldBase.setVisible(active);
+    view.shieldProgress.setVisible(active);
     view.shieldLabel.setVisible(
       active && actor.id === PRIMARY_CONTROLLED_ACTOR_ID,
     );
+    if (bucket === view.shieldBucket) return;
+    view.shieldBucket = bucket;
+    view.shieldProgress.clear();
     if (!active) return;
     const radius = actor.radius + 15;
-    const teamColor = actor.teamId === "red" ? 0xff6f78 : 0x7fdcff;
     const ratio = Phaser.Math.Clamp(
-      remainingMs / V2_ACTOR_LIFECYCLE_CONFIG.spawnProtectionMs,
+      bucket * 100 / V2_ACTOR_LIFECYCLE_CONFIG.spawnProtectionMs,
       0,
       1,
     );
-    view.shield.fillStyle(teamColor, .09).fillCircle(0, 0, radius);
-    view.shield.lineStyle(2, teamColor, .58 + ratio * .32).strokeCircle(0, 0, radius);
-    view.shield.lineStyle(3, 0xffffff, .72)
+    view.shieldProgress.lineStyle(3, 0xffffff, .72)
       .beginPath()
       .arc(0, 0, radius + 4, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio)
       .strokePath();
-    view.shield.lineStyle(1, teamColor, .34);
-    for (let index = 0; index < 6; index += 1) {
-      const angle = Math.PI * 2 * index / 6;
-      const next = Math.PI * 2 * (index + 1) / 6;
-      view.shield.beginPath()
-        .moveTo(Math.cos(angle) * radius, Math.sin(angle) * radius)
-        .lineTo(Math.cos(next) * radius, Math.sin(next) * radius)
-        .strokePath();
-    }
     view.shieldLabel.setText(
-      `SPAWN SHIELD ${(Math.ceil(remainingMs / 100) / 10).toFixed(1)}s`,
+      `SPAWN SHIELD ${(bucket / 10).toFixed(1)}s`,
     );
+  }
+}
+
+function drawSpawnProtectionBase(
+  graphics: Phaser.GameObjects.Graphics,
+  actor: Readonly<ActorState>,
+): void {
+  const radius = actor.radius + 15;
+  const teamColor = actor.teamId === "red" ? 0xff6f78 : 0x7fdcff;
+  graphics.fillStyle(teamColor, .09).fillCircle(0, 0, radius);
+  graphics.lineStyle(2, teamColor, .78).strokeCircle(0, 0, radius);
+  graphics.lineStyle(1, teamColor, .34);
+  for (let index = 0; index < 6; index += 1) {
+    const angle = Math.PI * 2 * index / 6;
+    const next = Math.PI * 2 * (index + 1) / 6;
+    graphics.beginPath()
+      .moveTo(Math.cos(angle) * radius, Math.sin(angle) * radius)
+      .lineTo(Math.cos(next) * radius, Math.sin(next) * radius)
+      .strokePath();
   }
 }
 

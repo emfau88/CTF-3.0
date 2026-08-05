@@ -43,8 +43,13 @@ import {
   type GameEvent,
   type MatchStatEntry,
 } from "../src/core";
-import { buildV2MatchSearch, readV2RouteState } from "../src/v2Route";
+import {
+  buildV2MatchSearch,
+  readV2RouteState,
+  resolveV2TeamSizes,
+} from "../src/v2Route";
 import { calculateV2TouchLayout } from "../src/adapters/phaser/v2TouchLayout";
+import { resolveMobileWeaponRoster } from "../src/adapters/phaser/PhaserMobileInputAdapter";
 import { resolveDesktopAimDirection } from "../src/adapters/phaser/desktopAim";
 import {
   formatArenaModeLine,
@@ -82,6 +87,76 @@ test("runtime timing hardening clamps negative and oversized frame deltas", () =
   );
 });
 
+test("match start countdown holds every fighter and the match clock", () => {
+  const runtime = new GameplayCoreRuntime({
+    mode: new TeamDeathmatchMode(),
+    createWorld: () => createTeamDeathmatchWorldState(TRAINING_CROSSING_V2),
+    startCountdownMs: 200,
+  });
+  const initialized = runtime.initialize();
+  const initialBlue = initialized.snapshot.actors.find((actor) =>
+    actor.id === "blue-player"
+  )!;
+  const initialRed = initialized.snapshot.actors.find((actor) =>
+    actor.id === "red-player"
+  )!;
+  const input = (sequence: number) => ({
+    sequence,
+    timeMs: sequence * 100,
+    deltaMs: 100,
+    actions: [{
+      action: "move" as const,
+      phase: "held" as const,
+      actorId: "blue-player",
+      direction: { x: 1, y: 0 },
+      magnitude: 1,
+    }, {
+      action: "move" as const,
+      phase: "held" as const,
+      actorId: "red-player",
+      direction: { x: -1, y: 0 },
+      magnitude: 1,
+    }],
+  });
+
+  assert.equal(initialized.snapshot.match?.phase, "starting");
+  assert.equal(initialized.snapshot.match?.startCountdownRemainingMs, 200);
+  assert.equal(initialized.events.some((event) => event.type === "match.started"), false);
+
+  const held = runtime.advance(input(1));
+  assert.equal(held.snapshot.timeMs, 0);
+  assert.equal(held.snapshot.match?.elapsedMs, 0);
+  assert.equal(held.snapshot.match?.startCountdownRemainingMs, 100);
+  assert.deepEqual(
+    held.snapshot.actors.map((actor) => actor.position),
+    initialized.snapshot.actors.map((actor) => actor.position),
+  );
+  assert.equal(
+    held.snapshot.actors[0]?.spawnProtectionRemainingMs,
+    initialized.snapshot.actors[0]?.spawnProtectionRemainingMs,
+  );
+
+  const released = runtime.advance(input(2));
+  assert.equal(released.snapshot.match?.phase, "running");
+  assert.equal(released.snapshot.timeMs, 0);
+  assert.equal(
+    released.events.filter((event) => event.type === "match.started").length,
+    1,
+  );
+  assert.deepEqual(
+    released.snapshot.actors.map((actor) => actor.position),
+    initialized.snapshot.actors.map((actor) => actor.position),
+  );
+
+  const running = runtime.advance({ ...input(3), deltaMs: 16 });
+  const blue = running.snapshot.actors.find((actor) => actor.id === "blue-player")!;
+  const red = running.snapshot.actors.find((actor) => actor.id === "red-player")!;
+  assert.equal(running.snapshot.timeMs, 16);
+  assert.equal(running.snapshot.match?.elapsedMs, 16);
+  assert.ok(blue.position.x > initialBlue.position.x);
+  assert.ok(red.position.x < initialRed.position.x);
+});
+
 test("retired v1 URLs resolve to the v2 menu", () => {
   const state = readV2RouteState(new URLSearchParams("scene=v1"));
 
@@ -111,6 +186,8 @@ test("v2 routes preserve and validate arena team size", () => {
   ));
   assert.equal(valid.canStartMatch, true);
   assert.equal(valid.route.teamSize, 4);
+  assert.equal(valid.route.blueBots, 3);
+  assert.equal(valid.route.redBots, 4);
   assert.equal(
     new URLSearchParams(buildV2MatchSearch(valid.route)).get("teamSize"),
     "4",
@@ -131,6 +208,42 @@ test("v2 routes preserve and validate arena team size", () => {
   assert.deepEqual(invalid.issues, ["Unsupported V2 team size: 5."]);
 });
 
+test("v2 routes support asymmetric bot teams and team difficulty", () => {
+  const state = readV2RouteState(new URLSearchParams(
+    "scene=v2&mode=tdm&map=helix-canopy-v2&players=bot&controls=keyboard&blueBots=2&redBots=3&blueBotDifficulty=strong&redBotDifficulty=casual",
+  ));
+
+  assert.equal(state.canStartMatch, true);
+  assert.equal(state.route.teamSize, 3);
+  assert.deepEqual(resolveV2TeamSizes(state.route), { blue: 3, red: 3 });
+  assert.equal(state.route.blueBotDifficulty, "strong");
+  assert.equal(state.route.redBotDifficulty, "casual");
+
+  const search = new URLSearchParams(buildV2MatchSearch(state.route));
+  assert.equal(search.get("blueBots"), "2");
+  assert.equal(search.get("redBots"), "3");
+  assert.equal(search.get("blueBotDifficulty"), "strong");
+  assert.equal(search.get("redBotDifficulty"), "casual");
+});
+
+test("v2 route validation rejects impossible bot teams and difficulty", () => {
+  const state = readV2RouteState(new URLSearchParams(
+    "scene=v2&mode=ctf&map=helix-canopy-v2&players=bot&controls=auto&blueBots=4&redBots=0&blueBotDifficulty=nightmare&redBotDifficulty=casual",
+  ));
+
+  assert.equal(state.canStartMatch, false);
+  assert.equal(state.route.menu, true);
+  assert.deepEqual(state.issues, [
+    "Unsupported V2 blue bot count: 4.",
+    "Unsupported V2 red bot count: 0.",
+    "Unsupported V2 blue bot difficulty: nightmare.",
+  ]);
+  assert.throws(
+    () => resolveV2TeamSizes({ players: "bot", blueBots: 4, redBots: 1 }),
+    /team sizes must stay between 1 and 4/,
+  );
+});
+
 test("v2 menu defaults to the 2v2 Foundry Circuit CTF hero slice", () => {
   const state = readV2RouteState(new URLSearchParams());
 
@@ -147,6 +260,22 @@ test("quick play lists Temple of the Drowned Sun", () => {
     html,
     /<option value="drowned-sun-temple-v2">Temple of the Drowned Sun<\/option>/,
   );
+});
+
+test("quick play exposes separate bot counts and difficulty per team", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+
+  for (const elementId of [
+    "v2-menu-blue-bots",
+    "v2-menu-red-bots",
+    "v2-menu-blue-bot-difficulty",
+    "v2-menu-red-bot-difficulty",
+  ]) {
+    assert.match(html, new RegExp(`id="${elementId}"`));
+  }
+  assert.doesNotMatch(html, /id="v2-menu-team-size"/);
+  assert.match(html, /<option value="casual">Easy<\/option>/);
+  assert.match(html, /<option value="strong">Hard<\/option>/);
 });
 
 test("competitive arena set keeps skill shortcuts and contested rail control", () => {
@@ -846,21 +975,30 @@ test("v2 attack touch zones stay separated in compact and full layouts", () => {
     { width: 844, height: 390 },
     { width: 1024, height: 768 },
   ]) {
-    const layout = calculateV2TouchLayout(size.width, size.height);
+    const layout = calculateV2TouchLayout(size.width, size.height, 4);
     const controls = [
       { id: "jump", ...layout.jump },
-      { id: "fire", ...layout.fire },
-      { id: "rocket", ...layout.rocket },
-      { id: "rail", ...layout.rail },
-      { id: "whip", ...layout.whip },
+      ...layout.weapons.map((weapon, index) => ({
+        id: `weapon-${index}`,
+        ...weapon,
+      })),
     ];
     assert.ok(layout.jump.x > layout.fire.x, "jump stays on the thumb anchor");
-    assert.ok(layout.rail.y < layout.jump.y, "rail stays above jump");
-    assert.ok(layout.rocket.y < layout.jump.y, "rocket stays above jump");
-    assert.ok(layout.whip.y < layout.jump.y, "whip stays above jump");
-    assert.ok(layout.fire.x < layout.whip.x, "fire begins the ability arc");
-    assert.ok(layout.whip.x < layout.rocket.x, "whip precedes rocket");
-    assert.ok(layout.rocket.x < layout.rail.x, "rocket precedes rail");
+    assert.ok(
+      layout.weapons.every((weapon) =>
+        weapon.y + weapon.r <= size.height - 12
+      ),
+      "weapons stay inside the compact jump fan",
+    );
+    assert.ok(
+      layout.weapons[0]!.x < layout.weapons.at(-1)!.x,
+      "the weapon fan progresses toward the right edge",
+    );
+    if (layout.compact) {
+      assert.ok(size.width - layout.jump.x <= 46, "jump hugs the right edge");
+      assert.ok(size.height - layout.jump.y <= 46, "jump hugs the bottom edge");
+      assert.ok(layout.jump.r <= 34, "compact jump stays thumb-sized");
+    }
 
     for (let index = 0; index < controls.length; index += 1) {
       const control = controls[index];
@@ -871,20 +1009,30 @@ test("v2 attack touch zones stay separated in compact and full layouts", () => {
       );
       assert.ok(control.y - control.r >= 12, `${control.id} top edge`);
       assert.ok(
-        control.y + control.r <= size.height - 28,
+        control.y + control.r <= size.height - 12,
         `${control.id} bottom edge`,
       );
       for (const other of controls.slice(index + 1)) {
         assert.ok(
           distance(control, other) >
             touchRadius(control.id, control.r) +
-              touchRadius(other.id, other.r) +
-              12,
+              touchRadius(other.id, other.r),
           `${control.id} overlaps ${other.id}`,
         );
       }
     }
   }
+});
+
+test("mobile weapon buttons follow the selected map roster", () => {
+  const helix = getWorldMap("helix-canopy-v2")!;
+  const snapshot = createWorldSnapshot(createTeamDeathmatchWorldState(helix));
+
+  assert.deepEqual(
+    resolveMobileWeaponRoster(snapshot),
+    ["whip", "rail", "pulse", "shard"],
+  );
+  assert.equal(resolveMobileWeaponRoster(snapshot).includes("rocket"), false);
 });
 
 test("desktop weapon pickups use stable ordered slots", () => {
@@ -957,8 +1105,15 @@ test("arena HUD layout preserves map space across desktop and tablet sizes", () 
   }
 
   const tablet = calculateArenaHudLayout(1024, 768, true);
+  assert.equal(tablet.density, "micro");
   assert.equal(tablet.playerStatusPortrait, false);
-  assert.ok(tablet.playerStatus.y > tablet.header.y + tablet.header.height);
+  assert.equal(tablet.playerStatusVisible, false);
+  assert.equal(tablet.header.y, 2);
+  assert.ok(tablet.header.width <= 178);
+  assert.ok(tablet.header.height <= 38);
+  assert.ok(tablet.killFeed.width <= 168);
+  assert.ok(tablet.killFeed.height <= 19);
+  assert.ok(tablet.killFeed.y <= tablet.header.y + tablet.header.height + 4);
 
   const micro = calculateArenaHudLayout(480, 270, false);
   assert.equal(micro.density, "micro");
@@ -1141,6 +1296,41 @@ test("default arena roster preserves the existing 1v1 actor ids", () => {
   ]);
 });
 
+test("arena rosters and worlds support asymmetric team sizes", () => {
+  const teamSizes = { blue: 1, red: 4 } as const;
+  const roster = createArenaRoster(teamSizes);
+  const world = createTeamDeathmatchWorldState(TRAINING_CROSSING_V2, {
+    teamSizes,
+  });
+
+  assert.equal(roster.filter((entry) => entry.teamId === "blue").length, 1);
+  assert.equal(roster.filter((entry) => entry.teamId === "red").length, 4);
+  assert.equal(world.actors.filter((actor) => actor.teamId === "blue").length, 1);
+  assert.equal(world.actors.filter((actor) => actor.teamId === "red").length, 4);
+});
+
+test("arena bot difficulty supports team defaults and actor overrides", () => {
+  const participants = createArenaRoster({ blue: 3, red: 3 }).filter(
+    (participant) => participant.actorId !== "blue-player",
+  );
+  const group = createArenaBotControllerGroup({
+    modeId: "team-deathmatch",
+    map: TRAINING_CROSSING_V2,
+    participants,
+    humanActorIds: ["blue-player"],
+    difficultyByTeam: { blue: "strong", red: "casual" },
+    difficultyByActorId: { "red-player-2": "normal" },
+  });
+
+  assert.deepEqual(group.difficultyAssignments, [
+    { actorId: "blue-player-2", difficultyId: "strong" },
+    { actorId: "blue-player-3", difficultyId: "strong" },
+    { actorId: "red-player", difficultyId: "casual" },
+    { actorId: "red-player-2", difficultyId: "normal" },
+    { actorId: "red-player-3", difficultyId: "casual" },
+  ]);
+});
+
 test("arena bot groups control every non-human slot from 1v1 through 4v4", () => {
   const modes = [
     {
@@ -1166,11 +1356,11 @@ test("arena bot groups control every non-human slot from 1v1 through 4v4", () =>
     for (const definition of modes) {
       const world = definition.createWorld(TRAINING_CROSSING_V2, { teamSize });
       definition.createMode().initialize(world);
-      const group = createArenaBotControllerGroup(
-        definition.id,
-        TRAINING_CROSSING_V2,
-        bots,
-      );
+      const group = createArenaBotControllerGroup({
+        modeId: definition.id,
+        map: TRAINING_CROSSING_V2,
+        participants: bots,
+      });
       const actions = group.readActions(createWorldSnapshot(world), 34);
       const controlledActorIds = new Set(actions
         .filter((action) => action.action === "move")

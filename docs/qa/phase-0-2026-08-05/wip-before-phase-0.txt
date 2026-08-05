@@ -1,0 +1,23 @@
+Phase-0 start snapshot
+Captured: 2026-08-05
+Branch: main
+Commit: cd661f66e11bc2c81310d121a917859dafe928e1
+
+The following changes already existed before the Phase-0 baseline work and were
+not modified intentionally as part of the capture/documentation task:
+
+ M src/core/combat/index.ts
+ M src/core/combat/v1Weapons.ts
+ M src/core/modes/OneFlagMode.ts
+ M src/core/modes/TeamDeathmatchMode.ts
+ M src/core/modes/gameMode.ts
+ M src/core/runtime/GameplayCoreRuntime.ts
+ M src/core/runtime/dispatchModeEvents.ts
+ M src/core/runtime/updateDiagnosticControlledActor.ts
+ M tests/bot-simulation.test.ts
+ M tests/p0-gameplay.test.ts
+?? public/assets/ax9-mantis-idle-special-pilot-spritesheet-6x4.png
+?? public/assets/sounds/neu/
+?? public/assets/ui/portraits/xeno-runner-portrait.png
+?? src/adapters/phaser/characterSpecialIdle.ts
+?? tmp/

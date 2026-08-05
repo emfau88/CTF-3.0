@@ -23,8 +23,9 @@ export function calculateArenaHudLayout(
   height: number,
   mobileControls: boolean,
 ): ArenaHudLayout {
-  const density: ArenaHudDensity =
-    width < 520 || height < 300
+  const density: ArenaHudDensity = mobileControls
+    ? "micro"
+    : width < 520 || height < 300
       ? "micro"
       : width < 980 || height < 600
       ? "compact"
@@ -35,7 +36,7 @@ export function calculateArenaHudLayout(
     ? Math.min(292, width - 24)
     : 364;
   const headerHeight = density === "micro" ? 38 : density === "compact" ? 54 : 64;
-  const headerY = density === "micro" ? 6 : 10;
+  const headerY = mobileControls ? 2 : density === "micro" ? 6 : 10;
   const header: ArenaHudRect = {
     x: Math.round((width - headerWidth) / 2),
     y: headerY,
@@ -43,23 +44,27 @@ export function calculateArenaHudLayout(
     height: headerHeight,
   };
 
-  const killFeedWidth = density === "standard"
+  const killFeedWidth = mobileControls
+    ? Math.min(168, width - 16)
+    : density === "standard"
     ? 252
     : Math.min(222, width - 20);
   const utilityStacked = width < 700 || height <= 520 || mobileControls;
-  const killFeedY = utilityStacked
+  const killFeedY = mobileControls
+    ? Math.max(header.y + header.height + 4, 42)
+    : utilityStacked
     ? header.y + header.height + (density === "micro" ? 78 : 46)
     : width < 1100
     ? header.y + header.height + 10
     : 58;
   const killFeed: ArenaHudRect = {
-    x: Math.max(8, width - killFeedWidth - 12),
+    x: Math.max(8, width - killFeedWidth - (mobileControls ? 8 : 12)),
     y: killFeedY,
     width: killFeedWidth,
-    height: density === "standard" ? 26 : 23,
+    height: mobileControls ? 19 : density === "standard" ? 26 : 23,
   };
 
-  const playerStatusVisible = density !== "micro";
+  const playerStatusVisible = !mobileControls && density !== "micro";
   const playerStatusPortrait = density === "standard" && !mobileControls;
   const playerStatusWidth = playerStatusPortrait ? 220 : 174;
   const playerStatusHeight = playerStatusPortrait ? 68 : 50;
@@ -77,7 +82,9 @@ export function calculateArenaHudLayout(
     header,
     objectiveY: header.y + header.height + 6,
     killFeed,
-    killFeedVisible: width >= 430 && height >= 260,
+    killFeedVisible: mobileControls
+      ? width >= 560 && height >= 280
+      : width >= 430 && height >= 260,
     playerStatus,
     playerStatusVisible,
     playerStatusPortrait,

@@ -98,6 +98,7 @@ if (showV2Menu) {
       "#v2-game-utility",
     );
     const usesTouchControls = activeRoute?.controls === "touch";
+    gameUtility?.classList.toggle("is-touch-controls", usesTouchControls);
     const activeModeId = activeRoute
       ? modeIdForRoute(activeRoute.mode)
       : "team-deathmatch";
@@ -117,7 +118,9 @@ if (showV2Menu) {
     );
     const setIngameButtonsVisible = (visible: boolean): void => {
       const fullscreenAvailable = Boolean(
-        fullscreenButton && !fullscreenButton.classList.contains("is-hidden"),
+        !usesTouchControls &&
+          fullscreenButton &&
+          !fullscreenButton.classList.contains("is-hidden"),
       );
       gameUtility?.classList.toggle(
         "is-hidden",

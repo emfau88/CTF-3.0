@@ -341,11 +341,11 @@ export function runSimulationScenario(
     createWorld: () => scenario.createWorld(scenario.map, scenario.teamSize),
   });
   runtime.initialize();
-  const bots = createArenaBotControllerGroup(
-    scenario.modeId,
-    scenario.map,
+  const bots = createArenaBotControllerGroup({
+    modeId: scenario.modeId,
+    map: scenario.map,
     participants,
-  );
+  });
   const movementByActor = new Map<string, BotMovementMetric>(
     participants.map((participant) => [participant.actorId, {
       actorId: participant.actorId,

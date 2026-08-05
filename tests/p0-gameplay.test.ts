@@ -11,6 +11,7 @@ import {
   GRAND_ARCHIVE_V2,
   OneFlagMode,
   resolveNearestValidEnemy,
+  TeamDeathmatchMode,
   updateActorLifecycle,
   updatePickups,
   updateProjectiles,
@@ -390,6 +391,138 @@ test("Rail deals fixed 85 damage and distinguishes actor, wall, and range ends",
     "range",
   );
 });
+
+test("runtime resolves simultaneous Rail and Arc Lash trades independent of actor order", () => {
+  for (const weaponId of ["rail", "whip"] as const) {
+    for (const reverseActors of [false, true]) {
+      const runtime = new GameplayCoreRuntime({
+        mode: new TeamDeathmatchMode({
+          durationMs: 120_000,
+          scoreLimit: 1,
+          initialScores: [
+            { id: "blue", teamId: "blue", score: 0 },
+            { id: "red", teamId: "red", score: 0 },
+          ],
+        }),
+        createWorld: () => simultaneousDuelWorld(weaponId, reverseActors),
+      });
+      runtime.initialize();
+
+      const frame = runtime.advance({
+        sequence: 1,
+        timeMs: 16,
+        deltaMs: 16,
+        actions: [{
+          action: "fireWeapon",
+          phase: "pressed",
+          actorId: "blue-player",
+          direction: { x: 1, y: 0 },
+          payload: { weaponId },
+        }, {
+          action: "fireWeapon",
+          phase: "pressed",
+          actorId: "red-player",
+          direction: { x: -1, y: 0 },
+          payload: { weaponId },
+        }],
+      });
+
+      assert.deepEqual(
+        frame.snapshot.actors.map((candidate) => ({
+          id: candidate.id,
+          lifeState: candidate.lifeState,
+        })).sort((left, right) => left.id.localeCompare(right.id)),
+        [{ id: "blue-player", lifeState: "dead" }, {
+          id: "red-player",
+          lifeState: "dead",
+        }],
+      );
+      assert.deepEqual(
+        frame.snapshot.scoreBoard.entries.map((entry) => ({
+          id: entry.id,
+          score: entry.score,
+        })),
+        [{ id: "blue", score: 1 }, { id: "red", score: 1 }],
+      );
+      assert.deepEqual(frame.snapshot.match?.result, { kind: "draw" });
+      assert.equal(
+        frame.events.filter((event) => event.type === "actor.died").length,
+        2,
+      );
+    }
+  }
+});
+
+test("One Flag leaves cross-team distance ties contested and picks the nearest actor", () => {
+  for (const reverseActors of [false, true]) {
+    const tiedWorld = createOneFlagWorldState(GRAND_ARCHIVE_V2);
+    const tiedMode = new OneFlagMode(GRAND_ARCHIVE_V2);
+    tiedMode.initialize(tiedWorld);
+    const tiedFlag = tiedWorld.objectives[0]!;
+    const tiedBlue = tiedWorld.actors.find((candidate) =>
+      candidate.id === "blue-player"
+    )!;
+    const tiedRed = tiedWorld.actors.find((candidate) =>
+      candidate.id === "red-player"
+    )!;
+    tiedBlue.position = { ...tiedFlag.position };
+    tiedRed.position = { ...tiedFlag.position };
+    if (reverseActors) tiedWorld.actors.reverse();
+
+    const tiedEvents = tiedMode.update(tiedWorld, 16);
+    assert.equal(
+      tiedEvents.some((event) => event.type === "objective.flagPickedUp"),
+      false,
+    );
+    assert.equal(tiedWorld.objectives[0]?.state.status, "home");
+    assert.equal(tiedWorld.objectives[0]?.state.interactingActorId, null);
+
+    const nearestWorld = createOneFlagWorldState(GRAND_ARCHIVE_V2);
+    const nearestMode = new OneFlagMode(GRAND_ARCHIVE_V2);
+    nearestMode.initialize(nearestWorld);
+    const nearestFlag = nearestWorld.objectives[0]!;
+    const nearestBlue = nearestWorld.actors.find((candidate) =>
+      candidate.id === "blue-player"
+    )!;
+    const nearestRed = nearestWorld.actors.find((candidate) =>
+      candidate.id === "red-player"
+    )!;
+    nearestBlue.position = { x: nearestFlag.position.x + 5, y: nearestFlag.position.y };
+    nearestRed.position = { x: nearestFlag.position.x - 10, y: nearestFlag.position.y };
+    if (reverseActors) nearestWorld.actors.reverse();
+
+    const nearestEvents = nearestMode.update(nearestWorld, 16);
+    assert.equal(
+      nearestEvents.find((event) => event.type === "objective.flagPickedUp")
+        ?.sourceActorId,
+      "blue-player",
+    );
+    assert.equal(
+      nearestWorld.objectives[0]?.state.interactingActorId,
+      "blue-player",
+    );
+  }
+});
+
+function simultaneousDuelWorld(
+  weaponId: "rail" | "whip",
+  reverseActors: boolean,
+) {
+  const world = createEmptyWorldState("team-deathmatch");
+  world.geometry = {
+    bounds: { minX: 0, minY: 0, maxX: 500, maxY: 300 },
+    solids: [],
+    gaps: [],
+  };
+  const blue = actor("blue-player", "blue", 100, 150);
+  const red = actor("red-player", "red", 220, 150);
+  blue.health = weaponId === "rail" ? 85 : 35;
+  red.health = weaponId === "rail" ? 85 : 35;
+  blue.weapons.railAmmo = 1;
+  red.weapons.railAmmo = 1;
+  world.actors.push(...(reverseActors ? [red, blue] : [blue, red]));
+  return world;
+}
 
 function actor(id: string, teamId: string, x: number, y: number) {
   return createActorState({

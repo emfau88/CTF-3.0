@@ -114,6 +114,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   };
   private weaponStripLayout: WeaponStripLayout =
     calculateWeaponStripLayout(1280, 720, WEAPON_IDS.length);
+  private lastDrawSignature = "";
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -312,6 +313,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     this.teamDefendWasHeld = false;
     this.teamFollowWasHeld = false;
     this.teamAttackWasHeld = false;
+    this.lastDrawSignature = "";
     this.draw();
   }
 
@@ -477,11 +479,21 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
         )
         .setFontSize(micro ? 8 : compact ? 11 : 12);
     }
+    this.lastDrawSignature = "";
     this.draw();
   }
 
   private draw(): void {
     const activeWeaponIds = this.activeWeaponIds();
+    const signature = activeWeaponIds.map((weaponId) => {
+      const status = this.weaponStatus?.(weaponId) ?? {
+        ammo: weaponId === "whip" ? null : 0,
+        cooldownMs: 0,
+      };
+      return `${weaponId}:${status.ammo ?? "na"}:${Math.ceil(status.cooldownMs / 100)}`;
+    }).join("|");
+    if (signature === this.lastDrawSignature) return;
+    this.lastDrawSignature = signature;
     const active = new Set(activeWeaponIds);
     this.graphics.clear();
     this.cooldownGraphics.clear();

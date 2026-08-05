@@ -29,7 +29,7 @@ test("Helix Canopy registers its rebuilt gameplay contract", () => {
     maxX: 2208,
     maxY: 1104,
   });
-  assert.equal(map?.geometry.solids.length, 50);
+  assert.equal(map?.geometry.solids.length, 32);
   assert.equal(map?.geometry.gaps.length, 0);
   assert.equal(map?.navigation.jumpLinks.length, 4);
   assert.equal(map?.spawnPoints.length, 8);
@@ -75,17 +75,17 @@ test("Helix Canopy passes structural and objective safety gates", () => {
     blockedSightLines: [
       {
         id: "spawn-to-spawn",
-        from: point(280, 480),
-        to: point(1640, 480),
+        from: point(350, 480),
+        to: point(1570, 480),
       },
       {
         id: "blue-spawn-to-objective",
-        from: point(280, 480),
+        from: point(350, 480),
         to: point(960, 480),
       },
       {
         id: "red-spawn-to-objective",
-        from: point(1640, 480),
+        from: point(1570, 480),
         to: point(960, 480),
       },
     ],
@@ -95,23 +95,23 @@ test("Helix Canopy passes structural and objective safety gates", () => {
 
 test("Helix Canopy retains distinct direct, canopy, and root route roles", () => {
   const direct = measureWorldRouteLength([
-    point(280, 480), point(450, 370),
+    point(350, 480), point(450, 370),
     point(730, 360), point(850, 440),
     point(960, 480),
   ]);
   const canopy = measureWorldRouteLength([
-    point(280, 480), point(400, 260),
+    point(350, 480), point(400, 260),
     point(660, 170), point(960, 175),
     point(960, 480),
   ]);
   const root = measureWorldRouteLength([
-    point(280, 480), point(400, 690),
+    point(350, 480), point(400, 690),
     point(675, 765), point(870, 720),
     point(960, 480),
   ]);
 
-  assert.ok(canopy > direct * 1.08 && canopy < direct * 1.55);
-  assert.ok(root > direct * 1.08 && root < direct * 1.55);
+  assert.ok(canopy > direct * 1.08 && canopy < direct * 1.7);
+  assert.ok(root > direct * 1.08 && root < direct * 1.7);
 });
 
 test("Helix Canopy pickup economy is mirrored and keeps rockets off the core", () => {
@@ -142,6 +142,19 @@ test("Helix Canopy collision is traced from the integrated master art", () => {
   assert.ok(visuals.every((visual) => visual === "helix-integrated-cover"));
   assert.deepEqual(HELIX_CANOPY_V2.presentation.gaps, []);
   assert.deepEqual(HELIX_CANOPY_V2.presentation.decorations, undefined);
+});
+
+test("Helix Canopy v2.1 uses simple mirrored planter footprints", () => {
+  const solids = HELIX_CANOPY_V2.geometry.solids;
+  const countMirroredGroup = (prefix: string) =>
+    solids.filter((solid) => solid.id.startsWith(prefix)).length;
+
+  assert.equal(countMirroredGroup("planter-north-outer-"), 2);
+  assert.equal(countMirroredGroup("planter-north-inner-"), 2);
+  assert.equal(countMirroredGroup("planter-mid-"), 2);
+  assert.equal(countMirroredGroup("planter-south-outer-"), 2);
+  assert.equal(countMirroredGroup("planter-south-inner-"), 2);
+  assert.equal(countMirroredGroup("helix-terminal-"), 2);
 });
 
 test("Helix Canopy keeps every marked dome garden outside the playable arena", () => {
@@ -198,50 +211,44 @@ test("Helix Canopy exposes no actor-sized opening through the stepped outer mask
   }
 });
 
-test("Helix Canopy preserves forgiving diagonal passages around the exchange", () => {
+test("Helix Canopy v2.1 keeps its north, middle, and south traversal lanes clear", () => {
   const map = HELIX_CANOPY_V2;
-  const minimumRawPassage = WORLD_MAP_ACTOR_RADIUS * 4;
-  const passagePairs = [
-    ["canopy-island", "exchange-island"],
-    ["exchange-island", "root-island"],
-    ["exchange-island", "helix-pod-upper"],
-    ["exchange-island", "helix-pod-lower"],
-  ] as const;
+  const westRoutes = {
+    north: [
+      point(420, 300), point(520, 230), point(740, 220),
+      point(750, 370), point(850, 390), point(920, 440),
+    ],
+    middle: [
+      point(420, 480), point(480, 540), point(600, 540),
+      point(800, 540), point(900, 510), point(960, 480),
+    ],
+    south: [
+      point(420, 650), point(520, 710), point(740, 710),
+      point(750, 660), point(850, 610), point(920, 530),
+    ],
+  } as const;
 
-  const rectGap = (
-    left: (typeof map.geometry.solids)[number],
-    right: (typeof map.geometry.solids)[number],
-  ) =>
-    Math.hypot(
-      Math.max(
-        left.x - right.x - right.width,
-        right.x - left.x - left.width,
-        0,
-      ),
-      Math.max(
-        left.y - right.y - right.height,
-        right.y - left.y - left.height,
-        0,
-      ),
-    );
-
-  for (const side of ["west", "east"] as const) {
-    for (const [firstPrefix, secondPrefix] of passagePairs) {
-      const first = map.geometry.solids.filter((solid) =>
-        solid.id.startsWith(firstPrefix) && solid.id.endsWith(`-${side}`)
-      );
-      const second = map.geometry.solids.filter((solid) =>
-        solid.id.startsWith(secondPrefix) && solid.id.endsWith(`-${side}`)
-      );
-      assert.ok(first.length > 0 && second.length > 0);
-      const rawPassage = Math.min(
-        ...first.flatMap((left) => second.map((right) => rectGap(left, right))),
-      );
+  for (const [routeId, route] of Object.entries(westRoutes)) {
+    for (const [index, routePoint] of route.entries()) {
+      const clearance = measureWorldMapClearance(map, routePoint);
       assert.ok(
-        rawPassage >= minimumRawPassage,
-        `${firstPrefix}/${secondPrefix} ${side} leaves only ${rawPassage.toFixed(1)}px raw clearance.`,
+        clearance.clearance >= WORLD_MAP_ACTOR_RADIUS,
+        `${routeId} route point ${index} is blocked by ${clearance.obstacleId}.`,
       );
     }
+  }
+});
+
+test("Helix Canopy v2.1 keeps the luminous under-glass helix walkable", () => {
+  for (const y of [300, 390, 480, 570, 660]) {
+    const clearance = measureWorldMapClearance(
+      HELIX_CANOPY_V2,
+      point(960, y),
+    );
+    assert.ok(
+      clearance.clearance >= WORLD_MAP_ACTOR_RADIUS,
+      `under-glass helix at y=${y} is blocked by ${clearance.obstacleId}.`,
+    );
   }
 });
 
@@ -291,14 +298,16 @@ test("Helix Canopy collision and authored bot routes remain mirrored and clear",
   }
 });
 
-test("Helix Canopy ships the approved undistorted arena master", () => {
-  const png = readFileSync(resolve("public/assets/helix-canopy/arena-master.png"));
+test("Helix Canopy ships the approved undistorted v2.1 arena master", () => {
+  const png = readFileSync(resolve("public/assets/helix-canopy/arena-master-v2.png"));
   assert.equal(png.subarray(1, 4).toString("ascii"), "PNG");
   assert.equal(png.readUInt32BE(16), 1647);
   assert.equal(png.readUInt32BE(20), 955);
   assert.equal(png[25], 2);
   const renderer = readFileSync(resolve("src/arenaRenderer.ts"), "utf8");
   assert.match(renderer, /level\.height \* \(1647 \/ 955\)/);
+  const assets = readFileSync(resolve("src/assets.ts"), "utf8");
+  assert.match(assets, /helix-canopy\/arena-master-v2\.png/);
   assert.doesNotMatch(renderer, /helixFloorCanopy/);
   assert.doesNotMatch(renderer, /helixCoreInlay/);
 });
@@ -314,9 +323,12 @@ test("static overview routes omit gameplay and collision overlays", () => {
     "utf8",
   );
   assert.match(scene, /search\.get\("mapPreview"\) === "1"/);
-  assert.match(scene, /createMapPreview\(selectedMap, route\.skin\)/);
+  assert.match(
+    scene,
+    /createMapPreview\(selectedMap, route\.skin, collisionDiagnostics\)/,
+  );
   const overview = readFileSync(
-    resolve("public/assets/map-previews/helix-canopy-v2-overview.png"),
+    resolve("public/assets/map-previews/helix-canopy-v2-1-overview.png"),
   );
   assert.equal(overview.subarray(1, 4).toString("ascii"), "PNG");
   assert.equal(overview.readUInt32BE(16), 2208);

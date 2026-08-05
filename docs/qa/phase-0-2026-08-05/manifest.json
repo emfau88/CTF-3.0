@@ -1,0 +1,345 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-05T14:11:18.553Z",
+  "project": "Core Arena / CTF-3.0",
+  "commit": "cd661f66e11bc2c81310d121a917859dafe928e1",
+  "branch": "main",
+  "dirtyAtCapture": true,
+  "baseUrl": "http://127.0.0.1:5188/CTF-3.0/",
+  "capturePolicy": {
+    "gameplayMode": "classic-ctf",
+    "teamSize": 2,
+    "opponent": "bots",
+    "controls": "keyboard",
+    "sound": "off",
+    "gameplayPausedBeforeCapture": true,
+    "imageFormat": "jpeg",
+    "imageQuality": 86
+  },
+  "captures": [
+    {
+      "mapId": "helix-canopy-v2",
+      "mapName": "Helix Canopy",
+      "kind": "overview",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/helix-canopy/overview-1280x720.jpg",
+      "bytes": 222895,
+      "sha256": "708901139d851d43fd9a7f0465ef2eb1a1f90fa52d6a38e5664a681f6f927e52",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=helix-canopy-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off&mapPreview=1",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "helix-canopy-v2",
+      "mapName": "Helix Canopy",
+      "kind": "gameplay",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "screenshots/helix-canopy/gameplay-1024x768.jpg",
+      "bytes": 213234,
+      "sha256": "c4541665e48f0303bf4eaa45ef3e09775a16585e28f7e626017f41e5eb1e6578",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=helix-canopy-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "helix-canopy-v2",
+      "mapName": "Helix Canopy",
+      "kind": "gameplay",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/helix-canopy/gameplay-1280x720.jpg",
+      "bytes": 231040,
+      "sha256": "bff3546d77ef3365d06a56cbaa5930ac5cfdcd926547cb4d78d62abc514f7f67",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=helix-canopy-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "helix-canopy-v2",
+      "mapName": "Helix Canopy",
+      "kind": "gameplay",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "file": "screenshots/helix-canopy/gameplay-1920x1080.jpg",
+      "bytes": 493409,
+      "sha256": "070d59ab9e1c5085a6a3568c4fac1585ec273beb7c05fd294df235c9d25b0a8b",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=helix-canopy-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "helix-canopy-v2",
+      "mapName": "Helix Canopy",
+      "kind": "collision",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/helix-canopy/collision-1280x720.jpg",
+      "bytes": 254486,
+      "sha256": "2ecfe3afee6ac91d90f60f607616cf0340dce1c8fc2ac385df740f22e7f8bc66",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=helix-canopy-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off&collisionDebug=1",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "helix-canopy-v2",
+      "mapName": "Helix Canopy",
+      "kind": "clearance-heatmap",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/helix-canopy/clearance-heatmap-1280x720.jpg",
+      "bytes": 248430,
+      "sha256": "386d29ddc5d6845e23b28e666a517db0eeed0eb47c18b0c209ec2e10830ec5fd",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=helix-canopy-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off&clearanceHeatmap=1",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "drowned-sun-temple-v2",
+      "mapName": "Temple of the Drowned Sun",
+      "kind": "overview",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/drowned-sun-temple/overview-1280x720.jpg",
+      "bytes": 158453,
+      "sha256": "1c3d285d25033d32671ceec87cc00e3eaf9ca9c4e42291caf03b435468edc397",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=drowned-sun-temple-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off&mapPreview=1",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "drowned-sun-temple-v2",
+      "mapName": "Temple of the Drowned Sun",
+      "kind": "gameplay",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "screenshots/drowned-sun-temple/gameplay-1024x768.jpg",
+      "bytes": 172057,
+      "sha256": "25b821e03a0e6af932f8e38f50486f489a6ae84c59ef5967efb5dac0eadbb597",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=drowned-sun-temple-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "drowned-sun-temple-v2",
+      "mapName": "Temple of the Drowned Sun",
+      "kind": "gameplay",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/drowned-sun-temple/gameplay-1280x720.jpg",
+      "bytes": 183029,
+      "sha256": "2b5db1cac0b36945a51147d240790334ac8a70836b1c0be227aa741ad44a3754",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=drowned-sun-temple-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "drowned-sun-temple-v2",
+      "mapName": "Temple of the Drowned Sun",
+      "kind": "gameplay",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "file": "screenshots/drowned-sun-temple/gameplay-1920x1080.jpg",
+      "bytes": 386915,
+      "sha256": "40910f64f400ed1a5fc536a795f70c38ce90d9707cb245ea3888ed05918d9ad6",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=drowned-sun-temple-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "drowned-sun-temple-v2",
+      "mapName": "Temple of the Drowned Sun",
+      "kind": "collision",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/drowned-sun-temple/collision-1280x720.jpg",
+      "bytes": 208792,
+      "sha256": "a96dee3a58e6813fca4c9548d4c8e3ba91b0baeed3469192caf4ac0826e0e25f",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=drowned-sun-temple-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off&collisionDebug=1",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "drowned-sun-temple-v2",
+      "mapName": "Temple of the Drowned Sun",
+      "kind": "clearance-heatmap",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/drowned-sun-temple/clearance-heatmap-1280x720.jpg",
+      "bytes": 206994,
+      "sha256": "61887c43f89a49799488990a98e23d58e4968f733674f6ae2349dee70b732192",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=drowned-sun-temple-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off&clearanceHeatmap=1",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "flow-circuit-v2",
+      "mapName": "Foundry Circuit",
+      "kind": "overview",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/foundry-circuit/overview-1280x720.jpg",
+      "bytes": 198247,
+      "sha256": "ae688a377bd02cd5879ae32f8feaf383f5c559fedd95f54575a04dc97adfedda",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=flow-circuit-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off&mapPreview=1",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "flow-circuit-v2",
+      "mapName": "Foundry Circuit",
+      "kind": "gameplay",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "screenshots/foundry-circuit/gameplay-1024x768.jpg",
+      "bytes": 197944,
+      "sha256": "36d622417058654d83547f83dc02c170502d0af2bd2f79be8678f012fdc1a0ef",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=flow-circuit-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "flow-circuit-v2",
+      "mapName": "Foundry Circuit",
+      "kind": "gameplay",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/foundry-circuit/gameplay-1280x720.jpg",
+      "bytes": 215566,
+      "sha256": "360b764e5cc04bf1967b45f9fee204712646e6cad024e961c07e68aecfe4b557",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=flow-circuit-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "flow-circuit-v2",
+      "mapName": "Foundry Circuit",
+      "kind": "gameplay",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "file": "screenshots/foundry-circuit/gameplay-1920x1080.jpg",
+      "bytes": 469432,
+      "sha256": "176616e2d664bedffcccab1749bca88e3f05e58c23abbf2f666746e59ebe68a2",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=flow-circuit-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "flow-circuit-v2",
+      "mapName": "Foundry Circuit",
+      "kind": "collision",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/foundry-circuit/collision-1280x720.jpg",
+      "bytes": 228654,
+      "sha256": "ed098875bb8caac544c1cf03306a2667e3a08baf55f5f59d749cf3c748ab2fc7",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=flow-circuit-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off&collisionDebug=1",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "flow-circuit-v2",
+      "mapName": "Foundry Circuit",
+      "kind": "clearance-heatmap",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/foundry-circuit/clearance-heatmap-1280x720.jpg",
+      "bytes": 227916,
+      "sha256": "a5f695af678aa93ef241d577a47e5ee0676dce37bab3ba60a919dcb4be0d01ff",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=flow-circuit-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off&clearanceHeatmap=1",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    }
+  ]
+}

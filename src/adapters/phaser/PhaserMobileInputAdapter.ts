@@ -1,14 +1,17 @@
 import Phaser from "phaser";
 import type {
   ActorState,
+  ArenaWeaponId,
   CoreActionIntent,
   CoreInputFrame,
   WorldPosition,
   WorldSnapshot,
 } from "../../core";
 import {
+  ARENA_WEAPON_CATALOG,
+  ARENA_WEAPON_IDS,
+  DEFAULT_ARENA_WEAPON_ROSTER,
   V2_BASIC_AUTOSHOOT_PARITY_CONFIG,
-  V2_V1_WEAPON_PARITY_CONFIG,
 } from "../../core";
 import { UI_FONT_FAMILY } from "../../uiTypography";
 import type { InputAdapterPort } from "../input";
@@ -19,6 +22,7 @@ import {
   weaponIconScale,
 } from "./weaponHudLayout";
 import { worldLineIntersectsRect } from "./worldLineOfSight";
+import { ensureArenaWeaponTextures } from "./PhaserArenaWeaponTextures";
 
 interface TouchControl {
   id: number;
@@ -49,9 +53,14 @@ interface KeyboardFallbackKeys {
   readonly rocket: Phaser.Input.Keyboard.Key;
   readonly rail: Phaser.Input.Keyboard.Key;
   readonly whip: Phaser.Input.Keyboard.Key;
+  readonly pulse: Phaser.Input.Keyboard.Key;
+  readonly disc: Phaser.Input.Keyboard.Key;
+  readonly grenade: Phaser.Input.Keyboard.Key;
+  readonly shard: Phaser.Input.Keyboard.Key;
 }
 
-type WeaponId = "rocket" | "rail" | "whip";
+type WeaponId = ArenaWeaponId;
+const WEAPON_IDS = ARENA_WEAPON_IDS;
 interface WeaponControl extends TouchControl {
   aim: WorldPosition;
   drag: number;
@@ -125,12 +134,21 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     rocket: createWeaponControl(36),
     rail: createWeaponControl(36),
     whip: createWeaponControl(36),
+    pulse: createWeaponControl(36),
+    disc: createWeaponControl(36),
+    grenade: createWeaponControl(36),
+    shard: createWeaponControl(36),
   };
   private weaponKeyWasHeld: Record<WeaponId, boolean> = {
     rocket: false,
     rail: false,
     whip: false,
+    pulse: false,
+    disc: false,
+    grenade: false,
+    shard: false,
   };
+  private lastDrawSignature = "";
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -153,6 +171,10 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
         rocket: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q),
         rail: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),
         whip: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F),
+        pulse: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R),
+        disc: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C),
+        grenade: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.G),
+        shard: keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.X),
       };
     }
     this.graphics = uiScene.add.graphics().setDepth(1100);
@@ -160,6 +182,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     this.cooldownGraphics = uiScene.add.graphics()
       .setScrollFactor(0)
       .setDepth(1102);
+    ensureArenaWeaponTextures(uiScene);
     const labelStyle: Phaser.Types.GameObjects.Text.TextStyle = {
       fontFamily: UI_FONT_FAMILY,
       fontSize: "12px",
@@ -175,6 +198,10 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       rocket: uiScene.add.image(0, 0, "uiRocketButton"),
       rail: uiScene.add.image(0, 0, "uiRailButton"),
       whip: uiScene.add.image(0, 0, "uiWhipButton"),
+      pulse: uiScene.add.image(0, 0, "uiPulseButton"),
+      disc: uiScene.add.image(0, 0, "uiDiscButton"),
+      grenade: uiScene.add.image(0, 0, "uiGrenadeButton"),
+      shard: uiScene.add.image(0, 0, "uiShardButton"),
     };
     for (const view of Object.values(this.weaponViews)) {
       view.setScrollFactor(0).setDepth(1101);
@@ -183,11 +210,19 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       rocket: this.createWeaponBadge("uiAmmoBadge", "#17211f"),
       rail: this.createWeaponBadge("uiRailBadge", "#10281a"),
       whip: this.createWeaponBadge("uiAmmoBadge", "#2b1c36"),
+      pulse: this.createWeaponBadge("uiRailBadge", "#06283a"),
+      disc: this.createWeaponBadge("uiAmmoBadge", "#332607"),
+      grenade: this.createWeaponBadge("uiAmmoBadge", "#082b45"),
+      shard: this.createWeaponBadge("uiRailBadge", "#28103a"),
     };
     this.weaponCooldownLabels = {
       rocket: this.createCooldownLabel(),
       rail: this.createCooldownLabel(),
       whip: this.createCooldownLabel(),
+      pulse: this.createCooldownLabel(),
+      disc: this.createCooldownLabel(),
+      grenade: this.createCooldownLabel(),
+      shard: this.createCooldownLabel(),
     };
 
     scene.input.on("pointerdown", this.handlePointerDown, this);
@@ -268,7 +303,16 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     }
     this.combinedJumpWasHeld = false;
     this.queuedWeapon = null;
-    this.weaponKeyWasHeld = { rocket: false, rail: false, whip: false };
+    this.weaponKeyWasHeld = {
+      rocket: false,
+      rail: false,
+      whip: false,
+      pulse: false,
+      disc: false,
+      grenade: false,
+      shard: false,
+    };
+    this.lastDrawSignature = "";
     this.draw();
   }
 
@@ -329,7 +373,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
   }
 
   private appendWeaponActions(actions: CoreActionIntent[]): void {
-    for (const weaponId of ["rocket", "rail", "whip"] as const) {
+    for (const weaponId of this.activeWeaponIds()) {
       const held = Boolean(this.keyboardKeys?.[weaponId].isDown);
       const queued = this.queuedWeapon?.weaponId === weaponId
         ? this.queuedWeapon
@@ -446,8 +490,13 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
   };
 
   private layout(gameSize: Phaser.Structs.Size): void {
-    const layout = calculateV2TouchLayout(gameSize.width, gameSize.height);
-    const compact = layout.rocket.r <= 36;
+    const activeWeaponIds = this.activeWeaponIds();
+    const layout = calculateV2TouchLayout(
+      gameSize.width,
+      gameSize.height,
+      activeWeaponIds.length,
+    );
+    const compact = layout.compact;
     this.moveStick.radius = layout.joy.r;
     this.moveStick.x = layout.joy.ox;
     this.moveStick.y = layout.joy.oy;
@@ -465,23 +514,28 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       .setVisible(this.manualFireEnabled);
     this.jumpLabel.setPosition(this.jump.x, this.jump.y)
       .setVisible(PLAYER_JUMP_INPUT_ENABLED);
-    const positions = {
-      rocket: layout.rocket,
-      rail: layout.rail,
-      whip: layout.whip,
-    };
-    for (const weaponId of ["rocket", "rail", "whip"] as const) {
-      Object.assign(this.weaponControls[weaponId], positions[weaponId], {
-        radius: positions[weaponId].r,
+    const active = new Set(activeWeaponIds);
+    for (const weaponId of WEAPON_IDS) {
+      const position = layout.weapons[activeWeaponIds.indexOf(weaponId)];
+      if (!active.has(weaponId) || !position) {
+        this.weaponViews[weaponId].setVisible(false);
+        this.weaponBadges[weaponId].image.setVisible(false);
+        this.weaponBadges[weaponId].text.setVisible(false);
+        this.weaponCooldownLabels[weaponId].setVisible(false);
+        continue;
+      }
+      Object.assign(this.weaponControls[weaponId], position, {
+        radius: position.r,
       });
       this.weaponViews[weaponId]
-        .setPosition(positions[weaponId].x, positions[weaponId].y)
-        .setScale(weaponIconScale(weaponId, positions[weaponId].r))
-        .setVisible(this.weaponAvailable(weaponId));
+        .setPosition(position.x, position.y)
+        .setScale(weaponIconScale(weaponId, position.r))
+        .setVisible(true);
       this.weaponCooldownLabels[weaponId]
-        .setPosition(positions[weaponId].x, positions[weaponId].y)
+        .setPosition(position.x, position.y)
         .setFontSize(compact ? 14 : 16);
     }
+    this.lastDrawSignature = "";
     this.draw();
   }
 
@@ -538,6 +592,9 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
   }
 
   private draw(): void {
+    const signature = this.drawSignature();
+    if (signature === this.lastDrawSignature) return;
+    this.lastDrawSignature = signature;
     const graphics = this.graphics;
     graphics.clear();
     this.aimGraphics.clear();
@@ -593,7 +650,16 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       graphics.fillCircle(this.jump.x, this.jump.y, this.jump.radius);
       graphics.strokeCircle(this.jump.x, this.jump.y, this.jump.radius);
     }
-    for (const weaponId of ["rocket", "rail", "whip"] as const) {
+    const activeWeaponIds = this.activeWeaponIds();
+    const activeWeapons = new Set(activeWeaponIds);
+    for (const weaponId of WEAPON_IDS) {
+      if (activeWeapons.has(weaponId)) continue;
+      this.weaponViews[weaponId].setVisible(false);
+      this.weaponBadges[weaponId].image.setVisible(false);
+      this.weaponBadges[weaponId].text.setVisible(false);
+      this.weaponCooldownLabels[weaponId].setVisible(false);
+    }
+    for (const weaponId of activeWeaponIds) {
       const status = this.weaponStatus?.(weaponId) ?? {
         ammo: weaponId === "whip" ? null : 0,
         cooldownMs: 0,
@@ -601,25 +667,25 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
       const usesAmmo = status.ammo !== null;
       const available = !usesAmmo || status.ammo > 0;
       const control = this.weaponControls[weaponId];
-      const compact = control.radius <= 36;
-      const badgeOffset = compact ? 21 : 27;
+      const compact = control.radius <= 24;
+      const badgeOffset = control.radius * .72;
       const badge = this.weaponBadges[weaponId];
       const active = control.held && status.cooldownMs <= 0;
       const baseScale = weaponIconScale(weaponId, control.radius);
       this.weaponViews[weaponId]
         .setVisible(true)
-        .setAlpha(available ? 1 : .34)
+        .setAlpha(available ? 1 : .58)
         .setScale(
           active && weaponId !== "whip" ? baseScale + .025 : baseScale,
         );
       badge.image
         .setPosition(control.x + badgeOffset, control.y + badgeOffset)
-        .setScale(compact ? .1 : .14)
+        .setScale(compact ? .075 : .11)
         .setAlpha(.95)
         .setVisible(usesAmmo);
       badge.text
         .setPosition(control.x + badgeOffset, control.y + badgeOffset)
-        .setFontSize(compact ? 12 : 15)
+        .setFontSize(compact ? 10 : 13)
         .setText(String(status.ammo ?? ""))
         .setVisible(usesAmmo);
       this.weaponCooldownLabels[weaponId]
@@ -639,15 +705,60 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     }
   }
 
+  private drawSignature(): string {
+    const actor = this.controlledActor();
+    const activeWeaponIds = this.activeWeaponIds();
+    const aimingWeapon = activeWeaponIds.find((weaponId) => {
+      const control = this.weaponControls[weaponId];
+      return weaponId !== "whip" && control.held && control.dragged;
+    });
+    const weaponState = activeWeaponIds.map(
+      (weaponId) => {
+        const control = this.weaponControls[weaponId];
+        const status = this.weaponStatus?.(weaponId) ?? {
+          ammo: weaponId === "whip" ? null : 0,
+          cooldownMs: 0,
+        };
+        return [
+          weaponId,
+          status.ammo ?? "na",
+          Math.ceil(status.cooldownMs / 100),
+          Number(control.held),
+          Number(control.dragged),
+          control.drag.toFixed(1),
+          control.aim.x.toFixed(3),
+          control.aim.y.toFixed(3),
+        ].join(":");
+      },
+    ).join("|");
+    const fireCooldown = this.manualFireEnabled
+      ? Math.ceil((actor?.primaryFireCooldownMs ?? 0) / 100)
+      : 0;
+    return [
+      this.moveStick.originX.toFixed(1),
+      this.moveStick.originY.toFixed(1),
+      this.moveStick.direction.x.toFixed(3),
+      this.moveStick.direction.y.toFixed(3),
+      this.moveStick.magnitude.toFixed(3),
+      Number(this.fire.held),
+      Number(this.jump.held),
+      fireCooldown,
+      weaponState,
+      aimingWeapon ? actor?.position.x.toFixed(1) ?? "x" : "",
+      aimingWeapon ? actor?.position.y.toFixed(1) ?? "y" : "",
+      aimingWeapon ? actor?.jump.height.toFixed(1) ?? "h" : "",
+    ].join(";");
+  }
+
   private drawWeaponAim(
-    weaponId: "rocket" | "rail",
+    weaponId: Exclude<WeaponId, "whip">,
     control: WeaponControl,
     cooldownMs: number,
   ): void {
     const ready = cooldownMs <= 0;
     const buttonLength = Math.min(68, Math.max(28, control.drag));
-    const color = weaponId === "rocket" ? 0xffd36c : 0x62ff91;
-    const lightColor = weaponId === "rocket" ? 0xfff0b2 : 0xcaffd9;
+    const color = mobileWeaponColor(weaponId);
+    const lightColor = 0xe9fbff;
     const alpha = ready ? .8 : .3;
     this.graphics.lineStyle(5, lightColor, ready ? .92 : .38)
       .beginPath()
@@ -660,7 +771,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
 
     const actor = this.controlledActor();
     if (!actor || actor.lifeState !== "active") return;
-    const length = weaponId === "rocket" ? 260 : 310;
+    const length = Math.min(340, ARENA_WEAPON_CATALOG[weaponId].range * .42);
     const startX = actor.position.x;
     const startY = actor.position.y - actor.jump.height;
     const endX = startX + control.aim.x * length;
@@ -689,14 +800,21 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
   }
 
   private weaponAt(pointer: Phaser.Input.Pointer): WeaponId | null {
-    return (["rocket", "rail", "whip"] as const).find((weaponId) =>
-      this.weaponAvailable(weaponId) &&
-      inside(
-        pointer,
-        this.weaponControls[weaponId],
-        8,
+    return this.activeWeaponIds()
+      .filter((weaponId) => this.weaponAvailable(weaponId))
+      .map((weaponId) => ({
+        weaponId,
+        distance: Phaser.Math.Distance.Between(
+          pointer.x,
+          pointer.y,
+          this.weaponControls[weaponId].x,
+          this.weaponControls[weaponId].y,
+        ),
+      }))
+      .filter(({ weaponId, distance }) =>
+        distance <= this.weaponControls[weaponId].radius + 8
       )
-    ) ?? null;
+      .sort((left, right) => left.distance - right.distance)[0]?.weaponId ?? null;
   }
 
   private createWeaponBadge(
@@ -736,11 +854,7 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
     if (cooldownMs <= 0) {
       return;
     }
-    const total = weaponId === "rocket"
-      ? V2_V1_WEAPON_PARITY_CONFIG.rocketCooldownMs
-      : weaponId === "rail"
-      ? V2_V1_WEAPON_PARITY_CONFIG.railCooldownMs
-      : V2_V1_WEAPON_PARITY_CONFIG.whipCooldownMs;
+    const total = ARENA_WEAPON_CATALOG[weaponId].cooldownMs;
     drawRadialCooldownWipe(
       this.cooldownGraphics,
       control.x,
@@ -752,9 +866,13 @@ export class PhaserMobileInputAdapter implements InputAdapterPort {
   }
 
   private capturedWeapon(pointerId: number): WeaponId | null {
-    return (["rocket", "rail", "whip"] as const).find((weaponId) =>
+    return this.activeWeaponIds().find((weaponId) =>
       this.weaponControls[weaponId].id === pointerId
     ) ?? null;
+  }
+
+  private activeWeaponIds(): readonly WeaponId[] {
+    return resolveMobileWeaponRoster(this.snapshotProvider?.());
   }
 
   private weaponAvailable(weaponId: WeaponId): boolean {
@@ -835,6 +953,21 @@ function normalizeDirection(direction: WorldPosition): WorldPosition {
     : { x: 1, y: 0 };
 }
 
+function mobileWeaponColor(weaponId: Exclude<WeaponId, "whip">): number {
+  if (weaponId === "rocket") return 0xffd36c;
+  if (weaponId === "rail") return 0x62ff91;
+  if (weaponId === "pulse") return 0x35d9ff;
+  if (weaponId === "disc") return 0xffd34a;
+  if (weaponId === "grenade") return 0x79caff;
+  return 0xc674ff;
+}
+
+export function resolveMobileWeaponRoster(
+  snapshot: Pick<WorldSnapshot, "map"> | null | undefined,
+): readonly WeaponId[] {
+  return snapshot?.map?.weaponRoster ?? DEFAULT_ARENA_WEAPON_ROSTER;
+}
+
 export function resolveMobileWeaponTapDirection(
   snapshot: WorldSnapshot,
   actorId: string,
@@ -842,11 +975,7 @@ export function resolveMobileWeaponTapDirection(
 ): WorldPosition | null {
   const owner = snapshot.actors.find((actor) => actor.id === actorId);
   if (!owner) return null;
-  const maxRange = weaponId === "rail"
-    ? V2_V1_WEAPON_PARITY_CONFIG.railRange
-    : weaponId === "whip"
-    ? V2_V1_WEAPON_PARITY_CONFIG.whipRange
-    : Number.POSITIVE_INFINITY;
+  const maxRange = ARENA_WEAPON_CATALOG[weaponId].range;
   const target = snapshot.actors
     .filter((candidate) =>
       candidate.id !== owner.id &&

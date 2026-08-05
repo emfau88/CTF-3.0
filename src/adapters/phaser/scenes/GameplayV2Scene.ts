@@ -4,6 +4,7 @@ import { playerSkinPortraitAssetStem } from "../../../playerSkinPreference";
 import { readLeagueMatchRosterPresentation } from "../../../meta/league";
 import {
   readV2Route,
+  resolveV2TeamSizes,
   type V2PlayerSkinId,
 } from "../../../v2Route";
 import {
@@ -27,6 +28,7 @@ import {
   type WorldMapData,
   V2_ACTOR_LIFECYCLE_CONFIG,
   V2_COLLISION_GROUNDWORK_CONFIG,
+  V2_GAMEPLAY_RUNTIME_TIMING_CONFIG,
 } from "../../../core";
 import {
   AugmentedInputAdapter,
@@ -56,6 +58,7 @@ import {
 } from "./GameplayV2HudScene";
 import { requiredV2CharacterSkinIds } from "../v2CharacterPresentation";
 import { bindArenaLoadingUi } from "../../../arenaLoadingUi";
+import { PhaserMatchStartOverlay } from "../PhaserMatchStartOverlay";
 
 export class GameplayV2Scene extends Phaser.Scene {
   private bridge?: PhaserGameBridge;
@@ -69,6 +72,7 @@ export class GameplayV2Scene extends Phaser.Scene {
   private mapPreviewRenderer?: PhaserArenaRendererPort;
   private mapPreviewResize?: () => void;
   private hudScene?: GameplayV2HudScene;
+  private matchStartOverlay?: PhaserMatchStartOverlay;
 
   constructor() {
     super("GameplayV2Scene");
@@ -114,8 +118,14 @@ export class GameplayV2Scene extends Phaser.Scene {
     const isClassicCtf = route.mode === "ctf";
     const isOneFlag = route.mode === "one-flag";
     const selectedMap = resolveWorldMap(route.map);
+    const collisionDiagnostics: ArenaCollisionDiagnostics =
+      search.get("clearanceHeatmap") === "1"
+        ? "heatmap"
+        : search.get("collisionDebug") === "1"
+        ? "solids"
+        : "off";
     if (search.get("mapPreview") === "1") {
-      this.createMapPreview(selectedMap, route.skin);
+      this.createMapPreview(selectedMap, route.skin, collisionDiagnostics);
       this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
       return;
     }
@@ -124,12 +134,6 @@ export class GameplayV2Scene extends Phaser.Scene {
       GAMEPLAY_V2_HUD_SCENE_KEY,
     ) as GameplayV2HudScene;
     this.scene.bringToTop(GAMEPLAY_V2_HUD_SCENE_KEY);
-    const collisionDiagnostics: ArenaCollisionDiagnostics =
-      search.get("clearanceHeatmap") === "1"
-        ? "heatmap"
-        : search.get("collisionDebug") === "1"
-        ? "solids"
-        : "off";
     const traversalSmokeSetup =
       search.get("traversalSmoke") === "1" &&
       isTeamDeathmatch &&
@@ -146,23 +150,28 @@ export class GameplayV2Scene extends Phaser.Scene {
     const humanActorIds = route.players === "bot"
       ? ["blue-player"]
       : ["blue-player", "red-player"];
-    const botParticipants = createArenaRoster(route.teamSize).filter(
+    const teamSizes = resolveV2TeamSizes(route);
+    const botParticipants = createArenaRoster(teamSizes).filter(
       (participant) => !humanActorIds.includes(participant.actorId),
     );
     const botControllers = traversalSmokeSetup
       ? new ArenaBotControllerGroup([
           new BotTraversalSmokeController(traversalSmokeSetup),
         ])
-      : createArenaBotControllerGroup(
-        isClassicCtf
+      : createArenaBotControllerGroup({
+        modeId: isClassicCtf
           ? "classic-ctf"
           : isOneFlag
           ? "one-flag"
           : "team-deathmatch",
-        selectedMap,
-        botParticipants,
+        map: selectedMap,
+        participants: botParticipants,
         humanActorIds,
-      );
+        difficultyByTeam: {
+          blue: route.blueBotDifficulty,
+          red: route.redBotDifficulty,
+        },
+      });
     this.sound.mute = route.sfx === "off";
     const runtime = new GameplayCoreRuntime({
       mode: isClassicCtf
@@ -172,17 +181,20 @@ export class GameplayV2Scene extends Phaser.Scene {
         : new TeamDeathmatchMode(),
       createWorld: () => {
         const world = isClassicCtf
-          ? createClassicCtfWorldState(selectedMap, { teamSize: route.teamSize })
+          ? createClassicCtfWorldState(selectedMap, { teamSizes })
           : isOneFlag
-          ? createOneFlagWorldState(selectedMap, { teamSize: route.teamSize })
+          ? createOneFlagWorldState(selectedMap, { teamSizes })
           : createTeamDeathmatchWorldState(selectedMap, {
-            teamSize: route.teamSize,
+            teamSizes,
           });
         return traversalSmokeSetup
           ? configureBotTraversalSmokeWorld(world, traversalSmokeSetup)
           : world;
       },
       humanActorIds,
+      startCountdownMs: traversalSmokeSetup
+        ? 0
+        : V2_GAMEPLAY_RUNTIME_TIMING_CONFIG.matchStartCountdownMs,
     });
     const readBlueWeaponStatus = (weaponId: ArenaWeaponId) => {
       const actor = (this.bridge?.snapshot ?? runtime.snapshot).actors.find(
@@ -257,6 +269,10 @@ export class GameplayV2Scene extends Phaser.Scene {
       hud,
     });
     this.bridge.initialize();
+    if (this.hudScene) {
+      this.matchStartOverlay = new PhaserMatchStartOverlay(this.hudScene);
+      this.matchStartOverlay.render(this.bridge.snapshot.match);
+    }
     if (traversalSmokeSetup) {
       this.traversalSmokeOverlay = new PhaserBotTraversalSmokeOverlay(
         traversalSmokeSetup,
@@ -296,6 +312,7 @@ export class GameplayV2Scene extends Phaser.Scene {
       return;
     }
     this.bridge.advance(this.inputAdapter.readFrame(delta));
+    this.matchStartOverlay?.render(this.bridge.snapshot.match);
     this.traversalSmokeOverlay?.render(this.bridge.snapshot);
     this.publishMatchState();
   }
@@ -310,6 +327,7 @@ export class GameplayV2Scene extends Phaser.Scene {
     this.bridge?.dispose();
     this.mapPreviewRenderer?.dispose();
     this.traversalSmokeOverlay?.dispose();
+    this.matchStartOverlay?.dispose();
     this.inputAdapter?.dispose();
     if (this.scene.isActive(GAMEPLAY_V2_HUD_SCENE_KEY)) {
       this.scene.stop(GAMEPLAY_V2_HUD_SCENE_KEY);
@@ -325,6 +343,7 @@ export class GameplayV2Scene extends Phaser.Scene {
     this.traversalSmokeOverlay = undefined;
     this.mapPreviewRenderer = undefined;
     this.mapPreviewResize = undefined;
+    this.matchStartOverlay = undefined;
     this.hudScene = undefined;
     this.pauseForVisibility = false;
     this.pauseForOverlay = false;
@@ -335,6 +354,7 @@ export class GameplayV2Scene extends Phaser.Scene {
   private createMapPreview(
     map: WorldMapData,
     skin: V2PlayerSkinId,
+    collisionDiagnostics: ArenaCollisionDiagnostics,
   ): void {
     document.body.classList.add("v2-map-preview");
     this.mapPreviewRenderer = new PhaserArenaRendererPort(
@@ -342,6 +362,9 @@ export class GameplayV2Scene extends Phaser.Scene {
       map,
       undefined,
       skin,
+      false,
+      1,
+      collisionDiagnostics,
     );
     const bounds = map.geometry.bounds;
     this.mapPreviewResize = () => {

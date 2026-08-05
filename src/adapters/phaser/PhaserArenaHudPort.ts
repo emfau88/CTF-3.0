@@ -467,7 +467,8 @@ implements HudPort, FrameDiagnosticsPort {
     for (let index = 0; index < this.killFeedViews.length; index += 1) {
       const view = this.killFeedViews[index];
       const entry = this.activeKillNotices[index];
-      if (!entry || !layoutVisible) {
+      const visibleLimit = this.mobileControls ? 2 : this.killFeedViews.length;
+      if (!entry || !layoutVisible || index >= visibleLimit) {
         setKillFeedViewVisible(view, false);
         continue;
       }
@@ -476,7 +477,7 @@ implements HudPort, FrameDiagnosticsPort {
       const ageMs = KILL_FEED_LIFETIME_MS - remainingMs;
       const slide = Math.max(0, 14 * (1 - ageMs / 180));
       const x = rect.x + slide;
-      const y = rect.y + index * (rect.height + 4);
+      const y = rect.y + index * (rect.height + (this.mobileControls ? 2 : 4));
       const centerX = x + rect.width / 2;
       const alpha = Math.min(1, remainingMs / 650) * (1 - index * .14);
       const accent = killFeedActorColorNumber(
@@ -494,7 +495,7 @@ implements HudPort, FrameDiagnosticsPort {
       );
       view.killer
         .setPosition(centerX - 17, y + rect.height / 2)
-        .setFontSize(rect.height >= 25 ? "10px" : "9px")
+        .setFontSize(this.mobileControls ? "8px" : rect.height >= 25 ? "10px" : "9px")
         .setText(killFeedActorName(
           notice.killerActorId,
           this.snapshot,
@@ -504,7 +505,7 @@ implements HudPort, FrameDiagnosticsPort {
         .setColor(killFeedActorColor(notice.killerActorId, this.snapshot));
       view.victim
         .setPosition(centerX + 17, y + rect.height / 2)
-        .setFontSize(rect.height >= 25 ? "10px" : "9px")
+        .setFontSize(this.mobileControls ? "8px" : rect.height >= 25 ? "10px" : "9px")
         .setText(killFeedActorName(
           notice.victimActorId,
           this.snapshot,
@@ -520,7 +521,7 @@ implements HudPort, FrameDiagnosticsPort {
       if (weaponTexture) view.weaponIcon.setTexture(weaponTexture);
       view.causeIcon
         .setPosition(centerX, y + rect.height / 2)
-        .setFontSize(rect.height >= 25 ? "14px" : "12px")
+        .setFontSize(this.mobileControls ? "10px" : rect.height >= 25 ? "14px" : "12px")
         .setText(killFeedCauseGlyph(notice.cause))
         .setVisible(!weaponTexture);
       setKillFeedViewAlpha(view, alpha);

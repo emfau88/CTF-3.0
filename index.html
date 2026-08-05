@@ -123,7 +123,7 @@
             </fieldset>
             <div class="v2-menu-section-title v2-quick-config-heading">
               <span>Match Setup</span>
-              <small>You control one fighter · open slots are filled by bots</small>
+              <small>You are Blue slot 1 · configure both squads</small>
             </div>
             <div class="v2-quick-match-fields">
               <label>Arena
@@ -137,14 +137,51 @@
                   <option value="flow-lab-v2">Sunken Court</option>
                 </select>
               </label>
-              <label>Team Size
-                <select id="v2-menu-team-size">
-                  <option value="1">1v1</option>
-                  <option value="2">2v2</option>
-                  <option value="3">3v3</option>
-                  <option value="4">4v4</option>
-                </select>
-              </label>
+            </div>
+            <div class="v2-quick-team-setup" aria-label="Team setup">
+              <fieldset class="v2-quick-team-card is-blue">
+                <legend>Your Squad</legend>
+                <div class="v2-quick-team-fields">
+                  <label>Ally Bots
+                    <select id="v2-menu-blue-bots">
+                      <option value="0">No ally bots</option>
+                      <option value="1">1 bot</option>
+                      <option value="2">2 bots</option>
+                      <option value="3">3 bots</option>
+                    </select>
+                  </label>
+                  <label>Bot Skill
+                    <select id="v2-menu-blue-bot-difficulty">
+                      <option value="casual">Easy</option>
+                      <option value="normal">Normal</option>
+                      <option value="strong">Hard</option>
+                    </select>
+                  </label>
+                </div>
+                <small>You occupy Blue slot 1</small>
+              </fieldset>
+              <div class="v2-quick-team-versus" aria-hidden="true">VS</div>
+              <fieldset class="v2-quick-team-card is-red">
+                <legend>Enemy Squad</legend>
+                <div class="v2-quick-team-fields">
+                  <label>Enemy Bots
+                    <select id="v2-menu-red-bots">
+                      <option value="1">1 bot</option>
+                      <option value="2">2 bots</option>
+                      <option value="3">3 bots</option>
+                      <option value="4">4 bots</option>
+                    </select>
+                  </label>
+                  <label>Bot Skill
+                    <select id="v2-menu-red-bot-difficulty">
+                      <option value="casual">Easy</option>
+                      <option value="normal">Normal</option>
+                      <option value="strong">Hard</option>
+                    </select>
+                  </label>
+                </div>
+                <small>Red is fully AI-controlled</small>
+              </fieldset>
             </div>
             <figure id="v2-menu-arena-preview" class="v2-quick-arena-preview is-hidden" aria-live="polite">
               <div class="v2-quick-arena-stage">

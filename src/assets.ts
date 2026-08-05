@@ -321,7 +321,7 @@ function preloadJungleTempleAssets(
 }
 
 function preloadHelixCanopyAssets(scene: Phaser.Scene) {
-  scene.load.image("helixArenaMaster", assetUrl("helix-canopy/arena-master.png"));
+  scene.load.image("helixArenaMaster", assetUrl("helix-canopy/arena-master-v2.png"));
 }
 
 function preloadFoundryCircuitAssets(scene: Phaser.Scene) {

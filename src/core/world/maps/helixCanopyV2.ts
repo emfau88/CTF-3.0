@@ -4,6 +4,8 @@ import type { WorldMapData } from "./worldMapData";
 const MAP_SCALE = 1.15;
 const DESIGN_WIDTH = 1920;
 const DESIGN_HEIGHT = 960;
+const MASTER_WIDTH = 1647;
+const MASTER_HEIGHT = 955;
 const scale = (value: number) => Math.round(value * MAP_SCALE);
 const point = (x: number, y: number) => ({ x: scale(x), y: scale(y) });
 const rect = (x: number, y: number, width: number, height: number) => ({
@@ -14,6 +16,8 @@ const rect = (x: number, y: number, width: number, height: number) => ({
 });
 const WORLD_WIDTH = scale(DESIGN_WIDTH);
 const WORLD_HEIGHT = scale(DESIGN_HEIGHT);
+const MASTER_SCALE = WORLD_HEIGHT / MASTER_HEIGHT;
+const MASTER_OFFSET_X = (WORLD_WIDTH - MASTER_WIDTH * MASTER_SCALE) / 2;
 const INTEGRATED_COVER = "helix-integrated-cover" as const;
 
 const scaledCover = (
@@ -63,14 +67,64 @@ const mirroredCover = (
   ] as const);
 };
 
+const masterRect = (
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => {
+  const left = Math.round(MASTER_OFFSET_X + x * MASTER_SCALE);
+  const top = Math.round(y * MASTER_SCALE);
+  const right = Math.round(MASTER_OFFSET_X + (x + width) * MASTER_SCALE);
+  const bottom = Math.round((y + height) * MASTER_SCALE);
+  return {
+    x: left,
+    y: top,
+    width: right - left,
+    height: bottom - top,
+  };
+};
+
+const masterCover = (
+  id: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => ({
+  id,
+  ...masterRect(x, y, width, height),
+  visual: INTEGRATED_COVER,
+} as const);
+
+const mirroredMasterCover = (
+  id: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) => {
+  const west = masterCover(`${id}-west`, x, y, width, height);
+  return ([
+    west,
+    masterCover(
+      `${id}-east`,
+      MASTER_WIDTH - x - width,
+      y,
+      width,
+      height,
+    ),
+  ] as const);
+};
+
 const walls = [
   // The arena edge is one closed stepped mask: broad top/bottom bands, full
   // side voids, and the four gardens above and below the team bases. This keeps
   // the complete glass/decorative rim outside play instead of patching isolated
-  // bushes while preserving the approved inner-arena collision unchanged.
+  // bushes, while the interior planters keep their independent simple shapes.
   ...mirroredCover("dome-void", 0, 0, 250, DESIGN_HEIGHT),
-  centeredCover("dome-rim-north", 250, 0, 135),
-  centeredCover("dome-rim-south", 250, 800, 160),
+  centeredCover("dome-rim-north", 250, 0, 170),
+  centeredCover("dome-rim-south", 250, 750, 210),
   ...mirroredCover("dome-base-garden-north", 250, 135, 150, 180),
   ...mirroredCover("dome-base-garden-south", 250, 645, 150, 155),
 
@@ -83,24 +137,20 @@ const walls = [
   ...mirroredCover("dome-planter-south-mid", 745, 770, 65, 55),
   ...mirroredCover("dome-planter-south-inner", 800, 810, 40, 45),
 
-  // Insets of roughly one actor radius make the effective collision, rather
-  // than the raw AABB, follow each diagonal botanical silhouette. The stepped
-  // groups preserve the four clearly visible passages around the exchange.
-  ...mirroredCover("canopy-island-outer", 495, 300, 65, 50),
-  ...mirroredCover("canopy-island-mid", 545, 285, 85, 55),
-  ...mirroredCover("canopy-island-inner", 615, 270, 55, 50),
-  ...mirroredCover("exchange-island-outer", 600, 405, 60, 50),
-  ...mirroredCover("exchange-island-mid", 640, 420, 80, 60),
-  ...mirroredCover("exchange-island-inner", 690, 445, 55, 45),
-  ...mirroredCover("root-island-outer", 495, 540, 65, 50),
-  ...mirroredCover("root-island-mid", 545, 555, 85, 55),
-  ...mirroredCover("root-island-inner", 615, 575, 55, 50),
-  ...mirroredCover("helix-pod-upper-cap", 782, 280, 30, 26),
-  ...mirroredCover("helix-pod-upper-core", 768, 306, 46, 58),
-  ...mirroredCover("helix-pod-upper-foot", 780, 364, 32, 18),
-  ...mirroredCover("helix-pod-lower-cap", 785, 530, 30, 20),
-  ...mirroredCover("helix-pod-lower-core", 770, 550, 45, 55),
-  ...mirroredCover("helix-pod-lower-foot", 785, 605, 30, 20),
+  // Helix v2.1 is authored gameplay-first. Every interior planter has one
+  // simple rectangular foliage core in master-image pixels. Circle-vs-rect
+  // collision expands that core by the actor radius until it meets the metal
+  // curb, so the visible planter and the effective block zone share one truth.
+  ...mirroredMasterCover("planter-north-outer", 469, 272, 96, 46),
+  ...mirroredMasterCover("planter-north-inner", 652, 260, 40, 82),
+  ...mirroredMasterCover("planter-mid", 528, 426, 109, 62),
+  ...mirroredMasterCover("planter-south-outer", 461, 596, 104, 48),
+  ...mirroredMasterCover("planter-south-inner", 650, 581, 42, 80),
+
+  // The helix itself is a walkable under-glass floor feature. Only its visibly
+  // raised terminal machinery joins the closed north/south arena shell.
+  masterCover("helix-terminal-north", 770, 140, 107, 90),
+  masterCover("helix-terminal-south", 770, 690, 107, 92),
 ] as const;
 
 export const HELIX_CANOPY_V2: WorldMapData = {
@@ -149,13 +199,13 @@ export const HELIX_CANOPY_V2: WorldMapData = {
   spawnPoints: [
     ...createTeamSpawnPoints({
       teamId: "blue",
-      position: point(280, 480),
+      position: point(350, 480),
       facing: { x: 1, y: 0 },
       tags: ["player", "tdm", "featured"],
     }),
     ...createTeamSpawnPoints({
       teamId: "red",
-      position: point(1640, 480),
+      position: point(1570, 480),
       facing: { x: -1, y: 0 },
       tags: ["player", "tdm", "featured"],
     }),
@@ -165,17 +215,17 @@ export const HELIX_CANOPY_V2: WorldMapData = {
     { id: "health-red-canopy-exit", type: "health", position: point(1495, 350) },
     { id: "health-blue-root-exit", type: "health", position: point(425, 610) },
     { id: "health-red-root-exit", type: "health", position: point(1495, 610) },
-    { id: "armor-exchange-west", type: "armor", position: point(780, 480) },
-    { id: "armor-exchange-east", type: "armor", position: point(1140, 480) },
-    { id: "pulse-root-west", type: "pulse", position: point(675, 765) },
-    { id: "pulse-root-east", type: "pulse", position: point(1245, 765) },
-    { id: "rail-canopy-center", type: "rail", position: point(960, 175) },
+    { id: "armor-exchange-west", type: "armor", position: point(820, 480) },
+    { id: "armor-exchange-east", type: "armor", position: point(1100, 480) },
+    { id: "pulse-root-west", type: "pulse", position: point(675, 700) },
+    { id: "pulse-root-east", type: "pulse", position: point(1245, 700) },
+    { id: "rail-canopy-center", type: "rail", position: point(960, 255) },
     { id: "shard-exchange-west", type: "shard", position: point(880, 480) },
     { id: "shard-exchange-east", type: "shard", position: point(1040, 480) },
   ],
   gameplay: {
-    blueBase: rect(180, 350, 200, 260),
-    redBase: rect(1540, 350, 200, 260),
+    blueBase: rect(250, 350, 200, 260),
+    redBase: rect(1470, 350, 200, 260),
     combatZone: rect(880, 400, 160, 160),
   },
   botProfile: {
@@ -184,29 +234,29 @@ export const HELIX_CANOPY_V2: WorldMapData = {
     tacticalZones: [
       { id: "helix-core", kind: "control", position: point(960, 480), radius: scale(150) },
       { id: "canopy-north", kind: "flank", position: point(960, 245), radius: scale(105) },
-      { id: "canopy-south", kind: "flank", position: point(960, 715), radius: scale(105) },
+      { id: "canopy-south", kind: "flank", position: point(960, 650), radius: scale(105) },
     ],
   },
   presentation: {
     theme: "helix-canopy",
-    plan: "A coherent orbital biodome whose integrated botanical islands form three readable routes around a luminous vertical helix.",
+    plan: "A competitive orbital biodome whose rectangular botanical planters form three readable routes around a walkable under-glass helix.",
     walls,
     gaps: [],
     botRoutes: {
       attacker: [
-        point(1620, 480), point(1450, 690),
+        point(1570, 480), point(1450, 690),
         point(1300, 690), point(1185, 680),
         point(1050, 610), point(960, 550),
         point(870, 610), point(735, 680),
         point(620, 690), point(470, 690),
-        point(300, 480),
+        point(350, 480),
       ],
       defender: [
-        point(300, 350), point(430, 300),
+        point(350, 350), point(430, 300),
         point(460, 480), point(430, 660),
-        point(300, 610),
+        point(350, 610),
       ],
     },
   },
-  diagnosticSpawn: point(1640, 480),
+  diagnosticSpawn: point(1570, 480),
 };

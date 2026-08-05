@@ -20,6 +20,28 @@ aim, route knowledge, weapon control and objective pressure.
 > single-player-versus-bots build with a complete Quick Play loop and the first
 > three-match League circuit. Progress is stored locally in the browser.
 
+## Development update — August 5, 2026
+
+- **Helix Canopy v2.1** replaces the dense organic combat court with readable
+  rectangular planters, three broad routes and a walkable under-glass helix.
+  The original master remains archived in the repository.
+- Quick Play supports asymmetric teams and separate **Easy**, **Normal** and
+  **Hard** bot settings for both sides—for example, the player plus two Hard
+  bots against three Easy bots.
+- A synchronized two-second match countdown now holds every player, bot and
+  timer until the simulation starts for everyone at once.
+- Landscape touch controls use each arena's real weapon roster and a compact
+  mobile-only action arc, top HUD and combat log. Desktop controls and layout
+  remain separate.
+- Repeated HUD and pickup drawing was reduced. In the reproducible 4v4
+  software-WebGL stress test, main-thread task time fell by about 15% and
+  script time by about 20%; real-device GPU profiling remains an open gate.
+
+The source audit, verified implementation status, open work and screenshot
+evidence are collected in the
+[audit status](docs/audits/CTF-3.0_Audit_STATUS_2026-08-05.md) and
+[Phase 3 QA record](docs/qa/phase-3-mobile-runtime/README.md).
+
 ## Vision
 
 Core Arena is designed as a readable, skill-driven arena game: a match should
@@ -37,7 +59,8 @@ matches context without turning the arena into an RPG grind.
 ### Quick Play
 
 Configure a match, select an arena and fighter, and play from **1v1 through
-4v4**. You control one fighter while every other slot is filled by bots.
+4v4**. You control one fighter while every other slot is filled by bots. Bot
+count and difficulty can be selected independently for the blue and red teams.
 
 | Mode | Objective | Match format |
 | --- | --- | --- |
@@ -73,7 +96,7 @@ spaces.
 
 ### Helix Canopy
 
-![Full overview of Helix Canopy](public/assets/map-previews/helix-canopy-v2-overview.png)
+![Full overview of Helix Canopy](public/assets/map-previews/helix-canopy-v2-1-overview.png)
 
 A bright mirrored orbital biodome with clean lanes, readable flanks and a
 luminous central helix.
@@ -153,9 +176,9 @@ them. Arc Lash is always available and never consumes ammunition.
 | Hold `Tab` | Match statistics |
 | `M` | Pause and match menu |
 
-Core Arena is developed desktop-first. A landscape touch interface exists as
-an experimental secondary control path, but desktop keyboard and mouse remain
-the primary target.
+Core Arena is developed desktop-first. A tested landscape touch interface is
+available as a secondary control path with map-specific weapon buttons and a
+mobile-only compact HUD; desktop keyboard and mouse remain the primary target.
 
 ## Technology
 
@@ -185,6 +208,7 @@ Open [http://127.0.0.1:5173/CTF-3.0/](http://127.0.0.1:5173/CTF-3.0/).
 npm test
 npm run test:typecheck
 npm run build
+npm run test:e2e
 npm run bot:audit:premium
 ```
 
@@ -202,8 +226,10 @@ Development is focused on:
 
 - bringing future arenas up to the Helix, Temple and Foundry quality bar
 - expanding League progression beyond the Proving Circuit
-- deepening presentation and usability without sacrificing visible map space
-- continuing bot, responsive-layout and experimental touch-control refinement
+- subjectively calibrating Easy, Normal and Hard bot profiles
+- re-baselining the full premium-map bot audit, especially 4v4 Classic CTF
+- introducing a shared image/collision registration and route-graph contract
+- profiling rendering on real mobile hardware without sacrificing map space
 
 Online multiplayer, local PvP, account services and cloud saves are not part of
 the current playable build.

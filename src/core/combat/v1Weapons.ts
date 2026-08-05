@@ -27,11 +27,23 @@ import {
 
 type V1WeaponId = ArenaWeaponId;
 
+export interface V1WeaponDamageRequest {
+  readonly target: ActorState;
+  readonly amount: number;
+  readonly sourceActorId: string;
+  readonly weaponId: "rail" | "whip";
+}
+
+export type V1WeaponDamageResolver = (
+  request: V1WeaponDamageRequest,
+) => readonly GameEvent[];
+
 export function fireV1Weapons(
   world: WorldState,
   actor: ActorState,
   input: CoreInputFrame,
   config: V1WeaponConfig = V2_V1_WEAPON_PARITY_CONFIG,
+  damageResolver?: V1WeaponDamageResolver,
 ): readonly GameEvent[] {
   const request = input.actions.find((intent) =>
     intent.action === "fireWeapon" &&
@@ -50,7 +62,7 @@ export function fireV1Weapons(
     return [];
   }
   if (weaponId === "whip") {
-    return fireWhip(world, actor, config);
+    return fireWhip(world, actor, config, damageResolver);
   }
   const direction = normalizedDirection(
     request?.direction ?? readAimDirection(input) ?? actor.lastMoveDirection,
@@ -60,7 +72,7 @@ export function fireV1Weapons(
     return fireRocket(world, actor, direction, config);
   }
   if (weaponId === "rail") {
-    return fireRail(world, actor, direction, config);
+    return fireRail(world, actor, direction, config, damageResolver);
   }
   if (weaponId === "grenade") {
     return fireGrenade(
@@ -150,6 +162,7 @@ function fireRail(
   actor: ActorState,
   direction: WorldPosition,
   config: V1WeaponConfig,
+  damageResolver?: V1WeaponDamageResolver,
 ): readonly GameEvent[] {
   if (
     actor.weapons.railAmmo <= 0 ||
@@ -217,14 +230,12 @@ function fireRail(
     },
   }];
   if (target) {
-    events.push(...applyDamage(
+    events.push(...resolveWeaponDamage(world, {
       target,
-      config.railDamage,
-      world.timeMs,
-      V2_ACTOR_LIFECYCLE_CONFIG,
-      actor.id,
-      "rail",
-    ).events);
+      amount: config.railDamage,
+      sourceActorId: actor.id,
+      weaponId: "rail",
+    }, damageResolver));
   }
   return events;
 }
@@ -233,6 +244,7 @@ function fireWhip(
   world: WorldState,
   actor: ActorState,
   config: V1WeaponConfig,
+  damageResolver?: V1WeaponDamageResolver,
 ): readonly GameEvent[] {
   if (
     actor.weapons.whipCooldownMs > 0
@@ -281,15 +293,30 @@ function fireWhip(
       cooldownMs: config.whipCooldownMs,
     },
   }];
-  events.push(...applyDamage(
+  events.push(...resolveWeaponDamage(world, {
     target,
-    config.whipDamage,
-    world.timeMs,
-    V2_ACTOR_LIFECYCLE_CONFIG,
-    actor.id,
-    "whip",
-  ).events);
+    amount: config.whipDamage,
+    sourceActorId: actor.id,
+    weaponId: "whip",
+  }, damageResolver));
   return events;
+}
+
+function resolveWeaponDamage(
+  world: WorldState,
+  request: V1WeaponDamageRequest,
+  damageResolver?: V1WeaponDamageResolver,
+): readonly GameEvent[] {
+  return damageResolver
+    ? damageResolver(request)
+    : applyDamage(
+      request.target,
+      request.amount,
+      world.timeMs,
+      V2_ACTOR_LIFECYCLE_CONFIG,
+      request.sourceActorId,
+      request.weaponId,
+    ).events;
 }
 
 function fireArenaProjectile(

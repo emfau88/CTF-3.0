@@ -18,6 +18,8 @@ export interface MatchState {
   readonly durationMs: number;
   elapsedMs: number;
   remainingMs: number;
+  startCountdownDurationMs?: number;
+  startCountdownRemainingMs?: number;
   result: MatchResult | null;
 }
 
