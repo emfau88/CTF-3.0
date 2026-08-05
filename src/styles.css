@@ -742,6 +742,13 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
   backdrop-filter: blur(8px);
 }
+.v2-game-utility.is-touch-controls {
+  top: max(6px, env(safe-area-inset-top));
+  right: max(6px, env(safe-area-inset-right));
+  gap: 2px;
+  padding: 2px;
+}
+.v2-game-utility.is-touch-controls .v2-fullscreen-button { display: none; }
 .v2-game-menu-button {
   position: relative;
   min-width: 67px;

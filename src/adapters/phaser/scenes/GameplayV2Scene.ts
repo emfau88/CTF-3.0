@@ -28,6 +28,7 @@ import {
   type WorldMapData,
   V2_ACTOR_LIFECYCLE_CONFIG,
   V2_COLLISION_GROUNDWORK_CONFIG,
+  V2_GAMEPLAY_RUNTIME_TIMING_CONFIG,
 } from "../../../core";
 import {
   AugmentedInputAdapter,
@@ -57,6 +58,7 @@ import {
 } from "./GameplayV2HudScene";
 import { requiredV2CharacterSkinIds } from "../v2CharacterPresentation";
 import { bindArenaLoadingUi } from "../../../arenaLoadingUi";
+import { PhaserMatchStartOverlay } from "../PhaserMatchStartOverlay";
 
 export class GameplayV2Scene extends Phaser.Scene {
   private bridge?: PhaserGameBridge;
@@ -70,6 +72,7 @@ export class GameplayV2Scene extends Phaser.Scene {
   private mapPreviewRenderer?: PhaserArenaRendererPort;
   private mapPreviewResize?: () => void;
   private hudScene?: GameplayV2HudScene;
+  private matchStartOverlay?: PhaserMatchStartOverlay;
 
   constructor() {
     super("GameplayV2Scene");
@@ -189,6 +192,9 @@ export class GameplayV2Scene extends Phaser.Scene {
           : world;
       },
       humanActorIds,
+      startCountdownMs: traversalSmokeSetup
+        ? 0
+        : V2_GAMEPLAY_RUNTIME_TIMING_CONFIG.matchStartCountdownMs,
     });
     const readBlueWeaponStatus = (weaponId: ArenaWeaponId) => {
       const actor = (this.bridge?.snapshot ?? runtime.snapshot).actors.find(
@@ -263,6 +269,10 @@ export class GameplayV2Scene extends Phaser.Scene {
       hud,
     });
     this.bridge.initialize();
+    if (this.hudScene) {
+      this.matchStartOverlay = new PhaserMatchStartOverlay(this.hudScene);
+      this.matchStartOverlay.render(this.bridge.snapshot.match);
+    }
     if (traversalSmokeSetup) {
       this.traversalSmokeOverlay = new PhaserBotTraversalSmokeOverlay(
         traversalSmokeSetup,
@@ -302,6 +312,7 @@ export class GameplayV2Scene extends Phaser.Scene {
       return;
     }
     this.bridge.advance(this.inputAdapter.readFrame(delta));
+    this.matchStartOverlay?.render(this.bridge.snapshot.match);
     this.traversalSmokeOverlay?.render(this.bridge.snapshot);
     this.publishMatchState();
   }
@@ -316,6 +327,7 @@ export class GameplayV2Scene extends Phaser.Scene {
     this.bridge?.dispose();
     this.mapPreviewRenderer?.dispose();
     this.traversalSmokeOverlay?.dispose();
+    this.matchStartOverlay?.dispose();
     this.inputAdapter?.dispose();
     if (this.scene.isActive(GAMEPLAY_V2_HUD_SCENE_KEY)) {
       this.scene.stop(GAMEPLAY_V2_HUD_SCENE_KEY);
@@ -331,6 +343,7 @@ export class GameplayV2Scene extends Phaser.Scene {
     this.traversalSmokeOverlay = undefined;
     this.mapPreviewRenderer = undefined;
     this.mapPreviewResize = undefined;
+    this.matchStartOverlay = undefined;
     this.hudScene = undefined;
     this.pauseForVisibility = false;
     this.pauseForOverlay = false;

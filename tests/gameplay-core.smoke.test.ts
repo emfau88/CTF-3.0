@@ -49,6 +49,7 @@ import {
   resolveV2TeamSizes,
 } from "../src/v2Route";
 import { calculateV2TouchLayout } from "../src/adapters/phaser/v2TouchLayout";
+import { resolveMobileWeaponRoster } from "../src/adapters/phaser/PhaserMobileInputAdapter";
 import { resolveDesktopAimDirection } from "../src/adapters/phaser/desktopAim";
 import {
   formatArenaModeLine,
@@ -84,6 +85,76 @@ test("runtime timing hardening clamps negative and oversized frame deltas", () =
     clampRuntimeDeltaMs(999),
     V2_GAMEPLAY_RUNTIME_TIMING_CONFIG.maxFrameDeltaMs,
   );
+});
+
+test("match start countdown holds every fighter and the match clock", () => {
+  const runtime = new GameplayCoreRuntime({
+    mode: new TeamDeathmatchMode(),
+    createWorld: () => createTeamDeathmatchWorldState(TRAINING_CROSSING_V2),
+    startCountdownMs: 200,
+  });
+  const initialized = runtime.initialize();
+  const initialBlue = initialized.snapshot.actors.find((actor) =>
+    actor.id === "blue-player"
+  )!;
+  const initialRed = initialized.snapshot.actors.find((actor) =>
+    actor.id === "red-player"
+  )!;
+  const input = (sequence: number) => ({
+    sequence,
+    timeMs: sequence * 100,
+    deltaMs: 100,
+    actions: [{
+      action: "move" as const,
+      phase: "held" as const,
+      actorId: "blue-player",
+      direction: { x: 1, y: 0 },
+      magnitude: 1,
+    }, {
+      action: "move" as const,
+      phase: "held" as const,
+      actorId: "red-player",
+      direction: { x: -1, y: 0 },
+      magnitude: 1,
+    }],
+  });
+
+  assert.equal(initialized.snapshot.match?.phase, "starting");
+  assert.equal(initialized.snapshot.match?.startCountdownRemainingMs, 200);
+  assert.equal(initialized.events.some((event) => event.type === "match.started"), false);
+
+  const held = runtime.advance(input(1));
+  assert.equal(held.snapshot.timeMs, 0);
+  assert.equal(held.snapshot.match?.elapsedMs, 0);
+  assert.equal(held.snapshot.match?.startCountdownRemainingMs, 100);
+  assert.deepEqual(
+    held.snapshot.actors.map((actor) => actor.position),
+    initialized.snapshot.actors.map((actor) => actor.position),
+  );
+  assert.equal(
+    held.snapshot.actors[0]?.spawnProtectionRemainingMs,
+    initialized.snapshot.actors[0]?.spawnProtectionRemainingMs,
+  );
+
+  const released = runtime.advance(input(2));
+  assert.equal(released.snapshot.match?.phase, "running");
+  assert.equal(released.snapshot.timeMs, 0);
+  assert.equal(
+    released.events.filter((event) => event.type === "match.started").length,
+    1,
+  );
+  assert.deepEqual(
+    released.snapshot.actors.map((actor) => actor.position),
+    initialized.snapshot.actors.map((actor) => actor.position),
+  );
+
+  const running = runtime.advance({ ...input(3), deltaMs: 16 });
+  const blue = running.snapshot.actors.find((actor) => actor.id === "blue-player")!;
+  const red = running.snapshot.actors.find((actor) => actor.id === "red-player")!;
+  assert.equal(running.snapshot.timeMs, 16);
+  assert.equal(running.snapshot.match?.elapsedMs, 16);
+  assert.ok(blue.position.x > initialBlue.position.x);
+  assert.ok(red.position.x < initialRed.position.x);
 });
 
 test("retired v1 URLs resolve to the v2 menu", () => {
@@ -904,21 +975,30 @@ test("v2 attack touch zones stay separated in compact and full layouts", () => {
     { width: 844, height: 390 },
     { width: 1024, height: 768 },
   ]) {
-    const layout = calculateV2TouchLayout(size.width, size.height);
+    const layout = calculateV2TouchLayout(size.width, size.height, 4);
     const controls = [
       { id: "jump", ...layout.jump },
-      { id: "fire", ...layout.fire },
-      { id: "rocket", ...layout.rocket },
-      { id: "rail", ...layout.rail },
-      { id: "whip", ...layout.whip },
+      ...layout.weapons.map((weapon, index) => ({
+        id: `weapon-${index}`,
+        ...weapon,
+      })),
     ];
     assert.ok(layout.jump.x > layout.fire.x, "jump stays on the thumb anchor");
-    assert.ok(layout.rail.y < layout.jump.y, "rail stays above jump");
-    assert.ok(layout.rocket.y < layout.jump.y, "rocket stays above jump");
-    assert.ok(layout.whip.y < layout.jump.y, "whip stays above jump");
-    assert.ok(layout.fire.x < layout.whip.x, "fire begins the ability arc");
-    assert.ok(layout.whip.x < layout.rocket.x, "whip precedes rocket");
-    assert.ok(layout.rocket.x < layout.rail.x, "rocket precedes rail");
+    assert.ok(
+      layout.weapons.every((weapon) =>
+        weapon.y + weapon.r <= size.height - 12
+      ),
+      "weapons stay inside the compact jump fan",
+    );
+    assert.ok(
+      layout.weapons[0]!.x < layout.weapons.at(-1)!.x,
+      "the weapon fan progresses toward the right edge",
+    );
+    if (layout.compact) {
+      assert.ok(size.width - layout.jump.x <= 46, "jump hugs the right edge");
+      assert.ok(size.height - layout.jump.y <= 46, "jump hugs the bottom edge");
+      assert.ok(layout.jump.r <= 34, "compact jump stays thumb-sized");
+    }
 
     for (let index = 0; index < controls.length; index += 1) {
       const control = controls[index];
@@ -929,20 +1009,30 @@ test("v2 attack touch zones stay separated in compact and full layouts", () => {
       );
       assert.ok(control.y - control.r >= 12, `${control.id} top edge`);
       assert.ok(
-        control.y + control.r <= size.height - 28,
+        control.y + control.r <= size.height - 12,
         `${control.id} bottom edge`,
       );
       for (const other of controls.slice(index + 1)) {
         assert.ok(
           distance(control, other) >
             touchRadius(control.id, control.r) +
-              touchRadius(other.id, other.r) +
-              12,
+              touchRadius(other.id, other.r),
           `${control.id} overlaps ${other.id}`,
         );
       }
     }
   }
+});
+
+test("mobile weapon buttons follow the selected map roster", () => {
+  const helix = getWorldMap("helix-canopy-v2")!;
+  const snapshot = createWorldSnapshot(createTeamDeathmatchWorldState(helix));
+
+  assert.deepEqual(
+    resolveMobileWeaponRoster(snapshot),
+    ["whip", "rail", "pulse", "shard"],
+  );
+  assert.equal(resolveMobileWeaponRoster(snapshot).includes("rocket"), false);
 });
 
 test("desktop weapon pickups use stable ordered slots", () => {
@@ -1015,8 +1105,15 @@ test("arena HUD layout preserves map space across desktop and tablet sizes", () 
   }
 
   const tablet = calculateArenaHudLayout(1024, 768, true);
+  assert.equal(tablet.density, "micro");
   assert.equal(tablet.playerStatusPortrait, false);
-  assert.ok(tablet.playerStatus.y > tablet.header.y + tablet.header.height);
+  assert.equal(tablet.playerStatusVisible, false);
+  assert.equal(tablet.header.y, 2);
+  assert.ok(tablet.header.width <= 178);
+  assert.ok(tablet.header.height <= 38);
+  assert.ok(tablet.killFeed.width <= 168);
+  assert.ok(tablet.killFeed.height <= 19);
+  assert.ok(tablet.killFeed.y <= tablet.header.y + tablet.header.height + 4);
 
   const micro = calculateArenaHudLayout(480, 270, false);
   assert.equal(micro.density, "micro");

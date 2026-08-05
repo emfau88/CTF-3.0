@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "scenario": "production Helix TDM 4v4, all bots hard, 1280x720, 8 seconds after countdown",
+  "renderer": "Chromium ANGLE SwiftShader software WebGL",
+  "baseline": {
+    "averageFrameMs": 45.22,
+    "p95FrameMs": 100.0,
+    "taskDurationSeconds": 4.1767,
+    "scriptDurationSeconds": 3.2901
+  },
+  "optimized": {
+    "averageFrameMs": 46.6842,
+    "p95FrameMs": 83.3,
+    "taskDurationSeconds": 3.551619,
+    "scriptDurationSeconds": 2.637698,
+    "consoleErrors": []
+  },
+  "interpretation": {
+    "taskDurationReductionPercent": 15.0,
+    "scriptDurationReductionPercent": 19.8,
+    "caveat": "SwiftShader frame pacing is noisy and remains much slower than hardware WebGL."
+  }
+}

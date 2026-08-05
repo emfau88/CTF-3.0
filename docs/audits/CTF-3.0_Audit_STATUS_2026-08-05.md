@@ -73,6 +73,18 @@ Zwei Punkte müssen inzwischen aktualisiert werden:
 - Schaden, Bewegungsgeschwindigkeit, Teamwissen und Objective-Regeln bleiben unverändert; die Profile beeinflussen nur Wahrnehmung, Reaktion, Zielwechsel, Jitter und Vorhersage.
 - 205/205 Tests, Test-Typecheck, Production-Build und 4/4 Browser-E2E-Tests bestanden; Desktop- und Kompaktansicht wurden zusätzlich visuell geprüft.
 
+### Phase 3 — synchroner Match-Start, Mobile-HUD und Runtime
+
+- Der beobachtete Start-Freeze ist durch einen echten zweisekündigen Match-Countdown ersetzt: Spieler, Bots, Weltzeit, Matchzeit und Spawn-Schutz stehen gemeinsam still und starten danach im selben Simulationsframe.
+- Mobile Waffen-Buttons folgen nun dem Waffenroster der ausgewählten Map. Auf Helix erscheinen Arc Lash, Rail, Pulse und Shard statt der vorher fest verdrahteten Rocket-/Rail-Auswahl.
+- Der Mobile-Aktionsbereich wurde ausschließlich für Touch-Steuerung neu geordnet: kleinerer Jump-Button am unteren rechten Rand, kompakter Waffenbogen mit getrennten vergrößerten Touchflächen und kein Fullscreen-Schalter im Kampfbereich.
+- Mobile Utility-Leiste und Match-HUD sitzen kompakt am oberen Rand. Das Xeno-Runner-Statusfeld ist mobil ausgeblendet.
+- Das Mobile-Combat-Log wurde auf zwei Zeilen mit jeweils 168 × 19 Pixel reduziert und unter die rechte Utility-Leiste verschoben. Desktop bleibt unverändert.
+- Wiederholtes Vector-Redrawing für Actor-Status, Spawn-Schutz, Pickup-Status und Waffen-HUD wurde zustandsbasiert gedrosselt; Spawn-Pad-Partikel verwenden einen Sprite-Pool.
+- Im reproduzierbaren SwiftShader-4v4-Vergleich sank die Main-Thread TaskDuration um rund 15 % und ScriptDuration um rund 19,8 %. Software-WebGL bleibt trotzdem ein realistischer Ruckel-Risikofall; als nächste Stufe ist Geräteprofiling vorgesehen.
+- 207/207 Tests, Test-Typecheck, Production-Build und 7/7 Browser-E2E-Tests bestanden. Helix lud in TDM, Classic CTF und One Flag mobil ausschließlich das neue Masterbild.
+- Evidenz und Reproduktion: [Phase-3-QA](../qa/phase-3-mobile-runtime/README.md).
+
 ## Einordnung meiner bisherigen Kommentare
 
 Meine vorherige Einschätzung zum Fremdaudit lässt sich so zusammenfassen:

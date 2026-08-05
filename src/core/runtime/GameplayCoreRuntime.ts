@@ -43,6 +43,7 @@ export interface GameplayCoreRuntimeOptions {
   readonly autoBasicAttackActorIds?: readonly string[];
   readonly allowManualPrimaryFire?: boolean;
   readonly humanActorIds?: readonly string[];
+  readonly startCountdownMs?: number;
 }
 
 export class GameplayCoreRuntime implements CoreRuntime {
@@ -53,9 +54,11 @@ export class GameplayCoreRuntime implements CoreRuntime {
   private readonly autoBasicAttackActorIds?: readonly string[];
   private readonly allowManualPrimaryFire: boolean;
   private readonly humanActorIds: readonly string[];
+  private readonly startCountdownMs: number;
   private world: WorldState;
   private currentSnapshot: WorldSnapshot;
   private currentEvents: readonly GameEvent[] = [];
+  private pendingStartEvents: readonly GameEvent[] = [];
 
   constructor(options: GameplayCoreRuntimeOptions = {}) {
     this.mode = options.mode ?? new DiagnosticArenaMode();
@@ -67,6 +70,7 @@ export class GameplayCoreRuntime implements CoreRuntime {
     this.autoBasicAttackActorIds = options.autoBasicAttackActorIds;
     this.allowManualPrimaryFire = options.allowManualPrimaryFire ?? true;
     this.humanActorIds = [...(options.humanActorIds ?? [])];
+    this.startCountdownMs = Math.max(0, options.startCountdownMs ?? 0);
     this.world = this.createWorld();
     this.world.matchStats = createMatchStatsState(this.world.actors);
     this.currentSnapshot = createWorldSnapshot(this.world);
@@ -80,6 +84,14 @@ export class GameplayCoreRuntime implements CoreRuntime {
     this.world = this.createWorld();
     this.world.matchStats = createMatchStatsState(this.world.actors);
     this.currentEvents = this.mode.initialize(this.world);
+    this.pendingStartEvents = [];
+    if (this.startCountdownMs > 0 && this.world.match) {
+      this.pendingStartEvents = this.currentEvents;
+      this.currentEvents = [];
+      this.world.match.phase = "starting";
+      this.world.match.startCountdownDurationMs = this.startCountdownMs;
+      this.world.match.startCountdownRemainingMs = this.startCountdownMs;
+    }
     return this.createFrameResult();
   }
 
@@ -95,6 +107,9 @@ export class GameplayCoreRuntime implements CoreRuntime {
     if (isMatchEnded(this.world)) {
       this.currentEvents = [];
       return this.createFrameResult();
+    }
+    if (this.world.match?.phase === "starting") {
+      return this.advanceStartCountdown(deltaMs);
     }
 
     this.world.timeMs += deltaMs;
@@ -239,6 +254,26 @@ export class GameplayCoreRuntime implements CoreRuntime {
         );
       }
     }
+  }
+
+  private advanceStartCountdown(deltaMs: number): CoreFrameResult {
+    const match = this.world.match;
+    if (!match || match.phase !== "starting") {
+      return this.createFrameResult();
+    }
+    const remainingMs = Math.max(
+      0,
+      (match.startCountdownRemainingMs ?? 0) - deltaMs,
+    );
+    match.startCountdownRemainingMs = remainingMs;
+    if (remainingMs > 0) {
+      this.currentEvents = [];
+      return this.createFrameResult();
+    }
+    match.phase = "running";
+    this.currentEvents = this.pendingStartEvents;
+    this.pendingStartEvents = [];
+    return this.createFrameResult();
   }
 
   private createFrameResult(): CoreFrameResult {

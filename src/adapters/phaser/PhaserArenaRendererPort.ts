@@ -30,7 +30,7 @@ interface SpawnPadParticle {
   lifeMs: number;
   maxLifeMs: number;
   size: number;
-  color: number;
+  readonly view: Phaser.GameObjects.Image;
 }
 
 interface LibraryDustParticle {
@@ -55,12 +55,12 @@ export class PhaserArenaRendererPort implements RendererPort {
   private readonly objectiveRenderer: PhaserArenaObjectiveRenderer;
   private readonly premiumMapCosmetics: PhaserPremiumMapCosmetics;
   private readonly premiumMapLighting: PhaserPremiumMapLighting;
-  private readonly spawnPadParticleGraphics: Phaser.GameObjects.Graphics;
   private readonly libraryDustGraphics?: Phaser.GameObjects.Graphics;
   private readonly libraryDust: LibraryDustParticle[] = [];
   private readonly collisionDiagnosticGraphics?: Phaser.GameObjects.Graphics;
   private readonly collisionDiagnosticViews: Phaser.GameObjects.GameObject[] = [];
   private spawnPadParticles: SpawnPadParticle[] = [];
+  private readonly spawnPadParticlePool: Phaser.GameObjects.Image[] = [];
   private spawnPadParticleTimerMs = 0;
   private lastRenderTimeMs = 0;
   private lastLibraryTimeMs = 0;
@@ -107,7 +107,6 @@ export class PhaserArenaRendererPort implements RendererPort {
       this.libraryDust.push(...createLibraryDust(map));
       this.addLibrarySpiders(map);
     }
-    this.spawnPadParticleGraphics = scene.add.graphics().setDepth(19);
     this.projectileChargeGraphics = scene.add.graphics().setDepth(51);
   }
 
@@ -145,7 +144,8 @@ export class PhaserArenaRendererPort implements RendererPort {
     this.projectileChargeGraphics.destroy();
     this.pickupRenderer.dispose();
     this.objectiveRenderer.dispose();
-    this.spawnPadParticleGraphics.destroy();
+    for (const particle of this.spawnPadParticles) particle.view.destroy();
+    for (const view of this.spawnPadParticlePool) view.destroy();
     this.libraryDustGraphics?.destroy();
     this.collisionDiagnosticGraphics?.destroy();
     for (const view of this.collisionDiagnosticViews) {
@@ -403,6 +403,9 @@ export class PhaserArenaRendererPort implements RendererPort {
       for (const pickup of snapshot.pickups) {
         if (pickup.lifeState !== "active") continue;
         const lifeMs = Phaser.Math.Between(620, 920);
+        const color = pickupPadColor(pickup.type);
+        const view = this.acquireSpawnPadParticleView();
+        view.setTint(color).setVisible(true);
         this.spawnPadParticles.push({
           x: pickup.position.x + Phaser.Math.Between(-14, 14),
           y: pickup.position.y - 2 + Phaser.Math.Between(-4, 7),
@@ -410,39 +413,52 @@ export class PhaserArenaRendererPort implements RendererPort {
           lifeMs,
           maxLifeMs: lifeMs,
           size: Phaser.Math.FloatBetween(2.2, 4.2),
-          color: pickupPadColor(pickup.type),
+          view,
         });
       }
     }
+    const activeParticles: SpawnPadParticle[] = [];
     for (const particle of this.spawnPadParticles) {
       particle.lifeMs -= deltaMs;
-    }
-    this.spawnPadParticles = this.spawnPadParticles.filter(
-      (particle) => particle.lifeMs > 0,
-    );
-
-    const graphics = this.spawnPadParticleGraphics;
-    graphics.clear();
-    for (const particle of this.spawnPadParticles) {
+      if (particle.lifeMs <= 0) {
+        particle.view.setVisible(false);
+        this.spawnPadParticlePool.push(particle.view);
+        continue;
+      }
       const progress = 1 - particle.lifeMs / particle.maxLifeMs;
       const alpha = Phaser.Math.Clamp(
         particle.lifeMs / particle.maxLifeMs,
         0,
         1,
       ) * .45;
-      graphics.fillStyle(particle.color, alpha).fillCircle(
-        particle.x + particle.offsetX * progress,
-        particle.y - progress * 34,
-        particle.size * (1 - progress * .35),
-      );
+      const size = particle.size * 2 * (1 - progress * .35);
+      particle.view
+        .setPosition(
+          particle.x + particle.offsetX * progress,
+          particle.y - progress * 34,
+        )
+        .setDisplaySize(size, size)
+        .setAlpha(alpha);
+      activeParticles.push(particle);
     }
+    this.spawnPadParticles = activeParticles;
   }
 
   private resetSpawnPadParticles(): void {
+    for (const particle of this.spawnPadParticles) {
+      particle.view.setVisible(false);
+      this.spawnPadParticlePool.push(particle.view);
+    }
     this.spawnPadParticles = [];
     this.spawnPadParticleTimerMs = 0;
     this.lastRenderTimeMs = 0;
-    this.spawnPadParticleGraphics.clear();
+  }
+
+  private acquireSpawnPadParticleView(): Phaser.GameObjects.Image {
+    return this.spawnPadParticlePool.pop() ??
+      this.scene.add.image(0, 0, "spawnPadGlowV2", 0)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDepth(19);
   }
 
   private addLibraryCandles(x: number, y: number): void {
