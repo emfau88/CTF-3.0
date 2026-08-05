@@ -114,7 +114,7 @@ Die technische Verdrahtung ist abgeschlossen. Als Nächstes sollten Easy, Normal
 
 ### 3. Premium-Audit sauber neu baselinen
 
-Nach dem Difficulty-Wiring und nach Trennung der derzeitigen unabhängigen Runtime-WIP-Änderungen wird der vollständige 270-Match-Audit auf einem dokumentierten, sauberen Commit ausgeführt. Der Bericht wird mit dem Lauf vom 2026-07-19 verglichen; besonders Temple/Foundry Classic CTF 4v4 und Foundry CPU-p95 werden isoliert betrachtet.
+Difficulty-Wiring sowie Runtime-/Mobile-Arbeit sind inzwischen in getrennten Commits dokumentiert. Nach dem Merge des Feature-Branches wird der vollständige 270-Match-Audit auf dem dokumentierten Merge-Commit ausgeführt. Der Bericht wird mit dem Lauf vom 2026-07-19 verglichen; besonders Temple/Foundry Classic CTF 4v4 und Foundry CPU-p95 werden isoliert betrachtet.
 
 ### 4. Gemeinsamen Registrierungsvertrag einführen
 
@@ -135,4 +135,4 @@ Erst wenn diese kleine Lösung unzureichend ist, sollte SVG, LDtk oder Tiled als
 
 ## Commit-Trennung
 
-Phase 0, Phase 1, die Combat-/Runtime-Korrekturen und Phase 2 bleiben in getrennten Commits nachvollziehbar. Bereits vorher vorhandene, sachlich unabhängige Änderungen an Charakteranimationen, Porträts und Audio bleiben weiterhin ungestaged.
+Phase 0, Phase 1, die Combat-/Fairness-Korrekturen, Phase 2 und Phase 3 bleiben in getrennten Commits nachvollziehbar. Bereits vorher vorhandene, sachlich unabhängige Änderungen an Charakteranimationen, Porträts und Audio bleiben weiterhin ungestaged.
