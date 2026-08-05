@@ -70,7 +70,7 @@ const QUICK_PLAY_ARENA_PREVIEWS: Readonly<
   Partial<Record<string, QuickPlayArenaPreview>>
 > = {
   "helix-canopy-v2": {
-    image: "assets/map-previews/helix-canopy-v2-overview.png",
+    image: "assets/map-previews/helix-canopy-v2-1-overview.png",
     kicker: "FEATURED ARENA · ORBITAL BIO-DOME",
     description:
       "A bright mirrored arena with clean lanes and a clear central objective route.",

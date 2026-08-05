@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-05T16:31:44.406Z",
+  "project": "Core Arena / CTF-3.0",
+  "variant": "Helix Canopy v2.1 gameplay-first redesign",
+  "commit": "cd661f66e11bc2c81310d121a917859dafe928e1",
+  "branch": "main",
+  "dirtyAtCapture": true,
+  "baseUrl": "http://127.0.0.1:5188/CTF-3.0/",
+  "capturePolicy": {
+    "gameplayMode": "classic-ctf",
+    "teamSize": 2,
+    "opponent": "bots",
+    "gameplayPausedBeforeCapture": true,
+    "fullMapDiagnosticsWithoutHud": true,
+    "imageFormat": "jpeg",
+    "imageQuality": 88
+  },
+  "captures": [
+    {
+      "mapId": "helix-canopy-v2",
+      "mapName": "Helix Canopy v2.1",
+      "kind": "overview",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/overview-1280x720.jpg",
+      "bytes": 198627,
+      "sha256": "1f582fa1a559577c906a8bf4b344e4b7abf9d7f58e55e6132904a50cce22f0e4",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=helix-canopy-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off&mapPreview=1",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "helix-canopy-v2",
+      "mapName": "Helix Canopy v2.1",
+      "kind": "overview",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "file": "screenshots/overview-1920x1080.jpg",
+      "bytes": 363186,
+      "sha256": "de5356d707ce1613ac592e785f9bced93fa6ea7243c5292f335f4d00491a14bd",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=helix-canopy-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off&mapPreview=1",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "helix-canopy-v2",
+      "mapName": "Helix Canopy v2.1",
+      "kind": "collision-full-map",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/collision-full-map-1280x720.jpg",
+      "bytes": 218014,
+      "sha256": "394c638e63e0bf9bc1cf183346e4258936959e01fcd653cf61987b1eecfb5dc4",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=helix-canopy-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off&mapPreview=1&collisionDebug=1",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "helix-canopy-v2",
+      "mapName": "Helix Canopy v2.1",
+      "kind": "clearance-full-map",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/clearance-full-map-1280x720.jpg",
+      "bytes": 205165,
+      "sha256": "2740c8c906baec1ef63c622674a9cc9275cb9ed1e7925451e63adaf29517e7eb",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=helix-canopy-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off&mapPreview=1&clearanceHeatmap=1",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "helix-canopy-v2",
+      "mapName": "Helix Canopy v2.1",
+      "kind": "gameplay",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "file": "screenshots/gameplay-1024x768.jpg",
+      "bytes": 195194,
+      "sha256": "515f9c0ee60e172d5f3c6b8617201ebc2c5eddae393b16622609008af6aaa437",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=helix-canopy-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "helix-canopy-v2",
+      "mapName": "Helix Canopy v2.1",
+      "kind": "gameplay",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/gameplay-1280x720.jpg",
+      "bytes": 209376,
+      "sha256": "c10801995614ee8ca1bcdb21433c7ba6fa7021dcd3d5c5eb56a0354f7d535f00",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=helix-canopy-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "helix-canopy-v2",
+      "mapName": "Helix Canopy v2.1",
+      "kind": "gameplay",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "file": "screenshots/gameplay-1920x1080.jpg",
+      "bytes": 444467,
+      "sha256": "865d92736e3a029211dc6172f1872add2d5123c1e3b7ff25a0e196012c86d2ca",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=helix-canopy-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    },
+    {
+      "mapId": "helix-canopy-v2",
+      "mapName": "Helix Canopy v2.1",
+      "kind": "collision-gameplay",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "file": "screenshots/collision-gameplay-1280x720.jpg",
+      "bytes": 227351,
+      "sha256": "e042f616ec3dab125a1dfa263b337f2b07a53d951464ef36c2c3bcf7441d118d",
+      "url": "http://127.0.0.1:5188/CTF-3.0/?v2=1&menu=0&mode=ctf&map=helix-canopy-v2&teamSize=2&players=bot&controls=keyboard&skin=alien-runner&sfx=off&collisionDebug=1",
+      "diagnostics": {
+        "consoleErrors": [],
+        "pageErrors": [],
+        "failedRequests": []
+      }
+    }
+  ]
+}

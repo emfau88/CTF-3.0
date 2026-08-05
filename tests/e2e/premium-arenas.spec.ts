@@ -4,7 +4,7 @@ const premiumArenas = [
   {
     name: "Helix Canopy",
     mapId: "helix-canopy-v2",
-    expectedAsset: "assets/helix-canopy/arena-master.png",
+    expectedAsset: "assets/helix-canopy/arena-master-v2.png",
     expectedCosmetic: null,
     expectedLighting: null,
     forbiddenAssetFolders: ["assets/jungle-temple/", "assets/library/", "assets/industrial/"],

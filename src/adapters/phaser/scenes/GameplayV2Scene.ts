@@ -114,8 +114,14 @@ export class GameplayV2Scene extends Phaser.Scene {
     const isClassicCtf = route.mode === "ctf";
     const isOneFlag = route.mode === "one-flag";
     const selectedMap = resolveWorldMap(route.map);
+    const collisionDiagnostics: ArenaCollisionDiagnostics =
+      search.get("clearanceHeatmap") === "1"
+        ? "heatmap"
+        : search.get("collisionDebug") === "1"
+        ? "solids"
+        : "off";
     if (search.get("mapPreview") === "1") {
-      this.createMapPreview(selectedMap, route.skin);
+      this.createMapPreview(selectedMap, route.skin, collisionDiagnostics);
       this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
       return;
     }
@@ -124,12 +130,6 @@ export class GameplayV2Scene extends Phaser.Scene {
       GAMEPLAY_V2_HUD_SCENE_KEY,
     ) as GameplayV2HudScene;
     this.scene.bringToTop(GAMEPLAY_V2_HUD_SCENE_KEY);
-    const collisionDiagnostics: ArenaCollisionDiagnostics =
-      search.get("clearanceHeatmap") === "1"
-        ? "heatmap"
-        : search.get("collisionDebug") === "1"
-        ? "solids"
-        : "off";
     const traversalSmokeSetup =
       search.get("traversalSmoke") === "1" &&
       isTeamDeathmatch &&
@@ -335,6 +335,7 @@ export class GameplayV2Scene extends Phaser.Scene {
   private createMapPreview(
     map: WorldMapData,
     skin: V2PlayerSkinId,
+    collisionDiagnostics: ArenaCollisionDiagnostics,
   ): void {
     document.body.classList.add("v2-map-preview");
     this.mapPreviewRenderer = new PhaserArenaRendererPort(
@@ -342,6 +343,9 @@ export class GameplayV2Scene extends Phaser.Scene {
       map,
       undefined,
       skin,
+      false,
+      1,
+      collisionDiagnostics,
     );
     const bounds = map.geometry.bounds;
     this.mapPreviewResize = () => {
