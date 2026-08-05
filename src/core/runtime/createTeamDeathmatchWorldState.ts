@@ -15,9 +15,10 @@ import {
   type WorldState,
 } from "../world";
 import {
-  assertArenaTeamSize,
   createArenaRoster,
   DEFAULT_ARENA_TEAM_SIZE,
+  maximumArenaTeamSize,
+  resolveArenaTeamSizes,
   type ArenaWorldOptions,
 } from "../spawning/arenaRoster";
 import { DEFAULT_ARENA_WEAPON_ROSTER } from "../weapons";
@@ -26,9 +27,14 @@ export function createTeamDeathmatchWorldState(
   map: WorldMapData = TRAINING_CROSSING_V2,
   options: ArenaWorldOptions = {},
 ): WorldState {
-  const teamSize = options.teamSize ?? DEFAULT_ARENA_TEAM_SIZE;
-  assertArenaTeamSize(teamSize);
-  assertWorldMapSupportsMode(map, "team-deathmatch", teamSize);
+  const teamSizes = resolveArenaTeamSizes(
+    options.teamSizes ?? options.teamSize ?? DEFAULT_ARENA_TEAM_SIZE,
+  );
+  assertWorldMapSupportsMode(
+    map,
+    "team-deathmatch",
+    maximumArenaTeamSize(teamSizes),
+  );
   const world = createEmptyWorldState("team-deathmatch");
   world.geometry = {
     bounds: { ...map.geometry.bounds },
@@ -55,7 +61,7 @@ export function createTeamDeathmatchWorldState(
     facing: spawnPoint.facing ? { ...spawnPoint.facing } : undefined,
     tags: spawnPoint.tags ? [...spawnPoint.tags] : undefined,
   }));
-  world.actors.push(...createArenaRoster(teamSize).map((participant) =>
+  world.actors.push(...createArenaRoster(teamSizes).map((participant) =>
     createPlayer(
       world,
       participant.actorId,

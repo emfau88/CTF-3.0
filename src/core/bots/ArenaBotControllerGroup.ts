@@ -1,7 +1,11 @@
 import type { CoreActionIntent } from "../input";
 import type { TeamId } from "../actors";
 import type { GameModeId } from "../modes";
-import type { ArenaParticipant, ArenaTeamSlot } from "../spawning";
+import type {
+  ArenaParticipant,
+  ArenaTeamId,
+  ArenaTeamSlot,
+} from "../spawning";
 import type { WorldMapData, WorldSnapshot } from "../world";
 import {
   ClassicCtfBotController,
@@ -13,6 +17,26 @@ import type {
 import { OneFlagBotController } from "./OneFlagBotController";
 import { TdmBotController } from "./TdmBotController";
 import { ArenaBotTeamCoordinator } from "./BotTeamCoordinator";
+import {
+  BOT_DIFFICULTY_PROFILES,
+  type BotDifficultyId,
+} from "./BotDifficulty";
+
+export interface ArenaBotControllerGroupOptions {
+  readonly modeId: GameModeId;
+  readonly map: WorldMapData;
+  readonly participants: readonly ArenaParticipant[];
+  readonly humanActorIds?: readonly string[];
+  readonly difficultyByTeam?: Readonly<
+    Partial<Record<ArenaTeamId, BotDifficultyId>>
+  >;
+  readonly difficultyByActorId?: Readonly<Record<string, BotDifficultyId>>;
+}
+
+export interface ArenaBotDifficultyAssignment {
+  readonly actorId: string;
+  readonly difficultyId: BotDifficultyId;
+}
 
 export interface BotActionSource {
   readActions(
@@ -30,6 +54,7 @@ export class ArenaBotControllerGroup implements BotActionSource {
   constructor(
     private readonly controllers: readonly BotActionSource[],
     private readonly coordinator?: ArenaBotTeamCoordinator,
+    readonly difficultyAssignments: readonly ArenaBotDifficultyAssignment[] = [],
   ) {}
 
   get size(): number {
@@ -60,18 +85,38 @@ export class ArenaBotControllerGroup implements BotActionSource {
 }
 
 export function createArenaBotControllerGroup(
-  modeId: GameModeId,
-  map: WorldMapData,
-  participants: readonly ArenaParticipant[],
-  humanActorIds: readonly string[] = [],
+  options: ArenaBotControllerGroupOptions,
 ): ArenaBotControllerGroup {
+  const {
+    modeId,
+    map,
+    participants,
+    humanActorIds = [],
+    difficultyByTeam = {},
+    difficultyByActorId = {},
+  } = options;
   const coordinator = new ArenaBotTeamCoordinator(
     modeId,
     map,
     participants,
     humanActorIds,
   );
-  return new ArenaBotControllerGroup(participants.map((participant) => {
+  const difficultyAssignments = participants.map((participant) => ({
+    actorId: participant.actorId,
+    difficultyId: difficultyByActorId[participant.actorId] ??
+      difficultyByTeam[participant.teamId] ??
+      "normal",
+  }));
+  const assignmentByActorId = new Map(
+    difficultyAssignments.map((assignment) => [
+      assignment.actorId,
+      assignment.difficultyId,
+    ]),
+  );
+  const controllers = participants.map((participant) => {
+    const difficultyId = assignmentByActorId.get(participant.actorId) ??
+      "normal";
+    const difficulty = BOT_DIFFICULTY_PROFILES[difficultyId];
     if (modeId === "team-deathmatch") {
       return new TdmBotController(
         participant.actorId,
@@ -81,7 +126,7 @@ export function createArenaBotControllerGroup(
         undefined,
         participant.slot,
         humanActorIds,
-        undefined,
+        difficulty,
         undefined,
         coordinator,
       );
@@ -94,7 +139,7 @@ export function createArenaBotControllerGroup(
         undefined,
         undefined,
         undefined,
-        undefined,
+        difficulty,
         undefined,
         coordinator,
       );
@@ -106,13 +151,18 @@ export function createArenaBotControllerGroup(
         undefined,
         undefined,
         undefined,
-        undefined,
+        difficulty,
         undefined,
         coordinator,
       );
     }
     throw new Error(`Unsupported arena bot mode: ${modeId}.`);
-  }), coordinator);
+  });
+  return new ArenaBotControllerGroup(
+    controllers,
+    coordinator,
+    difficultyAssignments,
+  );
 }
 
 export function classicCtfRoleForSlot(

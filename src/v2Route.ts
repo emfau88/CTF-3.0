@@ -1,12 +1,15 @@
 import {
   isArenaTeamSize,
   type ArenaTeamSize,
+  type ArenaTeamSizes,
 } from "./core/spawning";
+import type { BotDifficultyId } from "./core/bots";
 
 export type V2ModeId = "tdm" | "ctf" | "one-flag";
 export type V2PlayersMode = "bot" | "local";
 export type V2ControlsMode = "auto" | "touch" | "keyboard";
 export type V2SfxMode = "on" | "off";
+export type V2BotCount = 0 | 1 | 2 | 3 | 4;
 export const V2_PLAYER_SKINS = [
   "briarhorn",
   "ax9-mantis",
@@ -38,6 +41,10 @@ export interface V2RouteConfig {
   readonly map: string;
   readonly players: V2PlayersMode;
   readonly teamSize: ArenaTeamSize;
+  readonly blueBots: V2BotCount;
+  readonly redBots: V2BotCount;
+  readonly blueBotDifficulty: BotDifficultyId;
+  readonly redBotDifficulty: BotDifficultyId;
   readonly controls: V2ControlsMode;
   readonly skin: V2PlayerSkinId;
   readonly sfx: V2SfxMode;
@@ -56,6 +63,10 @@ const DEFAULT_ROUTE: V2RouteConfig = {
   map: "flow-circuit-v2",
   players: "bot",
   teamSize: 2,
+  blueBots: 1,
+  redBots: 2,
+  blueBotDifficulty: "normal",
+  redBotDifficulty: "normal",
   controls: "auto",
   skin: "alien-runner",
   sfx: "on",
@@ -69,15 +80,44 @@ export function readV2RouteState(
   const modeValue = search.get("mode");
   const playersValue = search.get("players");
   const teamSizeValue = search.get("teamSize");
+  const blueBotsValue = search.get("blueBots");
+  const redBotsValue = search.get("redBots");
   const controlsValue = search.get("controls");
   const skinValue = search.get("skin");
   const mapValue = search.get("map");
+  const players = readPlayers(playersValue);
+  const legacyTeamSize = readTeamSize(teamSizeValue);
+  const legacyBotCounts = botCountsForLegacyTeamSize(
+    players,
+    legacyTeamSize,
+  );
+  const blueBots = readBotCount(
+    blueBotsValue,
+    legacyBotCounts.blue,
+    "blue",
+    players,
+  );
+  const redBots = readBotCount(
+    redBotsValue,
+    legacyBotCounts.red,
+    "red",
+    players,
+  );
+  const teamSizes = resolveV2TeamSizes({ players, blueBots, redBots });
   const route: V2RouteConfig = {
     scene: "v2",
     mode: readMode(modeValue),
     map: mapValue ?? DEFAULT_ROUTE.map,
-    players: readPlayers(playersValue),
-    teamSize: readTeamSize(teamSizeValue),
+    players,
+    teamSize: maximumTeamSize(teamSizes),
+    blueBots,
+    redBots,
+    blueBotDifficulty: readBotDifficulty(
+      search.get("blueBotDifficulty"),
+    ),
+    redBotDifficulty: readBotDifficulty(
+      search.get("redBotDifficulty"),
+    ),
     controls: readControls(controlsValue),
     skin: readSkin(skinValue),
     sfx: readSfx(search.get("sfx")),
@@ -95,6 +135,26 @@ export function readV2RouteState(
   }
   if (hasMode && teamSizeValue !== null && !isTeamSize(teamSizeValue)) {
     issues.push(`Unsupported V2 team size: ${teamSizeValue}.`);
+  }
+  if (
+    hasMode && blueBotsValue !== null &&
+    !isBotCountForTeam(blueBotsValue, "blue", players)
+  ) {
+    issues.push(`Unsupported V2 blue bot count: ${blueBotsValue}.`);
+  }
+  if (
+    hasMode && redBotsValue !== null &&
+    !isBotCountForTeam(redBotsValue, "red", players)
+  ) {
+    issues.push(`Unsupported V2 red bot count: ${redBotsValue}.`);
+  }
+  for (const [key, value] of [
+    ["blue", search.get("blueBotDifficulty")],
+    ["red", search.get("redBotDifficulty")],
+  ] as const) {
+    if (hasMode && value !== null && !isBotDifficulty(value)) {
+      issues.push(`Unsupported V2 ${key} bot difficulty: ${value}.`);
+    }
   }
   if (hasMode && !isControlsMode(controlsValue)) {
     issues.push(`Unsupported V2 controls mode: ${controlsValue ?? "missing"}.`);
@@ -121,13 +181,33 @@ export function readV2Route(
 export function buildV2RouteSearch(
   config: Partial<V2RouteConfig> = {},
 ): string {
-  const resolved = { ...DEFAULT_ROUTE, ...config };
+  const players = config.players ?? DEFAULT_ROUTE.players;
+  const legacyTeamSize = config.teamSize ?? DEFAULT_ROUTE.teamSize;
+  const legacyBotCounts = botCountsForLegacyTeamSize(
+    players,
+    legacyTeamSize,
+  );
+  const blueBots = config.blueBots ?? legacyBotCounts.blue;
+  const redBots = config.redBots ?? legacyBotCounts.red;
+  const teamSizes = resolveV2TeamSizes({ players, blueBots, redBots });
+  const resolved: V2RouteConfig = {
+    ...DEFAULT_ROUTE,
+    ...config,
+    players,
+    teamSize: maximumTeamSize(teamSizes),
+    blueBots,
+    redBots,
+  };
   const params = new URLSearchParams();
   params.set("scene", "v2");
   params.set("mode", resolved.mode);
   params.set("map", resolved.map);
   params.set("players", resolved.players);
   params.set("teamSize", String(resolved.teamSize));
+  params.set("blueBots", String(resolved.blueBots));
+  params.set("redBots", String(resolved.redBots));
+  params.set("blueBotDifficulty", resolved.blueBotDifficulty);
+  params.set("redBotDifficulty", resolved.redBotDifficulty);
   params.set("controls", resolved.controls);
   params.set("skin", resolved.skin);
   params.set("sfx", resolved.sfx);
@@ -171,6 +251,48 @@ function readSkin(value: string | null): V2PlayerSkinId {
   return migrateV2PlayerSkinId(value) ?? DEFAULT_ROUTE.skin;
 }
 
+function readBotCount(
+  value: string | null,
+  fallback: V2BotCount,
+  teamId: "blue" | "red",
+  players: V2PlayersMode,
+): V2BotCount {
+  return value !== null && isBotCountForTeam(value, teamId, players)
+    ? Number(value) as V2BotCount
+    : fallback;
+}
+
+function readBotDifficulty(value: string | null): BotDifficultyId {
+  return isBotDifficulty(value) ? value : "normal";
+}
+
+function botCountsForLegacyTeamSize(
+  players: V2PlayersMode,
+  teamSize: ArenaTeamSize,
+): { readonly blue: V2BotCount; readonly red: V2BotCount } {
+  return {
+    blue: (teamSize - 1) as V2BotCount,
+    red: (players === "local" ? teamSize - 1 : teamSize) as V2BotCount,
+  };
+}
+
+export function resolveV2TeamSizes(
+  route: Pick<V2RouteConfig, "players" | "blueBots" | "redBots">,
+): ArenaTeamSizes {
+  const blue = 1 + route.blueBots;
+  const red = (route.players === "local" ? 1 : 0) + route.redBots;
+  if (!isArenaTeamSize(blue) || !isArenaTeamSize(red)) {
+    throw new Error(
+      `V2 team sizes must stay between 1 and 4 (blue ${blue}, red ${red}).`,
+    );
+  }
+  return { blue, red };
+}
+
+function maximumTeamSize(teamSizes: ArenaTeamSizes): ArenaTeamSize {
+  return Math.max(teamSizes.blue, teamSizes.red) as ArenaTeamSize;
+}
+
 function readSfx(value: string | null): V2SfxMode {
   return value === "off" ? "off" : "on";
 }
@@ -193,6 +315,22 @@ function isControlsMode(value: string | null): value is V2ControlsMode {
 
 function isPlayerSkin(value: string | null): value is V2PlayerSkinId {
   return V2_PLAYER_SKINS.includes(value as V2PlayerSkinId);
+}
+
+function isBotCountForTeam(
+  value: string,
+  teamId: "blue" | "red",
+  players: V2PlayersMode,
+): boolean {
+  if (!/^\d+$/.test(value)) return false;
+  const count = Number(value);
+  const humanSlots = teamId === "blue" || players === "local" ? 1 : 0;
+  const minimum = teamId === "red" && players === "bot" ? 1 : 0;
+  return count >= minimum && count + humanSlots <= 4;
+}
+
+function isBotDifficulty(value: string | null): value is BotDifficultyId {
+  return value === "casual" || value === "normal" || value === "strong";
 }
 
 export function migrateV2PlayerSkinId(

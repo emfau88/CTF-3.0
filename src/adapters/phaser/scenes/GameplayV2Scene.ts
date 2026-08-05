@@ -4,6 +4,7 @@ import { playerSkinPortraitAssetStem } from "../../../playerSkinPreference";
 import { readLeagueMatchRosterPresentation } from "../../../meta/league";
 import {
   readV2Route,
+  resolveV2TeamSizes,
   type V2PlayerSkinId,
 } from "../../../v2Route";
 import {
@@ -146,23 +147,28 @@ export class GameplayV2Scene extends Phaser.Scene {
     const humanActorIds = route.players === "bot"
       ? ["blue-player"]
       : ["blue-player", "red-player"];
-    const botParticipants = createArenaRoster(route.teamSize).filter(
+    const teamSizes = resolveV2TeamSizes(route);
+    const botParticipants = createArenaRoster(teamSizes).filter(
       (participant) => !humanActorIds.includes(participant.actorId),
     );
     const botControllers = traversalSmokeSetup
       ? new ArenaBotControllerGroup([
           new BotTraversalSmokeController(traversalSmokeSetup),
         ])
-      : createArenaBotControllerGroup(
-        isClassicCtf
+      : createArenaBotControllerGroup({
+        modeId: isClassicCtf
           ? "classic-ctf"
           : isOneFlag
           ? "one-flag"
           : "team-deathmatch",
-        selectedMap,
-        botParticipants,
+        map: selectedMap,
+        participants: botParticipants,
         humanActorIds,
-      );
+        difficultyByTeam: {
+          blue: route.blueBotDifficulty,
+          red: route.redBotDifficulty,
+        },
+      });
     this.sound.mute = route.sfx === "off";
     const runtime = new GameplayCoreRuntime({
       mode: isClassicCtf
@@ -172,11 +178,11 @@ export class GameplayV2Scene extends Phaser.Scene {
         : new TeamDeathmatchMode(),
       createWorld: () => {
         const world = isClassicCtf
-          ? createClassicCtfWorldState(selectedMap, { teamSize: route.teamSize })
+          ? createClassicCtfWorldState(selectedMap, { teamSizes })
           : isOneFlag
-          ? createOneFlagWorldState(selectedMap, { teamSize: route.teamSize })
+          ? createOneFlagWorldState(selectedMap, { teamSizes })
           : createTeamDeathmatchWorldState(selectedMap, {
-            teamSize: route.teamSize,
+            teamSizes,
           });
         return traversalSmokeSetup
           ? configureBotTraversalSmokeWorld(world, traversalSmokeSetup)

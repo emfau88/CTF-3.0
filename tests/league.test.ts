@@ -364,7 +364,9 @@ test("quick play presents premium arena previews and a final match summary", () 
   assert.match(html, /id="v2-menu-launch-summary"/);
   assert.doesNotMatch(html, /id="v2-menu-players"/);
   assert.doesNotMatch(html, /Local 2 Player/);
-  assert.match(html, /open slots are filled by bots/);
+  assert.match(html, /configure both squads/);
+  assert.match(html, /id="v2-menu-blue-bot-difficulty"/);
+  assert.match(html, /id="v2-menu-red-bot-difficulty"/);
   assert.match(html, /Input &amp; Audio/);
   assert.match(menuSource, /helix-canopy-v2-1-overview\.png/);
   assert.match(menuSource, /drowned-sun-temple-v2-overview\.png/);

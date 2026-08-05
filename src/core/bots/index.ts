@@ -14,6 +14,8 @@ export {
   ArenaBotControllerGroup,
   classicCtfRoleForSlot,
   createArenaBotControllerGroup,
+  type ArenaBotControllerGroupOptions,
+  type ArenaBotDifficultyAssignment,
   type BotActionSource,
 } from "./ArenaBotControllerGroup";
 export {

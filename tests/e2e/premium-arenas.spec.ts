@@ -42,6 +42,36 @@ const premiumArenas = [
   },
 ] as const;
 
+test("Quick Play launches asymmetric teams with separate bot skill", async ({
+  page,
+}) => {
+  const diagnostics = collectBrowserDiagnostics(page);
+  await page.goto("?v2=1&menu=1", { waitUntil: "domcontentloaded" });
+  await page.locator("#v2-menu-play").click();
+
+  await page.locator("#v2-menu-blue-bots").selectOption("2");
+  await page.locator("#v2-menu-blue-bot-difficulty").selectOption("strong");
+  await page.locator("#v2-menu-red-bots").selectOption("3");
+  await page.locator("#v2-menu-red-bot-difficulty").selectOption("casual");
+  await expect(page.locator("#v2-menu-launch-detail")).toContainText(
+    "YOU + 2 HARD BOTS VS 3 EASY BOTS",
+  );
+
+  await page.locator("#v2-menu-start").click();
+  await expect.poll(() => new URL(page.url()).searchParams.get("blueBots"))
+    .toBe("2");
+  expect(new URL(page.url()).searchParams.get("redBots")).toBe("3");
+  expect(new URL(page.url()).searchParams.get("blueBotDifficulty")).toBe(
+    "strong",
+  );
+  expect(new URL(page.url()).searchParams.get("redBotDifficulty")).toBe(
+    "casual",
+  );
+  await expect(page.locator("#game canvas")).toBeVisible({ timeout: 30_000 });
+  expect(diagnostics.errors).toEqual([]);
+  expect(diagnostics.failedRequests).toEqual([]);
+});
+
 for (const arena of premiumArenas) {
   test(`${arena.name} starts a real V2 match with its selective preload`, async ({
     page,

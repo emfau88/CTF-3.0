@@ -23,15 +23,15 @@ Zwei Punkte müssen inzwischen aktualisiert werden:
 | Drei Premium-Maps | Bestätigt | Helix Canopy, Temple of the Drowned Sun und Foundry Circuit bleiben die drei Premium-Maps. Es wurde keine vierte Map hinzugefügt. |
 | Zwei Wahrheiten: Masterbild und Kollision | Bestätigt, teilweise entschärft | Das Grundproblem besteht projektweit. Helix v2.1 verwendet für die Innenhindernisse nun Masterbild-Pixel plus dieselbe Skalierung/Offset-Transformation wie der Renderer. Temple und Foundry besitzen weiterhin eigene Projektionen. |
 | Mathematisches Qualitätsgate beweist keine visuelle Lesbarkeit | Bestätigt, teilweise ergänzt | Phase 0 und Phase 1 ergänzen Screenshot-, Collision- und Clearance-Evidenz. Eine automatisierte semantische Pixelprüfung existiert noch nicht. |
-| Difficulty-Profile existieren, erreichen das Produkt aber nicht | Bestätigt und offen | `createArenaBotControllerGroup` besitzt weiterhin keinen Difficulty-Parameter; die Controller erhalten an den entsprechenden Positionen `undefined` und verwenden damit Normal. |
-| Lange Positionsargumentlisten der Controller | Bestätigt und offen | Die Factory erzeugt TDM-, Classic-CTF- und One-Flag-Controller weiterhin über lange Argumentlisten. Benannte Optionsobjekte sind noch nicht umgesetzt. |
+| Difficulty-Profile existieren, erreichen das Produkt aber nicht | Bestätigt und umgesetzt | Quick Play übergibt nun getrennte Team-Schwierigkeiten bis an Combat und Target Selection jedes Bots. Zusätzlich unterstützt die Factory einzelne Actor-Overrides. |
+| Lange Positionsargumentlisten der Controller | Bestätigt, teilweise umgesetzt | Die öffentliche Factory verwendet jetzt `ArenaBotControllerGroupOptions`. Die langen Controller-Konstruktoren bleiben intern gekapselt; deren eigene Umstellung ist nur noch Wartungsarbeit, kein Produkt-Wiring-Risiko. |
 | Premium-Bot-Audit ist nützlich, aber kein menschlicher Qualitätstest | Bestätigt | Die Testinfrastruktur ist wertvoll. Plausibilität, Fairness und Lesbarkeit benötigen weiterhin einen echten Spieltest. |
 | Historische 4v4-Warnungen in Temple/Foundry | Historischer Befund, neu zu messen | Der gespeicherte 270-Match-Bericht stammt vom 2026-07-19 und bezog sich auf Commit `72be4a9` in einem dirty Worktree. Nach Helix und den derzeit separat vorliegenden Runtime-Änderungen ist ein sauberer Vergleichslauf erforderlich. |
 | Helix-Seitenverhältnis 2:1 vs. Master 1,725 | Bestätigt und dokumentiert | Das Masterbild bleibt unverzerrt und wird auf Welthöhe skaliert. Die seitlichen Weltstreifen sind absichtlich blockierter Außenraum; HUD-freie 16:9-Aufnahmen können zusätzlich letterboxen. |
 | Helix mit 50 gestuften Solids | Überholt | Der alte Wert war korrekt. Die aktive v2.1 besitzt 32 Solids und wesentlich einfachere Innenformen. |
 | Helix ist besonders registrierungsempfindlich | Für den alten Stand bestätigt | v2.1 reduziert dieses Risiko deutlich: einfache Planter, native Masterkoordinaten, Collision-/Clearance-Aufnahmen und feste Walkability-Tests für die DNA-Glasfläche. Der projektweite Vertrag bleibt offen. |
 | Temple hat den saubersten Bild-/Welt-Fit | Weiterhin plausibel | In Phase 0 visuell erfasst; an Temple wurde in Phase 1 nichts geändert. |
-| Foundry zuerst auf 4v4 und CPU untersuchen | Weiterhin sinnvoll | Nach Difficulty-Wiring und einem sauberen Audit-Lauf bleibt Foundry der erste Kandidat für gezielte Profilierung. |
+| Foundry zuerst auf 4v4 und CPU untersuchen | Weiterhin sinnvoll | Nach einem sauberen Audit-Lauf bleibt Foundry der erste Kandidat für gezielte Profilierung. |
 | Allgemeiner Graphvertrag für alternative Wege fehlt | Bestätigt und offen | Es existieren Routen- und Stichprobentests, aber noch kein generisches Disjoint-Path-/Chokepoint-Gate für jede Premium-Map. |
 | Kosmetik-/Lichttypen sind vollständiger als ihre Konfiguration | Bestätigt, geringe Priorität | Helix ist in den zulässigen Typen enthalten, besitzt aber bewusst keine aktive Premium-Kosmetik oder Beleuchtung. Das ist aktuell kein Gameplay-Problem. |
 | Keine neue KI, kein ML, kein 3D-Navmesh, kein großer Editor | Bestätigt | Diese Maßnahmen wären weiterhin unverhältnismäßig. |
@@ -61,12 +61,24 @@ Zwei Punkte müssen inzwischen aktualisiert werden:
 - Design, Bildgeneration, verworfene Variante, Kollisionsvertrag und Restbeobachtungen: [Phase-1-QA](../qa/phase-1-helix-v2-1/README.md).
 - Reproduktion: `scripts/capture-phase-1-helix.mjs`.
 
+### Phase 2 — Bot-Schwierigkeit und freie Teamgrößen
+
+- Quick Play bietet für das eigene und das gegnerische Team getrennte Bot-Anzahlen und die Stufen Easy, Normal und Hard an.
+- Asymmetrische Aufstellungen sind möglich, beispielsweise Spieler plus zwei Hard-Bots gegen drei Easy-Bots.
+- Routen speichern `blueBots`, `redBots`, `blueBotDifficulty` und `redBotDifficulty`; bestehende `teamSize`-Links bleiben abwärtskompatibel.
+- Roster und World-State unterstützen getrennte Teamgrößen von 1 bis 4.
+- `ArenaBotControllerGroupOptions` ersetzt die fehleranfällige öffentliche Positionsargumentliste und reicht die gewählten Profile an TDM, Classic CTF und One Flag weiter.
+- Team-Vorgaben können intern pro Bot über `difficultyByActorId` überschrieben werden. Die Quick-Play-Oberfläche bleibt bewusst bei einer Stufe pro Team, damit die Konfiguration schnell lesbar bleibt.
+- Liga-Partien verwenden vorerst bewusst das unveränderte Normal-Profil, solange keine Progressionsregel beschlossen wurde.
+- Schaden, Bewegungsgeschwindigkeit, Teamwissen und Objective-Regeln bleiben unverändert; die Profile beeinflussen nur Wahrnehmung, Reaktion, Zielwechsel, Jitter und Vorhersage.
+- 205/205 Tests, Test-Typecheck, Production-Build und 4/4 Browser-E2E-Tests bestanden; Desktop- und Kompaktansicht wurden zusätzlich visuell geprüft.
+
 ## Einordnung meiner bisherigen Kommentare
 
 Meine vorherige Einschätzung zum Fremdaudit lässt sich so zusammenfassen:
 
 - Die Diagnose war überwiegend korrekt und ungewöhnlich konkret; sie hat vorhandene Systeme nicht mit fehlender Produktreife verwechselt.
-- Die höchste technische Rendite liegt weiterhin beim Difficulty-Wiring, nicht bei einer neuen Bot-KI.
+- Die höchste technische Rendite lag beim Difficulty-Wiring, nicht bei einer neuen Bot-KI; dieses Wiring ist in Phase 2 umgesetzt.
 - Die roten Rechtecke in den Helix-Aufnahmen sind Debug-Kollision, keine beabsichtigten sichtbaren Spielelemente.
 - Viele kleine Rechtecke können organische Silhouetten approximieren, erhöhen aber Authoring-, Test- und Lesbarkeitskosten. Für Helix war ein neues, kollisionsfreundliches Master deshalb sinnvoller als weiteres Nachschärfen des alten Bildes.
 - Ein Screenshot allein definiert keine Laufwege. Verlässlichkeit entsteht erst aus Screenshot, expliziten Routen-/Clearance-Tests und anschließendem Spieltest.
@@ -84,15 +96,9 @@ Ein kurzer manueller Test sollte Classic CTF, One Flag und TDM jeweils in 2v2 so
 - stimmen sichtbare Basen, Pickups und tatsächliche Interaktionsorte;
 - wirkt die Karte in 1024×768 und 1920×1080 weder leer noch überladen.
 
-### 2. Difficulty bis ins Produkt verdrahten
+### 2. Difficulty subjektiv kalibrieren
 
-Die Factory sollte auf ein benanntes Eingabeobjekt umgestellt werden, beispielsweise `ArenaBotControllerGroupOptions` mit `modeId`, `map`, `participants`, `humanActorIds` und `difficulty`. Die ausgewählte Difficulty muss anschließend explizit an jeden Controller und dessen Combat-/Target-Komponenten weitergereicht werden.
-
-Akzeptanzkriterien:
-
-- Factory-Tests beweisen Casual, Normal und Strong ohne Rückfall auf Defaultwerte.
-- Quick Play besitzt eine sichtbare Auswahl; für die Liga wird eine bewusste feste oder fortschrittsabhängige Regel dokumentiert.
-- Schaden, Bewegungsgeschwindigkeit, Teamwissen und Objective-Regeln bleiben identisch. Nur Wahrnehmung, Reaktion, Commit-Zeiten, Jitter und Vorhersage variieren.
+Die technische Verdrahtung ist abgeschlossen. Als Nächstes sollten Easy, Normal und Hard in denselben kurzen TDM-, CTF- und One-Flag-Szenarien gegeneinander gespielt werden. Dabei geht es um verständlich spürbare, aber faire Unterschiede bei Reaktion, Zielstabilität und Entscheidungsbindung. Erst danach sollte entschieden werden, ob die Liga dauerhaft Normal verwendet oder die Stufe an die Progression koppelt.
 
 ### 3. Premium-Audit sauber neu baselinen
 
@@ -115,6 +121,6 @@ Erst wenn diese kleine Lösung unzureichend ist, sollte SVG, LDtk oder Tiled als
 - Optional ausdrücken, dass Premium-Kosmetik und -Licht absichtlich partielle Konfigurationen sind, statt Vollständigkeit durch den Typ zu suggerieren.
 - Das bekannte Vite-Bundle-Warning separat behandeln; es ist weder Ursache noch Blocker der Map- oder Botprobleme.
 
-## Vorgesehener Commit-Umfang
+## Commit-Trennung
 
-Der Helix-/Audit-Commit soll ausschließlich Phase 0, Phase 1 und diese Audit-Dokumentation enthalten. Bereits vorher vorhandene, sachlich unabhängige Änderungen an Combat, Modi, Runtime, Charakteranimationen, Porträts und Audio bleiben ungestaged. Damit bleibt der veröffentlichte Commit überprüfbar und vermischt das Map-Redesign nicht mit anderen Gameplay-Fixes.
+Phase 0, Phase 1, die Combat-/Runtime-Korrekturen und Phase 2 bleiben in getrennten Commits nachvollziehbar. Bereits vorher vorhandene, sachlich unabhängige Änderungen an Charakteranimationen, Porträts und Audio bleiben weiterhin ungestaged.

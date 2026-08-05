@@ -3,12 +3,18 @@ import {
   buildV2MenuSearch,
   readV2Route,
   V2_PLAYER_SKINS,
+  type V2BotCount,
   type V2ControlsMode,
   type V2ModeId,
   type V2PlayerSkinId,
   type V2RouteConfig,
 } from "./v2Route";
-import type { GameModeId, MatchStatEntry, ScoreEntry } from "./core";
+import type {
+  BotDifficultyId,
+  GameModeId,
+  MatchStatEntry,
+  ScoreEntry,
+} from "./core";
 import { createLeagueMenuController } from "./leagueMenu";
 import {
   calculateMatchImpact,
@@ -44,7 +50,10 @@ interface V2MenuElements {
   readonly arenaPreviewName: HTMLElement;
   readonly arenaPreviewDescription: HTMLElement;
   readonly arenaPreviewMeta: HTMLElement;
-  readonly teamSize: HTMLSelectElement;
+  readonly blueBots: HTMLSelectElement;
+  readonly redBots: HTMLSelectElement;
+  readonly blueBotDifficulty: HTMLSelectElement;
+  readonly redBotDifficulty: HTMLSelectElement;
   readonly controls: HTMLSelectElement;
   readonly controlsHint: HTMLElement;
   readonly skin: HTMLSelectElement;
@@ -153,7 +162,10 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     `url("${import.meta.env.BASE_URL}assets/league-menu-arena-v1.png")`,
   );
   elements.map.value = route.map;
-  elements.teamSize.value = String(route.teamSize);
+  elements.blueBots.value = String(route.blueBots);
+  elements.redBots.value = String(route.redBots);
+  elements.blueBotDifficulty.value = route.blueBotDifficulty;
+  elements.redBotDifficulty.value = route.redBotDifficulty;
   elements.controls.value = route.controls;
   const preferredSkin = loadPlayerSkinPreference();
 
@@ -199,14 +211,25 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     const mode = elements.mode.value as V2ModeId;
     const map =
       elements.map.selectedOptions[0]?.textContent?.trim() ?? elements.map.value;
-    const teamSize =
-      elements.teamSize.selectedOptions[0]?.textContent?.trim() ??
-      elements.teamSize.value;
+    const blueBots = readQuickPlayBotCount(elements.blueBots);
+    const redBots = readQuickPlayBotCount(elements.redBots);
+    const blueDifficulty = readQuickPlayBotDifficulty(
+      elements.blueBotDifficulty,
+    );
+    const redDifficulty = readQuickPlayBotDifficulty(
+      elements.redBotDifficulty,
+    );
     const skin = playerSkinLabel(elements.skin.value as V2PlayerSkinId);
     elements.launchSummary.textContent =
       `${QUICK_PLAY_MODE_LABELS[mode]} · ${map}`;
     elements.launchDetail.textContent =
-      `${teamSize} · SOLO + BOTS · ${skin}`;
+      `${blueSquadLabel(blueBots, blueDifficulty)} VS ${botSquadLabel(redBots, redDifficulty)} · ${skin}`;
+  };
+
+  const syncTeamSetup = (): void => {
+    elements.blueBotDifficulty.disabled =
+      readQuickPlayBotCount(elements.blueBots) === 0;
+    syncLaunchSummary();
   };
 
   const syncQuickPlayPresentation = (): void => {
@@ -262,9 +285,13 @@ export function showGameplayV2Menu(statusMessage?: string): void {
   elements.setup.classList.toggle("is-hidden", !statusMessage);
   elements.league.classList.add("is-hidden");
   focusMenuScreen(elements.root);
-  syncQuickPlayPresentation();
+  syncTeamSetup();
+  syncArenaPreview();
   elements.map.onchange = syncQuickPlayPresentation;
-  elements.teamSize.onchange = syncLaunchSummary;
+  elements.blueBots.onchange = syncTeamSetup;
+  elements.redBots.onchange = syncLaunchSummary;
+  elements.blueBotDifficulty.onchange = syncLaunchSummary;
+  elements.redBotDifficulty.onchange = syncLaunchSummary;
   elements.enterSetup.onclick = () => {
     elements.map.value = QUICK_PLAY_DEFAULT_MAP;
     selectQuickPlayMode(QUICK_PLAY_DEFAULT_MODE);
@@ -284,13 +311,23 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     showHome();
   };
   elements.start.onclick = () => {
+    const blueBots = readQuickPlayBotCount(elements.blueBots);
+    const redBots = readQuickPlayBotCount(elements.redBots);
     savePlayerSkinPreference(elements.skin.value as V2PlayerSkinId);
     resetMenuScroll(elements.root);
     window.location.search = buildV2MatchSearch({
       mode: elements.mode.value as typeof route.mode,
       map: elements.map.value,
       players: "bot",
-      teamSize: Number(elements.teamSize.value) as typeof route.teamSize,
+      teamSize: Math.max(1 + blueBots, redBots) as typeof route.teamSize,
+      blueBots,
+      redBots,
+      blueBotDifficulty: readQuickPlayBotDifficulty(
+        elements.blueBotDifficulty,
+      ),
+      redBotDifficulty: readQuickPlayBotDifficulty(
+        elements.redBotDifficulty,
+      ),
       controls: elements.controls.value as V2ControlsMode,
       skin: elements.skin.value as V2PlayerSkinId,
       sfx: elements.sfx.value === "off" ? "off" : "on",
@@ -468,7 +505,14 @@ function readMenuElements(): V2MenuElements {
     arenaPreviewMeta: requiredElement<HTMLElement>(
       "v2-menu-arena-preview-meta",
     ),
-    teamSize: requiredElement<HTMLSelectElement>("v2-menu-team-size"),
+    blueBots: requiredElement<HTMLSelectElement>("v2-menu-blue-bots"),
+    redBots: requiredElement<HTMLSelectElement>("v2-menu-red-bots"),
+    blueBotDifficulty: requiredElement<HTMLSelectElement>(
+      "v2-menu-blue-bot-difficulty",
+    ),
+    redBotDifficulty: requiredElement<HTMLSelectElement>(
+      "v2-menu-red-bot-difficulty",
+    ),
     controls: requiredElement<HTMLSelectElement>("v2-menu-controls"),
     controlsHint: requiredElement<HTMLElement>("v2-menu-controls-hint"),
     skin: requiredElement<HTMLSelectElement>("v2-menu-skin"),
@@ -761,6 +805,55 @@ function formatActorName(
   return `${teamName} BOT ${teamBots.findIndex((candidate) =>
     candidate.actorId === entry.actorId
   ) + 1}`;
+}
+
+function readQuickPlayBotCount(select: HTMLSelectElement): V2BotCount {
+  const value = Number(select.value);
+  if (!Number.isInteger(value) || value < 0 || value > 4) {
+    throw new Error(`Invalid Quick Play bot count: ${select.value}`);
+  }
+  return value as V2BotCount;
+}
+
+function readQuickPlayBotDifficulty(
+  select: HTMLSelectElement,
+): BotDifficultyId {
+  if (
+    select.value !== "casual" &&
+    select.value !== "normal" &&
+    select.value !== "strong"
+  ) {
+    throw new Error(`Invalid Quick Play bot difficulty: ${select.value}`);
+  }
+  return select.value;
+}
+
+function botDifficultyLabel(difficulty: BotDifficultyId): string {
+  return difficulty === "casual"
+    ? "EASY"
+    : difficulty === "strong"
+      ? "HARD"
+      : "NORMAL";
+}
+
+function blueSquadLabel(
+  botCount: V2BotCount,
+  difficulty: BotDifficultyId,
+): string {
+  return botCount === 0
+    ? "YOU SOLO"
+    : `YOU + ${botCount} ${botDifficultyLabel(difficulty)} ${botLabel(botCount)}`;
+}
+
+function botSquadLabel(
+  botCount: V2BotCount,
+  difficulty: BotDifficultyId,
+): string {
+  return `${botCount} ${botDifficultyLabel(difficulty)} ${botLabel(botCount)}`;
+}
+
+function botLabel(botCount: V2BotCount): string {
+  return botCount === 1 ? "BOT" : "BOTS";
 }
 
 function requiredElement<T extends HTMLElement>(id: string): T {

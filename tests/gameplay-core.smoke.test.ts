@@ -43,7 +43,11 @@ import {
   type GameEvent,
   type MatchStatEntry,
 } from "../src/core";
-import { buildV2MatchSearch, readV2RouteState } from "../src/v2Route";
+import {
+  buildV2MatchSearch,
+  readV2RouteState,
+  resolveV2TeamSizes,
+} from "../src/v2Route";
 import { calculateV2TouchLayout } from "../src/adapters/phaser/v2TouchLayout";
 import { resolveDesktopAimDirection } from "../src/adapters/phaser/desktopAim";
 import {
@@ -111,6 +115,8 @@ test("v2 routes preserve and validate arena team size", () => {
   ));
   assert.equal(valid.canStartMatch, true);
   assert.equal(valid.route.teamSize, 4);
+  assert.equal(valid.route.blueBots, 3);
+  assert.equal(valid.route.redBots, 4);
   assert.equal(
     new URLSearchParams(buildV2MatchSearch(valid.route)).get("teamSize"),
     "4",
@@ -131,6 +137,42 @@ test("v2 routes preserve and validate arena team size", () => {
   assert.deepEqual(invalid.issues, ["Unsupported V2 team size: 5."]);
 });
 
+test("v2 routes support asymmetric bot teams and team difficulty", () => {
+  const state = readV2RouteState(new URLSearchParams(
+    "scene=v2&mode=tdm&map=helix-canopy-v2&players=bot&controls=keyboard&blueBots=2&redBots=3&blueBotDifficulty=strong&redBotDifficulty=casual",
+  ));
+
+  assert.equal(state.canStartMatch, true);
+  assert.equal(state.route.teamSize, 3);
+  assert.deepEqual(resolveV2TeamSizes(state.route), { blue: 3, red: 3 });
+  assert.equal(state.route.blueBotDifficulty, "strong");
+  assert.equal(state.route.redBotDifficulty, "casual");
+
+  const search = new URLSearchParams(buildV2MatchSearch(state.route));
+  assert.equal(search.get("blueBots"), "2");
+  assert.equal(search.get("redBots"), "3");
+  assert.equal(search.get("blueBotDifficulty"), "strong");
+  assert.equal(search.get("redBotDifficulty"), "casual");
+});
+
+test("v2 route validation rejects impossible bot teams and difficulty", () => {
+  const state = readV2RouteState(new URLSearchParams(
+    "scene=v2&mode=ctf&map=helix-canopy-v2&players=bot&controls=auto&blueBots=4&redBots=0&blueBotDifficulty=nightmare&redBotDifficulty=casual",
+  ));
+
+  assert.equal(state.canStartMatch, false);
+  assert.equal(state.route.menu, true);
+  assert.deepEqual(state.issues, [
+    "Unsupported V2 blue bot count: 4.",
+    "Unsupported V2 red bot count: 0.",
+    "Unsupported V2 blue bot difficulty: nightmare.",
+  ]);
+  assert.throws(
+    () => resolveV2TeamSizes({ players: "bot", blueBots: 4, redBots: 1 }),
+    /team sizes must stay between 1 and 4/,
+  );
+});
+
 test("v2 menu defaults to the 2v2 Foundry Circuit CTF hero slice", () => {
   const state = readV2RouteState(new URLSearchParams());
 
@@ -147,6 +189,22 @@ test("quick play lists Temple of the Drowned Sun", () => {
     html,
     /<option value="drowned-sun-temple-v2">Temple of the Drowned Sun<\/option>/,
   );
+});
+
+test("quick play exposes separate bot counts and difficulty per team", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+
+  for (const elementId of [
+    "v2-menu-blue-bots",
+    "v2-menu-red-bots",
+    "v2-menu-blue-bot-difficulty",
+    "v2-menu-red-bot-difficulty",
+  ]) {
+    assert.match(html, new RegExp(`id="${elementId}"`));
+  }
+  assert.doesNotMatch(html, /id="v2-menu-team-size"/);
+  assert.match(html, /<option value="casual">Easy<\/option>/);
+  assert.match(html, /<option value="strong">Hard<\/option>/);
 });
 
 test("competitive arena set keeps skill shortcuts and contested rail control", () => {
@@ -1141,6 +1199,41 @@ test("default arena roster preserves the existing 1v1 actor ids", () => {
   ]);
 });
 
+test("arena rosters and worlds support asymmetric team sizes", () => {
+  const teamSizes = { blue: 1, red: 4 } as const;
+  const roster = createArenaRoster(teamSizes);
+  const world = createTeamDeathmatchWorldState(TRAINING_CROSSING_V2, {
+    teamSizes,
+  });
+
+  assert.equal(roster.filter((entry) => entry.teamId === "blue").length, 1);
+  assert.equal(roster.filter((entry) => entry.teamId === "red").length, 4);
+  assert.equal(world.actors.filter((actor) => actor.teamId === "blue").length, 1);
+  assert.equal(world.actors.filter((actor) => actor.teamId === "red").length, 4);
+});
+
+test("arena bot difficulty supports team defaults and actor overrides", () => {
+  const participants = createArenaRoster({ blue: 3, red: 3 }).filter(
+    (participant) => participant.actorId !== "blue-player",
+  );
+  const group = createArenaBotControllerGroup({
+    modeId: "team-deathmatch",
+    map: TRAINING_CROSSING_V2,
+    participants,
+    humanActorIds: ["blue-player"],
+    difficultyByTeam: { blue: "strong", red: "casual" },
+    difficultyByActorId: { "red-player-2": "normal" },
+  });
+
+  assert.deepEqual(group.difficultyAssignments, [
+    { actorId: "blue-player-2", difficultyId: "strong" },
+    { actorId: "blue-player-3", difficultyId: "strong" },
+    { actorId: "red-player", difficultyId: "casual" },
+    { actorId: "red-player-2", difficultyId: "normal" },
+    { actorId: "red-player-3", difficultyId: "casual" },
+  ]);
+});
+
 test("arena bot groups control every non-human slot from 1v1 through 4v4", () => {
   const modes = [
     {
@@ -1166,11 +1259,11 @@ test("arena bot groups control every non-human slot from 1v1 through 4v4", () =>
     for (const definition of modes) {
       const world = definition.createWorld(TRAINING_CROSSING_V2, { teamSize });
       definition.createMode().initialize(world);
-      const group = createArenaBotControllerGroup(
-        definition.id,
-        TRAINING_CROSSING_V2,
-        bots,
-      );
+      const group = createArenaBotControllerGroup({
+        modeId: definition.id,
+        map: TRAINING_CROSSING_V2,
+        participants: bots,
+      });
       const actions = group.readActions(createWorldSnapshot(world), 34);
       const controlledActorIds = new Set(actions
         .filter((action) => action.action === "move")
