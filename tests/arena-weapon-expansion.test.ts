@@ -29,6 +29,7 @@ test("Disc fire no longer shares its C key with the camera reset", () => {
 });
 
 test("Pulse and Disc pickups grant doubled ammunition", () => {
+  assert.equal(V2_ARENA_PICKUP_PARITY_CONFIG.healthValue, 75);
   assert.equal(ARENA_WEAPON_CATALOG.pulse.pickupValue, 36);
   assert.equal(ARENA_WEAPON_CATALOG.disc.pickupValue, 8);
   assert.equal(ARENA_WEAPON_CATALOG.pulse.maxAmmo, 54);
