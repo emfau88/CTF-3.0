@@ -79,6 +79,26 @@ export function preloadArenaAssets(
     "grenadeProjectile",
     assetUrl("weapons/lob-energy-grenade.png"),
   );
+  scene.load.image(
+    "uiGrenadeButton",
+    assetUrl("weapons/lob-energy-grenade.png"),
+  );
+  scene.load.image(
+    "pickupGrenade",
+    assetUrl("weapons/lob-energy-grenade.png"),
+  );
+  scene.load.image(
+    "uiShardButton",
+    assetUrl("weapons/shardcaster.png"),
+  );
+  scene.load.image(
+    "pickupShard",
+    assetUrl("weapons/shardcaster.png"),
+  );
+  scene.load.image(
+    "shardProjectile",
+    assetUrl("weapons/shard-bolt.png"),
+  );
   if (options.playerHudPortraitAssetStem) {
     scene.load.image(
       "playerHudPortrait",

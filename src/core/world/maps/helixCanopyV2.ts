@@ -1,5 +1,12 @@
 import { createTeamSpawnPoints } from "./createTeamSpawnPoints";
-import type { WorldMapData } from "./worldMapData";
+import {
+  createCenteredWorldMapMasterTransform,
+  createWorldMapLandmark,
+} from "./worldMapRegistration";
+import type {
+  WorldMapData,
+  WorldMapLandmarkDefinition,
+} from "./worldMapData";
 
 const MAP_SCALE = 1.15;
 const DESIGN_WIDTH = 1920;
@@ -18,7 +25,15 @@ const WORLD_WIDTH = scale(DESIGN_WIDTH);
 const WORLD_HEIGHT = scale(DESIGN_HEIGHT);
 const MASTER_SCALE = WORLD_HEIGHT / MASTER_HEIGHT;
 const MASTER_OFFSET_X = (WORLD_WIDTH - MASTER_WIDTH * MASTER_SCALE) / 2;
+const MASTER_TRANSFORM = createCenteredWorldMapMasterTransform(
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+  MASTER_WIDTH,
+  MASTER_HEIGHT,
+);
 const INTEGRATED_COVER = "helix-integrated-cover" as const;
+const landmark = (definition: WorldMapLandmarkDefinition) =>
+  createWorldMapLandmark(MASTER_TRANSFORM, definition);
 
 const scaledCover = (
   id: string,
@@ -213,15 +228,15 @@ export const HELIX_CANOPY_V2: WorldMapData = {
   pickupSpawns: [
     { id: "health-blue-canopy-exit", type: "health", position: point(425, 350) },
     { id: "health-red-canopy-exit", type: "health", position: point(1495, 350) },
-    { id: "health-blue-root-exit", type: "health", position: point(425, 610) },
-    { id: "health-red-root-exit", type: "health", position: point(1495, 610) },
-    { id: "armor-exchange-west", type: "armor", position: point(820, 480) },
-    { id: "armor-exchange-east", type: "armor", position: point(1100, 480) },
+    { id: "armor-blue-root-exit", type: "armor", position: point(425, 610) },
+    { id: "armor-red-root-exit", type: "armor", position: point(1495, 610) },
+    { id: "health-inner-west", type: "health", position: point(820, 480) },
+    { id: "health-inner-east", type: "health", position: point(1100, 480) },
+    { id: "shard-canopy-west", type: "shard", position: point(675, 240) },
+    { id: "shard-canopy-east", type: "shard", position: point(1245, 240) },
     { id: "pulse-root-west", type: "pulse", position: point(675, 700) },
     { id: "pulse-root-east", type: "pulse", position: point(1245, 700) },
     { id: "rail-canopy-center", type: "rail", position: point(960, 255) },
-    { id: "shard-exchange-west", type: "shard", position: point(880, 480) },
-    { id: "shard-exchange-east", type: "shard", position: point(1040, 480) },
   ],
   gameplay: {
     blueBase: rect(250, 350, 200, 260),
@@ -257,6 +272,24 @@ export const HELIX_CANOPY_V2: WorldMapData = {
         point(350, 610),
       ],
     },
+  },
+  registration: {
+    version: 1,
+    master: MASTER_TRANSFORM,
+    landmarks: [
+      landmark({ id: "blue-base", label: "Blue Base", kind: "base", masterPosition: { x: 217.11, y: 477.5 }, traversal: "walkable", cover: "open", routeTags: ["base", "blue", "middle"] }),
+      landmark({ id: "red-base", label: "Red Base", kind: "base", masterPosition: { x: 1430.755, y: 477.5 }, traversal: "walkable", cover: "open", routeTags: ["base", "red", "middle"] }),
+      landmark({ id: "helix-core", label: "Helix Core", kind: "objective", masterPosition: { x: 823.5, y: 477.5 }, traversal: "walkable", cover: "open", routeTags: ["objective", "middle"] }),
+      landmark({ id: "canopy-center", label: "Canopy Rail", kind: "pickup", masterPosition: { x: 823.5, y: 253.456 }, traversal: "walkable", cover: "open", routeTags: ["north", "pickup"], pickupId: "rail-canopy-center" }),
+      landmark({ id: "root-center", label: "Root Crossing", kind: "route", masterPosition: { x: 823.5, y: 647.047 }, traversal: "walkable", cover: "open", routeTags: ["south", "crossing"] }),
+      landmark({ id: "blue-canopy-recovery", label: "Blue Canopy Health", kind: "pickup", masterPosition: { x: 291.503, y: 348.61 }, traversal: "walkable", cover: "open", routeTags: ["blue", "north", "recovery"], pickupId: "health-blue-canopy-exit" }),
+      landmark({ id: "red-canopy-recovery", label: "Red Canopy Health", kind: "pickup", masterPosition: { x: 1355.497, y: 348.61 }, traversal: "walkable", cover: "open", routeTags: ["red", "north", "recovery"], pickupId: "health-red-canopy-exit" }),
+      landmark({ id: "blue-root-armor", label: "Blue Root Armor", kind: "pickup", masterPosition: { x: 291.503, y: 607.255 }, traversal: "walkable", cover: "open", routeTags: ["blue", "south", "armor"], pickupId: "armor-blue-root-exit" }),
+      landmark({ id: "red-root-armor", label: "Red Root Armor", kind: "pickup", masterPosition: { x: 1355.497, y: 607.255 }, traversal: "walkable", cover: "open", routeTags: ["red", "south", "armor"], pickupId: "armor-red-root-exit" }),
+      landmark({ id: "inner-health-west", label: "Inner Health West", kind: "pickup", masterPosition: { x: 684.229, y: 477.5 }, traversal: "walkable", cover: "open", routeTags: ["west", "middle", "recovery"], pickupId: "health-inner-west" }),
+      landmark({ id: "inner-health-east", label: "Inner Health East", kind: "pickup", masterPosition: { x: 962.771, y: 477.5 }, traversal: "walkable", cover: "open", routeTags: ["east", "middle", "recovery"], pickupId: "health-inner-east" }),
+      landmark({ id: "north-terminal", label: "North Helix Terminal", kind: "cover", masterPosition: { x: 823.5, y: 185 }, traversal: "solid", cover: "low", routeTags: ["north", "cover"] }),
+    ],
   },
   diagnosticSpawn: point(1570, 480),
 };

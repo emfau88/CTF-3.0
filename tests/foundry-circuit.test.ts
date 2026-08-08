@@ -47,7 +47,7 @@ test("Foundry Circuit registers its premium rebuild contract", () => {
   assert.equal(map?.geometry.gaps.length, 2);
   assert.equal(map?.navigation.jumpLinks.length, 4);
   assert.equal(map?.spawnPoints.length, 8);
-  assert.equal(map?.pickupSpawns.length, 13);
+  assert.equal(map?.pickupSpawns.length, 11);
   assert.deepEqual(map?.weaponRoster, ["whip", "rocket", "rail", "disc"]);
   assert.equal(map?.presentation.theme, "foundry-circuit");
   assert.deepEqual(
@@ -123,8 +123,8 @@ test("Foundry ships one undistorted master for gameplay and Quick Play", () => {
     assert.equal(image[25], 2);
   }
   assert.equal(master.equals(overview), true);
-  const renderer = readFileSync(resolve("src/arenaRenderer.ts"), "utf8");
-  assert.match(renderer, /level\.height \* \(1915 \/ 821\)/);
+  assert.equal(FLOW_CIRCUIT_V2.registration?.master.masterWidth, 1915);
+  assert.equal(FLOW_CIRCUIT_V2.registration?.master.masterHeight, 821);
   const menu = readFileSync(resolve("src/v2Menu.ts"), "utf8");
   assert.match(menu, /flow-circuit-v2-overview\.png/);
 });

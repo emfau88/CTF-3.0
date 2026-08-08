@@ -25,6 +25,7 @@ import {
   type ArenaTeamId,
   type ArenaTeamSlot,
   type ArenaTeamSize,
+  type BotDifficultyId,
   type ClassicCtfBotGoalKind,
   type GameMode,
   type GameModeId,
@@ -269,6 +270,9 @@ export interface ScenarioDefinition {
     snapshot: WorldSnapshot,
     actorId: string,
   ) => WorldPosition | null;
+  readonly difficultyByTeam?: Readonly<
+    Partial<Record<ArenaTeamId, BotDifficultyId>>
+  >;
 }
 
 export function createSimulationScenarios(): readonly ScenarioDefinition[] {
@@ -345,6 +349,7 @@ export function runSimulationScenario(
     modeId: scenario.modeId,
     map: scenario.map,
     participants,
+    difficultyByTeam: scenario.difficultyByTeam,
   });
   const movementByActor = new Map<string, BotMovementMetric>(
     participants.map((participant) => [participant.actorId, {

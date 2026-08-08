@@ -1,6 +1,6 @@
 # CTF-3.0 Audit — Zweitprüfung und Umsetzungsstatus
 
-Stand: 2026-08-05
+Stand: 2026-08-08
 
 Bezugsdokument: [CTF-3.0_Audit.md](CTF-3.0_Audit.md)
 
@@ -70,7 +70,9 @@ Zwei Punkte müssen inzwischen aktualisiert werden:
 - `ArenaBotControllerGroupOptions` ersetzt die fehleranfällige öffentliche Positionsargumentliste und reicht die gewählten Profile an TDM, Classic CTF und One Flag weiter.
 - Team-Vorgaben können intern pro Bot über `difficultyByActorId` überschrieben werden. Die Quick-Play-Oberfläche bleibt bewusst bei einer Stufe pro Team, damit die Konfiguration schnell lesbar bleibt.
 - Liga-Partien verwenden vorerst bewusst das unveränderte Normal-Profil, solange keine Progressionsregel beschlossen wurde.
-- Schaden, Bewegungsgeschwindigkeit, Teamwissen und Objective-Regeln bleiben unverändert; die Profile beeinflussen nur Wahrnehmung, Reaktion, Zielwechsel, Jitter und Vorhersage.
+- Schaden, Bewegungsgeschwindigkeit und Objective-Regeln bleiben unverändert.
+  Phase 2 verband zunächst Wahrnehmung, Reaktion, Zielwechsel, Jitter und
+  Vorhersage; Phase 6 ergänzt darauf aufbauend die strategischen Unterschiede.
 - 205/205 Tests, Test-Typecheck, Production-Build und 4/4 Browser-E2E-Tests bestanden; Desktop- und Kompaktansicht wurden zusätzlich visuell geprüft.
 
 ### Phase 3 — synchroner Match-Start, Mobile-HUD und Runtime
@@ -85,6 +87,59 @@ Zwei Punkte müssen inzwischen aktualisiert werden:
 - 207/207 Tests, Test-Typecheck, Production-Build und 7/7 Browser-E2E-Tests bestanden. Helix lud in TDM, Classic CTF und One Flag mobil ausschließlich das neue Masterbild.
 - Evidenz und Reproduktion: [Phase-3-QA](../qa/phase-3-mobile-runtime/README.md).
 
+### Phase 4 — Pickup-Ökonomie und Waffenlesbarkeit
+
+- Health-Pickups heilen nun feste 75 Punkte.
+- Jede Premium-Map besitzt als gemeinsame Ausgangsbasis vier Health-, zwei
+  Armor- und fünf Waffen-Pickups. Beide Basisseiten erhalten Health, Armor und
+  mindestens zwei erreichbare Waffenoptionen; die Mitte bleibt umkämpft.
+- Grenade und Shardcaster verwenden eigene Pickup-/HUD-Grafiken. Das sichtbare
+  Shard-Projektil ist etwas größer und seine Zielsuche geringfügig stärker,
+  ohne Schaden oder Kollisionsradius zu erhöhen.
+- Mobile Waffenbuttons übernehmen weiterhin direkt das Waffenroster der Map.
+  Die automatische Touch-Erkennung steuert nun zusätzlich dieselbe kompakte
+  HTML-Utility-Leiste wie die Phaser-Steuerung.
+- Die technische Verteilung ist umgesetzt. Die aktuellen Positionen wurden als
+  belastbare Ausgangsbasis angenommen und als Pickup-Landmarken registriert.
+- 210/210 Tests, Test-Typecheck und Production-Build bestehen. Der bestehende
+  Mobile-E2E-Vertrag verwendet nun `Auto detect` auf einem Touch-Kontext, damit
+  Phaser-Steuerung und HTML-Utility-Leiste nicht wieder auseinanderlaufen.
+
+### Phase 5 — Gemeinsamer Registrierungsvertrag
+
+- Helix, Temple und Foundry verwenden denselben zentrierten Masterbild-Transform
+  für Renderer und Landmarken. Map-spezifische Skalierungsformeln entfallen.
+- Jede Premium-Map besitzt zwölf benannte Landmarken: zwei Basen, ein zentrales
+  Objective, wichtige Routen-/Deckungspunkte und sieben feste Pickup-Anker.
+- Das automatische Qualitätsgate prüft Anzahl, eindeutige IDs, Projektion,
+  Begehbarkeit, Deckungsart und die Verbindung zum tatsächlichen Pickup.
+- `mapPreview=1&landmarkDebug=1` zeigt die Registrierung ohne Kosten im normalen
+  Match. Die Bots konsumieren diese Semantik noch nicht; dadurch ändert Phase 5
+  allein weder Schwierigkeit noch Laufverhalten.
+
+### Phase 6 — spürbare Bot-Stufen und Landmark-Strategie
+
+- Easy, Normal und Hard unterscheiden sich nun nicht nur bei Reaktion und Aim,
+  sondern auch nachvollziehbar bei Teamkoordination, Ressourcenplanung,
+  Landmark-Routing und Jump-Link-Nutzung.
+- Easy spielt Ziele unabhängiger, sucht nur in Notlagen Health und verwendet
+  grundsätzlich keine Jump-Links.
+- Normal koordiniert Rollen und Gegner, nimmt moderate Ressourcenumwege und
+  verwendet Sprünge nur, wenn sie trotz Sicherheitsaufschlag der bessere Weg
+  sind.
+- Hard verteilt Bots über Nord-, Mittel- und Südlandmarken, reserviert aktive
+  Pickups innerhalb des Teams und bevorzugt sichere Sprungabkürzungen.
+- Kritische Flaggenaufgaben wie Capture, Recovery, Escort und Interception
+  werden nie durch einen Pickup- oder Landmark-Umweg verdrängt.
+- Schaden, Bewegung, Health, Armor und Waffenwerte bleiben auf allen Stufen
+  identisch; die Unterschiede entstehen ausschließlich durch Entscheidungen.
+- Der Premium-Audit erzeugt seine Navigatoren nun mit denselben Normal-Regeln
+  wie das Spiel und misst dadurch keine veraltete Standardkonfiguration mehr.
+- 216/216 Tests, Test-Typecheck und Production-Build bestehen. Eine kurze
+  4v4-Matrix über alle Premium-Maps und Modi meldete keine kritischen Befunde
+  und keine Warnungen; die gemessenen Decision-CPU-p95-Werte lagen zwischen
+  1,56 und 3,01 ms pro Simulationsframe.
+
 ## Einordnung meiner bisherigen Kommentare
 
 Meine vorherige Einschätzung zum Fremdaudit lässt sich so zusammenfassen:
@@ -98,7 +153,20 @@ Meine vorherige Einschätzung zum Fremdaudit lässt sich so zusammenfassen:
 
 ## Empfohlene nächste Schritte
 
-### 1. Helix subjektiv abnehmen
+### 1. Difficulty und Landmark-Routing subjektiv abnehmen
+
+Die technische Anbindung ist abgeschlossen und deterministisch abgesichert.
+Als Nächstes sollten dieselben kurzen TDM-, Classic-CTF- und One-Flag-Matches
+jeweils mit Easy, Normal und Hard gespielt werden. Bewertet werden vor allem:
+
+- Easy springt nie und bleibt sichtbar reaktionsträger;
+- Normal springt gelegentlich bei einem klaren Wegvorteil;
+- Hard nutzt Sprungabkürzungen und verteilt sich erkennbar besser;
+- Hard sammelt Ressourcen cleverer, ohne Objectives oder den Menschen zu
+  benachteiligen;
+- keine Stufe bleibt an einer Landmarke oder einem Pickup hängen.
+
+### 2. Helix subjektiv abnehmen
 
 Ein kurzer manueller Test sollte Classic CTF, One Flag und TDM jeweils in 2v2 sowie mindestens einen 4v4-Lauf abdecken. Bewertet werden nur:
 
@@ -108,27 +176,31 @@ Ein kurzer manueller Test sollte Classic CTF, One Flag und TDM jeweils in 2v2 so
 - stimmen sichtbare Basen, Pickups und tatsächliche Interaktionsorte;
 - wirkt die Karte in 1024×768 und 1920×1080 weder leer noch überladen.
 
-### 2. Difficulty subjektiv kalibrieren
+### 3. Difficulty nach dem Spieltest fein kalibrieren
 
-Die technische Verdrahtung ist abgeschlossen. Als Nächstes sollten Easy, Normal und Hard in denselben kurzen TDM-, CTF- und One-Flag-Szenarien gegeneinander gespielt werden. Dabei geht es um verständlich spürbare, aber faire Unterschiede bei Reaktion, Zielstabilität und Entscheidungsbindung. Erst danach sollte entschieden werden, ob die Liga dauerhaft Normal verwendet oder die Stufe an die Progression koppelt.
+Nach der subjektiven Abnahme werden nur die Profilwerte angepasst, nicht die
+Grundregeln neu gebaut. Besonders relevant sind Pickup-Reichweite,
+Health-/Armor-Schwellen und der Sprungkostenfaktor. Erst danach sollte
+entschieden werden, ob die Liga dauerhaft Normal verwendet oder die Stufe an
+die Progression koppelt.
 
-### 3. Premium-Audit sauber neu baselinen
+### 4. Premium-Audit sauber neu baselinen
 
 Difficulty-Wiring sowie Runtime-/Mobile-Arbeit sind inzwischen in getrennten Commits dokumentiert. Nach dem Merge des Feature-Branches wird der vollständige 270-Match-Audit auf dem dokumentierten Merge-Commit ausgeführt. Der Bericht wird mit dem Lauf vom 2026-07-19 verglichen; besonders Temple/Foundry Classic CTF 4v4 und Foundry CPU-p95 werden isoliert betrachtet.
 
-### 4. Gemeinsamen Registrierungsvertrag einführen
+### 5. Registrierungsvertrag zum Routengraph erweitern
 
-Vor einem großen Editor genügt eine kleine gemeinsame Schicht:
+Die kleine gemeinsame Schicht ist umgesetzt:
 
-- ein wiederverwendbarer Masterbild-Transform statt map-spezifischer Skalierungsformeln;
-- acht bis zwölf benannte Landmarken pro Premium-Map;
-- pro Landmarke Masterpunkt, Weltpunkt, erwartete Begehbarkeit und Deckungsart;
-- ein maschinenlesbares Registrierungsmanifest plus automatisch erzeugte Debugansicht;
-- anschließend ein Graph-Gate für mindestens zwei unabhängige Wege von jeder Basis zum zentralen Objective.
+- [x] ein wiederverwendbarer Masterbild-Transform statt map-spezifischer Skalierungsformeln;
+- [x] zwölf benannte Landmarken pro Premium-Map;
+- [x] pro Landmarke Masterpunkt, Weltpunkt, erwartete Begehbarkeit und Deckungsart;
+- [x] ein maschinenlesbares Registrierungsmanifest plus Debugansicht;
+- [ ] ein Graph-Gate für mindestens zwei unabhängige Wege von jeder Basis zum zentralen Objective.
 
 Erst wenn diese kleine Lösung unzureichend ist, sollte SVG, LDtk oder Tiled als Authoringquelle bewertet werden.
 
-### 5. Niedrig priorisierte Wartung
+### 6. Niedrig priorisierte Wartung
 
 - Optional ausdrücken, dass Premium-Kosmetik und -Licht absichtlich partielle Konfigurationen sind, statt Vollständigkeit durch den Typ zu suggerieren.
 - Das bekannte Vite-Bundle-Warning separat behandeln; es ist weder Ursache noch Blocker der Map- oder Botprobleme.

@@ -76,6 +76,16 @@ export interface GridBotNavigatorDebugState {
   readonly recoveryStage: 0 | 1 | 2 | 3;
 }
 
+export interface BotNavigationBehavior {
+  readonly allowJumpLinks: boolean;
+  readonly jumpCostMultiplier: number;
+}
+
+const DEFAULT_NAVIGATION_BEHAVIOR: BotNavigationBehavior = {
+  allowJumpLinks: true,
+  jumpCostMultiplier: 1,
+};
+
 export interface BotNavigator {
   navigate(
     from: WorldPosition,
@@ -126,6 +136,8 @@ export class GridBotNavigator implements BotNavigator {
   constructor(
     private readonly config: BotNavigationConfig =
       V2_BOT_NAVIGATION_CONFIG,
+    private readonly behavior: BotNavigationBehavior =
+      DEFAULT_NAVIGATION_BEHAVIOR,
   ) {}
 
   navigate(
@@ -189,6 +201,7 @@ export class GridBotNavigator implements BotNavigator {
         target,
         snapshot,
         this.config,
+        this.behavior,
       );
       this.path = resolved.path;
       this.activeTarget = resolved.target;
@@ -377,6 +390,7 @@ function resolveNavigationPath(
   requestedTarget: WorldPosition,
   snapshot: NavigationSnapshot,
   config: BotNavigationConfig,
+  behavior: BotNavigationBehavior = DEFAULT_NAVIGATION_BEHAVIOR,
 ): ResolvedNavigationPath {
   const blockers = [...snapshot.geometry.solids, ...snapshot.geometry.gaps];
   const candidates = navigationTargetCandidates(
@@ -386,7 +400,7 @@ function resolveNavigationPath(
   );
   let fallback: ResolvedNavigationPath | null = null;
   for (const target of candidates) {
-    const rawPath = findPath(from, target, snapshot, config);
+    const rawPath = findPath(from, target, snapshot, config, behavior);
     const smoothed = smoothPath(
       from,
       rawPath,
@@ -530,6 +544,7 @@ function findPath(
   to: WorldPosition,
   snapshot: NavigationSnapshot,
   config: BotNavigationConfig,
+  behavior: BotNavigationBehavior = DEFAULT_NAVIGATION_BEHAVIOR,
 ): PathWaypoint[] {
   const bounds = snapshot.geometry.bounds;
   const cols = Math.max(
@@ -582,7 +597,7 @@ function findPath(
       current,
       cols,
       rows,
-      snapshot.navigation.jumpLinks,
+      behavior.allowJumpLinks ? snapshot.navigation.jumpLinks : [],
       blockers,
       bounds.minX,
       bounds.minY,
@@ -615,7 +630,7 @@ function findPath(
       const tentative = (costs.get(key(current)) ?? Infinity) +
         (candidate.jumpLink
           ? distance(candidate.jumpLink.from, candidate.jumpLink.to) /
-            config.cellSize
+            config.cellSize * Math.max(.1, behavior.jumpCostMultiplier)
           : stepCost(current, neighbor));
       if (tentative >= (costs.get(key(neighbor)) ?? Infinity)) continue;
       cameFrom.set(key(neighbor), {

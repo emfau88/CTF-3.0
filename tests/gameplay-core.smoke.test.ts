@@ -48,6 +48,7 @@ import {
   readV2RouteState,
   resolveV2TeamSizes,
 } from "../src/v2Route";
+import { prefersV2TouchControls } from "../src/v2Controls";
 import { calculateV2TouchLayout } from "../src/adapters/phaser/v2TouchLayout";
 import { resolveMobileWeaponRoster } from "../src/adapters/phaser/PhaserMobileInputAdapter";
 import { resolveDesktopAimDirection } from "../src/adapters/phaser/desktopAim";
@@ -206,6 +207,18 @@ test("v2 routes preserve and validate arena team size", () => {
   assert.equal(invalid.canStartMatch, false);
   assert.equal(invalid.route.menu, true);
   assert.deepEqual(invalid.issues, ["Unsupported V2 team size: 5."]);
+});
+
+test("v2 auto controls apply the same touch detection to every UI layer", () => {
+  const desktop = { maxTouchPoints: 0, coarsePointer: false };
+  const touchScreen = { maxTouchPoints: 5, coarsePointer: false };
+  const coarsePointer = { maxTouchPoints: 0, coarsePointer: true };
+
+  assert.equal(prefersV2TouchControls("auto", desktop), false);
+  assert.equal(prefersV2TouchControls("auto", touchScreen), true);
+  assert.equal(prefersV2TouchControls("auto", coarsePointer), true);
+  assert.equal(prefersV2TouchControls("touch", desktop), true);
+  assert.equal(prefersV2TouchControls("keyboard", touchScreen), false);
 });
 
 test("v2 routes support asymmetric bot teams and team difficulty", () => {
@@ -802,7 +815,7 @@ test("rocket bot leads moving targets and can choose a nearby wall for splash", 
     moving.bot,
     moving.target,
     createWorldSnapshot(moving.world),
-    34,
+    300,
   );
   assert.equal(actionWeaponId(lead), "rocket");
   assert.ok((lead?.direction?.y ?? 0) > .2);
@@ -822,7 +835,7 @@ test("rocket bot leads moving targets and can choose a nearby wall for splash", 
     surfaced.bot,
     surfaced.target,
     createWorldSnapshot(surfaced.world),
-    34,
+    300,
   );
   assert.equal(actionWeaponId(surfaceShot), "rocket");
   assert.ok((surfaceShot?.direction?.y ?? 0) > .08);
@@ -1196,7 +1209,7 @@ test("rail bot becomes less precise toward maximum range", () => {
     });
     world.actors.push(bot, target);
     const combat = new TdmBotCombatController(config);
-    combat.readAction(bot, target, createWorldSnapshot(world), 0);
+    combat.readAction(bot, target, createWorldSnapshot(world), 300);
     return combat.readAction(bot, target, createWorldSnapshot(world), 0);
   };
 

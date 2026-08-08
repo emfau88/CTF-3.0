@@ -488,7 +488,7 @@ function checkWorldMapRegistry(): void {
       world.actors.length !== 8 ||
       world.geometry.solids.length !== 20 ||
       world.geometry.gaps.length !== 2 ||
-      world.pickups.length !== 13 ||
+      world.pickups.length !== 11 ||
       world.navigation.jumpLinks.length !== 4 ||
       world.match?.phase !== "running"
     ) {
@@ -2687,7 +2687,7 @@ function checkTdmBotCombatDecision(): void {
     bot,
     target,
     createWorldSnapshot(world),
-    34,
+    300,
   );
   if (weaponIdFromAction(action) !== "whip") {
     throw new Error("TDM bot combat must prefer Whip in melee range.");
@@ -2748,12 +2748,19 @@ function checkTdmBotSpecialWeapons(): void {
 function checkTdmBotWhipRuntime(): void {
   const runtime = createBotWeaponRuntime("whip", 100);
   const controller = createStationaryBotController();
-  const frame = runtime.advance({
-    sequence: 1,
-    timeMs: 34,
-    deltaMs: 34,
-    actions: controller.readActions(runtime.snapshot, 34),
-  });
+  let frame: ReturnType<GameplayCoreRuntime["advance"]> | null = null;
+  for (let sequence = 1; sequence <= 12; sequence++) {
+    frame = runtime.advance({
+      sequence,
+      timeMs: sequence * 34,
+      deltaMs: 34,
+      actions: controller.readActions(runtime.snapshot, 34),
+    });
+    if (frame.events.some((event) => event.type === "weapon.whipFired")) break;
+  }
+  if (!frame) {
+    throw new Error("TDM bot Arc Lash runtime must advance acquisition frames.");
+  }
   const red = actorById(frame.snapshot.actors, "red-player");
   const blue = actorById(frame.snapshot.actors, "blue-player");
   if (

@@ -7,6 +7,7 @@ import {
   resolveV2TeamSizes,
   type V2PlayerSkinId,
 } from "../../../v2Route";
+import { prefersV2TouchControls } from "../../../v2Controls";
 import {
   ArenaBotControllerGroup,
   ClassicCtfMode,
@@ -119,7 +120,9 @@ export class GameplayV2Scene extends Phaser.Scene {
     const isOneFlag = route.mode === "one-flag";
     const selectedMap = resolveWorldMap(route.map);
     const collisionDiagnostics: ArenaCollisionDiagnostics =
-      search.get("clearanceHeatmap") === "1"
+      search.get("landmarkDebug") === "1"
+        ? "landmarks"
+        : search.get("clearanceHeatmap") === "1"
         ? "heatmap"
         : search.get("collisionDebug") === "1"
         ? "solids"
@@ -145,7 +148,7 @@ export class GameplayV2Scene extends Phaser.Scene {
         )
         : null;
     // Product V2 routes only resolve arena modes via readV2Route().
-    const useMobileControls = prefersMobileControls(route);
+    const useMobileControls = prefersV2TouchControls(route.controls);
     const useBotOpponent = prefersBotOpponent(route.players, useMobileControls);
     const humanActorIds = route.players === "bot"
       ? ["blue-player"]
@@ -447,21 +450,6 @@ export class GameplayV2Scene extends Phaser.Scene {
       },
     }));
   }
-}
-
-function prefersMobileControls(route: { controls: string; players: string }): boolean {
-  const override = route.controls;
-  if (override === "mobile" || override === "touch") {
-    return true;
-  }
-  if (override === "desktop" || override === "keyboard") {
-    return false;
-  }
-  // Touch controls follow the device, not the opponent: a desktop solo-vs-bots
-  // match defaults to keyboard + mouse, while real touch devices keep the
-  // overlay. `?controls=touch` still forces the overlay for on-desktop testing.
-  return navigator.maxTouchPoints > 0 ||
-    window.matchMedia("(pointer: coarse)").matches;
 }
 
 function prefersBotOpponent(

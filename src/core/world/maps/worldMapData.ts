@@ -122,6 +122,44 @@ export interface WorldMapPickupSpawn {
   readonly position: WorldPosition;
 }
 
+export type WorldMapLandmarkKind =
+  | "base"
+  | "objective"
+  | "route"
+  | "pickup"
+  | "cover"
+  | "traversal";
+
+export type WorldMapLandmarkTraversal = "walkable" | "solid" | "gap";
+export type WorldMapLandmarkCover = "open" | "low" | "high" | "gap";
+
+export interface WorldMapMasterTransform {
+  readonly masterWidth: number;
+  readonly masterHeight: number;
+  readonly worldRect: WorldMapPresentationRect;
+}
+
+export interface WorldMapLandmarkDefinition {
+  readonly id: string;
+  readonly label: string;
+  readonly kind: WorldMapLandmarkKind;
+  readonly masterPosition: WorldPosition;
+  readonly traversal: WorldMapLandmarkTraversal;
+  readonly cover: WorldMapLandmarkCover;
+  readonly routeTags: readonly string[];
+  readonly pickupId?: string;
+}
+
+export interface WorldMapLandmark extends WorldMapLandmarkDefinition {
+  readonly position: WorldPosition;
+}
+
+export interface WorldMapRegistration {
+  readonly version: 1;
+  readonly master: WorldMapMasterTransform;
+  readonly landmarks: readonly WorldMapLandmark[];
+}
+
 export interface WorldMapData {
   readonly id: string;
   readonly displayName: string;
@@ -133,6 +171,7 @@ export interface WorldMapData {
   readonly gameplay: WorldMapGameplay;
   readonly botProfile: WorldMapBotProfile;
   readonly presentation: WorldMapPresentation;
+  readonly registration?: WorldMapRegistration;
   readonly diagnosticSpawn: WorldPosition;
 }
 

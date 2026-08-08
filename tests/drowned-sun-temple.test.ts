@@ -28,7 +28,7 @@ test("Temple of the Drowned Sun registers its complete gameplay contract", () =>
   assert.equal(map?.geometry.gaps.length, 2);
   assert.equal(map?.navigation.jumpLinks.length, 4);
   assert.equal(map?.spawnPoints.length, 8);
-  assert.equal(map?.pickupSpawns.length, 13);
+  assert.equal(map?.pickupSpawns.length, 11);
   assert.deepEqual(map?.weaponRoster, ["whip", "rocket", "grenade", "disc"]);
   assert.equal(map?.presentation.theme, "jungle-temple");
 });
@@ -46,8 +46,8 @@ test("Temple production art ships a cohesive wide master image", () => {
   assert.equal(master.readUInt32BE(16), 1913);
   assert.equal(master.readUInt32BE(20), 822);
   assert.equal(master[25], 2);
-  const renderer = readFileSync(resolve("src/arenaRenderer.ts"), "utf8");
-  assert.match(renderer, /level\.height \* \(1913 \/ 822\)/);
+  assert.deepEqual(DROWNED_SUN_TEMPLE_V2.registration?.master.masterWidth, 1913);
+  assert.deepEqual(DROWNED_SUN_TEMPLE_V2.registration?.master.masterHeight, 822);
 });
 
 test("Temple legacy production art kit remains available for rollback", () => {
@@ -319,7 +319,7 @@ test("Temple pickup economy is mirrored and blocks objective weapon spam", () =>
     ]),
   );
   assert.deepEqual(counts, {
-    health: 6,
+    health: 4,
     armor: 2,
     rocket: 2,
     disc: 1,

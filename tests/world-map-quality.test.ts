@@ -31,6 +31,44 @@ test("registered maps have no blocking structural quality issues", () => {
   ]);
 });
 
+test("premium maps expose complete semantic landmark registrations", () => {
+  for (const map of WORLD_MAPS.slice(0, 3)) {
+    const registration = map.registration;
+    assert.ok(registration, `${map.id} needs a landmark registration.`);
+    assert.equal(registration.version, 1);
+    assert.equal(registration.landmarks.length, 12);
+    assert.equal(
+      registration.landmarks.filter((landmark) => landmark.kind === "base").length,
+      2,
+    );
+    assert.equal(
+      registration.landmarks.filter((landmark) =>
+        landmark.kind === "objective"
+      ).length,
+      1,
+    );
+    assert.ok(
+      registration.landmarks.filter((landmark) => landmark.pickupId).length >= 7,
+    );
+    assert.ok(
+      registration.landmarks.some((landmark) =>
+        landmark.traversal === "solid" && landmark.cover === "low"
+      ),
+    );
+  }
+});
+
+test("premium walkable landmarks have full actor clearance", () => {
+  for (const map of WORLD_MAPS.slice(0, 3)) {
+    const issues = validateWorldMapQuality(map);
+    assert.deepEqual(
+      issues.filter((issue) => issue.code === "invalid-landmark-surface"),
+      [],
+      `${map.displayName} exposes an unsafe walkable landmark.`,
+    );
+  }
+});
+
 test("quality gate rejects clipped pickups and decorative jump links", () => {
   const pickup = TRAINING_CROSSING_V2.pickupSpawns[0]!;
   const brokenMap = {

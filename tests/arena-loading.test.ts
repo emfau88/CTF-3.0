@@ -32,6 +32,11 @@ test("v2 preload selects only the active premium map and match roster", () => {
   assert.equal(loader.keys.has("uiDiscButton"), true);
   assert.equal(loader.keys.has("discProjectile"), true);
   assert.equal(loader.keys.has("grenadeProjectile"), true);
+  assert.equal(loader.keys.has("uiGrenadeButton"), true);
+  assert.equal(loader.keys.has("pickupGrenade"), true);
+  assert.equal(loader.keys.has("uiShardButton"), true);
+  assert.equal(loader.keys.has("pickupShard"), true);
+  assert.equal(loader.keys.has("shardProjectile"), true);
   assert.deepEqual(
     [...loader.keys].filter((key) => key.endsWith("Runner")).sort(),
     ["mirejawRunner", "prismBastionRunner", "scrapwingRunner", "xenoRunner"],

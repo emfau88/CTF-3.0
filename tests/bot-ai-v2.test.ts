@@ -7,6 +7,7 @@ import {
   BotTargetSelector,
   BotUtilityArbiter,
   createActorState,
+  createArenaBotControllerGroup,
   createArenaRoster,
   createBotPersonality,
   createClassicCtfWorldState,
@@ -78,6 +79,46 @@ test("combat opportunity and movement agree on the weapon that is actually usabl
   assert.equal(armed.canAttackAtCurrentRange, true);
   assert.equal(armed.movementWeaponId, "rocket");
   assert.equal(armed.posture, "hold");
+});
+
+test("general target reaction makes Hard engage before Easy", () => {
+  const world = createEmptyWorldState("team-deathmatch");
+  world.geometry = {
+    bounds: { minX: 0, minY: 0, maxX: 800, maxY: 500 },
+    solids: [],
+    gaps: [],
+  };
+  const bot = createActorState({
+    id: "reaction-bot",
+    kind: "bot",
+    teamId: "blue",
+    position: { x: 200, y: 250 },
+    radius: 16,
+  });
+  const target = createActorState({
+    id: "reaction-target",
+    kind: "bot",
+    teamId: "red",
+    position: { x: 300, y: 250 },
+    radius: 16,
+  });
+  world.actors.push(bot, target);
+  const snapshot = createWorldSnapshot(world);
+  const hard = new TdmBotCombatController(
+    undefined,
+    BOT_DIFFICULTY_PROFILES.strong,
+  );
+  const easy = new TdmBotCombatController(
+    undefined,
+    BOT_DIFFICULTY_PROFILES.casual,
+  );
+
+  assert.equal(hard.readAction(bot, target, snapshot, 100), null);
+  assert.ok(hard.readAction(bot, target, snapshot, 100));
+  for (let step = 0; step < 4; step += 1) {
+    assert.equal(easy.readAction(bot, target, snapshot, 100), null);
+  }
+  assert.ok(easy.readAction(bot, target, snapshot, 100));
 });
 
 test("utility arbitration keeps a plausible intention but yields to emergencies", () => {
@@ -271,6 +312,65 @@ test("One Flag coordinator sends one runner while teammates control space", () =
     );
   assert.equal(roles.filter((role) => role === "runner").length, 1);
   assert.equal(roles.filter((role) => role === "controller").length, 3);
+});
+
+test("Easy One Flag uses one basic runner without advanced formations", () => {
+  const world = createOneFlagWorldState(DROWNED_SUN_TEMPLE_V2, {
+    teamSize: 4,
+  });
+  new OneFlagMode(DROWNED_SUN_TEMPLE_V2).initialize(world);
+  const roster = createArenaRoster(4);
+  const difficulties = new Map(
+    roster.map((participant) => [
+      participant.actorId,
+      BOT_DIFFICULTY_PROFILES.casual,
+    ]),
+  );
+  const coordinator = new ArenaBotTeamCoordinator(
+    "one-flag",
+    DROWNED_SUN_TEMPLE_V2,
+    roster,
+    [],
+    difficulties,
+  );
+  const homeRoles = roster
+    .filter((participant) => participant.teamId === "blue")
+    .map((participant) =>
+      coordinator.assignmentFor(
+        participant.actorId,
+        createWorldSnapshot(world),
+      )?.oneFlagRole
+    );
+  assert.equal(homeRoles.filter((role) => role === "runner").length, 1);
+  assert.equal(homeRoles.filter((role) => role === "controller").length, 3);
+
+  const flag = world.objectives.find((objective) =>
+    objective.kind === "neutral-flag"
+  )!;
+  const mutableFlagState = flag.state as {
+    status: string;
+    interactingActorId: string | null;
+  };
+  mutableFlagState.status = "carried";
+  mutableFlagState.interactingActorId = "blue-player";
+  world.timeMs += 1;
+  const carriedSnapshot = createWorldSnapshot(world);
+  const blueRoles = roster
+    .filter((participant) => participant.teamId === "blue")
+    .map((participant) =>
+      coordinator.assignmentFor(participant.actorId, carriedSnapshot)
+        ?.oneFlagRole
+    );
+  const redRoles = roster
+    .filter((participant) => participant.teamId === "red")
+    .map((participant) =>
+      coordinator.assignmentFor(participant.actorId, carriedSnapshot)
+        ?.oneFlagRole
+    );
+  assert.equal(blueRoles.filter((role) => role === "escort").length, 1);
+  assert.equal(blueRoles.filter((role) => role === "screen").length, 0);
+  assert.equal(redRoles.filter((role) => role === "interceptor").length, 1);
+  assert.equal(redRoles.filter((role) => role === "cutoff").length, 0);
 });
 
 test("One Flag coordinator creates escort and interception formations", () => {
@@ -723,4 +823,97 @@ test("TDM coordinator spreads a four-bot squad across available threats", () => 
     )
     .filter((target): target is string => Boolean(target));
   assert.ok(new Set(targets).size >= 2);
+});
+
+test("difficulty profiles expose distinct strategy and traversal contracts", () => {
+  const easy = BOT_DIFFICULTY_PROFILES.casual;
+  const normal = BOT_DIFFICULTY_PROFILES.normal;
+  const hard = BOT_DIFFICULTY_PROFILES.strong;
+
+  assert.equal(easy.canUseJumpLinks, false);
+  assert.equal(normal.canUseJumpLinks, true);
+  assert.equal(hard.canUseJumpLinks, true);
+  assert.ok(hard.jumpCostMultiplier < normal.jumpCostMultiplier);
+  assert.ok(easy.healthSeekRatio < normal.healthSeekRatio);
+  assert.ok(normal.healthSeekRatio < hard.healthSeekRatio);
+  assert.deepEqual(
+    [easy.landmarkRouteMode, normal.landmarkRouteMode, hard.landmarkRouteMode],
+    ["none", "central", "distributed"],
+  );
+  assert.deepEqual(
+    [easy.coordinatesPickups, normal.coordinatesPickups, hard.coordinatesPickups],
+    [false, false, true],
+  );
+});
+
+test("Easy avoids authored jumps while Hard actively values the shortcut", () => {
+  const jump = HELIX_CANOPY_V2.navigation.jumpLinks[0]!;
+  const snapshot = createWorldSnapshot(
+    createTeamDeathmatchWorldState(HELIX_CANOPY_V2),
+  );
+  const target = { x: jump.to.x + 120, y: jump.to.y + 180 };
+  const easy = new GridBotNavigator(undefined, {
+    allowJumpLinks: false,
+    jumpCostMultiplier: 1,
+  });
+  const hard = new GridBotNavigator(undefined, {
+    allowJumpLinks: true,
+    jumpCostMultiplier: BOT_DIFFICULTY_PROFILES.strong.jumpCostMultiplier,
+  });
+
+  assert.equal(
+    easy.navigate(jump.from, target, "easy-route", snapshot, 34).jump,
+    false,
+  );
+  assert.equal(
+    hard.navigate(jump.from, target, "hard-route", snapshot, 34).jump,
+    true,
+  );
+  assert.equal(hard.debugSnapshot().jumpLinkId, jump.id);
+});
+
+test("Hard coordinates unique pickups and distributed premium-map routes", () => {
+  const roster = createArenaRoster(4);
+  const world = createTeamDeathmatchWorldState(HELIX_CANOPY_V2, {
+    teamSize: 4,
+  });
+  const group = createArenaBotControllerGroup({
+    modeId: "team-deathmatch",
+    map: HELIX_CANOPY_V2,
+    participants: roster,
+    difficultyByTeam: { blue: "strong", red: "casual" },
+  });
+  const coordinator = new ArenaBotTeamCoordinator(
+    "team-deathmatch",
+    HELIX_CANOPY_V2,
+    roster,
+    [],
+    new Map(roster.map((participant) => [
+      participant.actorId,
+      participant.teamId === "blue"
+        ? BOT_DIFFICULTY_PROFILES.strong
+        : BOT_DIFFICULTY_PROFILES.casual,
+    ])),
+  );
+  const snapshot = createWorldSnapshot(world);
+  const blue = roster.filter((participant) => participant.teamId === "blue")
+    .map((participant) => coordinator.assignmentFor(participant.actorId, snapshot)!);
+  const red = roster.filter((participant) => participant.teamId === "red")
+    .map((participant) => coordinator.assignmentFor(participant.actorId, snapshot)!);
+  const blueReservations = blue
+    .map((assignment) => assignment.reservedPickupId)
+    .filter((pickupId): pickupId is string => pickupId !== null);
+  const blueRoutes = blue
+    .map((assignment) => assignment.routeLandmarkId)
+    .filter((landmarkId): landmarkId is string => landmarkId !== null);
+
+  assert.equal(group.difficultyAssignments.length, roster.length);
+  assert.equal(new Set(blueReservations).size, blueReservations.length);
+  assert.ok(blueReservations.length >= 2);
+  assert.ok(new Set(blueRoutes).size >= 3);
+  assert.equal(red.every((assignment) =>
+    assignment.reservedPickupId === null &&
+    assignment.routeLandmarkId === null &&
+    assignment.combatTargetActorId === null
+  ), true);
 });

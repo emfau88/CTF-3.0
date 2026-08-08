@@ -6,6 +6,14 @@ import type {
 import type { GameModeId } from "../modes";
 import type { ArenaParticipant } from "../spawning";
 import type { WorldMapData, WorldSnapshot } from "../world";
+import {
+  BOT_DIFFICULTY_PROFILES,
+  type BotDifficultyProfile,
+} from "./BotDifficulty";
+import {
+  selectBotRouteLandmark,
+  selectBotStrategicPickup,
+} from "./BotStrategicPlanning";
 import type {
   ClassicCtfBotRole,
   ClassicCtfTeamCommand,
@@ -27,6 +35,8 @@ export interface BotTeamAssignment {
   readonly classicCtfCommand: ClassicCtfTeamCommand;
   readonly classicCtfEmergencyDuty: boolean;
   readonly oneFlagRole: OneFlagBotTacticalRole | null;
+  readonly reservedPickupId: string | null;
+  readonly routeLandmarkId: string | null;
   readonly reason: string;
 }
 
@@ -51,6 +61,10 @@ export class ArenaBotTeamCoordinator {
     private readonly map: WorldMapData,
     private readonly participants: readonly ArenaParticipant[],
     private readonly humanActorIds: readonly string[] = [],
+    private readonly difficultyByActorId: ReadonlyMap<
+      string,
+      BotDifficultyProfile
+    > = new Map(),
   ) {}
 
   assignmentFor(
@@ -98,6 +112,7 @@ export class ArenaBotTeamCoordinator {
       } else if (this.modeId === "one-flag") {
         this.assignOneFlagTeam(teamId, actors, snapshot);
       }
+      this.applyStrategicAssignments(teamParticipants, actors, snapshot);
     }
   }
 
@@ -112,9 +127,27 @@ export class ArenaBotTeamCoordinator {
     );
     const reservations = new Map<string, number>();
     for (const actor of [...actors].sort(actorIdOrder)) {
+      const difficulty = this.difficultyFor(actor.id);
+      if (!difficulty.coordinatesCombatTargets) {
+        this.assignments.set(actor.id, baseAssignment(actor.id, {
+          reason: "tdm-independent-targeting",
+        }));
+        continue;
+      }
       const target = [...enemies].sort((left, right) =>
-        coordinatedTargetCost(actor, left, snapshot, reservations) -
-          coordinatedTargetCost(actor, right, snapshot, reservations) ||
+        coordinatedTargetCost(
+          actor,
+          left,
+          snapshot,
+          reservations,
+          difficulty.id === "strong" ? .62 : .34,
+        ) - coordinatedTargetCost(
+          actor,
+          right,
+          snapshot,
+          reservations,
+          difficulty.id === "strong" ? .62 : .34,
+        ) ||
         left.id.localeCompare(right.id)
       )[0] ?? null;
       if (target) {
@@ -210,14 +243,22 @@ export class ArenaBotTeamCoordinator {
         role,
         followActorId,
       );
-      const target = coordinatedCombatTarget(actor, snapshot);
+      const difficulty = this.difficultyFor(actor.id);
+      const coordinatedObjectives = difficulty.coordinatesObjectives ||
+        actorCommand !== "auto";
+      const target = difficulty.coordinatesCombatTargets
+        ? coordinatedCombatTarget(actor, snapshot)
+        : null;
       this.assignments.set(actor.id, baseAssignment(actor.id, {
         combatTargetActorId: target?.id ?? null,
-        classicCtfRole: role,
+        classicCtfRole: coordinatedObjectives ? role : null,
         classicCtfCommand: actorCommand,
         classicCtfEmergencyDuty:
+          !difficulty.coordinatesObjectives ||
           emergencyActors.size === 0 || emergencyActors.has(actor.id),
-        reason: `ctf-${role}:${actorCommand}`,
+        reason: coordinatedObjectives
+          ? `ctf-${role}:${actorCommand}`
+          : `ctf-independent-${role}`,
       }));
     }
   }
@@ -280,14 +321,99 @@ export class ArenaBotTeamCoordinator {
       } else if (actor.id === primary) {
         role = "runner";
       }
-      const target = coordinatedCombatTarget(actor, snapshot);
+      const difficulty = this.difficultyFor(actor.id);
+      const target = difficulty.coordinatesCombatTargets
+        ? coordinatedCombatTarget(actor, snapshot)
+        : null;
+      const coordinatedRole = !carrier &&
+          difficulty.landmarkRouteMode === "distributed" &&
+          actor.id === secondary
+        ? "runner"
+        : difficulty.landmarkRouteMode === "distributed" &&
+            actors.length <= 3 && role === "screen"
+        ? "escort"
+        : difficulty.landmarkRouteMode === "distributed" &&
+            actors.length <= 3 && role === "cutoff"
+        ? "interceptor"
+        : role;
+      const assignedRole = difficulty.coordinatesObjectives
+        ? coordinatedRole
+        : basicOneFlagRole(actor.id, teamId, carrier, primary);
       this.assignments.set(actor.id, baseAssignment(actor.id, {
         combatTargetActorId: target?.id ?? null,
-        oneFlagRole: role,
-        reason: `one-flag-${role}`,
+        oneFlagRole: assignedRole,
+        reason: difficulty.coordinatesObjectives
+          ? `one-flag-${coordinatedRole}`
+          : `one-flag-basic-${assignedRole}`,
       }));
     }
   }
+
+  private applyStrategicAssignments(
+    teamParticipants: readonly ArenaParticipant[],
+    actors: readonly Readonly<ActorState>[],
+    snapshot: WorldSnapshot,
+  ): void {
+    const reservedPickupIds = new Set<string>();
+    const ordered = [...actors].sort((left, right) =>
+      Number(this.difficultyFor(right.id).coordinatesPickups) -
+        Number(this.difficultyFor(left.id).coordinatesPickups) ||
+      left.id.localeCompare(right.id)
+    );
+    for (const actor of ordered) {
+      const participant = teamParticipants.find((candidate) =>
+        candidate.actorId === actor.id
+      );
+      const assignment = this.assignments.get(actor.id);
+      if (!participant || !assignment) continue;
+      const difficulty = this.difficultyFor(actor.id);
+      const routeLandmark = selectBotRouteLandmark(
+        this.map,
+        actor,
+        participant.slot,
+        difficulty,
+      );
+      const pickup = difficulty.coordinatesPickups
+        ? selectBotStrategicPickup({
+          map: this.map,
+          snapshot,
+          actor,
+          slot: participant.slot,
+          difficulty,
+          excludedPickupIds: reservedPickupIds,
+          humanActorIds: this.humanActorIds,
+        })
+        : null;
+      if (pickup) reservedPickupIds.add(pickup.id);
+      this.assignments.set(actor.id, {
+        ...assignment,
+        reservedPickupId: pickup?.id ?? null,
+        routeLandmarkId: routeLandmark?.id ?? null,
+        reason: `${assignment.reason}:` +
+          `${routeLandmark ? `route-${routeLandmark.id}` : "direct"}:` +
+          `${pickup ? `reserve-${pickup.id}` : "no-reserve"}`,
+      });
+    }
+  }
+
+  private difficultyFor(actorId: string): BotDifficultyProfile {
+    return this.difficultyByActorId.get(actorId) ??
+      BOT_DIFFICULTY_PROFILES.normal;
+  }
+}
+
+function basicOneFlagRole(
+  actorId: string,
+  teamId: TeamId,
+  carrier: Readonly<ActorState> | null,
+  primaryId: string | null,
+): OneFlagBotTacticalRole {
+  if (!carrier) return actorId === primaryId ? "runner" : "controller";
+  if (carrier.teamId === teamId) {
+    if (actorId === carrier.id) return "carrier";
+    return actorId === primaryId ? "escort" : "controller";
+  }
+  return actorId === primaryId ? "interceptor" : "controller";
 }
 
 function actorIsAvailable(
@@ -308,6 +434,8 @@ function baseAssignment(
     classicCtfCommand: "auto",
     classicCtfEmergencyDuty: true,
     oneFlagRole: null,
+    reservedPickupId: null,
+    routeLandmarkId: null,
     reason: "unassigned",
     ...override,
   };
@@ -335,13 +463,14 @@ function coordinatedTargetCost(
   target: Readonly<ActorState>,
   snapshot: WorldSnapshot,
   reservations: ReadonlyMap<string, number>,
+  reservationPenalty: number,
 ): number {
   const objectiveCarrier = snapshot.objectives.some((objective) =>
     objective.state.interactingActorId === target.id &&
     objective.state.status === "carried"
   );
   return distance(actor.position, target.position) / 1_000 +
-    (reservations.get(target.id) ?? 0) * .42 -
+    (reservations.get(target.id) ?? 0) * reservationPenalty -
     (1 - target.health / Math.max(1, target.maxHealth)) * .18 -
     (objectiveCarrier ? .55 : 0);
 }

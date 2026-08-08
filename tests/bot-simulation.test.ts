@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { V2_ACTOR_LIFECYCLE_CONFIG, WORLD_MAPS } from "../src/core";
+import {
+  createTeamDeathmatchWorldState,
+  HELIX_CANOPY_V2,
+  TeamDeathmatchMode,
+  V2_ACTOR_LIFECYCLE_CONFIG,
+  WORLD_MAPS,
+  type BotDifficultyId,
+} from "../src/core";
 import {
   bothTeamsExceed,
   createAllModeMapTeamSizeSmokeScenarios,
@@ -174,6 +181,48 @@ test("tdm bots expose armor and weapon pickup intents", () => {
   assert.ok(weapon, diagnostic.report);
   assert.equal(armor.finalArmor > 0, true, diagnostic.report);
   assert.equal(weapon.finalRailAmmo > 0, true, diagnostic.report);
+});
+
+test("premium TDM exposes difficulty-specific traversal and resource behavior", () => {
+  const totals = new Map<BotDifficultyId, {
+    readonly jumps: number;
+    readonly landings: number;
+    readonly pickups: number;
+  }>();
+  for (const difficulty of ["casual", "normal", "strong"] as const) {
+    const summary = runSimulationScenario({
+      label: `Helix traversal ${difficulty}`,
+      modeId: "team-deathmatch",
+      map: HELIX_CANOPY_V2,
+      teamSize: 3,
+      durationMs: 12_000,
+      createMode: () => new TeamDeathmatchMode(),
+      createWorld: (map, teamSize) =>
+        createTeamDeathmatchWorldState(map, { teamSize }),
+      difficultyByTeam: { blue: difficulty, red: difficulty },
+    });
+    const progress = groupProgressByTeam(summary.movementByActor);
+    totals.set(difficulty, {
+      jumps: progress.blue.jumpStarts + progress.red.jumpStarts,
+      landings: progress.blue.jumpLandings + progress.red.jumpLandings,
+      pickups: progress.blue.pickupCollections + progress.red.pickupCollections,
+    });
+  }
+
+  assert.equal(totals.get("casual")?.jumps, 0);
+  assert.ok((totals.get("normal")?.jumps ?? 0) > 0);
+  assert.ok(
+    (totals.get("strong")?.jumps ?? 0) >=
+      (totals.get("normal")?.jumps ?? 0),
+  );
+  assert.ok(
+    (totals.get("strong")?.landings ?? 0) >=
+      (totals.get("strong")?.jumps ?? 0) - 1,
+  );
+  assert.ok(
+    (totals.get("strong")?.pickups ?? 0) >
+      (totals.get("casual")?.pickups ?? 0),
+  );
 });
 
 test("tdm bot closes into Arc range and then holds a usable distance", () => {
