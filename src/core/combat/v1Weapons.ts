@@ -27,6 +27,9 @@ import {
 
 type V1WeaponId = ArenaWeaponId;
 
+const SHARD_HOMING_HALF_ANGLE_RADIANS = Math.PI * 32 / 180;
+const SHARD_HOMING_TURN_RATE_RADIANS_PER_SECOND = 2.1;
+
 export interface V1WeaponDamageRequest {
   readonly target: ActorState;
   readonly amount: number;
@@ -372,7 +375,8 @@ function fireArenaProjectile(
       ? {
         homing: {
           targetActorId: homingTarget.id,
-          turnRateRadiansPerSecond: 1.75,
+          turnRateRadiansPerSecond:
+            SHARD_HOMING_TURN_RATE_RADIANS_PER_SECOND,
         },
       }
       : {}),
@@ -506,7 +510,7 @@ function selectShardTarget(
   direction: WorldPosition,
   range: number,
 ): ActorState | null {
-  const minimumDot = Math.cos(Math.PI * 28 / 180);
+  const minimumDot = Math.cos(SHARD_HOMING_HALF_ANGLE_RADIANS);
   return world.actors
     .filter((candidate) => isEnemyTarget(actor, candidate))
     .map((candidate) => {

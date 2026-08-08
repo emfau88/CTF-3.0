@@ -2,6 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 const modes = ["tdm", "ctf", "one-flag"] as const;
 
+test.use({ hasTouch: true });
+
 for (const mode of modes) {
   test(`Helix mobile ${mode} uses the rebuilt map and edge-safe HUD`, async ({
     page,
@@ -56,7 +58,7 @@ function matchUrl(mode: typeof modes[number]): string {
     blueBotDifficulty: "strong",
     redBotDifficulty: "casual",
     players: "bot",
-    controls: "touch",
+    controls: "auto",
     skin: "alien-runner",
     sfx: "off",
   });

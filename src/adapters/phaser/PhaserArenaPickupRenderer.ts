@@ -123,10 +123,10 @@ function pickupTexture(type: PickupState["type"]): string {
 
 function pickupIconScale(type: PickupState["type"]): number {
   if (type === "rail") return .22;
-  if (type === "pulse" || type === "disc") return .15;
-  if (type === "grenade" || type === "shard") {
-    return .28;
-  }
+  if (
+    type === "pulse" || type === "disc" ||
+    type === "grenade" || type === "shard"
+  ) return .15;
   return .18;
 }
 

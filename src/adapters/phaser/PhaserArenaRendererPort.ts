@@ -288,6 +288,8 @@ export class PhaserArenaRendererPort implements RendererPort {
       view.setScale(.46);
     } else if (projectile.weaponId === "pulse") {
       view.setDisplaySize(34, 34);
+    } else if (projectile.weaponId === "shard") {
+      view.setDisplaySize(22, 14);
     } else if (projectile.weaponId === "grenade") {
       const charge = grenadeChargeProgress(projectile);
       view
@@ -329,6 +331,13 @@ export class PhaserArenaRendererPort implements RendererPort {
         projectile.position.y,
         "discProjectile",
       ).setDisplaySize(40, 40).setDepth(52);
+    }
+    if (projectile.weaponId === "shard") {
+      return this.scene.add.image(
+        projectile.position.x,
+        projectile.position.y,
+        "shardProjectile",
+      ).setDisplaySize(22, 14).setDepth(52);
     }
     if (projectile.weaponId === "grenade") {
       return this.scene.add.image(

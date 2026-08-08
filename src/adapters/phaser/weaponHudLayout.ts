@@ -84,7 +84,8 @@ export function weaponIconScale(
   const sourceSize = weaponId === "whip"
     ? 512
     : weaponId === "rocket" || weaponId === "rail" ||
-        weaponId === "pulse" || weaponId === "disc"
+        weaponId === "pulse" || weaponId === "disc" ||
+        weaponId === "grenade" || weaponId === "shard"
     ? 256
     : 128;
   return radius * 2.15 / sourceSize;

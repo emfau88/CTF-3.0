@@ -251,18 +251,16 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
   ],
   pickupSpawns: [
     { id: "health-blue-upper-exit", type: "health", position: point(525, 220) },
-    { id: "health-blue-lower-exit", type: "health", position: point(525, 700) },
     { id: "health-red-upper-exit", type: "health", position: point(1635, 220) },
-    { id: "health-red-lower-exit", type: "health", position: point(1635, 700) },
+    { id: "armor-blue-lower-exit", type: "armor", position: point(525, 700) },
+    { id: "armor-red-lower-exit", type: "armor", position: point(1635, 700) },
     { id: "health-inner-west", type: "health", position: point(800, 460) },
     { id: "health-inner-east", type: "health", position: point(1360, 460) },
-    { id: "armor-sun-west", type: "armor", position: point(980, 460) },
-    { id: "armor-sun-east", type: "armor", position: point(1180, 460) },
+    { id: "grenade-gallery-west", type: "grenade", position: point(825, 220) },
+    { id: "grenade-gallery-east", type: "grenade", position: point(1335, 220) },
     { id: "rocket-roots-west", type: "rocket", position: point(800, 800) },
     { id: "rocket-roots-east", type: "rocket", position: point(1360, 800) },
     { id: "disc-gallery-center", type: "disc", position: point(1080, 80) },
-    { id: "grenade-sun-west", type: "grenade", position: point(1010, 460) },
-    { id: "grenade-sun-east", type: "grenade", position: point(1150, 460) },
   ],
   gameplay: {
     blueBase: {

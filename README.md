@@ -20,7 +20,7 @@ aim, route knowledge, weapon control and objective pressure.
 > single-player-versus-bots build with a complete Quick Play loop and the first
 > three-match League circuit. Progress is stored locally in the browser.
 
-## Development update — August 5, 2026
+## Development update — August 8, 2026
 
 - **Helix Canopy v2.1** replaces the dense organic combat court with readable
   rectangular planters, three broad routes and a walkable under-glass helix.
@@ -36,6 +36,12 @@ aim, route knowledge, weapon control and objective pressure.
 - Repeated HUD and pickup drawing was reduced. In the reproducible 4v4
   software-WebGL stress test, main-thread task time fell by about 15% and
   script time by about 20%; real-device GPU profiling remains an open gate.
+- Premium-map resources now follow one readable baseline: four Health, two
+  Armor and five weapon pickups per arena. Health restores 75 points, while
+  Grenade and Shardcaster use dedicated in-game art instead of placeholders.
+- Automatic input detection now applies the same touch result to the Phaser
+  controls and the HTML utility bar, keeping the mobile menu at the top and
+  the fullscreen action out of the combat controls.
 
 The source audit, verified implementation status, open work and screenshot
 evidence are collected in the
@@ -143,7 +149,7 @@ the HUD compact while allowing every map to have its own combat rhythm.
 | **Pulse Repeater** (`R`) | <img src="public/assets/weapons/pulse-repeater.png" width="72" alt="Pulse Repeater"> <img src="public/assets/weapons/pulse-bolt.png" width="56" alt="Pulse bolt"> | Fast mid-range tracking weapon. Sustained accuracy matters more than a single burst hit. |
 | **Ricochet Disc** (`C`) | <img src="public/assets/weapons/ricochet-disc-launcher.png" width="72" alt="Ricochet Disc launcher"> <img src="public/assets/weapons/ricochet-disc-projectile.png" width="56" alt="Ricochet Disc projectile"> | Banks up to three times from walls and gains damage after a bounce. It stops immediately when it hits an opponent. |
 | **Lob Grenade** (`G`) | <img src="public/assets/weapons/lob-energy-grenade.png" width="64" alt="Lob Grenade"> | Arcs over walls toward the cursor, lands with a visible fuse and controls a local area without affecting terrain. |
-| **Shardcaster** (`X`) | Runtime-drawn violet shard icon and homing trail | Fires low-damage seeking shards. Six hits from the same attacker trigger a local resonance burst on that target. |
+| **Shardcaster** (`X`) | <img src="public/assets/weapons/shardcaster.png" width="72" alt="Shardcaster"> <img src="public/assets/weapons/shard-bolt.png" width="56" alt="Shard projectile"> | Fires low-damage seeking shards. Six hits from the same attacker trigger a local resonance burst on that target. |
 
 Premium-map weapon rosters:
 
@@ -230,6 +236,8 @@ Development is focused on:
 - re-baselining the full premium-map bot audit, especially 4v4 Classic CTF
 - introducing a shared image/collision registration and route-graph contract
 - profiling rendering on real mobile hardware without sacrificing map space
+- approving the premium pickup placements, then recording eight to twelve
+  named registration landmarks per premium map
 
 Online multiplayer, local PvP, account services and cloud saves are not part of
 the current playable build.

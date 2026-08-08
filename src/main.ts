@@ -39,6 +39,7 @@ import {
 import {
   readV2RouteState,
 } from "./v2Route";
+import { prefersV2TouchControls } from "./v2Controls";
 import {
   readV2FullscreenControlState,
   toggleV2Fullscreen,
@@ -97,7 +98,7 @@ if (showV2Menu) {
     const gameUtility = document.querySelector<HTMLElement>(
       "#v2-game-utility",
     );
-    const usesTouchControls = activeRoute?.controls === "touch";
+    const usesTouchControls = prefersV2TouchControls(activeRoute.controls);
     gameUtility?.classList.toggle("is-touch-controls", usesTouchControls);
     const activeModeId = activeRoute
       ? modeIdForRoute(activeRoute.mode)

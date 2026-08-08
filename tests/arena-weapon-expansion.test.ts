@@ -47,6 +47,8 @@ test("new projectile identities ship as compact transparent art", () => {
     "weapons/ricochet-disc-launcher.png",
     "weapons/ricochet-disc-projectile.png",
     "weapons/lob-energy-grenade.png",
+    "weapons/shardcaster.png",
+    "weapons/shard-bolt.png",
   ]) {
     const png = readFileSync(resolve("public/assets", asset));
     assert.equal(png.subarray(1, 4).toString("ascii"), "PNG");
@@ -76,6 +78,50 @@ test("premium rosters expose Arc Lash plus at most three map pickups", async () 
       [...pickupWeapons].sort(),
       [...(map.weaponRoster ?? [])].filter((id) => id !== "whip").sort(),
     );
+  }
+});
+
+test("premium pickup layouts separate base recovery from paired route weapons", async () => {
+  const { HELIX_CANOPY_V2, DROWNED_SUN_TEMPLE_V2, FLOW_CIRCUIT_V2 } =
+    await import("../src/core");
+  for (const map of [
+    HELIX_CANOPY_V2,
+    DROWNED_SUN_TEMPLE_V2,
+    FLOW_CIRCUIT_V2,
+  ]) {
+    const centerX = (map.geometry.bounds.minX + map.geometry.bounds.maxX) / 2;
+    const sideLimit = map.geometry.bounds.maxX * .25;
+    const health = map.pickupSpawns.filter((pickup) => pickup.type === "health");
+    const armor = map.pickupSpawns.filter((pickup) => pickup.type === "armor");
+    const weapons = map.pickupSpawns.filter((pickup) =>
+      pickup.type !== "health" && pickup.type !== "armor"
+    );
+    assert.equal(health.length, 4, `${map.id} should expose four Health pickups.`);
+    assert.equal(armor.length, 2, `${map.id} should expose two Armor pickups.`);
+    assert.equal(weapons.length, 5, `${map.id} should expose five weapon pickups.`);
+    assert.equal(
+      health.some((pickup) => pickup.position.x <= sideLimit),
+      true,
+      `${map.id} needs Health in the blue base sector.`,
+    );
+    assert.equal(
+      health.some((pickup) => pickup.position.x >= map.geometry.bounds.maxX - sideLimit),
+      true,
+      `${map.id} needs Health in the red base sector.`,
+    );
+    assert.equal(
+      armor.some((pickup) => pickup.position.x <= sideLimit),
+      true,
+      `${map.id} needs Armor in the blue base sector.`,
+    );
+    assert.equal(
+      armor.some((pickup) => pickup.position.x >= map.geometry.bounds.maxX - sideLimit),
+      true,
+      `${map.id} needs Armor in the red base sector.`,
+    );
+    assert.equal(weapons.filter((pickup) => pickup.position.x < centerX - 100).length, 2);
+    assert.equal(weapons.filter((pickup) => pickup.position.x > centerX + 100).length, 2);
+    assert.equal(weapons.filter((pickup) => Math.abs(pickup.position.x - centerX) <= 100).length, 1);
   }
 });
 
@@ -250,6 +296,20 @@ test("Shardcaster resonates after six hits and never spreads bonus damage", () =
     events.filter((event) => event.type === "weapon.shardResonance").length,
     1,
   );
+});
+
+test("Shardcaster acquires a wider forward target with stronger homing", () => {
+  const { world, owner, target } = combatWorld(["whip", "shard"]);
+  const angle = Math.PI * 31 / 180;
+  target.position = {
+    x: owner.position.x + Math.cos(angle) * 200,
+    y: owner.position.y + Math.sin(angle) * 200,
+  };
+  owner.weapons.shardAmmo = 1;
+  fireV1Weapons(world, owner, weaponInput("shard", { x: 1, y: 0 }));
+  assert.equal(world.projectiles[0]?.homing?.targetActorId, target.id);
+  assert.equal(world.projectiles[0]?.homing?.turnRateRadiansPerSecond, 2.1);
+  assert.equal(world.projectiles[0]?.radius, 5);
 });
 
 test("map roster rejects a weapon that is not available in the arena", () => {

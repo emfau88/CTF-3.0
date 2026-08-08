@@ -1,6 +1,6 @@
 # CTF-3.0 Audit — Zweitprüfung und Umsetzungsstatus
 
-Stand: 2026-08-05
+Stand: 2026-08-08
 
 Bezugsdokument: [CTF-3.0_Audit.md](CTF-3.0_Audit.md)
 
@@ -85,6 +85,24 @@ Zwei Punkte müssen inzwischen aktualisiert werden:
 - 207/207 Tests, Test-Typecheck, Production-Build und 7/7 Browser-E2E-Tests bestanden. Helix lud in TDM, Classic CTF und One Flag mobil ausschließlich das neue Masterbild.
 - Evidenz und Reproduktion: [Phase-3-QA](../qa/phase-3-mobile-runtime/README.md).
 
+### Phase 4 — Pickup-Ökonomie und Waffenlesbarkeit
+
+- Health-Pickups heilen nun feste 75 Punkte.
+- Jede Premium-Map besitzt als gemeinsame Ausgangsbasis vier Health-, zwei
+  Armor- und fünf Waffen-Pickups. Beide Basisseiten erhalten Health, Armor und
+  mindestens zwei erreichbare Waffenoptionen; die Mitte bleibt umkämpft.
+- Grenade und Shardcaster verwenden eigene Pickup-/HUD-Grafiken. Das sichtbare
+  Shard-Projektil ist etwas größer und seine Zielsuche geringfügig stärker,
+  ohne Schaden oder Kollisionsradius zu erhöhen.
+- Mobile Waffenbuttons übernehmen weiterhin direkt das Waffenroster der Map.
+  Die automatische Touch-Erkennung steuert nun zusätzlich dieselbe kompakte
+  HTML-Utility-Leiste wie die Phaser-Steuerung.
+- Die technische Verteilung ist umgesetzt. Die subjektive Abnahme der genauen
+  Positionen ist bewusst das Gate vor den Registrierungs-Landmarken.
+- 210/210 Tests, Test-Typecheck und Production-Build bestehen. Der bestehende
+  Mobile-E2E-Vertrag verwendet nun `Auto detect` auf einem Touch-Kontext, damit
+  Phaser-Steuerung und HTML-Utility-Leiste nicht wieder auseinanderlaufen.
+
 ## Einordnung meiner bisherigen Kommentare
 
 Meine vorherige Einschätzung zum Fremdaudit lässt sich so zusammenfassen:
@@ -98,7 +116,18 @@ Meine vorherige Einschätzung zum Fremdaudit lässt sich so zusammenfassen:
 
 ## Empfohlene nächste Schritte
 
-### 1. Helix subjektiv abnehmen
+### 1. Pickup-Positionen abnehmen und danach Landmarken erfassen
+
+Die neue Ressourcenverteilung wird auf Helix, Temple und Foundry zunächst in
+TDM, Classic CTF und One Flag manuell geprüft. Bewertet werden Basissicherheit,
+Umwegkosten, zentrale Risiken, Rückwege und mögliche Pickup-Cluster.
+
+Erst nach dieser Abnahme werden pro Premium-Map acht bis zwölf benannte
+Landmarken festgeschrieben. Dazu gehören beide Basen, zentrale Objectives,
+wichtige Routenkreuzungen sowie die bestätigten Pickup-Anker. Jede Landmarke
+speichert Masterbildpunkt, Weltpunkt, erwartete Begehbarkeit und Deckungsart.
+
+### 2. Helix subjektiv abnehmen
 
 Ein kurzer manueller Test sollte Classic CTF, One Flag und TDM jeweils in 2v2 sowie mindestens einen 4v4-Lauf abdecken. Bewertet werden nur:
 
@@ -108,15 +137,15 @@ Ein kurzer manueller Test sollte Classic CTF, One Flag und TDM jeweils in 2v2 so
 - stimmen sichtbare Basen, Pickups und tatsächliche Interaktionsorte;
 - wirkt die Karte in 1024×768 und 1920×1080 weder leer noch überladen.
 
-### 2. Difficulty subjektiv kalibrieren
+### 3. Difficulty subjektiv kalibrieren
 
 Die technische Verdrahtung ist abgeschlossen. Als Nächstes sollten Easy, Normal und Hard in denselben kurzen TDM-, CTF- und One-Flag-Szenarien gegeneinander gespielt werden. Dabei geht es um verständlich spürbare, aber faire Unterschiede bei Reaktion, Zielstabilität und Entscheidungsbindung. Erst danach sollte entschieden werden, ob die Liga dauerhaft Normal verwendet oder die Stufe an die Progression koppelt.
 
-### 3. Premium-Audit sauber neu baselinen
+### 4. Premium-Audit sauber neu baselinen
 
 Difficulty-Wiring sowie Runtime-/Mobile-Arbeit sind inzwischen in getrennten Commits dokumentiert. Nach dem Merge des Feature-Branches wird der vollständige 270-Match-Audit auf dem dokumentierten Merge-Commit ausgeführt. Der Bericht wird mit dem Lauf vom 2026-07-19 verglichen; besonders Temple/Foundry Classic CTF 4v4 und Foundry CPU-p95 werden isoliert betrachtet.
 
-### 4. Gemeinsamen Registrierungsvertrag einführen
+### 5. Gemeinsamen Registrierungsvertrag einführen
 
 Vor einem großen Editor genügt eine kleine gemeinsame Schicht:
 
@@ -128,7 +157,7 @@ Vor einem großen Editor genügt eine kleine gemeinsame Schicht:
 
 Erst wenn diese kleine Lösung unzureichend ist, sollte SVG, LDtk oder Tiled als Authoringquelle bewertet werden.
 
-### 5. Niedrig priorisierte Wartung
+### 6. Niedrig priorisierte Wartung
 
 - Optional ausdrücken, dass Premium-Kosmetik und -Licht absichtlich partielle Konfigurationen sind, statt Vollständigkeit durch den Typ zu suggerieren.
 - Das bekannte Vite-Bundle-Warning separat behandeln; es ist weder Ursache noch Blocker der Map- oder Botprobleme.
