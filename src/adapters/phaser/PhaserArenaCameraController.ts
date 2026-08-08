@@ -1,6 +1,10 @@
 import Phaser from "phaser";
 import type { ActorId, WorldSnapshot } from "../../core";
-import { calculateArenaFitZoom } from "./arenaCameraFit";
+import {
+  calculateArenaFitZoom,
+  calculateArenaFollowAlpha,
+  type ArenaCameraMode,
+} from "./arenaCameraFit";
 
 export const ARENA_CAMERA_RESET_KEY_CODE =
   Phaser.Input.Keyboard.KeyCodes.HOME;
@@ -9,6 +13,7 @@ export class PhaserArenaCameraController {
   private initialized = false;
   private manualActive = false;
   private lastTimeMs = 0;
+  private lastFollowCenter?: Readonly<{ x: number; y: number }>;
   private readonly cursorKeys?: Phaser.Types.Input.Keyboard.CursorKeys;
   private readonly resetKey?: Phaser.Input.Keyboard.Key;
 
@@ -17,6 +22,7 @@ export class PhaserArenaCameraController {
     private readonly followActorId?: ActorId,
     enableManualCamera = false,
     private readonly requestedZoom = 1,
+    private readonly cameraMode: ArenaCameraMode = "desktop",
   ) {
     scene.cameras.main.setRoundPixels(false);
     if (enableManualCamera && scene.input.keyboard) {
@@ -35,6 +41,7 @@ export class PhaserArenaCameraController {
       camera.height,
       bounds,
       this.requestedZoom,
+      this.cameraMode,
     ));
     camera.setBounds(
       bounds.minX,
@@ -69,6 +76,11 @@ export class PhaserArenaCameraController {
         actor.id === this.followActorId && actor.lifeState === "active"
       )
       : undefined;
+    if (this.followActorId && !requested) {
+      this.initialized = false;
+      this.lastFollowCenter = undefined;
+      return;
+    }
     const activePlayers = snapshot.actors.filter((actor) =>
       actor.kind === "player" && actor.lifeState === "active"
     );
@@ -86,16 +98,22 @@ export class PhaserArenaCameraController {
       (sum, actor) => sum + actor.position.y,
       0,
     ) / followed.length;
+    const teleported = this.lastFollowCenter !== undefined && Math.hypot(
+      centerX - this.lastFollowCenter.x,
+      centerY - this.lastFollowCenter.y,
+    ) > 280;
+    this.lastFollowCenter = { x: centerX, y: centerY };
     const targetScrollX = centerX - camera.width / (2 * camera.zoom);
     const targetScrollY = centerY - camera.height / (2 * camera.zoom);
-    if (!this.initialized) {
+    if (!this.initialized || teleported) {
       camera.centerOn(centerX, centerY);
       this.initialized = true;
       return;
     }
+    const followAlpha = calculateArenaFollowAlpha(deltaMs, this.cameraMode);
     camera.setScroll(
-      Phaser.Math.Linear(camera.scrollX, targetScrollX, .12),
-      Phaser.Math.Linear(camera.scrollY, targetScrollY, .12),
+      Phaser.Math.Linear(camera.scrollX, targetScrollX, followAlpha),
+      Phaser.Math.Linear(camera.scrollY, targetScrollY, followAlpha),
     );
   }
 
@@ -103,6 +121,7 @@ export class PhaserArenaCameraController {
     this.initialized = false;
     this.manualActive = false;
     this.lastTimeMs = 0;
+    this.lastFollowCenter = undefined;
   }
 
   dispose(): void {

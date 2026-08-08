@@ -3,9 +3,12 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   calculateArenaFitZoom,
+  calculateArenaFollowAlpha,
   MAXIMUM_DESKTOP_ARENA_ZOOM,
+  MAXIMUM_MOBILE_ARENA_ZOOM,
   MINIMUM_ARENA_VIEW_HEIGHT,
   MINIMUM_ARENA_VIEW_WIDTH,
+  MINIMUM_MOBILE_ARENA_VIEW_HEIGHT,
 } from "../src/adapters/phaser/arenaCameraFit";
 import {
   DROWNED_SUN_TEMPLE_V2,
@@ -86,6 +89,34 @@ test("compact playtest viewports retain useful arena context", () => {
     ),
     viewportWidth / MINIMUM_ARENA_VIEW_WIDTH,
   );
+});
+
+test("mobile camera is closer and follows consistently across frame rates", () => {
+  const bounds = HELIX_CANOPY_V2.geometry.bounds;
+  const desktopFit = calculateArenaFitZoom(844, 390, bounds, 1);
+  const mobileFit = calculateArenaFitZoom(844, 390, bounds, 1, "mobile");
+  assert.ok(mobileFit > desktopFit);
+  assert.equal(mobileFit, 390 / MINIMUM_MOBILE_ARENA_VIEW_HEIGHT);
+  assert.ok(mobileFit <= MAXIMUM_MOBILE_ARENA_ZOOM);
+
+  const oneFrame = calculateArenaFollowAlpha(16, "mobile");
+  const twoFrames = 1 - Math.pow(1 - oneFrame, 2);
+  assert.ok(oneFrame > calculateArenaFollowAlpha(16, "desktop"));
+  assert.ok(Math.abs(twoFrames - calculateArenaFollowAlpha(32, "mobile")) < 1e-12);
+});
+
+test("mobile portrait keeps the menu pages available", () => {
+  const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.doesNotMatch(html, /v2-menu-rotate/);
+  const portraitRules = css.slice(css.indexOf(
+    "@media (hover: none) and (pointer: coarse) and (orientation: portrait)",
+  ));
+  assert.doesNotMatch(
+    portraitRules,
+    /#v2-menu-home[\s\S]*display:\s*none\s*!important/,
+  );
+  assert.match(portraitRules, /\.v2-menu-card\.v2-menu-shell\s*\{[\s\S]*width:\s*100%/);
 });
 
 test("desktop P0 UI contract keeps Career primary and uses one outer menu scroller", () => {

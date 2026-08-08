@@ -22,6 +22,7 @@ import {
 } from "./PhaserArenaPickupRenderer";
 import { PhaserPremiumMapCosmetics } from "./PhaserPremiumMapCosmetics";
 import { PhaserPremiumMapLighting } from "./PhaserPremiumMapLighting";
+import type { ArenaCameraMode } from "./arenaCameraFit";
 
 interface SpawnPadParticle {
   x: number;
@@ -75,6 +76,7 @@ export class PhaserArenaRendererPort implements RendererPort {
     private readonly playerSkinId: V2PlayerSkinId = "alien-runner",
     enableManualCamera = false,
     cameraZoom = 1,
+    cameraMode: ArenaCameraMode = "desktop",
     collisionDiagnostics: ArenaCollisionDiagnostics = "off",
     rosterPresentation?: V2CharacterRosterPresentation,
   ) {
@@ -83,6 +85,7 @@ export class PhaserArenaRendererPort implements RendererPort {
       followActorId,
       enableManualCamera,
       cameraZoom,
+      cameraMode,
     );
     this.actorRenderer = new PhaserArenaActorRenderer(
       scene,

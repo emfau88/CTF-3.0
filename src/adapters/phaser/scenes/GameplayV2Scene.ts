@@ -262,7 +262,8 @@ export class GameplayV2Scene extends Phaser.Scene {
         useBotOpponent ? "blue-player" : undefined,
         captainSkinId,
         useBotOpponent,
-        useMobileControls ? .8 : 1,
+        1,
+        useMobileControls ? "mobile" : "desktop",
         collisionDiagnostics,
         characterRosterPresentation,
       ),
@@ -367,6 +368,7 @@ export class GameplayV2Scene extends Phaser.Scene {
       skin,
       false,
       1,
+      "desktop",
       collisionDiagnostics,
     );
     const bounds = map.geometry.bounds;
