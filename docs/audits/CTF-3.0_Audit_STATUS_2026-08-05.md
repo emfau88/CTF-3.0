@@ -82,9 +82,11 @@ Zwei Punkte müssen inzwischen aktualisiert werden:
 - Der Mobile-Aktionsbereich wurde ausschließlich für Touch-Steuerung neu geordnet: kleinerer Jump-Button am unteren rechten Rand, kompakter Waffenbogen mit getrennten vergrößerten Touchflächen und kein Fullscreen-Schalter im Kampfbereich.
 - Mobile Utility-Leiste und Match-HUD sitzen kompakt am oberen Rand. Das Xeno-Runner-Statusfeld ist mobil ausgeblendet.
 - Das Mobile-Combat-Log wurde auf zwei Zeilen mit jeweils 168 × 19 Pixel reduziert und unter die rechte Utility-Leiste verschoben. Desktop bleibt unverändert.
+- Die Mobile-Kamera verwendet nun eine nähere 1120-×-640-Sichtfläche und eine zeitbasierte, direktere Folgereaktion. Spawn, Respawn und Teleports rasten ohne langsame Kamerafahrt ein; die Desktop-Sichtfläche bleibt unverändert.
+- Die bisherige Hochformat-Sperre der Menüs ist entfernt. Hauptmenü, Quick Play und League verwenden im Hochformat denselben äußeren vertikalen Scroller mit Safe-Area-Abständen und kollisionsfreier Kopfzeile.
 - Wiederholtes Vector-Redrawing für Actor-Status, Spawn-Schutz, Pickup-Status und Waffen-HUD wurde zustandsbasiert gedrosselt; Spawn-Pad-Partikel verwenden einen Sprite-Pool.
 - Im reproduzierbaren SwiftShader-4v4-Vergleich sank die Main-Thread TaskDuration um rund 15 % und ScriptDuration um rund 19,8 %. Software-WebGL bleibt trotzdem ein realistischer Ruckel-Risikofall; als nächste Stufe ist Geräteprofiling vorgesehen.
-- 207/207 Tests, Test-Typecheck, Production-Build und 7/7 Browser-E2E-Tests bestanden. Helix lud in TDM, Classic CTF und One Flag mobil ausschließlich das neue Masterbild.
+- 220/220 Tests, Test-Typecheck, Production-Build und 8/8 Browser-E2E-Tests bestanden. Helix lud in TDM, Classic CTF und One Flag mobil ausschließlich das neue Masterbild; Hauptmenü und Quick Play wurden zusätzlich auf 390 × 844 geprüft.
 - Evidenz und Reproduktion: [Phase-3-QA](../qa/phase-3-mobile-runtime/README.md).
 
 ### Phase 4 — Pickup-Ökonomie und Waffenlesbarkeit

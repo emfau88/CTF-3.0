@@ -42,6 +42,10 @@ aim, route knowledge, weapon control and objective pressure.
 - Automatic input detection now applies the same touch result to the Phaser
   controls and the HTML utility bar, keeping the mobile menu at the top and
   the fullscreen action out of the combat controls.
+- The mobile arena camera now shows a closer 1120 × 640 minimum view, follows
+  the player with frame-rate-independent damping and snaps cleanly after
+  respawns. Main Menu, Quick Play and League are available in portrait mode;
+  landscape remains the intended match orientation.
 
 The source audit, verified implementation status, open work and screenshot
 evidence are collected in the

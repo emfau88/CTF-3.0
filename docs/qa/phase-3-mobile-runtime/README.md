@@ -1,6 +1,6 @@
 # Phase 3 — Match-Start, Mobile-HUD und Runtime
 
-Status: technisch umgesetzt und am 2026-08-05 geprüft. Die subjektive Abnahme auf einem echten Touch-Gerät bleibt sinnvoll.
+Status: technisch umgesetzt und zuletzt am 2026-08-08 geprüft. Die subjektive Abnahme auf einem echten Touch-Gerät bleibt sinnvoll.
 
 ## Ergebnis
 
@@ -12,6 +12,8 @@ Status: technisch umgesetzt und am 2026-08-05 geprüft. Die subjektive Abnahme a
 - Das große Xeno-Runner-Statusfeld ist nur bei Touch-Steuerung ausgeblendet. Die zentrale Match-HUD verwendet mobil die kleine Micro-Darstellung direkt am oberen Rand.
 - Das Combat-Log ist mobil auf 168 × 19 Pixel pro Zeile und höchstens zwei Meldungen begrenzt. Es sitzt direkt unter der rechten Utility-Leiste. Desktop-Layout und Desktop-Combat-Log bleiben unverändert.
 - Helix verwendet auf Mobile und Desktop in allen drei Modi dieselbe aktive Map-ID und lädt ausschließlich `arena-master-v2.png`. Das alte Master bleibt als Projekt-Rückfalloption erhalten, wird im Spiel aber nicht geladen.
+- Die Mobile-Kamera zeigt statt der allgemeinen 1280 × 720 mindestens 1120 × 640 Welteinheiten. Das entspricht auf dem 844 × 390 Referenz-Viewport rund 12,5 Prozent mehr Nähe. Die zeitbasierte Dämpfung reagiert unabhängig von 30 oder 60 FPS; Spawn, Respawn und große Positionssprünge werden ohne Kamerafahrt eingerastet.
+- Hauptmenü, Quick Play und League bleiben im Hochformat sichtbar. Der äußere Menübereich scrollt vertikal; Titel, Zurück- und Fullscreen-Aktion bleiben auf dem 390 × 844 Referenz-Viewport getrennt und der Match-Start ist erreichbar.
 
 ## Runtime-Optimierungen
 
@@ -37,11 +39,12 @@ Das Ergebnis bestätigt: unnötige CPU-/Zeichenarbeit wurde messbar reduziert. E
 
 | Gate | Ergebnis |
 | --- | --- |
-| Vollständige Unit-/Simulationssuite | 207/207 bestanden |
+| Vollständige Unit-/Simulationssuite | 220/220 bestanden |
 | TypeScript-Test-Typecheck | Bestanden |
 | Production-Build | Bestanden; nur bekanntes Phaser-Chunk-Warning |
-| Browser-E2E | 7/7 bestanden |
+| Browser-E2E | 8/8 bestanden |
 | Mobile Helix TDM, Classic CTF, One Flag | neue Map geladen, Legacy-Map nicht geladen |
+| Mobile Portrait 390 × 844 | Hauptmenü und Quick Play sichtbar, kein relevanter Horizontalüberlauf oder Header-Overlap |
 | Screenshot-Diagnostik | 6/6 ohne Console-, Page- oder Request-Fehler |
 
 ## Screenshot-Matrix

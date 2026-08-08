@@ -84,7 +84,6 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   box-shadow: 0 28px 90px rgb(0 0 0 / .42);
   backdrop-filter: blur(14px);
 }
-.v2-menu-rotate { display: none; gap: 14px; text-align: center; }
 .v2-menu-view { display: grid; gap: 16px; }
 .v2-menu-view.is-hidden { display: none; }
 .v2-menu-kicker {
@@ -1012,23 +1011,73 @@ body.v2-map-preview > :not(#game) { display: none !important; }
 }
 @media (hover: none) and (pointer: coarse) and (orientation: portrait) {
   .v2-main-menu {
-    place-items: center;
+    place-items: start center;
     padding:
-      max(18px, env(safe-area-inset-top))
-      max(18px, env(safe-area-inset-right))
-      max(18px, env(safe-area-inset-bottom))
-      max(18px, env(safe-area-inset-left));
+      max(10px, env(safe-area-inset-top))
+      max(10px, env(safe-area-inset-right))
+      max(14px, env(safe-area-inset-bottom))
+      max(10px, env(safe-area-inset-left));
   }
-  .v2-menu-card {
-    width: min(100%, 540px);
-    min-height: min(100%, 420px);
+  .v2-menu-card.v2-menu-shell {
+    width: 100%;
+    min-height: calc(100vh - 24px);
+    min-height: calc(100dvh - 24px);
+    margin: 0 auto;
+    padding: 12px 10px 20px;
+    border-radius: 5px;
+  }
+  .v2-menu-view {
+    min-height: 0;
+    align-content: start;
+    gap: 12px;
+  }
+  .v2-home-view {
+    min-height: calc(100vh - 44px);
+    min-height: calc(100dvh - 44px);
     align-content: center;
   }
-  .v2-menu-rotate { display: grid; }
-  #v2-menu-home,
-  #v2-menu-setup,
-  #v2-league-hub { display: none !important; }
-  .v2-menu-status.is-hidden { display: none; }
+  .v2-home-actions { gap: 10px; }
+  .v2-home-action {
+    min-height: 88px;
+    padding: 14px 16px 13px 22px;
+  }
+  .v2-home-action strong { font-size: 24px; }
+  .v2-home-action small { font-size: 11px; line-height: 1.35; }
+  .v2-setup-view,
+  .v2-league-hub { padding: 14px 12px 18px; }
+  .v2-subpage-header {
+    grid-template-columns: 84px minmax(0, 1fr) 44px;
+    gap: 6px;
+  }
+  .v2-subpage-back {
+    min-width: 0;
+    min-height: 44px;
+    padding-inline: 5px;
+    font-size: 8px;
+    letter-spacing: .04em;
+  }
+  .v2-subpage-header .v2-screen-fullscreen-button {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+  .v2-subpage-header .v2-screen-fullscreen-button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .v2-subpage-header.league-header {
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+  .league-header-actions {
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+  .league-header-actions > * { flex: 1 1 90px; }
 }
 
 @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
