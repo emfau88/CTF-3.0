@@ -45,11 +45,19 @@ export {
   GridBotNavigator,
   navigationPathExists,
   projectToNavigablePosition,
+  type BotNavigationBehavior,
   type BotNavigationDecision,
   type GridBotNavigatorDebugState,
   type GridBotRepathReason,
   type BotNavigator,
 } from "./GridBotNavigator";
+export {
+  BotLandmarkRoutePlanner,
+  selectBotRouteLandmark,
+  selectBotStrategicPickup,
+  type BotLandmarkRoutePlan,
+  type BotStrategicPickupOptions,
+} from "./BotStrategicPlanning";
 export {
   TdmBotController,
   type TdmBotControllerDebugState,

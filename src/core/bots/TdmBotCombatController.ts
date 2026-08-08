@@ -21,6 +21,8 @@ type BotWeaponId = ArenaWeaponId;
 export { distanceBetween, hasLineOfSight } from "./BotCombatOpportunity";
 
 export class TdmBotCombatController {
+  private targetReactionRemainingMs = 0;
+  private reactionTargetKey: string | null = null;
   private rocketDecisionCooldownMs = 0;
   private railReactionRemainingMs = 0;
   private railTargetKey: string | null = null;
@@ -57,12 +59,15 @@ export class TdmBotCombatController {
       !target.teamId ||
       actor.teamId === target.teamId
     ) {
+      this.resetReactionTarget();
       this.resetRailTarget();
       return null;
     }
 
+    this.updateReactionTarget(target, deltaMs);
     if (lineOfSight) this.updateRailTarget(target, deltaMs);
     else this.resetRailTarget();
+    if (this.targetReactionRemainingMs > 0) return null;
     const directAim = directionBetween(actor.position, target.position);
     const distance = distanceBetween(actor.position, target.position);
     const weaponId = this.chooseWeapon(
@@ -93,10 +98,31 @@ export class TdmBotCombatController {
   }
 
   reset(): void {
+    this.resetReactionTarget();
     this.rocketDecisionCooldownMs = 0;
     this.resetRailTarget();
     this.railShotSequence = 0;
     this.rocketShotSequence = 0;
+  }
+
+  private updateReactionTarget(
+    target: Readonly<ActorState>,
+    deltaMs: number,
+  ): void {
+    const targetKey = `${target.id}:${target.lifeId}`;
+    if (this.reactionTargetKey !== targetKey) {
+      this.reactionTargetKey = targetKey;
+      this.targetReactionRemainingMs = this.difficulty.reactionMs;
+    }
+    this.targetReactionRemainingMs = Math.max(
+      0,
+      this.targetReactionRemainingMs - Math.max(0, deltaMs),
+    );
+  }
+
+  private resetReactionTarget(): void {
+    this.reactionTargetKey = null;
+    this.targetReactionRemainingMs = 0;
   }
 
   private updateRailTarget(

@@ -95,12 +95,6 @@ export function createArenaBotControllerGroup(
     difficultyByTeam = {},
     difficultyByActorId = {},
   } = options;
-  const coordinator = new ArenaBotTeamCoordinator(
-    modeId,
-    map,
-    participants,
-    humanActorIds,
-  );
   const difficultyAssignments = participants.map((participant) => ({
     actorId: participant.actorId,
     difficultyId: difficultyByActorId[participant.actorId] ??
@@ -112,6 +106,19 @@ export function createArenaBotControllerGroup(
       assignment.actorId,
       assignment.difficultyId,
     ]),
+  );
+  const difficultyProfileByActorId = new Map(
+    difficultyAssignments.map((assignment) => [
+      assignment.actorId,
+      BOT_DIFFICULTY_PROFILES[assignment.difficultyId],
+    ]),
+  );
+  const coordinator = new ArenaBotTeamCoordinator(
+    modeId,
+    map,
+    participants,
+    humanActorIds,
+    difficultyProfileByActorId,
   );
   const controllers = participants.map((participant) => {
     const difficultyId = assignmentByActorId.get(participant.actorId) ??
@@ -129,6 +136,7 @@ export function createArenaBotControllerGroup(
         difficulty,
         undefined,
         coordinator,
+        map,
       );
     }
     if (modeId === "classic-ctf") {
@@ -142,6 +150,7 @@ export function createArenaBotControllerGroup(
         difficulty,
         undefined,
         coordinator,
+        participant.slot,
       );
     }
     if (modeId === "one-flag") {
@@ -154,6 +163,7 @@ export function createArenaBotControllerGroup(
         difficulty,
         undefined,
         coordinator,
+        participant.slot,
       );
     }
     throw new Error(`Unsupported arena bot mode: ${modeId}.`);

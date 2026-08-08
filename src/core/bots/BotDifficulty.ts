@@ -10,6 +10,17 @@ export interface BotDifficultyProfile {
   readonly aimJitterMultiplier: number;
   readonly predictionMultiplier: number;
   readonly awarenessRange: number;
+  readonly pickupAwarenessRange: number;
+  readonly healthSeekRatio: number;
+  readonly armorSeekRatio: number;
+  readonly weaponReserveRatio: number;
+  readonly resourceDiscipline: number;
+  readonly canUseJumpLinks: boolean;
+  readonly jumpCostMultiplier: number;
+  readonly landmarkRouteMode: "none" | "central" | "distributed";
+  readonly coordinatesCombatTargets: boolean;
+  readonly coordinatesObjectives: boolean;
+  readonly coordinatesPickups: boolean;
 }
 
 export interface BotPersonality {
@@ -31,6 +42,17 @@ export const BOT_DIFFICULTY_PROFILES: Readonly<
     aimJitterMultiplier: 1.65,
     predictionMultiplier: .55,
     awarenessRange: 780,
+    pickupAwarenessRange: 420,
+    healthSeekRatio: .32,
+    armorSeekRatio: 0,
+    weaponReserveRatio: 0,
+    resourceDiscipline: .64,
+    canUseJumpLinks: false,
+    jumpCostMultiplier: 1,
+    landmarkRouteMode: "none",
+    coordinatesCombatTargets: false,
+    coordinatesObjectives: false,
+    coordinatesPickups: false,
   },
   normal: {
     id: "normal",
@@ -40,6 +62,17 @@ export const BOT_DIFFICULTY_PROFILES: Readonly<
     aimJitterMultiplier: 1,
     predictionMultiplier: .82,
     awarenessRange: 940,
+    pickupAwarenessRange: 760,
+    healthSeekRatio: .58,
+    armorSeekRatio: .45,
+    weaponReserveRatio: .05,
+    resourceDiscipline: 1,
+    canUseJumpLinks: true,
+    jumpCostMultiplier: 1.28,
+    landmarkRouteMode: "central",
+    coordinatesCombatTargets: true,
+    coordinatesObjectives: true,
+    coordinatesPickups: false,
   },
   strong: {
     id: "strong",
@@ -49,6 +82,17 @@ export const BOT_DIFFICULTY_PROFILES: Readonly<
     aimJitterMultiplier: .62,
     predictionMultiplier: 1,
     awarenessRange: 1_150,
+    pickupAwarenessRange: 1_100,
+    healthSeekRatio: .78,
+    armorSeekRatio: .7,
+    weaponReserveRatio: .5,
+    resourceDiscipline: 1.24,
+    canUseJumpLinks: true,
+    jumpCostMultiplier: .44,
+    landmarkRouteMode: "distributed",
+    coordinatesCombatTargets: true,
+    coordinatesObjectives: true,
+    coordinatesPickups: true,
   },
 };
 

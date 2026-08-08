@@ -70,7 +70,9 @@ Zwei Punkte müssen inzwischen aktualisiert werden:
 - `ArenaBotControllerGroupOptions` ersetzt die fehleranfällige öffentliche Positionsargumentliste und reicht die gewählten Profile an TDM, Classic CTF und One Flag weiter.
 - Team-Vorgaben können intern pro Bot über `difficultyByActorId` überschrieben werden. Die Quick-Play-Oberfläche bleibt bewusst bei einer Stufe pro Team, damit die Konfiguration schnell lesbar bleibt.
 - Liga-Partien verwenden vorerst bewusst das unveränderte Normal-Profil, solange keine Progressionsregel beschlossen wurde.
-- Schaden, Bewegungsgeschwindigkeit, Teamwissen und Objective-Regeln bleiben unverändert; die Profile beeinflussen nur Wahrnehmung, Reaktion, Zielwechsel, Jitter und Vorhersage.
+- Schaden, Bewegungsgeschwindigkeit und Objective-Regeln bleiben unverändert.
+  Phase 2 verband zunächst Wahrnehmung, Reaktion, Zielwechsel, Jitter und
+  Vorhersage; Phase 6 ergänzt darauf aufbauend die strategischen Unterschiede.
 - 205/205 Tests, Test-Typecheck, Production-Build und 4/4 Browser-E2E-Tests bestanden; Desktop- und Kompaktansicht wurden zusätzlich visuell geprüft.
 
 ### Phase 3 — synchroner Match-Start, Mobile-HUD und Runtime
@@ -115,6 +117,29 @@ Zwei Punkte müssen inzwischen aktualisiert werden:
   Match. Die Bots konsumieren diese Semantik noch nicht; dadurch ändert Phase 5
   allein weder Schwierigkeit noch Laufverhalten.
 
+### Phase 6 — spürbare Bot-Stufen und Landmark-Strategie
+
+- Easy, Normal und Hard unterscheiden sich nun nicht nur bei Reaktion und Aim,
+  sondern auch nachvollziehbar bei Teamkoordination, Ressourcenplanung,
+  Landmark-Routing und Jump-Link-Nutzung.
+- Easy spielt Ziele unabhängiger, sucht nur in Notlagen Health und verwendet
+  grundsätzlich keine Jump-Links.
+- Normal koordiniert Rollen und Gegner, nimmt moderate Ressourcenumwege und
+  verwendet Sprünge nur, wenn sie trotz Sicherheitsaufschlag der bessere Weg
+  sind.
+- Hard verteilt Bots über Nord-, Mittel- und Südlandmarken, reserviert aktive
+  Pickups innerhalb des Teams und bevorzugt sichere Sprungabkürzungen.
+- Kritische Flaggenaufgaben wie Capture, Recovery, Escort und Interception
+  werden nie durch einen Pickup- oder Landmark-Umweg verdrängt.
+- Schaden, Bewegung, Health, Armor und Waffenwerte bleiben auf allen Stufen
+  identisch; die Unterschiede entstehen ausschließlich durch Entscheidungen.
+- Der Premium-Audit erzeugt seine Navigatoren nun mit denselben Normal-Regeln
+  wie das Spiel und misst dadurch keine veraltete Standardkonfiguration mehr.
+- 216/216 Tests, Test-Typecheck und Production-Build bestehen. Eine kurze
+  4v4-Matrix über alle Premium-Maps und Modi meldete keine kritischen Befunde
+  und keine Warnungen; die gemessenen Decision-CPU-p95-Werte lagen zwischen
+  1,56 und 3,01 ms pro Simulationsframe.
+
 ## Einordnung meiner bisherigen Kommentare
 
 Meine vorherige Einschätzung zum Fremdaudit lässt sich so zusammenfassen:
@@ -128,15 +153,18 @@ Meine vorherige Einschätzung zum Fremdaudit lässt sich so zusammenfassen:
 
 ## Empfohlene nächste Schritte
 
-### 1. Landmarken kontrolliert für die Bot-KI nutzbar machen
+### 1. Difficulty und Landmark-Routing subjektiv abnehmen
 
-Die zwölf Landmarken pro Premium-Map sind erfasst und technisch abgesichert.
-Als nächster Schritt werden sie nicht pauschal zu neuen Wegpunkten, sondern zu
-erklärbaren Entscheidungshilfen: Pickup-Ziele, sichere Rückzugsbereiche,
-umkämpfte Mittelpunkte und alternative Routeneinstiege. Zunächst wird nur die
-Zielwahl angebunden; Bewegung und Pathfinding bleiben unverändert. Danach wird
-gegen die heutige Bot-Baseline geprüft, ob Objektivspiel und Teamverteilung
-tatsächlich besser werden, ohne allwissend oder vorhersehbar zu wirken.
+Die technische Anbindung ist abgeschlossen und deterministisch abgesichert.
+Als Nächstes sollten dieselben kurzen TDM-, Classic-CTF- und One-Flag-Matches
+jeweils mit Easy, Normal und Hard gespielt werden. Bewertet werden vor allem:
+
+- Easy springt nie und bleibt sichtbar reaktionsträger;
+- Normal springt gelegentlich bei einem klaren Wegvorteil;
+- Hard nutzt Sprungabkürzungen und verteilt sich erkennbar besser;
+- Hard sammelt Ressourcen cleverer, ohne Objectives oder den Menschen zu
+  benachteiligen;
+- keine Stufe bleibt an einer Landmarke oder einem Pickup hängen.
 
 ### 2. Helix subjektiv abnehmen
 
@@ -148,9 +176,13 @@ Ein kurzer manueller Test sollte Classic CTF, One Flag und TDM jeweils in 2v2 so
 - stimmen sichtbare Basen, Pickups und tatsächliche Interaktionsorte;
 - wirkt die Karte in 1024×768 und 1920×1080 weder leer noch überladen.
 
-### 3. Difficulty subjektiv kalibrieren
+### 3. Difficulty nach dem Spieltest fein kalibrieren
 
-Die technische Verdrahtung ist abgeschlossen. Als Nächstes sollten Easy, Normal und Hard in denselben kurzen TDM-, CTF- und One-Flag-Szenarien gegeneinander gespielt werden. Dabei geht es um verständlich spürbare, aber faire Unterschiede bei Reaktion, Zielstabilität und Entscheidungsbindung. Erst danach sollte entschieden werden, ob die Liga dauerhaft Normal verwendet oder die Stufe an die Progression koppelt.
+Nach der subjektiven Abnahme werden nur die Profilwerte angepasst, nicht die
+Grundregeln neu gebaut. Besonders relevant sind Pickup-Reichweite,
+Health-/Armor-Schwellen und der Sprungkostenfaktor. Erst danach sollte
+entschieden werden, ob die Liga dauerhaft Normal verwendet oder die Stufe an
+die Progression koppelt.
 
 ### 4. Premium-Audit sauber neu baselinen
 

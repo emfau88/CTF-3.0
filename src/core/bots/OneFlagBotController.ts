@@ -1,5 +1,6 @@
 import type { ActorState, WorldPosition } from "../actors";
 import type { CoreActionIntent } from "../input";
+import type { ArenaTeamSlot } from "../spawning";
 import type { WorldMapData, WorldSnapshot } from "../world";
 import {
   V2_BOT_MOVEMENT_CONFIG,
@@ -33,6 +34,10 @@ import {
   type ArenaBotTeamCoordinator,
   type BotTeamAssignment,
 } from "./BotTeamCoordinator";
+import {
+  BotLandmarkRoutePlanner,
+  selectBotStrategicPickup,
+} from "./BotStrategicPlanning";
 
 export interface OneFlagBotControllerDebugState {
   readonly actorId: string;
@@ -40,6 +45,8 @@ export interface OneFlagBotControllerDebugState {
   readonly goalTarget: WorldPosition | null;
   readonly navigationTarget: WorldPosition | null;
   readonly navigationTargetKey: string;
+  readonly strategicPickupId: string | null;
+  readonly routeLandmarkId: string | null;
   readonly projectionApplied: boolean;
   readonly projectionDistance: number;
   readonly combatTargetId: string | null;
@@ -57,21 +64,31 @@ export class OneFlagBotController {
   private lastDebugState: OneFlagBotControllerDebugState;
   private readonly targetSelector: BotTargetSelector;
   private readonly combat: TdmBotCombatController;
+  private readonly navigator: BotNavigator;
+  private readonly landmarkRoute = new BotLandmarkRoutePlanner();
 
   constructor(
     private readonly actorId: string,
-    map: WorldMapData,
+    private readonly map: WorldMapData,
     private readonly movement: BotMovementConfig = V2_BOT_MOVEMENT_CONFIG,
-    private readonly navigator: BotNavigator = new GridBotNavigator(),
+    navigator: BotNavigator | undefined = undefined,
     combat: TdmBotCombatController | undefined = undefined,
     private readonly difficulty: BotDifficultyProfile =
       BOT_DIFFICULTY_PROFILES.normal,
     private readonly personality: BotPersonality =
       createBotPersonality(actorId),
     private readonly coordinator?: ArenaBotTeamCoordinator,
+    private readonly slot: ArenaTeamSlot = 1,
   ) {
     this.combat = combat ?? new TdmBotCombatController(undefined, difficulty);
-    this.decision = new OneFlagBotDecisionController(map);
+    this.navigator = navigator ?? new GridBotNavigator(
+      V2_BOT_NAVIGATION_CONFIG,
+      {
+        allowJumpLinks: difficulty.canUseJumpLinks,
+        jumpCostMultiplier: difficulty.jumpCostMultiplier,
+      },
+    );
+    this.decision = new OneFlagBotDecisionController(this.map);
     this.targetSelector = new BotTargetSelector(difficulty, personality);
     this.lastDebugState = createEmptyDebugState(actorId);
   }
@@ -102,7 +119,21 @@ export class OneFlagBotController {
       teamAssignment?.combatTargetActorId,
     );
     const combatTarget = targetSelection.target;
-    const shouldApplyStandoff = combatTarget &&
+    const strategicPickup = canTakeResourceDetour(goal.kind)
+      ? selectBotStrategicPickup({
+        map: this.map,
+        snapshot,
+        actor,
+        slot: this.slot,
+        difficulty: this.difficulty,
+        preferredPickupId: teamAssignment?.reservedPickupId,
+      })
+      : null;
+    const strategicTarget = strategicPickup?.position ?? goal.position;
+    const strategicTargetKey = strategicPickup
+      ? `strategy:pickup:${strategicPickup.id}`
+      : goal.targetKey;
+    const shouldApplyStandoff = !strategicPickup && combatTarget &&
       isCombatChaseGoal(goal.kind) &&
       positionsMatch(goal.position, combatTarget.position);
     const navigationTarget = shouldApplyStandoff
@@ -114,9 +145,9 @@ export class OneFlagBotController {
         targetSelection.targetPerceived,
       )
       : null;
-    const desiredTarget = navigationTarget?.targetPosition ?? goal.position;
-    const shouldProjectDynamicTarget = shouldApplyStandoff ||
-      goal.kind === "escort-carrier";
+    const desiredTarget = navigationTarget?.targetPosition ?? strategicTarget;
+    const shouldProjectDynamicTarget = !strategicPickup &&
+      (shouldApplyStandoff || goal.kind === "escort-carrier");
     const projectedTarget = shouldProjectDynamicTarget
       ? projectDynamicCarrierTarget(
         actor.position,
@@ -128,6 +159,18 @@ export class OneFlagBotController {
       desiredTarget,
       projectedTarget,
     );
+    const directNavigationTargetKey = navigationTarget
+      ? `${strategicTargetKey}:${navigationTarget.key}`
+      : strategicTargetKey;
+    const routePlan = this.landmarkRoute.plan(
+      actor.position,
+      projectedTarget,
+      directNavigationTargetKey,
+      this.map,
+      teamAssignment?.routeLandmarkId,
+      this.difficulty,
+      !strategicPickup && !navigationTarget && canUseLandmarkRoute(goal.kind),
+    );
     const navigation = navigationTarget?.holdPosition
       ? {
         direction: { x: 0, y: 0 } as const,
@@ -136,10 +179,8 @@ export class OneFlagBotController {
       }
       : this.navigator.navigate(
         actor.position,
-        projectedTarget,
-        navigationTarget
-          ? `${goal.targetKey}:${navigationTarget.key}`
-          : goal.targetKey,
+        routePlan.position,
+        routePlan.targetKey,
         snapshot,
         deltaMs,
       );
@@ -159,10 +200,10 @@ export class OneFlagBotController {
       actorId: actor.id,
       goalKind: goal.kind,
       goalTarget: { ...goal.position },
-      navigationTarget: { ...projectedTarget },
-      navigationTargetKey: navigationTarget
-        ? `${goal.targetKey}:${navigationTarget.key}`
-        : goal.targetKey,
+      navigationTarget: { ...routePlan.position },
+      navigationTargetKey: routePlan.targetKey,
+      strategicPickupId: strategicPickup?.id ?? null,
+      routeLandmarkId: routePlan.landmarkId,
       projectionApplied: projectionDistance > .001,
       projectionDistance,
       combatTargetId: combatTarget?.id ?? null,
@@ -207,6 +248,7 @@ export class OneFlagBotController {
   reset(): void {
     this.navigator.reset();
     this.decision.reset();
+    this.landmarkRoute.reset();
     this.resetTransientState();
     this.lastDebugState = createEmptyDebugState(this.actorId);
   }
@@ -226,6 +268,7 @@ export class OneFlagBotController {
   private resetTransientState(): void {
     this.combat.reset();
     this.targetSelector.reset();
+    this.landmarkRoute.reset();
     this.jumpHeld = false;
   }
 
@@ -234,11 +277,12 @@ export class OneFlagBotController {
     actor: Readonly<ActorState>,
     jump: boolean,
   ): void {
+    const requestedNavigationJump = this.difficulty.canUseJumpLinks && jump;
     const continueHeldJump = this.jumpHeld && !actor.jump.grounded;
-    if (jump || continueHeldJump) {
+    if (requestedNavigationJump || continueHeldJump) {
       let requestedJumpStart = false;
       if (
-        jump &&
+        requestedNavigationJump &&
         !this.jumpHeld &&
         actor.jump.grounded &&
         actor.jump.cooldownRemainingMs <= 0
@@ -299,6 +343,14 @@ function directionBetween(
 
 function isCombatChaseGoal(kind: OneFlagBotGoal["kind"]): boolean {
   return kind === "chase-enemy-carrier";
+}
+
+function canTakeResourceDetour(kind: OneFlagBotGoal["kind"]): boolean {
+  return kind === "control-mid";
+}
+
+function canUseLandmarkRoute(kind: OneFlagBotGoal["kind"]): boolean {
+  return kind === "control-mid";
 }
 
 function positionsMatch(left: WorldPosition, right: WorldPosition): boolean {
@@ -381,6 +433,8 @@ function createEmptyDebugState(actorId: string): OneFlagBotControllerDebugState 
     goalTarget: null,
     navigationTarget: null,
     navigationTargetKey: "",
+    strategicPickupId: null,
+    routeLandmarkId: null,
     projectionApplied: false,
     projectionDistance: 0,
     combatTargetId: null,

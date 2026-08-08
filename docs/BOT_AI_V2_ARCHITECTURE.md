@@ -1,6 +1,6 @@
 # Bot-KI v2: Architektur und Map-Vertrag
 
-Stand: 2026-07-19
+Stand: 2026-08-08
 
 Dieses Dokument beschreibt die gemeinsame Bot-KI für Team Deathmatch,
 Classic CTF und One Flag. Sie ist nicht auf die drei Premium-Maps
@@ -107,10 +107,20 @@ Deterministische Persönlichkeitswerte variieren:
 - bevorzugte seitliche Ausweichrichtung.
 
 Die Profile `casual`, `normal` und `strong` definieren Reaktionszeit,
-Entscheidungsbindung, Zielbindung, Zielungenauigkeit, Vorhalt und
-Wahrnehmungsreichweite. Die Controller reichen das gewählte Profil bis zur
-Waffenlogik durch. Eine Auswahl im Spielmenü ist bewusst noch nicht Teil
-dieses Pakets.
+Entscheidungsbindung, Zielbindung, Zielungenauigkeit, Vorhalt,
+Wahrnehmungsreichweite und strategische Disziplin. Quick Play reicht die
+getrennt für beide Teams gewählten Stufen bis an jeden Controller durch.
+
+| Stufe | Wahrnehmung und Teamspiel | Ressourcen und Landmarken | Sprünge |
+| --- | --- | --- | --- |
+| Easy (`casual`) | langsamere Reaktion, unabhängige Ziel- und Objective-Wahl | nur dringende Health-Suche, keine semantische Route | Jump-Links vollständig deaktiviert |
+| Normal | koordinierte Ziele und Rollen | moderate Pickup-Suche, zentrale Landmarke nur bei kleinem Umweg | Jump-Link nur, wenn er trotz Sicherheitsaufschlag der bessere Pfad ist |
+| Hard (`strong`) | schnellere Reaktion, stabilere Zielwahl und stärkere Teamverteilung | vorausschauende Pickup-Suche, Teamreservierungen sowie verteilte Nord-/Mittel-/Südrouten | sichere Jump-Links werden als echte Abkürzungen bevorzugt |
+
+Schaden, Health, Armor, Bewegungsgeschwindigkeit, Waffenreichweiten und
+Objective-Regeln bleiben auf allen Stufen identisch. Hard erhält daher keine
+versteckten Werteboni und Easy keine künstlichen Gameplay-Nachteile außerhalb
+seiner schwächeren Entscheidungen.
 
 ## Teamkoordination
 
@@ -192,6 +202,9 @@ Weitere Regeln:
   Objectives zuverlässig wirklich berührt.
 - Autorisierte Jump-Links bestehen aus Anlaufpunkt und Landepunkt. Der Bot
   läuft zuerst in den Aktivierungsradius und springt erst dann.
+- Der Schwierigkeitsgrad entscheidet, ob und zu welchen Pfadkosten Jump-Links
+  angeboten werden. Easy sieht keine Sprungkanten, Normal verlangt einen
+  klaren Wegvorteil und Hard bevorzugt sichere Abkürzungen.
 - Eine Sprungkante darf nur von Rasterzellen angeboten werden, von denen
   der Aktivierungsradius über einen freien Anlauf erreichbar ist. Der
   Navigator überspringt einen Anlaufpunkt niemals von außerhalb dieses
@@ -254,15 +267,15 @@ erst registriert werden, wenn diese Prüfung grün ist.
 - keine perfekte Zielgenauigkeit oder sofortige Rail-Reaktion,
 - keine globale Verfolgung jedes Flaggen-Notfalls durch das ganze Team,
 - keine Gameplay-Boni durch Rollen oder Kommandos,
-- keine Schwierigkeitsauswahl im HUD oder Touch-Umbau.
+- keine exklusiven Bot-Abkürzungen außerhalb der autorisierten Jump-Links.
 
 ## Relevante Tests
 
 - `tests/bot-ai-v2.test.ts`: Wahrnehmung, Utility-Bindung, Kommandos,
-  Teamformationen, lokale Bewegung, Zielprojektion, Jump-Anlauf und
-  Map-Vertrag.
+  Teamformationen, Difficulty-Strategie, Pickup-Reservierungen, lokale
+  Bewegung, Zielprojektion, Jump-Anlauf und Map-Vertrag.
 - `tests/bot-simulation.test.ts`: echte Runtime-Matrix, Langläufe und
-  modusspezifische Szenarien.
+  modusspezifische Szenarien einschließlich Easy-/Normal-/Hard-Vergleich.
 - `tests/bot-traversal-smoke.test.ts`: jeder autorisierte Jump-Link.
 - `tests/premium-bot-audit.test.ts`: Reproduzierbarkeit und
   Kommandovergleich.

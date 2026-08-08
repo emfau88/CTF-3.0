@@ -4,7 +4,7 @@ import type {
 import type { CoreActionIntent } from "../input";
 import type { PickupState } from "../pickups";
 import type { ArenaTeamSlot } from "../spawning";
-import type { WorldRect, WorldSnapshot } from "../world";
+import type { WorldMapData, WorldSnapshot } from "../world";
 import {
   V2_BOT_MOVEMENT_CONFIG,
   type BotMovementConfig,
@@ -13,16 +13,14 @@ import {
   GridBotNavigator,
   type BotNavigator,
 } from "./GridBotNavigator";
+import { V2_BOT_NAVIGATION_CONFIG } from "./BotNavigationConfig";
 import {
   directionBetween,
   TdmBotCombatController,
 } from "./TdmBotCombatController";
 import { planWeaponAwareCombatStandoff } from "./BotCombatStandoff";
 import {
-  isAmmoWeaponId,
-  weaponAmmo,
-  type AmmoWeaponId,
-  type ArenaWeaponId,
+  DEFAULT_ARENA_WEAPON_ROSTER,
 } from "../weapons";
 import {
   BOT_DIFFICULTY_PROFILES,
@@ -48,6 +46,10 @@ import {
   type ArenaBotTeamCoordinator,
   type BotTeamAssignment,
 } from "./BotTeamCoordinator";
+import {
+  BotLandmarkRoutePlanner,
+  selectBotStrategicPickup,
+} from "./BotStrategicPlanning";
 
 export type TdmBotIntent =
   | "fight-enemy"
@@ -62,6 +64,7 @@ export interface TdmBotControllerDebugState {
   readonly intent: TdmBotIntent;
   readonly targetActorId: string | null;
   readonly pickupId: string | null;
+  readonly routeLandmarkId: string | null;
   readonly navigationTargetKey: string;
   readonly standoffKey: string | null;
   readonly holdPosition: boolean;
@@ -82,13 +85,15 @@ export class TdmBotController {
   private readonly targetSelector: BotTargetSelector;
   private readonly intentArbiter = new BotUtilityArbiter<TdmBotIntent>();
   private readonly combat: TdmBotCombatController;
+  private readonly navigator: BotNavigator;
+  private readonly landmarkRoute = new BotLandmarkRoutePlanner();
 
   constructor(
     private readonly actorId: string,
     private readonly targetActorId?: string,
     private readonly movement: BotMovementConfig =
       V2_BOT_MOVEMENT_CONFIG,
-    private readonly navigator: BotNavigator = new GridBotNavigator(),
+    navigator: BotNavigator | undefined = undefined,
     combat: TdmBotCombatController | undefined = undefined,
     private readonly slot: ArenaTeamSlot = 1,
     private readonly humanActorIds: readonly string[] = [],
@@ -97,8 +102,16 @@ export class TdmBotController {
     private readonly personality: BotPersonality =
       createBotPersonality(actorId, slot),
     private readonly coordinator?: ArenaBotTeamCoordinator,
+    private readonly map?: WorldMapData,
   ) {
     this.combat = combat ?? new TdmBotCombatController(undefined, difficulty);
+    this.navigator = navigator ?? new GridBotNavigator(
+      V2_BOT_NAVIGATION_CONFIG,
+      {
+        allowJumpLinks: difficulty.canUseJumpLinks,
+        jumpCostMultiplier: difficulty.jumpCostMultiplier,
+      },
+    );
     this.lastDebugState = createEmptyDebugState(actorId);
     this.targetSelector = new BotTargetSelector(difficulty, personality);
   }
@@ -135,6 +148,7 @@ export class TdmBotController {
       this.stickyPickupRemainingMs = 0;
       this.targetSelector.reset();
       this.intentArbiter.reset();
+      this.landmarkRoute.reset();
       this.lastDebugState = createEmptyDebugState(this.actorId);
       return [this.stopIntent()];
     }
@@ -145,15 +159,29 @@ export class TdmBotController {
     );
     const enemyDistance = distance(actor.position, target.position);
     const combatAssessment = assessCombatOpportunity(actor, target, snapshot);
-    const pickup = selectPickupGoal(
+    const stickyPreferredPickupId = this.stickyPickupRemainingMs > 0
+      ? this.stickyPickupId
+      : null;
+    const preferredPickupId = teamAssignment?.reservedPickupId ??
+      stickyPreferredPickupId;
+    const strategicPickup = selectBotStrategicPickup({
+      map: this.map ?? {
+        weaponRoster: snapshot.map?.weaponRoster ??
+          DEFAULT_ARENA_WEAPON_ROSTER,
+      },
       snapshot,
       actor,
-      this.slot,
-      enemyDistance,
-      combatAssessment.canAttackAtCurrentRange,
-      this.stickyPickupRemainingMs > 0 ? this.stickyPickupId : null,
-      this.humanActorIds,
-    );
+      slot: this.slot,
+      difficulty: this.difficulty,
+      preferredPickupId,
+      humanActorIds: this.humanActorIds,
+    });
+    const pickup = enemyDistance < 230 &&
+        actor.health > 25 &&
+        strategicPickup?.type !== "health" &&
+        stickyPreferredPickupId === null
+      ? null
+      : strategicPickup;
     const intentTrace = this.intentArbiter.choose(
       createIntentCandidates(
         actor,
@@ -161,6 +189,7 @@ export class TdmBotController {
         pickup,
         combatAssessment,
         this.personality,
+        this.difficulty,
       ),
       deltaMs,
       this.difficulty.intentCommitMs,
@@ -185,7 +214,7 @@ export class TdmBotController {
     const separationTarget = selectedPickup
       ? null
       : clusteredSeparationTarget(snapshot, actor, this.slot);
-    const navigationTarget = selectedPickup?.position ?? separationTarget ?? laneBiasedTarget(
+    const directNavigationTarget = selectedPickup?.position ?? separationTarget ?? laneBiasedTarget(
       snapshot,
       actor,
       target,
@@ -195,11 +224,28 @@ export class TdmBotController {
     const holdPosition = !selectedPickup &&
       !separationTarget &&
       engagement.holdPosition;
-    const navigationTargetKey = selectedPickup
+    const directNavigationTargetKey = selectedPickup
       ? `pickup:${selectedPickup.id}`
       : separationTarget
       ? `spread:${actor.lifeId}:lane-${this.slot}`
       : `${target.id}:${target.lifeId}:${engagement.key}:lane-${this.slot}`;
+    const routePlan = this.map
+      ? this.landmarkRoute.plan(
+        actor.position,
+        directNavigationTarget,
+        directNavigationTargetKey,
+        this.map,
+        teamAssignment?.routeLandmarkId,
+        this.difficulty,
+        !selectedPickup && !separationTarget,
+      )
+      : {
+        position: directNavigationTarget,
+        targetKey: directNavigationTargetKey,
+        landmarkId: null,
+      };
+    const navigationTarget = routePlan.position;
+    const navigationTargetKey = routePlan.targetKey;
     const navigation = holdPosition
       ? {
         direction: { x: 0, y: 0 } as const,
@@ -234,6 +280,7 @@ export class TdmBotController {
         : "fight-enemy",
       targetActorId: target.id,
       pickupId: selectedPickup?.id ?? null,
+      routeLandmarkId: routePlan.landmarkId,
       navigationTargetKey,
       standoffKey: selectedPickup ? null : engagement.key,
       holdPosition,
@@ -267,11 +314,13 @@ export class TdmBotController {
     if (weaponAction) {
       actions.push(weaponAction);
     }
+    const requestedNavigationJump = this.difficulty.canUseJumpLinks &&
+      navigation.jump;
     const continueHeldJump = this.jumpHeld && !actor.jump.grounded;
-    if (navigation.jump || continueHeldJump) {
+    if (requestedNavigationJump || continueHeldJump) {
       let requestedJumpStart = false;
       if (
-        navigation.jump &&
+        requestedNavigationJump &&
         !this.jumpHeld &&
         actor.jump.grounded &&
         actor.jump.cooldownRemainingMs <= 0
@@ -310,6 +359,7 @@ export class TdmBotController {
     this.combat.reset();
     this.targetSelector.reset();
     this.intentArbiter.reset();
+    this.landmarkRoute.reset();
     this.jumpHeld = false;
     this.stickyPickupId = null;
     this.stickyPickupRemainingMs = 0;
@@ -327,75 +377,6 @@ export class TdmBotController {
   }
 }
 
-function selectPickupGoal(
-  snapshot: WorldSnapshot,
-  actor: Readonly<ActorState>,
-  slot: ArenaTeamSlot,
-  enemyDistance: number,
-  canAttackAtCurrentRange: boolean,
-  preferredPickupId: string | null,
-  humanActorIds: readonly string[],
-): Readonly<PickupState> | null {
-  const active = snapshot.pickups.filter((pickup) => pickup.lifeState === "active");
-  const urgentType = actor.health <= actor.maxHealth * .55
-    ? "health"
-    : slot === 4 && actor.armor <= actor.maxArmor * .5
-    ? "armor"
-    : null;
-  const preferredWeapon = preferredWeaponForSlot(
-    slot,
-    snapshot.map?.weaponRoster ?? ["whip", "rocket", "rail"],
-  );
-  const needsPreferredWeapon = preferredWeapon !== null &&
-    (weaponAmmo(actor.weapons, preferredWeapon) ?? 0) <= 0;
-  const desiredTypes = [
-    urgentType,
-    needsPreferredWeapon ? preferredWeapon : null,
-  ].filter((type): type is PickupState["type"] => type !== null);
-  if (desiredTypes.length === 0) {
-    return null;
-  }
-  if (
-    !preferredPickupId &&
-    enemyDistance < 230 &&
-    actor.health > 25 &&
-    canAttackAtCurrentRange
-  ) {
-    return null;
-  }
-  const candidates = active
-    .filter((pickup) => desiredTypes.includes(pickup.type))
-    .filter((pickup) =>
-      !isWeaponPickupReservedForHuman(
-        snapshot,
-        actor,
-        pickup,
-        humanActorIds,
-      )
-    )
-    .map((pickup) => ({
-      pickup,
-      distance: distance(actor.position, pickup.position),
-    }))
-    .filter((candidate) => candidate.distance <= 720)
-    .sort((left, right) =>
-      left.distance - right.distance || left.pickup.id.localeCompare(right.pickup.id)
-    );
-  return candidates.find((candidate) =>
-    candidate.pickup.id === preferredPickupId
-  )?.pickup ?? candidates[0]?.pickup ?? null;
-}
-
-function preferredWeaponForSlot(
-  slot: ArenaTeamSlot,
-  roster: readonly ArenaWeaponId[],
-): AmmoWeaponId | null {
-  const pickupWeapons = roster.filter((weaponId): weaponId is AmmoWeaponId =>
-    isAmmoWeaponId(weaponId)
-  );
-  return pickupWeapons[(slot - 1) % Math.max(1, pickupWeapons.length)] ?? null;
-}
-
 function intentForPickup(pickup: Readonly<PickupState>): TdmBotIntent {
   if (pickup.type === "health") return "seek-health";
   if (pickup.type === "armor") return "seek-armor";
@@ -408,6 +389,7 @@ function createEmptyDebugState(actorId: string): TdmBotControllerDebugState {
     intent: "idle",
     targetActorId: null,
     pickupId: null,
+    routeLandmarkId: null,
     navigationTargetKey: "",
     standoffKey: null,
     holdPosition: false,
@@ -429,6 +411,7 @@ function createIntentCandidates(
   pickup: Readonly<PickupState> | null,
   assessment: BotCombatAssessment,
   personality: BotPersonality,
+  difficulty: BotDifficultyProfile,
 ): readonly BotUtilityCandidate<TdmBotIntent>[] {
   const healthRatio = actor.health / Math.max(1, actor.maxHealth);
   const candidates: BotUtilityCandidate<TdmBotIntent>[] = [{
@@ -450,7 +433,7 @@ function createIntentCandidates(
   const armorRatio = actor.maxArmor > 0
     ? actor.armor / actor.maxArmor
     : 1;
-  const score = isHealth
+  const baseScore = isHealth
     ? .46 + (1 - healthRatio) * .82 * personality.selfPreservation
     : isArmor
     ? .56 +
@@ -459,6 +442,7 @@ function createIntentCandidates(
     : .5 +
       (assessment.canAttackAtCurrentRange ? 0 : .3) +
       personality.selfPreservation * .08;
+  const score = .42 + (baseScore - .42) * difficulty.resourceDiscipline;
   candidates.push({
     key: `pickup:${pickup.id}`,
     kind: intentForPickup(pickup),
@@ -530,37 +514,6 @@ function clusteredSeparationTarget(
     )),
     y: bounds.minY + (bounds.maxY - bounds.minY) * laneRatio,
   };
-}
-
-function isWeaponPickupReservedForHuman(
-  snapshot: WorldSnapshot,
-  actor: Readonly<ActorState>,
-  pickup: Readonly<PickupState>,
-  humanActorIds: readonly string[],
-): boolean {
-  if (
-    pickup.type === "health" ||
-    pickup.type === "armor"
-  ) {
-    return false;
-  }
-  const weapon = pickup.type as AmmoWeaponId;
-  const actorAmmo = ammoFor(actor, weapon);
-  const humans = new Set(humanActorIds);
-  return snapshot.actors.some((candidate) =>
-    humans.has(candidate.id) &&
-    candidate.teamId === actor.teamId &&
-    candidate.lifeState === "active" &&
-    distance(candidate.position, pickup.position) <= 240 &&
-    ammoFor(candidate, weapon) <= actorAmmo
-  );
-}
-
-function ammoFor(
-  actor: Readonly<ActorState>,
-  weapon: AmmoWeaponId,
-): number {
-  return weaponAmmo(actor.weapons, weapon) ?? 0;
 }
 
 function distance(

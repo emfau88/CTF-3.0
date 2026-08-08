@@ -815,7 +815,7 @@ test("rocket bot leads moving targets and can choose a nearby wall for splash", 
     moving.bot,
     moving.target,
     createWorldSnapshot(moving.world),
-    34,
+    300,
   );
   assert.equal(actionWeaponId(lead), "rocket");
   assert.ok((lead?.direction?.y ?? 0) > .2);
@@ -835,7 +835,7 @@ test("rocket bot leads moving targets and can choose a nearby wall for splash", 
     surfaced.bot,
     surfaced.target,
     createWorldSnapshot(surfaced.world),
-    34,
+    300,
   );
   assert.equal(actionWeaponId(surfaceShot), "rocket");
   assert.ok((surfaceShot?.direction?.y ?? 0) > .08);
@@ -1209,7 +1209,7 @@ test("rail bot becomes less precise toward maximum range", () => {
     });
     world.actors.push(bot, target);
     const combat = new TdmBotCombatController(config);
-    combat.readAction(bot, target, createWorldSnapshot(world), 0);
+    combat.readAction(bot, target, createWorldSnapshot(world), 300);
     return combat.readAction(bot, target, createWorldSnapshot(world), 0);
   };
 

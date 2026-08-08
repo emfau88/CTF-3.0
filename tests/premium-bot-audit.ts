@@ -2,6 +2,7 @@ import {
   ClassicCtfBotController,
   ClassicCtfMode,
   ArenaBotTeamCoordinator,
+  BOT_DIFFICULTY_PROFILES,
   assessCombatOpportunity,
   createArenaRoster,
   createClassicCtfWorldState,
@@ -562,7 +563,14 @@ function createHarness(
   profile: PremiumBotAuditRunProfile,
   coordinator?: ArenaBotTeamCoordinator,
 ): BotHarness {
-  const navigator = new GridBotNavigator();
+  const difficulty = BOT_DIFFICULTY_PROFILES.normal;
+  const navigator = new GridBotNavigator(
+    V2_BOT_NAVIGATION_CONFIG,
+    {
+      allowJumpLinks: difficulty.canUseJumpLinks,
+      jumpCostMultiplier: difficulty.jumpCostMultiplier,
+    },
+  );
   if (modeId === "team-deathmatch") {
     return {
       participant,
@@ -575,9 +583,10 @@ function createHarness(
         undefined,
         participant.slot,
         [],
-        undefined,
+        difficulty,
         undefined,
         coordinator,
+        map,
       ),
       receivesHumanCommand: false,
     };
@@ -592,9 +601,10 @@ function createHarness(
         undefined,
         navigator,
         undefined,
-        undefined,
+        difficulty,
         undefined,
         coordinator,
+        participant.slot,
       ),
       receivesHumanCommand: false,
     };
@@ -609,9 +619,10 @@ function createHarness(
       undefined,
       navigator,
       undefined,
-      undefined,
+      difficulty,
       undefined,
       coordinator,
+      participant.slot,
     ),
     receivesHumanCommand:
       profile.usesHumanProxy &&

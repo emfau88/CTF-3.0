@@ -1,5 +1,6 @@
 import type { ActorState, TeamId, WorldPosition } from "../actors";
 import type { CoreActionIntent } from "../input";
+import type { ArenaTeamSlot } from "../spawning";
 import type { WorldMapData, WorldSnapshot } from "../world";
 import {
   V2_BOT_MOVEMENT_CONFIG,
@@ -15,6 +16,7 @@ import {
   GridBotNavigator,
   type BotNavigator,
 } from "./GridBotNavigator";
+import { V2_BOT_NAVIGATION_CONFIG } from "./BotNavigationConfig";
 import { planWeaponAwareCombatStandoff } from "./BotCombatStandoff";
 import { TdmBotCombatController } from "./TdmBotCombatController";
 import {
@@ -34,6 +36,10 @@ import {
   type ArenaBotTeamCoordinator,
   type BotTeamAssignment,
 } from "./BotTeamCoordinator";
+import {
+  BotLandmarkRoutePlanner,
+  selectBotStrategicPickup,
+} from "./BotStrategicPlanning";
 
 export interface ClassicCtfBotControllerDebugState {
   readonly actorId: string;
@@ -41,6 +47,8 @@ export interface ClassicCtfBotControllerDebugState {
   readonly goalTarget: WorldPosition | null;
   readonly navigationTarget: WorldPosition | null;
   readonly navigationTargetKey: string;
+  readonly strategicPickupId: string | null;
+  readonly routeLandmarkId: string | null;
   readonly combatTargetId: string | null;
   readonly standoffKey: string | null;
   readonly holdPosition: boolean;
@@ -56,23 +64,33 @@ export class ClassicCtfBotController {
   private lastDebugState: ClassicCtfBotControllerDebugState;
   private readonly targetSelector: BotTargetSelector;
   private readonly combat: TdmBotCombatController;
+  private readonly navigator: BotNavigator;
+  private readonly landmarkRoute = new BotLandmarkRoutePlanner();
 
   constructor(
     private readonly actorId: string,
     role: ClassicCtfBotRole,
-    map: WorldMapData,
+    private readonly map: WorldMapData,
     private readonly movement: BotMovementConfig =
       V2_BOT_MOVEMENT_CONFIG,
-    private readonly navigator: BotNavigator = new GridBotNavigator(),
+    navigator: BotNavigator | undefined = undefined,
     combat: TdmBotCombatController | undefined = undefined,
     private readonly difficulty: BotDifficultyProfile =
       BOT_DIFFICULTY_PROFILES.normal,
     private readonly personality: BotPersonality =
       createBotPersonality(actorId),
     private readonly coordinator?: ArenaBotTeamCoordinator,
+    private readonly slot: ArenaTeamSlot = 1,
   ) {
     this.combat = combat ?? new TdmBotCombatController(undefined, difficulty);
-    this.decision = new ClassicCtfBotDecisionController(role, map);
+    this.navigator = navigator ?? new GridBotNavigator(
+      V2_BOT_NAVIGATION_CONFIG,
+      {
+        allowJumpLinks: difficulty.canUseJumpLinks,
+        jumpCostMultiplier: difficulty.jumpCostMultiplier,
+      },
+    );
+    this.decision = new ClassicCtfBotDecisionController(role, this.map);
     this.targetSelector = new BotTargetSelector(difficulty, personality);
     this.lastDebugState = createEmptyDebugState(actorId);
   }
@@ -109,7 +127,21 @@ export class ClassicCtfBotController {
       teamAssignment?.combatTargetActorId,
     );
     const combatTarget = targetSelection.target;
-    const shouldApplyStandoff = combatTarget &&
+    const strategicPickup = canTakeResourceDetour(goal.kind)
+      ? selectBotStrategicPickup({
+        map: this.map,
+        snapshot,
+        actor,
+        slot: this.slot,
+        difficulty: this.difficulty,
+        preferredPickupId: teamAssignment?.reservedPickupId,
+      })
+      : null;
+    const strategicTarget = strategicPickup?.position ?? goal.position;
+    const strategicTargetKey = strategicPickup
+      ? `strategy:pickup:${strategicPickup.id}`
+      : goal.targetKey;
+    const shouldApplyStandoff = !strategicPickup && combatTarget &&
       isCombatChaseGoal(goal.kind) &&
       positionsMatch(goal.position, combatTarget.position);
     const navigationTarget = shouldApplyStandoff
@@ -121,6 +153,20 @@ export class ClassicCtfBotController {
         targetSelection.targetPerceived,
       )
       : null;
+    const directNavigationTarget = navigationTarget?.targetPosition ??
+      strategicTarget;
+    const directNavigationTargetKey = navigationTarget
+      ? `${strategicTargetKey}:${navigationTarget.key}`
+      : strategicTargetKey;
+    const routePlan = this.landmarkRoute.plan(
+      actor.position,
+      directNavigationTarget,
+      directNavigationTargetKey,
+      this.map,
+      teamAssignment?.routeLandmarkId,
+      this.difficulty,
+      !strategicPickup && !navigationTarget && canUseLandmarkRoute(goal.kind),
+    );
     const navigation = navigationTarget?.holdPosition
       ? {
         direction: { x: 0, y: 0 } as const,
@@ -129,10 +175,8 @@ export class ClassicCtfBotController {
       }
       : this.navigator.navigate(
         actor.position,
-        navigationTarget?.targetPosition ?? goal.position,
-        navigationTarget
-          ? `${goal.targetKey}:${navigationTarget.key}`
-          : goal.targetKey,
+        routePlan.position,
+        routePlan.targetKey,
         snapshot,
         deltaMs,
       );
@@ -152,12 +196,10 @@ export class ClassicCtfBotController {
       actorId: actor.id,
       goalKind: goal.kind,
       goalTarget: { ...goal.position },
-      navigationTarget: {
-        ...(navigationTarget?.targetPosition ?? goal.position),
-      },
-      navigationTargetKey: navigationTarget
-        ? `${goal.targetKey}:${navigationTarget.key}`
-        : goal.targetKey,
+      navigationTarget: { ...routePlan.position },
+      navigationTargetKey: routePlan.targetKey,
+      strategicPickupId: strategicPickup?.id ?? null,
+      routeLandmarkId: routePlan.landmarkId,
       combatTargetId: combatTarget?.id ?? null,
       standoffKey: navigationTarget?.key ?? null,
       holdPosition: navigationTarget?.holdPosition ?? false,
@@ -200,6 +242,7 @@ export class ClassicCtfBotController {
   reset(): void {
     this.navigator.reset();
     this.decision.reset();
+    this.landmarkRoute.reset();
     this.resetTransientState();
     this.lastDebugState = createEmptyDebugState(this.actorId);
   }
@@ -224,6 +267,7 @@ export class ClassicCtfBotController {
   private resetTransientState(): void {
     this.combat.reset();
     this.targetSelector.reset();
+    this.landmarkRoute.reset();
     this.jumpHeld = false;
   }
 
@@ -232,11 +276,12 @@ export class ClassicCtfBotController {
     actor: Readonly<ActorState>,
     jump: boolean,
   ): void {
+    const requestedNavigationJump = this.difficulty.canUseJumpLinks && jump;
     const continueHeldJump = this.jumpHeld && !actor.jump.grounded;
-    if (jump || continueHeldJump) {
+    if (requestedNavigationJump || continueHeldJump) {
       let requestedJumpStart = false;
       if (
-        jump &&
+        requestedNavigationJump &&
         !this.jumpHeld &&
         actor.jump.grounded &&
         actor.jump.cooldownRemainingMs <= 0
@@ -285,6 +330,8 @@ function createEmptyDebugState(
     goalTarget: null,
     navigationTarget: null,
     navigationTargetKey: "",
+    strategicPickupId: null,
+    routeLandmarkId: null,
     combatTargetId: null,
     standoffKey: null,
     holdPosition: false,
@@ -320,6 +367,16 @@ function directionBetween(
 
 function isCombatChaseGoal(kind: ClassicCtfBotGoal["kind"]): boolean {
   return kind === "recover-own-flag" || kind === "defend-base";
+}
+
+function canTakeResourceDetour(kind: ClassicCtfBotGoal["kind"]): boolean {
+  return kind === "attack-flag" ||
+    kind === "patrol-base" ||
+    kind === "support-mid";
+}
+
+function canUseLandmarkRoute(kind: ClassicCtfBotGoal["kind"]): boolean {
+  return kind === "attack-flag" || kind === "support-mid";
 }
 
 function positionsMatch(left: WorldPosition, right: WorldPosition): boolean {

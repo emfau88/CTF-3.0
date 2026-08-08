@@ -236,8 +236,8 @@ Development is focused on:
 - re-baselining the full premium-map bot audit, especially 4v4 Classic CTF
 - extending the shared image/collision registration into a route-graph contract
 - profiling rendering on real mobile hardware without sacrificing map space
-- using the twelve registered landmarks per premium map for explainable bot
-  route, pickup and retreat decisions
+- playtesting the new landmark-based bot routes, pickup coordination and
+  difficulty-specific jump behavior
 
 Online multiplayer, local PvP, account services and cloud saves are not part of
 the current playable build.
