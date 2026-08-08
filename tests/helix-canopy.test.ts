@@ -273,6 +273,7 @@ test("Helix Canopy exposes actor-accurate collision diagnostics", () => {
   );
   assert.match(scene, /search\.get\("collisionDebug"\) === "1"/);
   assert.match(scene, /search\.get\("clearanceHeatmap"\) === "1"/);
+  assert.match(scene, /search\.get\("landmarkDebug"\) === "1"/);
 });
 
 test("Helix Canopy collision and authored bot routes remain mirrored and clear", () => {
@@ -304,8 +305,18 @@ test("Helix Canopy ships the approved undistorted v2.1 arena master", () => {
   assert.equal(png.readUInt32BE(16), 1647);
   assert.equal(png.readUInt32BE(20), 955);
   assert.equal(png[25], 2);
+  assert.deepEqual(HELIX_CANOPY_V2.registration?.master, {
+    masterWidth: 1647,
+    masterHeight: 955,
+    worldRect: {
+      x: 152.01675392670154,
+      y: 0,
+      width: 1903.966492146597,
+      height: 1104,
+    },
+  });
   const renderer = readFileSync(resolve("src/arenaRenderer.ts"), "utf8");
-  assert.match(renderer, /level\.height \* \(1647 \/ 955\)/);
+  assert.match(renderer, /drawRegisteredArenaMaster/);
   const assets = readFileSync(resolve("src/assets.ts"), "utf8");
   assert.match(assets, /helix-canopy\/arena-master-v2\.png/);
   assert.doesNotMatch(renderer, /helixFloorCanopy/);

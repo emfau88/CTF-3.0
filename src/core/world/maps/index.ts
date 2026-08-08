@@ -35,6 +35,11 @@ export {
   type WorldMapClearanceSample,
   type WorldMapClearanceSampleOptions,
 } from "./worldMapClearance";
+export {
+  createCenteredWorldMapMasterTransform,
+  createWorldMapLandmark,
+  projectWorldMapMasterPoint,
+} from "./worldMapRegistration";
 export type {
   WorldMapData,
   WorldMapGameplay,
@@ -46,10 +51,17 @@ export type {
   WorldMapGapPresentation,
   WorldMapGapVisual,
   WorldMapInfo,
+  WorldMapLandmark,
+  WorldMapLandmarkCover,
+  WorldMapLandmarkDefinition,
+  WorldMapLandmarkKind,
+  WorldMapLandmarkTraversal,
+  WorldMapMasterTransform,
   WorldMapPickupSpawn,
   WorldMapPresentation,
   WorldMapPresentationRect,
   WorldMapTheme,
+  WorldMapRegistration,
   WorldMapWallPresentation,
   WorldMapWallVisual,
 } from "./worldMapData";

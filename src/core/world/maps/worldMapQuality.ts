@@ -2,6 +2,7 @@ import type { WorldPosition } from "../../actors";
 import type { WorldRect } from "../worldGeometry";
 import type { WorldMapData, WorldMapPresentationRect } from "./worldMapData";
 import { WORLD_MAP_ACTOR_RADIUS } from "./worldMapClearance";
+import { projectWorldMapMasterPoint } from "./worldMapRegistration";
 
 const DEFAULT_PICKUP_RADIUS = 22;
 const DEFAULT_MAXIMUM_JUMP_DISTANCE = 170;
@@ -44,6 +45,10 @@ export interface WorldMapQualityIssue {
     | "jump-link-too-long"
     | "jump-link-misses-traversal"
     | "invalid-diagnostic-spawn"
+    | "invalid-landmark-registration"
+    | "duplicate-landmark-id"
+    | "invalid-landmark-surface"
+    | "invalid-landmark-pickup"
     | "unsafe-required-point"
     | "unblocked-required-sight-line";
   readonly message: string;
@@ -64,6 +69,7 @@ export function validateWorldMapQuality(
   validateSpawns(map, actorRadius, issues);
   validatePickups(map, actorRadius, pickupRadius, issues);
   validateJumpLinks(map, maximumJumpDistance, issues);
+  validateLandmarks(map, issues);
 
   if (!pointHasClearance(map, map.diagnosticSpawn, actorRadius)) {
     issues.push({
@@ -99,6 +105,85 @@ export function validateWorldMapQuality(
   }
 
   return issues;
+}
+
+function validateLandmarks(
+  map: WorldMapData,
+  issues: WorldMapQualityIssue[],
+): void {
+  const registration = map.registration;
+  if (!registration) return;
+  const { master, landmarks } = registration;
+  if (
+    registration.version !== 1 ||
+    !Number.isFinite(master.masterWidth) || master.masterWidth <= 0 ||
+    !Number.isFinite(master.masterHeight) || master.masterHeight <= 0 ||
+    !isPositiveRect(master.worldRect) ||
+    landmarks.length < 8 || landmarks.length > 12
+  ) {
+    issues.push({
+      code: "invalid-landmark-registration",
+      message: `${map.id} registration needs a valid master transform and 8-12 landmarks.`,
+    });
+  }
+
+  const seen = new Set<string>();
+  for (const landmark of landmarks) {
+    if (seen.has(landmark.id)) {
+      issues.push({
+        code: "duplicate-landmark-id",
+        message: `${map.id} uses duplicate landmark id ${landmark.id}.`,
+      });
+    }
+    seen.add(landmark.id);
+    const projected = projectWorldMapMasterPoint(master, landmark.masterPosition);
+    const masterInBounds =
+      landmark.masterPosition.x >= 0 &&
+      landmark.masterPosition.x <= master.masterWidth &&
+      landmark.masterPosition.y >= 0 &&
+      landmark.masterPosition.y <= master.masterHeight;
+    if (
+      !masterInBounds ||
+      distance(projected, landmark.position) > 1 ||
+      landmark.routeTags.length === 0
+    ) {
+      issues.push({
+        code: "invalid-landmark-registration",
+        message: `${map.id} landmark ${landmark.id} must match its master projection and have route tags.`,
+      });
+    }
+
+    const onSolid = map.geometry.solids.some((rect) =>
+      pointInsideRect(landmark.position, rect)
+    );
+    const onGap = map.geometry.gaps.some((rect) =>
+      pointInsideRect(landmark.position, rect)
+    );
+    const surfaceMatches = landmark.traversal === "solid"
+      ? onSolid && landmark.cover !== "open" && landmark.cover !== "gap"
+      : landmark.traversal === "gap"
+      ? onGap && landmark.cover === "gap"
+      : pointHasClearance(map, landmark.position, WORLD_MAP_ACTOR_RADIUS) &&
+        landmark.cover !== "gap";
+    if (!surfaceMatches) {
+      issues.push({
+        code: "invalid-landmark-surface",
+        message: `${map.id} landmark ${landmark.id} does not match its expected ${landmark.traversal}/${landmark.cover} surface.`,
+      });
+    }
+
+    if (landmark.pickupId) {
+      const pickup = map.pickupSpawns.find((candidate) =>
+        candidate.id === landmark.pickupId
+      );
+      if (!pickup || distance(pickup.position, landmark.position) > 1) {
+        issues.push({
+          code: "invalid-landmark-pickup",
+          message: `${map.id} landmark ${landmark.id} must anchor pickup ${landmark.pickupId}.`,
+        });
+      }
+    }
+  }
 }
 
 export function assertWorldMapQuality(
@@ -378,6 +463,14 @@ function circleIntersectsRect(
   const nearestX = clamp(point.x, rect.x, rect.x + rect.width);
   const nearestY = clamp(point.y, rect.y, rect.y + rect.height);
   return (point.x - nearestX) ** 2 + (point.y - nearestY) ** 2 < radius ** 2;
+}
+
+function pointInsideRect(
+  point: WorldPosition,
+  rect: WorldMapPresentationRect,
+): boolean {
+  return point.x >= rect.x && point.x <= rect.x + rect.width &&
+    point.y >= rect.y && point.y <= rect.y + rect.height;
 }
 
 function segmentIntersectsRect(

@@ -2,6 +2,7 @@ import type { PickupType } from "./core/pickups";
 import type {
   WorldMapDecorationKind,
   WorldMapGapVisual,
+  WorldMapMasterTransform,
   WorldMapTheme,
   WorldMapWallVisual,
 } from "./core/world/maps";
@@ -30,6 +31,7 @@ export interface ArenaPresentationData {
   readonly theme: WorldMapTheme;
   readonly width: number;
   readonly height: number;
+  readonly masterTransform?: WorldMapMasterTransform;
   readonly redSpawn: { readonly x: number; readonly y: number };
   readonly blueSpawn: { readonly x: number; readonly y: number };
   readonly redBase: ArenaPresentationRect;

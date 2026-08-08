@@ -198,10 +198,7 @@ function drawFoundryFloor(scene: Phaser.Scene, level: ArenaPresentationData) {
     level.height,
     0x08090b,
   ).setDepth(-2.1);
-  const imageWidth = level.height * (1915 / 821);
-  scene.add.image(level.width / 2, level.height / 2, "foundryArenaMasterV2")
-    .setDisplaySize(imageWidth, level.height)
-    .setDepth(-2);
+  drawRegisteredArenaMaster(scene, level, "foundryArenaMasterV2");
 }
 
 function drawHelixFloor(scene: Phaser.Scene, level: ArenaPresentationData) {
@@ -212,10 +209,7 @@ function drawHelixFloor(scene: Phaser.Scene, level: ArenaPresentationData) {
     level.height,
     0x050b18,
   ).setDepth(-2.1);
-  const imageWidth = level.height * (1647 / 955);
-  scene.add.image(level.width / 2, level.height / 2, "helixArenaMaster")
-    .setDisplaySize(imageWidth, level.height)
-    .setDepth(-2);
+  drawRegisteredArenaMaster(scene, level, "helixArenaMaster");
 }
 
 function drawHelixCombatZone(scene: Phaser.Scene, r: ArenaPresentationRect) {
@@ -259,10 +253,7 @@ function drawTempleFloor(scene: Phaser.Scene, level: ArenaPresentationData) {
     level.height,
     0x101711,
   ).setDepth(-2.1);
-  const imageWidth = level.height * (1913 / 822);
-  scene.add.image(level.width / 2, level.height / 2, "templeArenaMasterV2")
-    .setDisplaySize(imageWidth, level.height)
-    .setDepth(-2);
+  drawRegisteredArenaMaster(scene, level, "templeArenaMasterV2");
   for (const gap of level.gaps) {
     const shimmer = scene.add.graphics()
       .setDepth(-1.78)
@@ -294,6 +285,22 @@ function drawTempleFloor(scene: Phaser.Scene, level: ArenaPresentationData) {
       delay: gap.x % 317,
     });
   }
+}
+
+function drawRegisteredArenaMaster(
+  scene: Phaser.Scene,
+  level: ArenaPresentationData,
+  texture: string,
+): void {
+  const rect = level.masterTransform?.worldRect;
+  if (!rect) {
+    throw new Error(`${level.id} needs a registered master-image transform.`);
+  }
+  scene.add.image(
+    rect.x + rect.width / 2,
+    rect.y + rect.height / 2,
+    texture,
+  ).setDisplaySize(rect.width, rect.height).setDepth(-2);
 }
 
 function drawTempleCombatZone(

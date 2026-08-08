@@ -120,7 +120,9 @@ export class GameplayV2Scene extends Phaser.Scene {
     const isOneFlag = route.mode === "one-flag";
     const selectedMap = resolveWorldMap(route.map);
     const collisionDiagnostics: ArenaCollisionDiagnostics =
-      search.get("clearanceHeatmap") === "1"
+      search.get("landmarkDebug") === "1"
+        ? "landmarks"
+        : search.get("clearanceHeatmap") === "1"
         ? "heatmap"
         : search.get("collisionDebug") === "1"
         ? "solids"

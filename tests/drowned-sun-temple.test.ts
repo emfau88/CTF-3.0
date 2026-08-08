@@ -46,8 +46,8 @@ test("Temple production art ships a cohesive wide master image", () => {
   assert.equal(master.readUInt32BE(16), 1913);
   assert.equal(master.readUInt32BE(20), 822);
   assert.equal(master[25], 2);
-  const renderer = readFileSync(resolve("src/arenaRenderer.ts"), "utf8");
-  assert.match(renderer, /level\.height \* \(1913 \/ 822\)/);
+  assert.deepEqual(DROWNED_SUN_TEMPLE_V2.registration?.master.masterWidth, 1913);
+  assert.deepEqual(DROWNED_SUN_TEMPLE_V2.registration?.master.masterHeight, 822);
 });
 
 test("Temple legacy production art kit remains available for rollback", () => {

@@ -184,6 +184,20 @@ Rollback, aber nicht als konkurrierende zweite Geometriesprache.
 
 ### Phase E – Kollision aus dem Bild nachzeichnen
 
+Vor der Detailarbeit erhält jede Premium-Map einen maschinenlesbaren
+Registrierungsvertrag mit acht bis zwölf Landmarken. Jede Landmarke enthält:
+
+- einen eindeutigen Namen und eine semantische Rolle;
+- Masterbildpunkt und daraus projizierten Weltpunkt;
+- erwartete Begehbarkeit und Deckungsart;
+- mindestens ein Routentag sowie, falls zutreffend, die echte Pickup-ID.
+
+Basen, zentrales Objective, wichtige Kreuzungen, Deckung und bestätigte
+Pickup-Anker müssen vertreten sein. `mapPreview=1&landmarkDebug=1` blendet die
+Punkte zur Sichtprüfung ein. Die Registrierung verbessert Bot-Verhalten nicht
+automatisch: Erst ein separat getesteter KI-Verbrauch darf Landmarken für
+Zielwahl, Rückzug oder Routenentscheidung verwenden.
+
 Kollision niemals nur aus einer alten Greybox übernehmen.
 
 1. Masterbild im Spiel rendern.

@@ -97,11 +97,23 @@ Zwei Punkte müssen inzwischen aktualisiert werden:
 - Mobile Waffenbuttons übernehmen weiterhin direkt das Waffenroster der Map.
   Die automatische Touch-Erkennung steuert nun zusätzlich dieselbe kompakte
   HTML-Utility-Leiste wie die Phaser-Steuerung.
-- Die technische Verteilung ist umgesetzt. Die subjektive Abnahme der genauen
-  Positionen ist bewusst das Gate vor den Registrierungs-Landmarken.
+- Die technische Verteilung ist umgesetzt. Die aktuellen Positionen wurden als
+  belastbare Ausgangsbasis angenommen und als Pickup-Landmarken registriert.
 - 210/210 Tests, Test-Typecheck und Production-Build bestehen. Der bestehende
   Mobile-E2E-Vertrag verwendet nun `Auto detect` auf einem Touch-Kontext, damit
   Phaser-Steuerung und HTML-Utility-Leiste nicht wieder auseinanderlaufen.
+
+### Phase 5 — Gemeinsamer Registrierungsvertrag
+
+- Helix, Temple und Foundry verwenden denselben zentrierten Masterbild-Transform
+  für Renderer und Landmarken. Map-spezifische Skalierungsformeln entfallen.
+- Jede Premium-Map besitzt zwölf benannte Landmarken: zwei Basen, ein zentrales
+  Objective, wichtige Routen-/Deckungspunkte und sieben feste Pickup-Anker.
+- Das automatische Qualitätsgate prüft Anzahl, eindeutige IDs, Projektion,
+  Begehbarkeit, Deckungsart und die Verbindung zum tatsächlichen Pickup.
+- `mapPreview=1&landmarkDebug=1` zeigt die Registrierung ohne Kosten im normalen
+  Match. Die Bots konsumieren diese Semantik noch nicht; dadurch ändert Phase 5
+  allein weder Schwierigkeit noch Laufverhalten.
 
 ## Einordnung meiner bisherigen Kommentare
 
@@ -116,16 +128,15 @@ Meine vorherige Einschätzung zum Fremdaudit lässt sich so zusammenfassen:
 
 ## Empfohlene nächste Schritte
 
-### 1. Pickup-Positionen abnehmen und danach Landmarken erfassen
+### 1. Landmarken kontrolliert für die Bot-KI nutzbar machen
 
-Die neue Ressourcenverteilung wird auf Helix, Temple und Foundry zunächst in
-TDM, Classic CTF und One Flag manuell geprüft. Bewertet werden Basissicherheit,
-Umwegkosten, zentrale Risiken, Rückwege und mögliche Pickup-Cluster.
-
-Erst nach dieser Abnahme werden pro Premium-Map acht bis zwölf benannte
-Landmarken festgeschrieben. Dazu gehören beide Basen, zentrale Objectives,
-wichtige Routenkreuzungen sowie die bestätigten Pickup-Anker. Jede Landmarke
-speichert Masterbildpunkt, Weltpunkt, erwartete Begehbarkeit und Deckungsart.
+Die zwölf Landmarken pro Premium-Map sind erfasst und technisch abgesichert.
+Als nächster Schritt werden sie nicht pauschal zu neuen Wegpunkten, sondern zu
+erklärbaren Entscheidungshilfen: Pickup-Ziele, sichere Rückzugsbereiche,
+umkämpfte Mittelpunkte und alternative Routeneinstiege. Zunächst wird nur die
+Zielwahl angebunden; Bewegung und Pathfinding bleiben unverändert. Danach wird
+gegen die heutige Bot-Baseline geprüft, ob Objektivspiel und Teamverteilung
+tatsächlich besser werden, ohne allwissend oder vorhersehbar zu wirken.
 
 ### 2. Helix subjektiv abnehmen
 
@@ -145,15 +156,15 @@ Die technische Verdrahtung ist abgeschlossen. Als Nächstes sollten Easy, Normal
 
 Difficulty-Wiring sowie Runtime-/Mobile-Arbeit sind inzwischen in getrennten Commits dokumentiert. Nach dem Merge des Feature-Branches wird der vollständige 270-Match-Audit auf dem dokumentierten Merge-Commit ausgeführt. Der Bericht wird mit dem Lauf vom 2026-07-19 verglichen; besonders Temple/Foundry Classic CTF 4v4 und Foundry CPU-p95 werden isoliert betrachtet.
 
-### 5. Gemeinsamen Registrierungsvertrag einführen
+### 5. Registrierungsvertrag zum Routengraph erweitern
 
-Vor einem großen Editor genügt eine kleine gemeinsame Schicht:
+Die kleine gemeinsame Schicht ist umgesetzt:
 
-- ein wiederverwendbarer Masterbild-Transform statt map-spezifischer Skalierungsformeln;
-- acht bis zwölf benannte Landmarken pro Premium-Map;
-- pro Landmarke Masterpunkt, Weltpunkt, erwartete Begehbarkeit und Deckungsart;
-- ein maschinenlesbares Registrierungsmanifest plus automatisch erzeugte Debugansicht;
-- anschließend ein Graph-Gate für mindestens zwei unabhängige Wege von jeder Basis zum zentralen Objective.
+- [x] ein wiederverwendbarer Masterbild-Transform statt map-spezifischer Skalierungsformeln;
+- [x] zwölf benannte Landmarken pro Premium-Map;
+- [x] pro Landmarke Masterpunkt, Weltpunkt, erwartete Begehbarkeit und Deckungsart;
+- [x] ein maschinenlesbares Registrierungsmanifest plus Debugansicht;
+- [ ] ein Graph-Gate für mindestens zwei unabhängige Wege von jeder Basis zum zentralen Objective.
 
 Erst wenn diese kleine Lösung unzureichend ist, sollte SVG, LDtk oder Tiled als Authoringquelle bewertet werden.
 

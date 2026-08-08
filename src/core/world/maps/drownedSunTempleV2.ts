@@ -1,5 +1,12 @@
 import { createTeamSpawnPoints } from "./createTeamSpawnPoints";
-import type { WorldMapData } from "./worldMapData";
+import {
+  createCenteredWorldMapMasterTransform,
+  createWorldMapLandmark,
+} from "./worldMapRegistration";
+import type {
+  WorldMapData,
+  WorldMapLandmarkDefinition,
+} from "./worldMapData";
 
 const INTEGRATED_COVER = "temple-integrated-cover" as const;
 const WORLD_WIDTH = 2280;
@@ -8,6 +15,14 @@ const MASTER_WIDTH = 1913;
 const MASTER_HEIGHT = 822;
 const MASTER_SCALE = WORLD_HEIGHT / MASTER_HEIGHT;
 const MASTER_OFFSET_X = (WORLD_WIDTH - MASTER_WIDTH * MASTER_SCALE) / 2;
+const MASTER_TRANSFORM = createCenteredWorldMapMasterTransform(
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
+  MASTER_WIDTH,
+  MASTER_HEIGHT,
+);
+const landmark = (definition: WorldMapLandmarkDefinition) =>
+  createWorldMapLandmark(MASTER_TRANSFORM, definition);
 
 const masterRect = (
   x: number,
@@ -312,6 +327,24 @@ export const DROWNED_SUN_TEMPLE_V2: WorldMapData = {
         point(360, 640), point(360, 280),
       ],
     },
+  },
+  registration: {
+    version: 1,
+    master: MASTER_TRANSFORM,
+    landmarks: [
+      landmark({ id: "blue-base", label: "Blue Base", kind: "base", masterPosition: { x: 126.112, y: 411 }, traversal: "walkable", cover: "open", routeTags: ["base", "blue", "causeway"] }),
+      landmark({ id: "red-base", label: "Red Base", kind: "base", masterPosition: { x: 1786.888, y: 411 }, traversal: "walkable", cover: "open", routeTags: ["base", "red", "causeway"] }),
+      landmark({ id: "drowned-sun", label: "Drowned Sun", kind: "objective", masterPosition: { x: 956.5, y: 411 }, traversal: "walkable", cover: "open", routeTags: ["objective", "causeway"] }),
+      landmark({ id: "gallery-center", label: "Jaguar Gallery Disc", kind: "pickup", masterPosition: { x: 956.5, y: 67.102 }, traversal: "walkable", cover: "open", routeTags: ["north", "gallery", "pickup"], pickupId: "disc-gallery-center" }),
+      landmark({ id: "rootwater-center", label: "Rootwater Crossing", kind: "route", masterPosition: { x: 956.5, y: 650.051 }, traversal: "walkable", cover: "open", routeTags: ["south", "rootwater", "crossing"] }),
+      landmark({ id: "blue-gallery-recovery", label: "Blue Gallery Health", kind: "pickup", masterPosition: { x: 457.429, y: 209.694 }, traversal: "walkable", cover: "open", routeTags: ["blue", "north", "recovery"], pickupId: "health-blue-upper-exit" }),
+      landmark({ id: "red-gallery-recovery", label: "Red Gallery Health", kind: "pickup", masterPosition: { x: 1455.571, y: 209.694 }, traversal: "walkable", cover: "open", routeTags: ["red", "north", "recovery"], pickupId: "health-red-upper-exit" }),
+      landmark({ id: "blue-rootwater-armor", label: "Blue Rootwater Armor", kind: "pickup", masterPosition: { x: 457.429, y: 637.469 }, traversal: "walkable", cover: "open", routeTags: ["blue", "south", "armor"], pickupId: "armor-blue-lower-exit" }),
+      landmark({ id: "red-rootwater-armor", label: "Red Rootwater Armor", kind: "pickup", masterPosition: { x: 1455.571, y: 637.469 }, traversal: "walkable", cover: "open", routeTags: ["red", "south", "armor"], pickupId: "armor-red-lower-exit" }),
+      landmark({ id: "inner-health-west", label: "Inner Health West", kind: "pickup", masterPosition: { x: 704.867, y: 411 }, traversal: "walkable", cover: "open", routeTags: ["west", "causeway", "recovery"], pickupId: "health-inner-west" }),
+      landmark({ id: "inner-health-east", label: "Inner Health East", kind: "pickup", masterPosition: { x: 1208.133, y: 411 }, traversal: "walkable", cover: "open", routeTags: ["east", "causeway", "recovery"], pickupId: "health-inner-east" }),
+      landmark({ id: "solar-sight-altar", label: "Solar Sight Altar", kind: "cover", masterPosition: { x: 956.5, y: 241.15 }, traversal: "solid", cover: "low", routeTags: ["north", "objective", "cover"] }),
+    ],
   },
   diagnosticSpawn: point(2010, 460),
 };

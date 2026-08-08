@@ -43,7 +43,11 @@ interface LibraryDustParticle {
   alpha: number;
 }
 
-export type ArenaCollisionDiagnostics = "off" | "solids" | "heatmap";
+export type ArenaCollisionDiagnostics =
+  | "off"
+  | "solids"
+  | "heatmap"
+  | "landmarks";
 
 export class PhaserArenaRendererPort implements RendererPort {
   private readonly projectileViews =
@@ -158,6 +162,10 @@ export class PhaserArenaRendererPort implements RendererPort {
     mode: Exclude<ArenaCollisionDiagnostics, "off">,
     graphics: Phaser.GameObjects.Graphics,
   ): void {
+    if (mode === "landmarks") {
+      this.renderLandmarkDiagnostics(map, graphics);
+      return;
+    }
     const radius = WORLD_MAP_ACTOR_RADIUS;
     if (mode === "heatmap") {
       const step = 22;
@@ -244,6 +252,68 @@ export class PhaserArenaRendererPort implements RendererPort {
         padding: { x: 8, y: 6 },
       },
     ).setDepth(120).setScrollFactor(0);
+    this.collisionDiagnosticViews.push(legend);
+  }
+
+  private renderLandmarkDiagnostics(
+    map: WorldMapData,
+    graphics: Phaser.GameObjects.Graphics,
+  ): void {
+    const landmarks = map.registration?.landmarks ?? [];
+    for (const landmark of landmarks) {
+      const color = landmark.traversal === "solid"
+        ? 0xff496c
+        : landmark.traversal === "gap"
+        ? 0x25c7ff
+        : landmark.kind === "pickup"
+        ? 0xffd85a
+        : landmark.kind === "base"
+        ? 0x63b7ff
+        : 0x79ffbd;
+      graphics
+        .fillStyle(0x07131b, .86)
+        .fillCircle(landmark.position.x, landmark.position.y, 10)
+        .lineStyle(3, color, 1)
+        .strokeCircle(landmark.position.x, landmark.position.y, 10)
+        .lineStyle(1, color, .8)
+        .lineBetween(
+          landmark.position.x - 15,
+          landmark.position.y,
+          landmark.position.x + 15,
+          landmark.position.y,
+        )
+        .lineBetween(
+          landmark.position.x,
+          landmark.position.y - 15,
+          landmark.position.x,
+          landmark.position.y + 15,
+        );
+      const label = this.scene.add.text(
+        landmark.position.x + 14,
+        landmark.position.y - 12,
+        `${landmark.label}\n${landmark.traversal}/${landmark.cover} · ${landmark.routeTags.join(" · ")}`,
+        {
+          backgroundColor: "rgba(4, 14, 20, .88)",
+          color: "#f5fbff",
+          fontFamily: "monospace",
+          fontSize: "10px",
+          padding: { x: 4, y: 3 },
+        },
+      ).setDepth(89);
+      this.collisionDiagnosticViews.push(label);
+    }
+    const legend = this.scene.add.text(
+      12,
+      58,
+      `LANDMARKEN ${landmarks.length} · BLAU BASIS · GELB PICKUP · GRÜN ROUTE · ROT SOLID`,
+      {
+        backgroundColor: "rgba(4, 14, 20, .9)",
+        color: "#f5fbff",
+        fontFamily: "monospace",
+        fontSize: "12px",
+        padding: { x: 7, y: 5 },
+      },
+    ).setDepth(90).setScrollFactor(0);
     this.collisionDiagnosticViews.push(legend);
   }
 
@@ -622,6 +692,7 @@ function toPresentationLevel(map: WorldMapData): ArenaPresentationData {
     theme: map.presentation.theme,
     width: bounds.maxX - bounds.minX,
     height: bounds.maxY - bounds.minY,
+    masterTransform: map.registration?.master,
     redSpawn: { ...redSpawn },
     blueSpawn: { ...blueSpawn },
     redBase: rect(map.gameplay.redBase),

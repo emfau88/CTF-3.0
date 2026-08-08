@@ -234,10 +234,10 @@ Development is focused on:
 - expanding League progression beyond the Proving Circuit
 - subjectively calibrating Easy, Normal and Hard bot profiles
 - re-baselining the full premium-map bot audit, especially 4v4 Classic CTF
-- introducing a shared image/collision registration and route-graph contract
+- extending the shared image/collision registration into a route-graph contract
 - profiling rendering on real mobile hardware without sacrificing map space
-- approving the premium pickup placements, then recording eight to twelve
-  named registration landmarks per premium map
+- using the twelve registered landmarks per premium map for explainable bot
+  route, pickup and retreat decisions
 
 Online multiplayer, local PvP, account services and cloud saves are not part of
 the current playable build.
