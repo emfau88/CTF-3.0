@@ -1,6 +1,6 @@
 # Asset Provenance
 
-Stand: 2026-07-13
+Stand: 2026-08-24
 
 Nach Angabe des Projekteigentuemers wurden die vorhandenen Spielassets mit
 ChatGPT erzeugt. Fuer aeltere Assets liegen in diesem Repository derzeit keine
@@ -124,3 +124,34 @@ menschlichen Abnahme unveraendert aus
 `docs/concepts/foundry-circuit-rebuild-target-v2.png` uebernommen. Prompt,
 Edit-Ziel und technische Leitplanken stehen in
 `docs/concepts/foundry-circuit-rebuild-target-v2-prompt.md`.
+
+## Arena-Twilight-Menüassets
+
+Die folgenden Assets wurden am 2026-08-24 mit dem eingebauten
+OpenAI-ImageGen-Modus eigens für das neue responsive Menü erzeugt:
+
+- `public/assets/ui/menu/arena-twilight-desktop-v1.webp`
+  (1672 × 941, RGB): textfreier weiter Blick in ein hochwertiges orbitales
+  Arena-Foyer mit Glas, Vegetation, kühlen Cyan-Akzenten, ruhigen Flächen für
+  HTML-Menüs und zurückhaltendem Morgenlicht; keine Personen, Waffen, Logos,
+  Schrift, UI-Panels oder Wasserzeichen.
+- `public/assets/ui/menu/arena-twilight-mobile-v1.webp`
+  (853 × 1844, RGB): hochformatige Companion-Komposition derselben
+  Arena-Twilight-Umgebung mit klarer vertikaler Tiefenführung, ruhiger Mitte
+  und abgedunkelten Randzonen für lesbare Mobile-Menüs; keine Schrift, Logos,
+  Figuren, Waffen, UI oder Wasserzeichen.
+- `public/assets/ui/menu/league-tier-proving-v1.png`
+  (512 × 512, RGBA): symmetrisches silbernes Einstiegs-Ligaabzeichen mit
+  cyanfarbenem Energiekern, transparenter Hintergrund, kein Text.
+- `public/assets/ui/menu/league-tier-contender-v1.png`
+  (512 × 512, RGBA): komplexeres platin-/tealfarbenes Ligaabzeichen als klarer
+  visueller Aufstieg vom Proving-Tier, transparenter Hintergrund, kein Text.
+- `public/assets/ui/menu/league-tier-apex-v1.png`
+  (512 × 512, RGBA): prestigeträchtiges gold-/schwarzes Meisterschaftsabzeichen
+  mit geometrischem Arena-Kern, transparenter Hintergrund, kein Text.
+
+Prompt-Leitplanken für alle fünf Generierungen: originelles Premium-Sci-Fi-
+Sportdesign, klare symmetrische Formsprache, lesbare Silhouette auch in kleiner
+UI-Darstellung, keine geschützten Marken oder wiedererkennbaren Fremddesigns.
+Die Hintergründe wurden ohne inhaltliche Retusche als WebP-Runtimefassung
+übernommen; die Abzeichen wurden als transparente PNGs übernommen.

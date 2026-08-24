@@ -44,6 +44,7 @@ import {
   readV2FullscreenControlState,
   toggleV2Fullscreen,
 } from "./v2Fullscreen";
+import { applyUiTranslations, onUiLanguageChange, uiText } from "./uiLocale";
 
 const search = new URLSearchParams(window.location.search);
 const leagueMatchContext = readLeagueMatchContext(search);
@@ -75,6 +76,7 @@ if (routeState.canStartMatch) {
 }
 const showV2Menu = Boolean(activeRoute.menu || routeIssues.length > 0);
 
+applyUiTranslations(document);
 setupV2FullscreenControls();
 
 if (showV2Menu) {
@@ -235,7 +237,7 @@ if (showV2Menu) {
       let currentSfx = activeRoute.sfx;
       const syncAudioButton = (): void => {
         if (audioLabel) {
-          audioLabel.textContent = currentSfx === "off" ? "SFX OFF" : "SFX ON";
+          audioLabel.textContent = uiText(currentSfx === "off" ? "utility.sfxOff" : "utility.sfxOn");
         }
         audioButton.classList.toggle("is-muted", currentSfx === "off");
         audioButton.setAttribute(
@@ -244,7 +246,7 @@ if (showV2Menu) {
         );
         audioButton.setAttribute(
           "aria-label",
-          currentSfx === "off" ? "Enable sound effects" : "Disable sound effects",
+          uiText(currentSfx === "off" ? "settings.enableSfx" : "settings.disableSfx"),
         );
       };
       syncAudioButton();
@@ -322,15 +324,18 @@ if (showV2Menu) {
       releaseOverlayPause();
       showGameplayV2Result({
         headline: detail.result.kind === "draw"
-          ? "Draw"
+          ? uiText("common.draw")
           : leagueMatchContext
             ? detail.result.winnerEntryId === "blue"
-              ? `${careerProfile?.teamName ?? "Iron Vanguard"} Win`
-              : `${leagueOpponentName ?? "Rivals"} Win`
-            : `${detail.result.winnerEntryId.toUpperCase()} Wins`,
+              ? uiText("result.teamWins", { team: careerProfile?.teamName ?? "Iron Vanguard" })
+              : uiText("result.teamWins", { team: leagueOpponentName ?? "Rivals" })
+            : uiText("result.teamWins", { team: detail.result.winnerEntryId.toUpperCase() }),
         detail: leagueMatchContext
-          ? `LEAGUE MATCH ${leagueMatchContext.roundIndex + 1} · ${resultModeLabel(activeModeId)}`
-          : `${resultModeLabel(activeModeId)} · FINAL SCORE`,
+          ? uiText("result.leagueMatch", {
+              match: leagueMatchContext.roundIndex + 1,
+              mode: resultModeLabel(activeModeId),
+            })
+          : uiText("result.modeFinal", { mode: resultModeLabel(activeModeId) }),
         winnerEntryId: detail.result.kind === "winner"
           ? detail.result.winnerEntryId
           : null,
@@ -354,8 +359,8 @@ if (showV2Menu) {
         modeId: activeModeId,
         onPlayAgain: leagueMatchContext ? showMenuRoute : restartCurrentMatch,
         onMainMenu: showMenuRoute,
-        playAgainLabel: leagueMatchContext ? "Continue League" : "Play Again",
-        mainMenuLabel: leagueMatchContext ? "League HQ" : "Main Menu",
+        playAgainLabel: leagueMatchContext ? uiText("home.careerContinue") : uiText("result.playAgain"),
+        mainMenuLabel: leagueMatchContext ? uiText("league.title") : uiText("common.mainMenu"),
       });
     });
   showArenaLoadingUi(
@@ -380,10 +385,10 @@ function modeIdForRoute(mode: "tdm" | "ctf" | "one-flag") {
 
 function resultModeLabel(modeId: ReturnType<typeof modeIdForRoute>): string {
   return modeId === "team-deathmatch"
-    ? "TEAM DEATHMATCH"
+    ? uiText("custom.modeTdm").toUpperCase()
     : modeId === "classic-ctf"
-      ? "CLASSIC CTF"
-      : "ONE FLAG";
+      ? uiText("custom.modeCtf").toUpperCase()
+      : uiText("custom.modeOneFlag").toUpperCase();
 }
 
 function setupV2FullscreenControls(): void {
@@ -394,19 +399,20 @@ function setupV2FullscreenControls(): void {
 
   const syncControls = (): void => {
     const state = readV2FullscreenControlState(document);
+    const fullscreenLabel = uiText(state.active ? "common.exitFullscreen" : "common.enterFullscreen");
     for (const control of controls) {
       control.classList.toggle("is-hidden", !state.available);
       control.classList.toggle("is-active", state.active);
-      control.setAttribute("aria-label", state.ariaLabel);
+      control.setAttribute("aria-label", fullscreenLabel);
       control.setAttribute("aria-pressed", String(state.active));
-      control.setAttribute("title", state.ariaLabel);
+      control.setAttribute("title", fullscreenLabel);
       const label = control.querySelector<HTMLElement>(
         "[data-v2-fullscreen-label]",
       );
       const icon = control.querySelector<HTMLImageElement>(
         "[data-v2-fullscreen-icon]",
       );
-      if (label) label.textContent = state.label;
+      if (label) label.textContent = fullscreenLabel;
       if (icon) {
         icon.src =
           `${import.meta.env.BASE_URL}assets/ui/hud-fullscreen-${state.icon}.svg`;
@@ -429,5 +435,6 @@ function setupV2FullscreenControls(): void {
   }
   document.addEventListener("fullscreenchange", syncControls);
   document.addEventListener("fullscreenerror", syncControls);
+  onUiLanguageChange(syncControls);
   syncControls();
 }

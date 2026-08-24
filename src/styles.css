@@ -747,7 +747,6 @@ body.v2-map-preview > :not(#game) { display: none !important; }
   gap: 2px;
   padding: 2px;
 }
-.v2-game-utility.is-touch-controls .v2-fullscreen-button { display: none; }
 .v2-game-menu-button {
   position: relative;
   min-width: 67px;

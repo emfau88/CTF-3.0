@@ -42,12 +42,13 @@ const premiumArenas = [
   },
 ] as const;
 
-test("Quick Play launches asymmetric teams with separate bot skill", async ({
+test("Custom Match launches asymmetric teams with separate bot skill", async ({
   page,
 }) => {
   const diagnostics = collectBrowserDiagnostics(page);
   await page.goto("?v2=1&menu=1", { waitUntil: "domcontentloaded" });
   await page.locator("#v2-menu-play").click();
+  await page.locator('[data-setup-step-target="teams"]').click();
 
   await page.locator("#v2-menu-blue-bots").selectOption("2");
   await page.locator("#v2-menu-blue-bot-difficulty").selectOption("strong");
@@ -57,6 +58,7 @@ test("Quick Play launches asymmetric teams with separate bot skill", async ({
     "YOU + 2 HARD BOTS VS 3 EASY BOTS",
   );
 
+  await page.locator('[data-setup-step-target="overview"]').click();
   await page.locator("#v2-menu-start").click();
   await expect.poll(() => new URL(page.url()).searchParams.get("blueBots"))
     .toBe("2");

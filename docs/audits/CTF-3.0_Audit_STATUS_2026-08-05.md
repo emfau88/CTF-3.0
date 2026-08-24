@@ -1,6 +1,6 @@
 # CTF-3.0 Audit — Zweitprüfung und Umsetzungsstatus
 
-Stand: 2026-08-08
+Stand: 2026-08-24
 
 Bezugsdokument: [CTF-3.0_Audit.md](CTF-3.0_Audit.md)
 
@@ -17,7 +17,7 @@ Zwei Punkte müssen inzwischen aktualisiert werden:
 
 ## Status der Audit-Aussagen
 
-| Thema | Bewertung | Stand 2026-08-05 |
+| Thema | Bewertung | Stand 2026-08-24 |
 | --- | --- | --- |
 | Technische Basis statt Neubau | Bestätigt | Phaser/TypeScript, Map-Verträge, Bot-KI, Tests und Diagnostik sind substanziell. Ein Rewrite wäre weiterhin nicht gerechtfertigt. |
 | Drei Premium-Maps | Bestätigt | Helix Canopy, Temple of the Drowned Sun und Foundry Circuit bleiben die drei Premium-Maps. Es wurde keine vierte Map hinzugefügt. |
@@ -141,6 +141,25 @@ Zwei Punkte müssen inzwischen aktualisiert werden:
   4v4-Matrix über alle Premium-Maps und Modi meldete keine kritischen Befunde
   und keine Warnungen; die gemessenen Decision-CPU-p95-Werte lagen zwischen
   1,56 und 3,01 ms pro Simulationsframe.
+
+### Phase 7 — Menü, Sprache und responsive Produktoberfläche
+
+Diese Phase war kein eigener Punkt des Fremdaudits, schließt aber eine danach
+identifizierte Produktlücke:
+
+- Hauptmenü, Eigenes Match, League HQ, Einstellungen und Hilfe verwenden das
+  gemeinsame Arena-Twilight-Design.
+- Schnellstart und das vierstufige eigene Match sind funktional getrennt.
+- Statische und dynamische Menütexte stehen auf Deutsch und Englisch bereit;
+  die Auswahl wird lokal gespeichert.
+- Premium-Map-Vorschauen zeigen das vollständige Bild ohne Zuschnitt.
+- Desktop, Mobile Portrait und kompaktes Mobile Landscape besitzen eigene
+  responsive Regeln. Vollbild wird im Menü und in der oberen Match-Leiste
+  angeboten, wenn der Browser die API unterstützt.
+- Reproduzierbare, randlose Screenshots und der aktuelle QA-Vertrag stehen im
+  [Menü-Refresh-Bericht](../MENU_REFRESH_2026-08-24.md).
+- Der finale Stand besteht 223/223 Unit-/Integrations-/Simulationstests,
+  Test-Typecheck, Production-Build und 9/9 Browser-E2E-Tests.
 
 ## Einordnung meiner bisherigen Kommentare
 
