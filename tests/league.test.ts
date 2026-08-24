@@ -350,11 +350,12 @@ test("career and custom menus share the same primary navigation shell", () => {
   assert.match(html, /id="v2-menu-back" class="v2-subpage-back"/);
   assert.match(html, /id="league-back" class="v2-subpage-back"/);
   assert.match(html, /assets\/league\/arena-league-emblem\.png/);
-  assert.match(html, /Master every arena/);
+  assert.match(html, /data-i18n="home\.intro"/);
+  assert.match(html, /data-i18n="custom\.subtitle"/);
   assert.match(html, /id="league-intro-route"/);
 });
 
-test("quick play presents premium arena previews and a final match summary", () => {
+test("custom match presents premium arena previews and a final match summary", () => {
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   const menuSource = readFileSync(
     new URL("../src/v2Menu.ts", import.meta.url),
@@ -364,10 +365,15 @@ test("quick play presents premium arena previews and a final match summary", () 
   assert.match(html, /id="v2-menu-launch-summary"/);
   assert.doesNotMatch(html, /id="v2-menu-players"/);
   assert.doesNotMatch(html, /Local 2 Player/);
-  assert.match(html, /configure both squads/);
+  assert.match(html, /data-i18n="custom\.teamsHint"/);
   assert.match(html, /id="v2-menu-blue-bot-difficulty"/);
   assert.match(html, /id="v2-menu-red-bot-difficulty"/);
-  assert.match(html, /Input &amp; Audio/);
+  assert.match(html, /id="v2-setup-steps"/);
+  assert.match(html, /data-i18n="custom\.preferences"/);
+  assert.match(html, /id="v2-menu-overview-map"/);
+  assert.match(html, /id="v2-menu-match-dock"/);
+  assert.match(html, /id="v2-menu-dock-map"/);
+  assert.match(menuSource, /dockSteps\.forEach/);
   assert.match(menuSource, /helix-canopy-v2-1-overview\.png/);
   assert.match(menuSource, /drowned-sun-temple-v2-overview\.png/);
   assert.match(menuSource, /flow-circuit-v2-overview\.png/);
@@ -379,7 +385,7 @@ test("quick play presents premium arena previews and a final match summary", () 
   assert.match(menuSource, /QUICK_PLAY_DEFAULT_MAP\s*=\s*"helix-canopy-v2"/);
   assert.match(
     menuSource,
-    /elements\.map\.value\s*=\s*QUICK_PLAY_DEFAULT_MAP;[\s\S]*selectQuickPlayMode\(QUICK_PLAY_DEFAULT_MODE\)/,
+    /selectQuickPlayMap\(QUICK_PLAY_DEFAULT_MAP\);[\s\S]*selectQuickPlayMode\(QUICK_PLAY_DEFAULT_MODE\)/,
   );
   assert.match(menuSource, /const preferredSkin = loadPlayerSkinPreference\(\);/);
   assert.doesNotMatch(menuSource, /has\("skin"\)/);
@@ -627,12 +633,18 @@ test("league profile reviews correctable choices before starting the season", ()
   assert.match(document.getElementById("league-player-roster")!.textContent ?? "", /Lyra Quell/);
   assert.equal(createCareerProfileRepository(window.localStorage).load()?.captainSkinId, "ax9-mantis");
   assert.equal(window.localStorage.getItem(PLAYER_SKIN_STORAGE_KEY), null);
-  assert.match(document.getElementById("league-next-match")!.textContent ?? "", /MATCH 1 OF 3/);
+  assert.match(document.getElementById("league-next-match")!.textContent ?? "", /MATCH 1 \/ 3/);
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /TEAM DEATHMATCH 2V2/);
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /EXPECTED LINEUP/);
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /NO SEASON DATA/i);
   assert.equal(document.querySelectorAll(".league-season-stop").length, 3);
   assert.equal(document.querySelectorAll(".league-season-stop.is-current").length, 1);
+  assert.equal(document.querySelectorAll(".league-season-stop-emblem").length, 3);
+  assert.deepEqual(
+    Array.from(document.querySelectorAll(".league-season-stop strong"), (node) => node.textContent),
+    ["Grave Circuit", "Neon Phantoms", "Crimson Jackals"],
+  );
+  assert.match(document.querySelector(".league-season-stop.is-current b")?.textContent ?? "", /UP NEXT/i);
   assert.match(document.getElementById("league-pyramid")!.textContent ?? "", /Contender Circuit/);
   document.getElementById("league-manage-team")!.click();
   assert.equal(document.getElementById("league-header-title")!.textContent, "Team Manager");
@@ -713,9 +725,9 @@ test("league progression separates match outcome from rival-driven table movemen
 
   createLeagueMenuController({ onBack: () => {} }).open();
   const progression = document.getElementById("league-progression")!;
-  assert.match(progression.textContent ?? "", /The Climb Continues/);
+  assert.match(progression.textContent ?? "", /The climb continues/i);
   assert.doesNotMatch(progression.textContent ?? "", /Up 1 Place/);
-  assert.match(progression.textContent ?? "", /other circuit result reshaped the table/);
+  assert.match(progression.textContent ?? "", /other result moved you to #2/i);
   assert.ok(progression.querySelector(".league-points-earned.is-zero"));
   window.localStorage.clear();
 });

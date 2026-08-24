@@ -1,5 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
+const e2ePort = process.env.CORE_ARENA_E2E_PORT ?? "4197";
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
@@ -8,7 +10,7 @@ export default defineConfig({
   workers: 1,
   reporter: process.env.CI ? "github" : "line",
   use: {
-    baseURL: "http://127.0.0.1:4173/CTF-3.0/",
+    baseURL: `http://127.0.0.1:${e2ePort}/CTF-3.0/`,
     headless: true,
     launchOptions: {
       args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
@@ -16,9 +18,9 @@ export default defineConfig({
     viewport: { width: 1280, height: 720 },
   },
   webServer: {
-    command: "npm run preview -- --host 127.0.0.1 --port 4173",
-    url: "http://127.0.0.1:4173/CTF-3.0/",
-    reuseExistingServer: !process.env.CI,
+    command: `npm run preview -- --host 127.0.0.1 --port ${e2ePort}`,
+    url: `http://127.0.0.1:${e2ePort}/CTF-3.0/`,
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });

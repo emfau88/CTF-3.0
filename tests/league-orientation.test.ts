@@ -28,16 +28,19 @@ test("career presentation exposes one current circuit and two honest future prev
 
 test("league HQ keeps player identity, season progress and future-state language explicit", () => {
   const menu = readFileSync(new URL("../src/leagueMenu.ts", import.meta.url), "utf8");
+  const locale = readFileSync(new URL("../src/uiLocale.ts", import.meta.url), "utf8");
   const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
   assert.match(menu, /aria-current/);
   assert.match(menu, /league-you-badge/);
-  assert.match(menu, /UP NEXT/);
-  assert.match(menu, /LOCKED/);
-  assert.match(menu, /OF \$\{active\.rounds\.length\} COMPLETE/);
-  assert.match(menu, /COMING SOON/);
-  assert.match(menu, /YOU ARE HERE/);
-  assert.match(menu, /Qualification Earned/);
+  assert.match(menu, /uiText\("league\.upNext"\)/);
+  assert.match(menu, /uiText\("common\.locked"\)/);
+  assert.match(menu, /uiText\("league\.matchProgress"/);
+  assert.match(menu, /uiText\("common\.comingSoon"\)/);
+  assert.match(menu, /uiText\("league\.youAreHere"\)/);
+  assert.match(menu, /uiText\("league\.qualificationEarned"\)/);
+  assert.match(locale, /"league\.upNext": "UP NEXT"/);
+  assert.match(locale, /"league\.upNext": "ALS NÄCHSTES"/);
   assert.doesNotMatch(menu, /Promotion Secured|Challenger League|Core League/);
   assert.match(html, /id="league-season-command-status"/);
   assert.match(html, /id="league-standings-title"/);

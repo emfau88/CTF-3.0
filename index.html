@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="/src/styles.css" />
     <link rel="stylesheet" href="/src/styles/p0-desktop.css" />
     <link rel="stylesheet" href="/src/styles/p1-visual-polish.css" />
+    <link rel="stylesheet" href="/src/styles/menu-refresh.css" />
+    <link rel="stylesheet" href="/src/styles/menu-fidelity.css" />
   </head>
   <body>
     <div id="game"></div>
@@ -14,61 +16,72 @@
       <div class="v2-menu-card v2-menu-shell">
         <div id="v2-menu-status" class="v2-menu-status is-hidden" role="status" aria-live="polite"></div>
         <div id="v2-menu-home" class="v2-menu-view v2-home-view">
-          <button
-            class="v2-screen-fullscreen-button v2-home-fullscreen-button is-hidden"
-            type="button"
-            data-v2-fullscreen-control
-            aria-label="Enter fullscreen"
-            aria-pressed="false"
-          >
-            <img data-v2-fullscreen-icon src="./assets/ui/hud-fullscreen-enter.svg" alt="" aria-hidden="true" />
-            <span data-v2-fullscreen-label>Fullscreen</span>
-          </button>
           <div class="v2-home-brand">
             <img class="v2-home-league-mark" src="assets/league/arena-league-emblem.png" alt="" aria-hidden="true" />
-            <div class="v2-menu-kicker">THE OFFICIAL ARENA LEAGUE</div>
+            <div class="v2-menu-kicker" data-i18n="home.eyebrow">THE OFFICIAL ARENA LEAGUE</div>
             <h1>CORE<br><span>ARENA</span></h1>
-            <p class="v2-menu-intro">Build a two-fighter squad. Master every arena. Climb the league.</p>
+            <strong class="v2-home-tagline" data-i18n="home.tagline">YOUR ARENA. YOUR TEAM.</strong>
+            <p class="v2-menu-intro" data-i18n="home.intro">Build your squad and fight your way to the top.</p>
           </div>
-          <div class="v2-home-actions">
+          <div class="v2-home-actions" aria-label="Main navigation">
             <button id="v2-menu-league" class="v2-home-action v2-home-action-primary" type="button">
-              <span class="v2-home-action-tag">CAREER</span>
-              <strong id="v2-menu-league-label">Start League</strong>
-              <small id="v2-menu-league-meta">A short opening circuit · squad growth · promotion</small>
+              <span class="v2-home-action-icon" aria-hidden="true">
+                <img class="v2-home-imagegen-icon" src="assets/ui/menu/home-career-icon-v1.webp" alt="" />
+              </span>
+              <span class="v2-home-action-copy"><span class="v2-home-action-tag" data-i18n="home.careerTag">CAREER</span><strong id="v2-menu-league-label">Start League</strong><small id="v2-menu-league-meta">Proving Circuit · Build your first squad</small></span>
+              <span class="v2-home-action-arrow" aria-hidden="true">›</span>
+            </button>
+            <button id="v2-menu-quick-start" class="v2-home-action" type="button">
+              <span class="v2-home-action-icon" aria-hidden="true">
+                <img class="v2-home-imagegen-icon" src="assets/ui/menu/home-quick-play-icon-v1.webp" alt="" />
+              </span>
+              <span class="v2-home-action-copy"><span class="v2-home-action-tag" data-i18n="home.quickTag">QUICK START</span><strong data-i18n="home.quickTitle">Quick Play</strong><small data-i18n="home.quickMeta">Start instantly with recommended settings</small></span>
+              <span class="v2-home-action-arrow" aria-hidden="true">›</span>
             </button>
             <button id="v2-menu-play" class="v2-home-action" type="button">
-              <span class="v2-home-action-tag">CUSTOM</span>
-              <strong>Quick Play</strong>
-              <small>CTF, One Flag or TDM with your own setup</small>
+              <span class="v2-home-action-icon" aria-hidden="true">
+                <img class="v2-home-imagegen-icon" src="assets/ui/menu/home-custom-match-icon-v1.webp" alt="" />
+              </span>
+              <span class="v2-home-action-copy"><span class="v2-home-action-tag" data-i18n="home.customTag">CUSTOM</span><strong data-i18n="home.customTitle">Custom Match</strong><small data-i18n="home.customMeta">Choose mode, arena, teams and bot difficulty</small></span>
+              <span class="v2-home-action-arrow" aria-hidden="true">›</span>
             </button>
           </div>
+          <nav class="v2-home-utility" aria-label="Utility navigation">
+            <button id="v2-open-settings" type="button"><span aria-hidden="true">⚙</span><b data-i18n="common.settings">Settings</b></button>
+            <button id="v2-open-help" type="button"><span aria-hidden="true">?</span><b data-i18n="common.help">Help</b></button>
+            <button class="v2-screen-fullscreen-button is-hidden" type="button" data-v2-fullscreen-control data-i18n-aria-label="common.fullscreen" aria-pressed="false"><img data-v2-fullscreen-icon src="./assets/ui/hud-fullscreen-enter.svg" alt="" aria-hidden="true" /><b data-v2-fullscreen-label data-i18n="common.fullscreen">Fullscreen</b></button>
+          </nav>
         </div>
-        <div id="v2-menu-setup" class="v2-menu-view v2-setup-view is-hidden">
+        <div id="v2-menu-setup" class="v2-menu-view v2-setup-view is-hidden" data-setup-step="mode">
           <header class="v2-subpage-header">
-            <button id="v2-menu-back" class="v2-subpage-back" type="button">&larr; Main Menu</button>
+            <button id="v2-menu-back" class="v2-subpage-back" type="button"><span aria-hidden="true">&larr;</span> <span data-i18n="common.mainMenu">Main Menu</span></button>
             <div class="v2-subpage-title">
-              <div class="v2-menu-kicker">CUSTOM ARENA</div>
-              <h2>Quick Play</h2>
+              <div class="v2-menu-kicker" data-i18n="custom.title">Custom Match</div>
+              <h2 data-i18n="custom.subtitle">Your arena. Your rules.</h2>
             </div>
             <div class="v2-subpage-header-actions">
               <button
                 class="v2-screen-fullscreen-button is-hidden"
                 type="button"
                 data-v2-fullscreen-control
-                aria-label="Enter fullscreen"
+                data-i18n-aria-label="common.fullscreen"
                 aria-pressed="false"
               >
                 <img data-v2-fullscreen-icon src="./assets/ui/hud-fullscreen-enter.svg" alt="" aria-hidden="true" />
-                <span data-v2-fullscreen-label>Fullscreen</span>
+                <span data-v2-fullscreen-label data-i18n="common.fullscreen">Fullscreen</span>
               </button>
             </div>
           </header>
-          <p class="v2-menu-intro">
-            Pick a mode and start with the current V2 arena rules.
-          </p>
-          <div class="v2-menu-section">
-            <fieldset class="v2-quick-mode-field">
-              <legend>Choose Game Mode</legend>
+          <nav id="v2-setup-steps" class="v2-setup-steps" aria-label="Match setup progress">
+            <button type="button" data-setup-step-target="mode" aria-current="step"><span>1</span><b data-i18n="custom.stepMode">Mode</b></button>
+            <button type="button" data-setup-step-target="arena"><span>2</span><b data-i18n="custom.stepArena">Arena</b></button>
+            <button type="button" data-setup-step-target="teams"><span>3</span><b data-i18n="custom.stepTeams">Teams</b></button>
+            <button type="button" data-setup-step-target="overview"><span>4</span><b data-i18n="custom.stepOverview">Overview</b></button>
+          </nav>
+          <div class="v2-menu-section v2-setup-content">
+            <div class="v2-setup-panel-heading" data-setup-group="mode"><div><span>01</span><h3 data-i18n="custom.modeHeading">Choose mode</h3></div><p data-i18n="custom.modeHint">Choose how this match will be won.</p></div>
+            <fieldset class="v2-quick-mode-field" data-setup-group="mode">
+              <legend class="v2-visually-hidden" data-i18n="custom.modeHeading">Choose mode</legend>
               <div id="v2-menu-mode-picker" class="v2-quick-mode-picker" role="radiogroup" aria-label="Game mode">
                 <button class="v2-quick-mode-option" type="button" role="radio" data-mode="tdm" style="--mode-accent:#e5525b">
                   <span class="v2-quick-mode-icon" aria-hidden="true">
@@ -79,7 +92,7 @@
                       <path d="M24 14v6m0 8v6m-10-10h6m8 0h6" />
                     </svg>
                   </span>
-                  <span class="v2-quick-mode-copy"><strong>Team Deathmatch</strong><small>First team to 10 eliminations</small></span>
+                  <span class="v2-quick-mode-copy"><strong data-i18n="custom.modeTdm">Team Deathmatch</strong><small data-i18n="custom.modeTdmMeta">First team to 10 eliminations</small></span>
                   <b>TDM</b>
                 </button>
                 <button class="v2-quick-mode-option" type="button" role="radio" data-mode="ctf" style="--mode-accent:#5cb5d1">
@@ -91,7 +104,7 @@
                       <path d="M8 40h32" />
                     </svg>
                   </span>
-                  <span class="v2-quick-mode-copy"><strong>Classic CTF</strong><small>Steal and secure the enemy flag</small></span>
+                  <span class="v2-quick-mode-copy"><strong data-i18n="custom.modeCtf">Classic CTF</strong><small data-i18n="custom.modeCtfMeta">Steal and secure the enemy flag</small></span>
                   <b>CTF</b>
                 </button>
                 <button class="v2-quick-mode-option" type="button" role="radio" data-mode="one-flag" style="--mode-accent:#d4ae62">
@@ -104,23 +117,25 @@
                       <circle cx="24" cy="41" r="2" />
                     </svg>
                   </span>
-                  <span class="v2-quick-mode-copy"><strong>One Flag</strong><small>Control the neutral objective</small></span>
+                  <span class="v2-quick-mode-copy"><strong data-i18n="custom.modeOneFlag">One Flag</strong><small data-i18n="custom.modeOneFlagMeta">Control the neutral objective</small></span>
                   <b>1F</b>
                 </button>
               </div>
               <select id="v2-menu-mode" class="v2-quick-mode-native" tabindex="-1" aria-hidden="true">
-                <option value="tdm">Team Deathmatch</option>
-                <option value="ctf">Classic CTF</option>
-                <option value="one-flag">One Flag</option>
+                <option value="tdm" data-i18n="custom.modeTdm">Team Deathmatch</option>
+                <option value="ctf" data-i18n="custom.modeCtf">Classic CTF</option>
+                <option value="one-flag" data-i18n="custom.modeOneFlag">One Flag</option>
               </select>
             </fieldset>
-            <div class="v2-menu-section-title v2-quick-config-heading">
-              <span>Match Setup</span>
-              <small>You are Blue slot 1 · configure both squads</small>
+            <div class="v2-setup-panel-heading" data-setup-group="arena"><div><span>02</span><h3 data-i18n="custom.arenaHeading">Choose arena</h3></div><p data-i18n="custom.arenaHint">Every premium arena supports all three modes.</p></div>
+            <div id="v2-menu-map-picker" class="v2-quick-map-picker" data-setup-group="arena" role="radiogroup" aria-label="Arena">
+              <button type="button" class="v2-quick-map-option" data-map="helix-canopy-v2" role="radio"><img src="assets/map-previews/helix-canopy-v2-1-overview.png" alt="" /><span><strong>Helix Canopy</strong><small data-i18n="custom.arenaBiodome">BIODOME</small></span></button>
+              <button type="button" class="v2-quick-map-option" data-map="drowned-sun-temple-v2" role="radio"><img src="assets/map-previews/drowned-sun-temple-v2-overview.png" alt="" /><span><strong>Temple of the Drowned Sun</strong><small data-i18n="custom.arenaTemple">TEMPLE</small></span></button>
+              <button type="button" class="v2-quick-map-option" data-map="flow-circuit-v2" role="radio"><img src="assets/map-previews/flow-circuit-v2-overview.png" alt="" /><span><strong>Foundry Circuit</strong><small data-i18n="custom.arenaSteelworks">STEELWORKS</small></span></button>
             </div>
-            <div class="v2-quick-match-fields">
-              <label>Arena
-                <select id="v2-menu-map">
+            <div class="v2-quick-match-fields v2-quick-map-native" data-setup-group="arena">
+              <label><span data-i18n="custom.arenaLabel">Arena</span>
+                <select id="v2-menu-map" tabindex="-1" aria-hidden="true">
                   <option value="helix-canopy-v2">Helix Canopy</option>
                   <option value="drowned-sun-temple-v2">Temple of the Drowned Sun</option>
                   <option value="flow-circuit-v2">Foundry Circuit</option>
@@ -131,52 +146,53 @@
                 </select>
               </label>
             </div>
-            <div class="v2-quick-team-setup" aria-label="Team setup">
+            <div class="v2-setup-panel-heading" data-setup-group="teams"><div><span>03</span><h3 data-i18n="custom.teamsHeading">Configure teams</h3></div><p data-i18n="custom.teamsHint">You occupy Blue slot 1. Configure both squads independently.</p></div>
+            <div class="v2-quick-team-setup" data-setup-group="teams" aria-label="Team setup">
               <fieldset class="v2-quick-team-card is-blue">
-                <legend>Your Squad</legend>
+                <legend data-i18n="custom.blueTeam">Your squad</legend>
                 <div class="v2-quick-team-fields">
-                  <label>Ally Bots
+                  <label><span data-i18n="custom.allyBots">Ally bots</span>
                     <select id="v2-menu-blue-bots">
-                      <option value="0">No ally bots</option>
-                      <option value="1">1 bot</option>
+                      <option value="0" data-i18n="custom.noBots">No ally bots</option>
+                      <option value="1" data-i18n="custom.oneBot">1 bot</option>
                       <option value="2">2 bots</option>
                       <option value="3">3 bots</option>
                     </select>
                   </label>
-                  <label>Bot Skill
+                  <label><span data-i18n="custom.botDifficulty">Bot difficulty</span>
                     <select id="v2-menu-blue-bot-difficulty">
-                      <option value="casual">Easy</option>
-                      <option value="normal">Normal</option>
-                      <option value="strong">Hard</option>
+                      <option value="casual" data-i18n="common.easy">Easy</option>
+                      <option value="normal" data-i18n="common.normal">Normal</option>
+                      <option value="strong" data-i18n="common.hard">Hard</option>
                     </select>
                   </label>
                 </div>
-                <small>You occupy Blue slot 1</small>
+                <small data-i18n="custom.blueSlot">You occupy Blue slot 1</small>
               </fieldset>
               <div class="v2-quick-team-versus" aria-hidden="true">VS</div>
               <fieldset class="v2-quick-team-card is-red">
-                <legend>Enemy Squad</legend>
+                <legend data-i18n="custom.redTeam">Enemy squad</legend>
                 <div class="v2-quick-team-fields">
-                  <label>Enemy Bots
+                  <label><span data-i18n="custom.enemyBots">Enemy bots</span>
                     <select id="v2-menu-red-bots">
-                      <option value="1">1 bot</option>
+                      <option value="1" data-i18n="custom.oneBot">1 bot</option>
                       <option value="2">2 bots</option>
                       <option value="3">3 bots</option>
                       <option value="4">4 bots</option>
                     </select>
                   </label>
-                  <label>Bot Skill
+                  <label><span data-i18n="custom.botDifficulty">Bot difficulty</span>
                     <select id="v2-menu-red-bot-difficulty">
-                      <option value="casual">Easy</option>
-                      <option value="normal">Normal</option>
-                      <option value="strong">Hard</option>
+                      <option value="casual" data-i18n="common.easy">Easy</option>
+                      <option value="normal" data-i18n="common.normal">Normal</option>
+                      <option value="strong" data-i18n="common.hard">Hard</option>
                     </select>
                   </label>
                 </div>
-                <small>Red is fully AI-controlled</small>
+                <small data-i18n="custom.redAi">Red is fully AI-controlled</small>
               </fieldset>
             </div>
-            <figure id="v2-menu-arena-preview" class="v2-quick-arena-preview is-hidden" aria-live="polite">
+            <figure id="v2-menu-arena-preview" class="v2-quick-arena-preview is-hidden" data-setup-group="arena" aria-live="polite">
               <div class="v2-quick-arena-stage">
                 <img id="v2-menu-arena-preview-image" alt="" />
               </div>
@@ -187,61 +203,82 @@
                 <b id="v2-menu-arena-preview-meta"></b>
               </figcaption>
             </figure>
-            <fieldset class="v2-quick-skin-field">
-              <legend>Choose Your Fighter</legend>
+            <fieldset class="v2-quick-skin-field" data-setup-group="teams">
+              <legend data-i18n="custom.fighterHeading">Choose your fighter</legend>
               <div class="v2-quick-skin-selected">
                 <div id="v2-menu-skin-preview" class="v2-quick-skin-preview" aria-hidden="true"></div>
                 <div>
-                  <small>Selected Skin</small>
+                  <small data-i18n="custom.selectedFighter">Selected fighter</small>
                   <strong id="v2-menu-skin-name"></strong>
-                  <span>Cosmetic only · available in Quick Play and League</span>
+                  <span data-i18n="custom.fighterHint">Cosmetic only · available in Custom Match and League</span>
                 </div>
               </div>
               <div id="v2-menu-skin-picker" class="v2-quick-skin-picker" role="listbox" aria-label="Playable character skins"></div>
               <select id="v2-menu-skin" class="v2-quick-skin-native" tabindex="-1" aria-hidden="true"></select>
             </fieldset>
-            <div class="v2-menu-section-title v2-quick-config-heading">
-              <span>Input &amp; Audio</span>
-              <small>Personal preferences</small>
+            <div class="v2-setup-panel-heading" data-setup-group="overview"><div><span>04</span><h3 data-i18n="custom.overviewHeading">Match overview</h3></div><p data-i18n="custom.overviewHint">Review the complete setup before entering the arena.</p></div>
+            <div class="v2-match-overview" data-setup-group="overview">
+              <div class="v2-match-overview-map"><img id="v2-menu-overview-map" alt="" /><span><small data-i18n="custom.arenaLabel">Arena</small><strong id="v2-menu-overview-arena"></strong></span></div>
+              <dl><div><dt data-i18n="custom.modeLabel">Mode</dt><dd id="v2-menu-overview-mode"></dd></div><div><dt data-i18n="custom.blueLabel">Blue</dt><dd id="v2-menu-overview-blue"></dd></div><div><dt data-i18n="custom.redLabel">Red</dt><dd id="v2-menu-overview-red"></dd></div><div><dt data-i18n="custom.fighterLabel">Fighter</dt><dd id="v2-menu-overview-fighter"></dd></div></dl>
             </div>
-            <div class="v2-quick-preference-fields">
-              <label>Controls
+            <div class="v2-menu-section-title v2-quick-config-heading" data-setup-group="overview"><span data-i18n="custom.preferences">Personal settings</span></div>
+            <div class="v2-quick-preference-fields" data-setup-group="overview">
+              <label><span data-i18n="custom.controls">Controls</span>
                 <select id="v2-menu-controls">
-                  <option value="auto">Auto detect</option>
-                  <option value="touch">Touch overlay + keyboard</option>
-                  <option value="keyboard">Keyboard only</option>
+                  <option value="auto" data-i18n="custom.controlsAuto">Auto detect</option>
+                  <option value="touch" data-i18n="custom.controlsTouch">Touch overlay + keyboard</option>
+                  <option value="keyboard" data-i18n="custom.controlsKeyboard">Keyboard only</option>
                 </select>
                 <small id="v2-menu-controls-hint" class="v2-quick-field-hint"></small>
               </label>
-              <label>SFX
+              <label><span data-i18n="custom.sfx">Sound effects</span>
                 <select id="v2-menu-sfx">
-                  <option value="on">On</option>
-                  <option value="off">Muted</option>
+                  <option value="on" data-i18n="custom.sfxOn">On</option>
+                  <option value="off" data-i18n="custom.sfxOff">Off</option>
                 </select>
               </label>
             </div>
           </div>
-          <div class="v2-quick-launch">
-            <div class="v2-quick-launch-summary">
-              <small>Selected Match</small>
+          <aside id="v2-menu-match-dock" class="v2-match-dock" aria-live="polite">
+            <header>
+              <small data-i18n="custom.selectedMatch">Selected match</small>
+              <h3 data-i18n="custom.overviewHeading">Match overview</h3>
+            </header>
+            <div class="v2-match-dock-map">
+              <img id="v2-menu-dock-map" alt="" />
+              <span><small data-i18n="custom.arenaLabel">Arena</small><strong id="v2-menu-dock-arena"></strong></span>
+            </div>
+            <dl>
+              <div><dt data-i18n="custom.modeLabel">Mode</dt><dd id="v2-menu-dock-mode"></dd></div>
+              <div><dt data-i18n="custom.blueLabel">Blue</dt><dd id="v2-menu-dock-blue"></dd></div>
+              <div><dt data-i18n="custom.redLabel">Red</dt><dd id="v2-menu-dock-red"></dd></div>
+              <div><dt data-i18n="custom.fighterLabel">Fighter</dt><dd id="v2-menu-dock-fighter"></dd></div>
+            </dl>
+            <div class="v2-match-dock-progress" aria-hidden="true"><span class="is-active">1</span><i></i><span>2</span><i></i><span>3</span><i></i><span>4</span></div>
+          </aside>
+          <div class="v2-quick-launch" data-setup-group="overview">
+            <div class="v2-quick-launch-summary is-hidden">
+              <small data-i18n="custom.selectedMatch">Selected Match</small>
               <strong id="v2-menu-launch-summary"></strong>
               <span id="v2-menu-launch-detail"></span>
             </div>
-            <button id="v2-menu-start" type="button">Start Match</button>
+            <button id="v2-menu-start" type="button" data-i18n="custom.start">Start match</button>
           </div>
-          <div class="v2-menu-help">
-            P1: WASD + Space &nbsp; | &nbsp; Aim: Mouse &nbsp; | &nbsp; Weapons: Q Rocket &middot; E Rail &middot; F Arc Lash (auto-target)<br>
-            Team: 1 Defend · 2 Follow · 3 Attack &nbsp; | &nbsp; Repeat command: Auto
+          <div class="v2-setup-footer">
+            <button id="v2-setup-previous" class="v2-menu-secondary is-hidden" type="button" data-i18n="custom.previous">Previous</button>
+            <span id="v2-setup-footer-summary"></span>
+            <button id="v2-setup-next" type="button" data-i18n="custom.next">Next</button>
           </div>
         </div>
         <div id="v2-league-hub" class="v2-menu-view v2-league-hub is-hidden">
           <header class="v2-subpage-header league-header">
-            <button id="league-back" class="v2-subpage-back" type="button">&larr; Main Menu</button>
+            <button id="league-back" class="v2-subpage-back" type="button"><span aria-hidden="true">&larr;</span> <span data-i18n="common.mainMenu">Main Menu</span></button>
             <div class="v2-subpage-title league-header-title">
               <img class="league-header-mark" src="assets/league/arena-league-emblem.png" alt="" aria-hidden="true" />
               <div>
-                <div id="league-header-kicker" class="v2-menu-kicker">CAREER &middot; PROVING CIRCUIT</div>
-                <h2 id="league-header-title">League HQ</h2>
+                <div id="league-header-kicker" class="v2-menu-kicker" data-i18n="league.kicker">CAREER &middot; PROVING CIRCUIT</div>
+                <h2 id="league-header-title" data-i18n="league.title">League HQ</h2>
+                <p class="league-header-subtitle" data-i18n="league.subtitle">Your path to the top.</p>
               </div>
             </div>
             <div class="v2-subpage-header-actions league-header-actions">
@@ -249,17 +286,17 @@
                 class="v2-screen-fullscreen-button is-hidden"
                 type="button"
                 data-v2-fullscreen-control
-                aria-label="Enter fullscreen"
+                data-i18n-aria-label="common.fullscreen"
                 aria-pressed="false"
               >
                 <img data-v2-fullscreen-icon src="./assets/ui/hud-fullscreen-enter.svg" alt="" aria-hidden="true" />
-                <span data-v2-fullscreen-label>Fullscreen</span>
+                <span data-v2-fullscreen-label data-i18n="common.fullscreen">Fullscreen</span>
               </button>
               <details id="league-season-tools" class="league-season-tools">
-                <summary id="league-season-options" title="Season options">Season Options</summary>
+                <summary id="league-season-options" data-i18n="league.options" data-i18n-title="league.options" title="Season options">Season options</summary>
                 <div class="league-season-tools-menu">
-                  <small>SEASON MANAGEMENT</small>
-                  <button id="league-reset" class="league-text-button league-danger-button" type="button">Reset Season</button>
+                  <small data-i18n="league.management">SEASON MANAGEMENT</small>
+                  <button id="league-reset" class="league-text-button league-danger-button" type="button" data-i18n="league.reset">Reset season</button>
                 </div>
               </details>
             </div>
@@ -267,75 +304,93 @@
           <section id="league-profile-setup" class="league-profile-setup is-hidden" aria-live="polite"></section>
           <div id="league-empty" class="league-empty is-hidden">
             <div class="league-empty-copy">
-              <span class="league-eyebrow">YOUR FIRST CONTRACT</span>
+              <span class="league-eyebrow" data-i18n="league.firstContract">YOUR FIRST CONTRACT</span>
               <h3 id="league-intro-title">Lead Iron Vanguard</h3>
-              <p>Three arena trials introduce the full circuit. Master combat, secure the neutral objective, then face the CTF final.</p>
+              <p data-i18n="league.introCopy">Three arena trials introduce the full circuit. Master combat, secure the neutral objective, then face the CTF final.</p>
               <div id="league-intro-route" class="league-intro-route"></div>
-              <button id="league-new-season" type="button">Begin Season</button>
+              <button id="league-new-season" type="button" data-i18n="league.beginSeason">Begin season</button>
             </div>
             <div class="league-empty-badge"><img id="league-intro-emblem" src="assets/league/teams/iron-vanguard-emblem.png" alt="Iron Vanguard emblem" /><small id="league-intro-team-name">IRON VANGUARD</small></div>
           </div>
           <div id="league-dashboard" class="league-dashboard is-hidden">
-            <div class="league-dashboard-band league-dashboard-band-match"><span>01</span><strong>Season Command</strong><small id="league-season-command-status">Proving Circuit &middot; Match 1 of 3</small></div>
+            <div class="league-dashboard-band league-dashboard-band-match"><span>01</span><strong data-i18n="league.currentSeason">Current season</strong><small id="league-season-command-status">Proving Circuit &middot; Match 1 of 3</small></div>
             <section id="league-next-match" class="league-next-match"></section>
-            <div class="league-dashboard-band league-dashboard-band-team"><span>02</span><strong>Team Operations</strong><small>Squad status and league table</small></div>
+            <div class="league-dashboard-band league-dashboard-band-team"><span>02</span><strong data-i18n="league.yourSquadPanel">Your squad</strong><small data-i18n="league.standings">Standings</small></div>
             <section class="league-panel league-squad-panel">
               <div class="league-panel-heading league-squad-heading">
-                <span>Your Squad</span>
-                <div><small id="league-team-record"></small><button id="league-manage-team" class="league-manage-team" type="button">Manage Team</button></div>
+                <span data-i18n="league.yourSquadPanel">Your squad</span>
+                <div><small id="league-team-record"></small><button id="league-manage-team" class="league-manage-team" type="button" data-i18n="league.manageTeam">Manage team</button></div>
               </div>
               <div id="league-player-roster" class="league-roster"></div>
             </section>
             <section class="league-panel league-table-panel">
-              <div class="league-panel-heading"><span id="league-standings-title">Proving Circuit Standings</span><small>Select a team to inspect</small></div>
+              <div class="league-panel-heading"><span id="league-standings-title">Proving Circuit Standings</span><small data-i18n="league.selectTeam">Select a team to inspect</small></div>
               <div id="league-standings" class="league-standings"></div>
             </section>
-            <div class="league-dashboard-band league-dashboard-band-depth"><span>03</span><strong>Scouting &amp; Progression</strong><small>Rival files and the path ahead</small></div>
+            <div class="league-dashboard-band league-dashboard-band-depth"><span>03</span><strong data-i18n="league.scouting">Scouting</strong><small data-i18n="league.scoutingHint">Rival files and recorded performance</small></div>
             <section id="league-team-detail" class="league-panel league-detail-panel"></section>
             <section class="league-panel league-pyramid-panel">
-              <div class="league-panel-heading"><span>Arena Path</span><small>Your current tier and future circuits</small></div>
+              <div class="league-panel-heading"><span data-i18n="league.path">Path to the top</span><small data-i18n="league.pathHint">Your current tier and future circuits</small></div>
               <div id="league-pyramid" class="league-pyramid" role="list" aria-label="Core Arena League circuit path"></div>
             </section>
           </div>
           <div id="league-reset-confirm" class="league-reset-dialog is-hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="league-reset-title">
             <div class="league-reset-card">
-              <div class="v2-menu-kicker">SEASON MANAGEMENT</div>
-              <h2 id="league-reset-title">Reset current season?</h2>
-              <p>All match results and standings from the current circuit will be permanently removed. Your team identity and unlocked wingmen remain.</p>
+              <div class="v2-menu-kicker" data-i18n="league.management">SEASON MANAGEMENT</div>
+              <h2 id="league-reset-title" data-i18n="league.resetTitle">Reset current season?</h2>
+              <p data-i18n="league.resetCopy">All match results and standings from the current circuit will be removed. Your team identity and unlocked wingmen remain.</p>
               <div class="league-reset-actions">
-                <button id="league-reset-cancel" class="league-reset-cancel" type="button">Keep Season</button>
-                <button id="league-reset-confirm-button" class="league-reset-confirm-button" type="button">Reset Season</button>
+                <button id="league-reset-cancel" class="league-reset-cancel" type="button" data-i18n="league.keepSeason">Keep season</button>
+                <button id="league-reset-confirm-button" class="league-reset-confirm-button" type="button" data-i18n="league.reset">Reset season</button>
               </div>
             </div>
           </div>
           <div id="league-progression" class="league-progression is-hidden" role="dialog" aria-modal="true" aria-hidden="true"></div>
         </div>
+        <div id="v2-settings-dialog" class="v2-menu-dialog is-hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="v2-settings-title">
+          <div class="v2-menu-dialog-card">
+            <header><div><span class="v2-menu-kicker" data-i18n="common.settings">Settings</span><h2 id="v2-settings-title" data-i18n="settings.title">Settings</h2><p data-i18n="settings.subtitle">Language and display</p></div><button id="v2-settings-close" type="button" data-i18n-aria-label="common.close" aria-label="Close">×</button></header>
+            <section><div><small data-i18n="common.language">Language</small><strong data-i18n="settings.languageHint">Menu language changes immediately and is saved on this device.</strong></div><div class="v2-language-choice" role="group" aria-label="Language"><button type="button" data-ui-language="de" aria-pressed="false">DEUTSCH</button><button type="button" data-ui-language="en" aria-pressed="false">ENGLISH</button></div></section>
+            <section><div><small data-i18n="settings.display">Display</small><strong data-i18n="settings.fullscreenHint">Use fullscreen for the clearest arena view.</strong></div><button class="v2-dialog-fullscreen v2-screen-fullscreen-button is-hidden" type="button" data-v2-fullscreen-control data-i18n-aria-label="common.fullscreen" aria-pressed="false"><img data-v2-fullscreen-icon src="./assets/ui/hud-fullscreen-enter.svg" alt="" /><span data-v2-fullscreen-label data-i18n="common.fullscreen">Fullscreen</span></button></section>
+            <section><div><small data-i18n="settings.accessibility">Accessibility</small><strong data-i18n="settings.motionHint">Reduced-motion preferences from your device are respected automatically.</strong></div><span class="v2-settings-status" aria-hidden="true">AUTO</span></section>
+          </div>
+        </div>
+        <div id="v2-help-dialog" class="v2-menu-dialog is-hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="v2-help-title">
+          <div class="v2-menu-dialog-card">
+            <header><div><span class="v2-menu-kicker" data-i18n="common.help">Help</span><h2 id="v2-help-title" data-i18n="help.title">How to play</h2><p data-i18n="help.subtitle">Controls and team commands</p></div><button id="v2-help-close" type="button" data-i18n-aria-label="common.close" aria-label="Close">×</button></header>
+            <div class="v2-help-grid">
+              <section><span aria-hidden="true">⌨</span><div><small data-i18n="help.keyboard">Keyboard &amp; mouse</small><strong data-i18n="help.keyboardCopy">Move with WASD, jump with Space, aim with the mouse and use the weapon keys shown in the HUD.</strong></div></section>
+              <section><span aria-hidden="true">◎</span><div><small data-i18n="help.touch">Touch</small><strong data-i18n="help.touchCopy">Move with the left stick. Jump and weapons are grouped at the lower-right edge.</strong></div></section>
+              <section><span aria-hidden="true">⌁</span><div><small data-i18n="help.commands">Bot commands</small><strong data-i18n="help.commandsCopy">1 Defend · 2 Follow · 3 Attack. Repeat the active command to return the squad to Auto.</strong></div></section>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div id="v2-pause-overlay" class="v2-flow-overlay is-hidden">
       <div class="v2-flow-card">
-        <div class="v2-menu-kicker">PAUSED</div>
-        <h2>Match Paused</h2>
-        <p class="v2-menu-intro">Resume the current match, restart it, or return to the fullscreen main menu.</p>
+        <div class="v2-menu-kicker" data-i18n="pause.kicker">PAUSED</div>
+        <h2 data-i18n="pause.title">Match paused</h2>
+        <p class="v2-menu-intro" data-i18n="pause.intro">Resume the match, restart it or return to the main menu.</p>
         <div class="v2-flow-actions">
-          <button id="v2-pause-resume" type="button">Resume</button>
-          <button id="v2-pause-restart" class="v2-menu-secondary" type="button">Restart</button>
-          <button id="v2-pause-main-menu" class="v2-menu-secondary" type="button">Main Menu</button>
+          <button id="v2-pause-resume" type="button" data-i18n="pause.resume">Resume</button>
+          <button id="v2-pause-restart" class="v2-menu-secondary" type="button" data-i18n="pause.restart">Restart</button>
+          <button id="v2-pause-main-menu" class="v2-menu-secondary" type="button" data-i18n="common.mainMenu">Main Menu</button>
         </div>
       </div>
     </div>
     <div id="v2-result-overlay" class="v2-flow-overlay is-hidden">
       <div id="v2-result-card" class="v2-flow-card v2-stats-card v2-result-card">
-        <div class="v2-menu-kicker">ARENA RESULT</div>
+        <div class="v2-menu-kicker" data-i18n="result.kicker">ARENA RESULT</div>
         <h2 id="v2-result-title">Blue Wins</h2>
-        <p id="v2-result-detail" class="v2-menu-intro">FINAL SCORE</p>
+        <p id="v2-result-detail" class="v2-menu-intro" data-i18n="result.finalScore">FINAL SCORE</p>
         <div id="v2-result-lockup" class="v2-result-lockup" aria-label="Blue Team 3 to Red Team 2">
           <div id="v2-result-blue-team" class="v2-result-team is-blue">
             <span id="v2-result-blue-emblem" class="v2-result-emblem" aria-hidden="true">
               <svg viewBox="0 0 64 64"><path d="M32 5 53 13v17c0 13-8 23-21 29C19 53 11 43 11 30V13Z"/><path d="m22 30 7 7 14-16"/></svg>
               <img id="v2-result-blue-emblem-image" class="is-hidden" alt="" />
             </span>
-            <small id="v2-result-blue-name">Blue Team</small>
+            <small id="v2-result-blue-name" data-i18n="result.blueTeam">Blue Team</small>
           </div>
           <strong class="v2-result-score" aria-hidden="true"><span id="v2-result-blue-score">3</span><i>:</i><span id="v2-result-red-score">2</span></strong>
           <div id="v2-result-red-team" class="v2-result-team is-red">
@@ -343,51 +398,51 @@
               <svg viewBox="0 0 64 64"><path d="M32 5 53 13v17c0 13-8 23-21 29C19 53 11 43 11 30V13Z"/><path d="M22 22 42 42M42 22 22 42"/></svg>
               <img id="v2-result-red-emblem-image" class="is-hidden" alt="" />
             </span>
-            <small id="v2-result-red-name">Red Team</small>
+            <small id="v2-result-red-name" data-i18n="result.redTeam">Red Team</small>
           </div>
         </div>
         <div id="v2-result-stats" class="v2-stats-table-wrap"></div>
         <div class="v2-flow-actions">
-          <button id="v2-result-play-again" type="button">Play Again</button>
-          <button id="v2-result-main-menu" class="v2-menu-secondary" type="button">Main Menu</button>
+          <button id="v2-result-play-again" type="button" data-i18n="result.playAgain">Play again</button>
+          <button id="v2-result-main-menu" class="v2-menu-secondary" type="button" data-i18n="common.mainMenu">Main Menu</button>
         </div>
       </div>
     </div>
     <div id="v2-stats-overlay" class="v2-flow-overlay is-hidden">
       <div class="v2-flow-card v2-stats-card">
-        <div class="v2-menu-kicker">ARENA LIVE</div>
-        <h2>Match Scoreboard</h2>
-        <p class="v2-stats-hold-hint">Release TAB to close</p>
+        <div class="v2-menu-kicker" data-i18n="stats.kicker">ARENA LIVE</div>
+        <h2 data-i18n="stats.title">Match scoreboard</h2>
+        <p class="v2-stats-hold-hint" data-i18n="stats.release">Release TAB to close</p>
         <div id="v2-stats-table" class="v2-stats-table-wrap"></div>
-        <p class="v2-stats-impact-note">Impact combines kills and objective play, reduced by deaths.</p>
+        <p class="v2-stats-impact-note" data-i18n="stats.impact">Impact combines eliminations and objective play, reduced by deaths.</p>
         <div class="v2-flow-actions">
-          <button id="v2-stats-close" type="button">Back to Game</button>
+          <button id="v2-stats-close" type="button" data-i18n="stats.back">Back to game</button>
         </div>
       </div>
     </div>
     <div id="v2-game-utility" class="v2-game-utility is-hidden" role="toolbar" aria-label="Match controls">
       <button id="v2-audio-button" class="v2-game-menu-button v2-audio-button" type="button" aria-pressed="false">
         <img src="./assets/ui/hud-audio.svg" alt="" aria-hidden="true" />
-        <span id="v2-audio-label">SFX ON</span>
+        <span id="v2-audio-label" data-i18n="utility.sfxOn">SFX ON</span>
       </button>
       <button
         id="v2-fullscreen-button"
         class="v2-game-menu-button v2-fullscreen-button is-hidden"
         type="button"
         data-v2-fullscreen-control
-        aria-label="Enter fullscreen"
+        data-i18n-aria-label="common.fullscreen"
         aria-pressed="false"
       >
         <img id="v2-fullscreen-icon" data-v2-fullscreen-icon src="./assets/ui/hud-fullscreen-enter.svg" alt="" aria-hidden="true" />
-        <span id="v2-fullscreen-label" data-v2-fullscreen-label>Fullscreen</span>
+        <span id="v2-fullscreen-label" data-v2-fullscreen-label data-i18n="common.fullscreen">Fullscreen</span>
       </button>
       <button id="v2-stats-button" class="v2-game-menu-button v2-stats-button is-hidden" type="button">
         <img src="./assets/ui/hud-stats.svg" alt="" aria-hidden="true" />
-        <span>Stats</span>
+        <span data-i18n="utility.stats">Stats</span>
       </button>
       <button id="v2-game-menu-button" class="v2-game-menu-button" type="button">
         <img src="./assets/ui/hud-menu.svg" alt="" aria-hidden="true" />
-        <span>Menu</span>
+        <span data-i18n="utility.menu">Menu</span>
       </button>
     </div>
     <div id="v2-respawn-status" class="v2-respawn-status is-hidden" role="status"></div>

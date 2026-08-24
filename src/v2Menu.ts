@@ -29,6 +29,13 @@ import {
   playerSkinPortraitAssetStem,
   savePlayerSkinPreference,
 } from "./playerSkinPreference";
+import {
+  applyUiTranslations,
+  onUiLanguageChange,
+  setUiLanguage,
+  uiText,
+  type UiCopyKey,
+} from "./uiLocale";
 
 interface V2MenuElements {
   readonly root: HTMLElement;
@@ -37,6 +44,7 @@ interface V2MenuElements {
   readonly league: HTMLElement;
   readonly status: HTMLElement;
   readonly enterSetup: HTMLButtonElement;
+  readonly quickStart: HTMLButtonElement;
   readonly enterLeague: HTMLButtonElement;
   readonly leagueLabel: HTMLElement;
   readonly leagueMeta: HTMLElement;
@@ -44,6 +52,7 @@ interface V2MenuElements {
   readonly mode: HTMLSelectElement;
   readonly modePicker: HTMLElement;
   readonly map: HTMLSelectElement;
+  readonly mapPicker: HTMLElement;
   readonly arenaPreview: HTMLElement;
   readonly arenaPreviewImage: HTMLImageElement;
   readonly arenaPreviewKicker: HTMLElement;
@@ -63,14 +72,29 @@ interface V2MenuElements {
   readonly sfx: HTMLSelectElement;
   readonly launchSummary: HTMLElement;
   readonly launchDetail: HTMLElement;
+  readonly overviewMap: HTMLImageElement;
+  readonly overviewArena: HTMLElement;
+  readonly overviewMode: HTMLElement;
+  readonly overviewBlue: HTMLElement;
+  readonly overviewRed: HTMLElement;
+  readonly overviewFighter: HTMLElement;
+  readonly dockMap: HTMLImageElement;
+  readonly dockArena: HTMLElement;
+  readonly dockMode: HTMLElement;
+  readonly dockBlue: HTMLElement;
+  readonly dockRed: HTMLElement;
+  readonly dockFighter: HTMLElement;
+  readonly matchDock: HTMLElement;
+  readonly setupSteps: HTMLElement;
+  readonly setupPrevious: HTMLButtonElement;
+  readonly setupNext: HTMLButtonElement;
+  readonly setupFooterSummary: HTMLElement;
   readonly start: HTMLButtonElement;
 }
 
 interface QuickPlayArenaPreview {
   readonly image: string;
-  readonly kicker: string;
-  readonly description: string;
-  readonly meta: string;
+  readonly descriptionKey: UiCopyKey;
   readonly foregroundSize: string;
   readonly backdropPosition?: string;
 }
@@ -80,34 +104,25 @@ const QUICK_PLAY_ARENA_PREVIEWS: Readonly<
 > = {
   "helix-canopy-v2": {
     image: "assets/map-previews/helix-canopy-v2-1-overview.png",
-    kicker: "FEATURED ARENA · ORBITAL BIO-DOME",
-    description:
-      "A bright mirrored arena with clean lanes and a clear central objective route.",
-    meta: "PREMIUM ARENA · ALL MODES",
+    descriptionKey: "custom.arenaHelixDescription",
     foregroundSize: "94%",
   },
   "drowned-sun-temple-v2": {
     image: "assets/map-previews/drowned-sun-temple-v2-overview.png",
-    kicker: "FEATURED ARENA · DROWNED TEMPLE",
-    description:
-      "A darker battleground with layered cover, flank routes and a contested central court.",
-    meta: "PREMIUM ARENA · ALL MODES",
+    descriptionKey: "custom.arenaTempleDescription",
     foregroundSize: "100%",
   },
   "flow-circuit-v2": {
     image: "assets/map-previews/flow-circuit-v2-overview.png",
-    kicker: "FEATURED ARENA · ORBITAL STEELWORKS",
-    description:
-      "A rebuilt steelworks arena with a volatile Forge Heart and three broad combat routes.",
-    meta: "PREMIUM ARENA · ALL MODES",
+    descriptionKey: "custom.arenaFoundryDescription",
     foregroundSize: "100%",
   },
 };
 
-const QUICK_PLAY_MODE_LABELS: Readonly<Record<V2ModeId, string>> = {
-  tdm: "Team Deathmatch",
-  ctf: "Classic CTF",
-  "one-flag": "One Flag",
+const QUICK_PLAY_MODE_KEYS: Readonly<Record<V2ModeId, UiCopyKey>> = {
+  tdm: "custom.modeTdm",
+  ctf: "custom.modeCtf",
+  "one-flag": "custom.modeOneFlag",
 };
 const QUICK_PLAY_DEFAULT_MODE: V2ModeId = "tdm";
 const QUICK_PLAY_DEFAULT_MAP = "helix-canopy-v2";
@@ -154,13 +169,10 @@ interface V2StatsElements {
 export function showGameplayV2Menu(statusMessage?: string): void {
   const elements = readMenuElements();
   const route = readV2Route();
+  applyUiTranslations(document);
   elements.root.classList.remove("has-modal-open");
   setupMenuKeyboardScrolling(elements.root);
   resetMenuScroll(elements.root);
-  document.documentElement.style.setProperty(
-    "--v2-menu-background",
-    `url("${import.meta.env.BASE_URL}assets/league-menu-arena-v1.png")`,
-  );
   elements.map.value = route.map;
   elements.blueBots.value = String(route.blueBots);
   elements.redBots.value = String(route.redBots);
@@ -171,7 +183,7 @@ export function showGameplayV2Menu(statusMessage?: string): void {
 
   const syncArenaPreview = (): void => {
     const preview = QUICK_PLAY_ARENA_PREVIEWS[elements.map.value];
-    elements.arenaPreview.classList.toggle("is-hidden", !preview);
+    elements.arenaPreview.classList.toggle("is-unavailable", !preview);
     if (!preview) {
       elements.arenaPreviewImage.removeAttribute("src");
       elements.arenaPreviewImage.alt = "";
@@ -201,10 +213,16 @@ export function showGameplayV2Menu(statusMessage?: string): void {
       "--arena-preview-backdrop-position",
       preview.backdropPosition ?? "center",
     );
-    elements.arenaPreviewKicker.textContent = preview.kicker;
+    elements.arenaPreviewKicker.textContent = uiText("custom.arenaFeatured");
     elements.arenaPreviewName.textContent = mapLabel;
-    elements.arenaPreviewDescription.textContent = preview.description;
-    elements.arenaPreviewMeta.textContent = preview.meta;
+    elements.arenaPreviewDescription.textContent = uiText(preview.descriptionKey);
+    elements.arenaPreviewMeta.textContent = uiText("custom.arenaPremium");
+    elements.overviewMap.src = imageUrl;
+    elements.overviewMap.alt = `${mapLabel} arena overview`;
+    elements.overviewArena.textContent = mapLabel;
+    elements.dockMap.src = imageUrl;
+    elements.dockMap.alt = `${mapLabel} arena overview`;
+    elements.dockArena.textContent = mapLabel;
   };
 
   const syncLaunchSummary = (): void => {
@@ -220,10 +238,20 @@ export function showGameplayV2Menu(statusMessage?: string): void {
       elements.redBotDifficulty,
     );
     const skin = playerSkinLabel(elements.skin.value as V2PlayerSkinId);
-    elements.launchSummary.textContent =
-      `${QUICK_PLAY_MODE_LABELS[mode]} · ${map}`;
-    elements.launchDetail.textContent =
-      `${blueSquadLabel(blueBots, blueDifficulty)} VS ${botSquadLabel(redBots, redDifficulty)} · ${skin}`;
+    const modeLabel = uiText(QUICK_PLAY_MODE_KEYS[mode]);
+    const blueLabel = blueSquadLabel(blueBots, blueDifficulty);
+    const redLabel = botSquadLabel(redBots, redDifficulty);
+    elements.launchSummary.textContent = `${modeLabel} · ${map}`;
+    elements.launchDetail.textContent = `${blueLabel} VS ${redLabel} · ${skin}`;
+    elements.overviewMode.textContent = modeLabel;
+    elements.overviewBlue.textContent = blueLabel;
+    elements.overviewRed.textContent = redLabel;
+    elements.overviewFighter.textContent = skin;
+    elements.dockMode.textContent = modeLabel;
+    elements.dockBlue.textContent = blueLabel;
+    elements.dockRed.textContent = redLabel;
+    elements.dockFighter.textContent = skin;
+    elements.setupFooterSummary.textContent = `${modeLabel} · ${map}`;
   };
 
   const syncTeamSetup = (): void => {
@@ -241,6 +269,10 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     select: elements.mode,
     picker: elements.modePicker,
   }, route.mode, syncQuickPlayPresentation);
+  const selectQuickPlayMap = setupQuickPlayMapPicker({
+    select: elements.map,
+    picker: elements.mapPicker,
+  }, route.map, syncQuickPlayPresentation);
   setupQuickPlaySkinPicker({
     select: elements.skin,
     picker: elements.skinPicker,
@@ -258,8 +290,9 @@ export function showGameplayV2Menu(statusMessage?: string): void {
   hideGameplayV2Result();
   hideGameplayV2Stats();
   elements.controls.disabled = false;
-  elements.controlsHint.textContent =
-    "Auto detect uses keyboard or touch controls when available.";
+  elements.controlsHint.textContent = uiText("custom.controlsHint");
+  const wizard = setupCustomMatchWizard(elements, syncQuickPlayPresentation);
+  const dialogs = setupMenuDialogs(elements.root);
   const showHome = (): void => {
     elements.home.classList.remove("is-hidden");
     elements.setup.classList.add("is-hidden");
@@ -270,8 +303,8 @@ export function showGameplayV2Menu(statusMessage?: string): void {
   };
   const syncLeagueHome = (): void => {
     elements.leagueLabel.textContent = leagueController.hasSave
-      ? "Continue League"
-      : "Start League";
+      ? uiText("home.careerContinue")
+      : uiText("home.careerStart");
     elements.leagueMeta.textContent = leagueController.homeMeta;
   };
   const leagueController = createLeagueMenuController({
@@ -287,18 +320,36 @@ export function showGameplayV2Menu(statusMessage?: string): void {
   focusMenuScreen(elements.root);
   syncTeamSetup();
   syncArenaPreview();
-  elements.map.onchange = syncQuickPlayPresentation;
+  elements.map.onchange = () => selectQuickPlayMap(elements.map.value);
   elements.blueBots.onchange = syncTeamSetup;
   elements.redBots.onchange = syncLaunchSummary;
   elements.blueBotDifficulty.onchange = syncLaunchSummary;
   elements.redBotDifficulty.onchange = syncLaunchSummary;
   elements.enterSetup.onclick = () => {
-    elements.map.value = QUICK_PLAY_DEFAULT_MAP;
+    selectQuickPlayMap(QUICK_PLAY_DEFAULT_MAP);
     selectQuickPlayMode(QUICK_PLAY_DEFAULT_MODE);
+    wizard.open("mode");
     elements.home.classList.add("is-hidden");
     elements.setup.classList.remove("is-hidden");
     resetMenuScroll(elements.root);
     focusMenuScreen(elements.root);
+  };
+  elements.quickStart.onclick = () => {
+    elements.status.textContent = uiText("custom.quickStatus");
+    elements.status.classList.remove("is-hidden");
+    window.location.search = buildV2MatchSearch({
+      mode: QUICK_PLAY_DEFAULT_MODE,
+      map: QUICK_PLAY_DEFAULT_MAP,
+      players: "bot",
+      teamSize: 3,
+      blueBots: 2,
+      redBots: 3,
+      blueBotDifficulty: "normal",
+      redBotDifficulty: "normal",
+      controls: route.controls,
+      skin: loadPlayerSkinPreference(),
+      sfx: route.sfx,
+    });
   };
   elements.enterLeague.onclick = () => {
     elements.home.classList.add("is-hidden");
@@ -333,6 +384,14 @@ export function showGameplayV2Menu(statusMessage?: string): void {
       sfx: elements.sfx.value === "off" ? "off" : "on",
     });
   };
+  onUiLanguageChange(() => {
+    applyUiTranslations(document);
+    elements.controlsHint.textContent = uiText("custom.controlsHint");
+    syncQuickPlayPresentation();
+    syncLeagueHome();
+    leagueController.refresh();
+    dialogs.sync();
+  });
   if (new URLSearchParams(window.location.search).get("leagueHub") === "1") {
     elements.enterLeague.click();
   }
@@ -382,8 +441,8 @@ export function showGameplayV2Result(input: {
 }): void {
   hideGameplayV2Pause();
   const elements = readResultElements();
-  const blueTeam = input.teams?.blue ?? { name: "Blue Team" };
-  const redTeam = input.teams?.red ?? { name: "Red Team" };
+  const blueTeam = input.teams?.blue ?? { name: uiText("result.blueTeam") };
+  const redTeam = input.teams?.red ?? { name: uiText("result.redTeam") };
   const blueScore = input.scores.find((entry) => entry.teamId === "blue")?.score ?? 0;
   const redScore = input.scores.find((entry) => entry.teamId === "red")?.score ?? 0;
   const outcomeClass = input.winnerEntryId === "blue"
@@ -410,8 +469,8 @@ export function showGameplayV2Result(input: {
   renderStatsTable(elements.stats, input.stats, input.humanActorIds, input.modeId);
   elements.playAgain.onclick = input.onPlayAgain;
   elements.mainMenu.onclick = input.onMainMenu;
-  elements.playAgain.textContent = input.playAgainLabel ?? "Play Again";
-  elements.mainMenu.textContent = input.mainMenuLabel ?? "Main Menu";
+  elements.playAgain.textContent = input.playAgainLabel ?? uiText("result.playAgain");
+  elements.mainMenu.textContent = input.mainMenuLabel ?? uiText("common.mainMenu");
   elements.card.classList.remove("is-revealing");
   void elements.card.offsetWidth;
   elements.card.classList.add("is-revealing");
@@ -482,6 +541,7 @@ function readMenuElements(): V2MenuElements {
     league: requiredElement<HTMLElement>("v2-league-hub"),
     status: requiredElement<HTMLElement>("v2-menu-status"),
     enterSetup: requiredElement<HTMLButtonElement>("v2-menu-play"),
+    quickStart: requiredElement<HTMLButtonElement>("v2-menu-quick-start"),
     enterLeague: requiredElement<HTMLButtonElement>("v2-menu-league"),
     leagueLabel: requiredElement<HTMLElement>("v2-menu-league-label"),
     leagueMeta: requiredElement<HTMLElement>("v2-menu-league-meta"),
@@ -489,6 +549,7 @@ function readMenuElements(): V2MenuElements {
     mode: requiredElement<HTMLSelectElement>("v2-menu-mode"),
     modePicker: requiredElement<HTMLElement>("v2-menu-mode-picker"),
     map: requiredElement<HTMLSelectElement>("v2-menu-map"),
+    mapPicker: requiredElement<HTMLElement>("v2-menu-map-picker"),
     arenaPreview: requiredElement<HTMLElement>("v2-menu-arena-preview"),
     arenaPreviewImage: requiredElement<HTMLImageElement>(
       "v2-menu-arena-preview-image",
@@ -522,6 +583,23 @@ function readMenuElements(): V2MenuElements {
     sfx: requiredElement<HTMLSelectElement>("v2-menu-sfx"),
     launchSummary: requiredElement<HTMLElement>("v2-menu-launch-summary"),
     launchDetail: requiredElement<HTMLElement>("v2-menu-launch-detail"),
+    overviewMap: requiredElement<HTMLImageElement>("v2-menu-overview-map"),
+    overviewArena: requiredElement<HTMLElement>("v2-menu-overview-arena"),
+    overviewMode: requiredElement<HTMLElement>("v2-menu-overview-mode"),
+    overviewBlue: requiredElement<HTMLElement>("v2-menu-overview-blue"),
+    overviewRed: requiredElement<HTMLElement>("v2-menu-overview-red"),
+    overviewFighter: requiredElement<HTMLElement>("v2-menu-overview-fighter"),
+    dockMap: requiredElement<HTMLImageElement>("v2-menu-dock-map"),
+    dockArena: requiredElement<HTMLElement>("v2-menu-dock-arena"),
+    dockMode: requiredElement<HTMLElement>("v2-menu-dock-mode"),
+    dockBlue: requiredElement<HTMLElement>("v2-menu-dock-blue"),
+    dockRed: requiredElement<HTMLElement>("v2-menu-dock-red"),
+    dockFighter: requiredElement<HTMLElement>("v2-menu-dock-fighter"),
+    matchDock: requiredElement<HTMLElement>("v2-menu-match-dock"),
+    setupSteps: requiredElement<HTMLElement>("v2-setup-steps"),
+    setupPrevious: requiredElement<HTMLButtonElement>("v2-setup-previous"),
+    setupNext: requiredElement<HTMLButtonElement>("v2-setup-next"),
+    setupFooterSummary: requiredElement<HTMLElement>("v2-setup-footer-summary"),
     start: requiredElement<HTMLButtonElement>("v2-menu-start"),
   };
 }
@@ -650,6 +728,11 @@ export interface QuickPlayModePickerElements {
   readonly picker: HTMLElement;
 }
 
+export interface QuickPlayMapPickerElements {
+  readonly select: HTMLSelectElement;
+  readonly picker: HTMLElement;
+}
+
 export function setupQuickPlayModePicker(
   elements: QuickPlayModePickerElements,
   initialMode: V2ModeId,
@@ -706,6 +789,175 @@ export function setupQuickPlayModePicker(
   };
   selectMode(initialMode, false);
   return (modeId) => selectMode(modeId, true);
+}
+
+export function setupQuickPlayMapPicker(
+  elements: QuickPlayMapPickerElements,
+  initialMapId: string,
+  onSelected: (mapId: string) => void = () => {},
+): (mapId: string) => void {
+  const buttons = Array.from(
+    elements.picker.querySelectorAll<HTMLButtonElement>("[data-map]"),
+  );
+  const mapIds = buttons.map((button) => button.dataset.map).filter(
+    (mapId): mapId is string => Boolean(mapId),
+  );
+
+  const selectMap = (mapId: string, notify: boolean): void => {
+    if (!Array.from(elements.select.options).some((option) => option.value === mapId)) {
+      return;
+    }
+    elements.select.value = mapId;
+    for (const button of buttons) {
+      const selected = button.dataset.map === mapId;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-checked", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    }
+    if (notify) onSelected(mapId);
+  };
+
+  for (const button of buttons) {
+    button.onclick = () => {
+      if (button.dataset.map) selectMap(button.dataset.map, true);
+    };
+    button.onkeydown = (event) => {
+      const current = mapIds.indexOf(elements.select.value);
+      let next = current;
+      if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+        next = (Math.max(0, current) + 1) % mapIds.length;
+      } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        next = (Math.max(0, current) - 1 + mapIds.length) % mapIds.length;
+      } else if (event.key === "Home") {
+        next = 0;
+      } else if (event.key === "End") {
+        next = mapIds.length - 1;
+      } else {
+        return;
+      }
+      event.preventDefault();
+      selectMap(mapIds[next], true);
+      buttons.find((candidate) => candidate.dataset.map === mapIds[next])?.focus();
+    };
+  }
+
+  selectMap(mapIds.includes(initialMapId) ? initialMapId : QUICK_PLAY_DEFAULT_MAP, false);
+  return (mapId) => selectMap(mapId, true);
+}
+
+type CustomSetupStep = "mode" | "arena" | "teams" | "overview";
+
+function setupCustomMatchWizard(
+  elements: V2MenuElements,
+  syncPresentation: () => void,
+): { open: (step: CustomSetupStep) => void } {
+  const steps: readonly CustomSetupStep[] = ["mode", "arena", "teams", "overview"];
+  const stepButtons = Array.from(
+    elements.setupSteps.querySelectorAll<HTMLButtonElement>("[data-setup-step-target]"),
+  );
+  const groups = Array.from(
+    elements.setup.querySelectorAll<HTMLElement>("[data-setup-group]"),
+  );
+  const dockSteps = Array.from(
+    elements.matchDock.querySelectorAll<HTMLElement>(".v2-match-dock-progress span"),
+  );
+  let activeStep: CustomSetupStep = "mode";
+
+  const open = (step: CustomSetupStep): void => {
+    activeStep = step;
+    elements.setup.dataset.setupStep = step;
+    const activeIndex = steps.indexOf(step);
+    for (const group of groups) {
+      group.classList.toggle("is-hidden", group.dataset.setupGroup !== step);
+    }
+    for (const button of stepButtons) {
+      const target = button.dataset.setupStepTarget as CustomSetupStep;
+      const index = steps.indexOf(target);
+      const active = target === step;
+      button.toggleAttribute("aria-current", active);
+      if (active) button.setAttribute("aria-current", "step");
+      button.classList.toggle("is-complete", index < activeIndex);
+    }
+    dockSteps.forEach((marker, index) => {
+      marker.classList.toggle("is-active", index === activeIndex);
+      marker.classList.toggle("is-complete", index < activeIndex);
+    });
+    elements.setupPrevious.classList.toggle("is-hidden", activeIndex === 0);
+    elements.setupNext.classList.toggle("is-hidden", activeIndex === steps.length - 1);
+    syncPresentation();
+    elements.setup.scrollIntoView?.({ block: "start" });
+    elements.setup.focus({ preventScroll: true });
+  };
+
+  for (const button of stepButtons) {
+    button.onclick = () => {
+      const step = button.dataset.setupStepTarget as CustomSetupStep;
+      if (steps.includes(step)) open(step);
+    };
+  }
+  elements.setupPrevious.onclick = () => {
+    const index = steps.indexOf(activeStep);
+    open(steps[Math.max(0, index - 1)]);
+  };
+  elements.setupNext.onclick = () => {
+    const index = steps.indexOf(activeStep);
+    open(steps[Math.min(steps.length - 1, index + 1)]);
+  };
+  open("mode");
+  return { open };
+}
+
+function setupMenuDialogs(root: HTMLElement): { sync: () => void } {
+  const settings = requiredElement<HTMLElement>("v2-settings-dialog");
+  const help = requiredElement<HTMLElement>("v2-help-dialog");
+  const settingsOpen = requiredElement<HTMLButtonElement>("v2-open-settings");
+  const helpOpen = requiredElement<HTMLButtonElement>("v2-open-help");
+  const settingsClose = requiredElement<HTMLButtonElement>("v2-settings-close");
+  const helpClose = requiredElement<HTMLButtonElement>("v2-help-close");
+  let returnFocus: HTMLElement | null = null;
+
+  const syncModalState = (): void => {
+    const open = !settings.classList.contains("is-hidden") ||
+      !help.classList.contains("is-hidden");
+    root.classList.toggle("has-modal-open", open);
+    settings.setAttribute("aria-hidden", String(settings.classList.contains("is-hidden")));
+    help.setAttribute("aria-hidden", String(help.classList.contains("is-hidden")));
+  };
+  const close = (dialog: HTMLElement): void => {
+    dialog.classList.add("is-hidden");
+    syncModalState();
+    returnFocus?.focus({ preventScroll: true });
+  };
+  const open = (dialog: HTMLElement, closeButton: HTMLButtonElement): void => {
+    returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    settings.classList.add("is-hidden");
+    help.classList.add("is-hidden");
+    dialog.classList.remove("is-hidden");
+    syncModalState();
+    closeButton.focus({ preventScroll: true });
+  };
+
+  settingsOpen.onclick = () => open(settings, settingsClose);
+  helpOpen.onclick = () => open(help, helpClose);
+  settingsClose.onclick = () => close(settings);
+  helpClose.onclick = () => close(help);
+  settings.querySelectorAll<HTMLButtonElement>("[data-ui-language]").forEach((button) => {
+    button.onclick = () => {
+      if (button.dataset.uiLanguage === "de" || button.dataset.uiLanguage === "en") {
+        setUiLanguage(button.dataset.uiLanguage);
+      }
+    };
+  });
+  for (const dialog of [settings, help]) {
+    dialog.addEventListener("pointerdown", (event) => {
+      if (event.target === dialog) close(dialog);
+    });
+    dialog.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") close(dialog);
+    });
+  }
+  syncModalState();
+  return { sync: syncModalState };
 }
 
 export function setupQuickPlaySkinPicker(
@@ -780,10 +1032,10 @@ function orderedTeamIds(stats: readonly MatchStatEntry[]): string[] {
 
 function teamLabel(teamId: string): string {
   return teamId === "blue"
-    ? "BLUE TEAM"
+    ? uiText("result.blueTeam").toUpperCase()
     : teamId === "red"
-    ? "RED TEAM"
-    : "NEUTRAL";
+    ? uiText("result.redTeam").toUpperCase()
+    : uiText("common.neutral").toUpperCase();
 }
 
 function formatActorName(
@@ -792,17 +1044,19 @@ function formatActorName(
   humanActorIds: ReadonlySet<string>,
 ): string {
   const teamName = entry.teamId
-    ? entry.teamId.charAt(0).toUpperCase() + entry.teamId.slice(1)
-    : "Neutral";
+    ? entry.teamId === "blue"
+      ? uiText("custom.blueLabel")
+      : uiText("custom.redLabel")
+    : uiText("common.neutral");
   if (humanActorIds.has(entry.actorId)) {
     return entry.actorId === "blue-player"
-      ? `YOU / ${teamName}`
-      : `PLAYER 2 / ${teamName}`;
+      ? `${uiText("common.you").toUpperCase()} / ${teamName}`
+      : `${uiText("common.player2").toUpperCase()} / ${teamName}`;
   }
   const teamBots = stats.filter((candidate) =>
     candidate.teamId === entry.teamId && !humanActorIds.has(candidate.actorId)
   );
-  return `${teamName} BOT ${teamBots.findIndex((candidate) =>
+  return `${teamName} ${uiText("common.bot").toUpperCase()} ${teamBots.findIndex((candidate) =>
     candidate.actorId === entry.actorId
   ) + 1}`;
 }
@@ -830,10 +1084,10 @@ function readQuickPlayBotDifficulty(
 
 function botDifficultyLabel(difficulty: BotDifficultyId): string {
   return difficulty === "casual"
-    ? "EASY"
+    ? uiText("common.easy").toUpperCase()
     : difficulty === "strong"
-      ? "HARD"
-      : "NORMAL";
+      ? uiText("common.hard").toUpperCase()
+      : uiText("common.normal").toUpperCase();
 }
 
 function blueSquadLabel(
@@ -841,19 +1095,27 @@ function blueSquadLabel(
   difficulty: BotDifficultyId,
 ): string {
   return botCount === 0
-    ? "YOU SOLO"
-    : `YOU + ${botCount} ${botDifficultyLabel(difficulty)} ${botLabel(botCount)}`;
+    ? uiText("custom.solo")
+    : uiText("custom.youPlus", {
+        count: botCount,
+        difficulty: botDifficultyLabel(difficulty),
+        bots: botLabel(botCount),
+      });
 }
 
 function botSquadLabel(
   botCount: V2BotCount,
   difficulty: BotDifficultyId,
 ): string {
-  return `${botCount} ${botDifficultyLabel(difficulty)} ${botLabel(botCount)}`;
+  return uiText("custom.botSquad", {
+    count: botCount,
+    difficulty: botDifficultyLabel(difficulty),
+    bots: botLabel(botCount),
+  });
 }
 
 function botLabel(botCount: V2BotCount): string {
-  return botCount === 1 ? "BOT" : "BOTS";
+  return uiText(botCount === 1 ? "custom.botSingular" : "custom.botPlural");
 }
 
 function requiredElement<T extends HTMLElement>(id: string): T {

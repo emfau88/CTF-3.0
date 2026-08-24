@@ -48,15 +48,61 @@ import {
   readV2Route,
   type V2PlayerSkinId,
 } from "./v2Route";
+import { applyUiTranslations, uiText, type UiCopyKey } from "./uiLocale";
 
 interface LeagueMenuController {
   readonly hasSave: boolean;
   readonly homeMeta: string;
   open(): void;
+  refresh(): void;
 }
 
 export function leagueTeamEmblemUrl(teamId: LeagueTeamId): string {
   return `${import.meta.env?.BASE_URL ?? "/"}assets/league/teams/${teamId}-emblem.png`;
+}
+
+const TEAM_MOTTO_KEYS: Readonly<Partial<Record<LeagueTeamId, UiCopyKey>>> = {
+  "iron-vanguard": "league.mottoIronVanguard",
+  "crimson-jackals": "league.mottoCrimsonJackals",
+  "neon-phantoms": "league.mottoNeonPhantoms",
+  "grave-circuit": "league.mottoGraveCircuit",
+  "solar-wardens": "league.mottoSolarWardens",
+  "void-runners": "league.mottoVoidRunners",
+};
+
+const CHARACTER_PERSONALITY_KEYS: Readonly<Record<string, UiCopyKey>> = {
+  "nova-vale": "league.personalityNovaVale",
+  "atlas-rho": "league.personalityAtlasRho",
+  "lyra-quell": "league.personalityLyraQuell",
+  "dax-ember": "league.personalityDaxEmber",
+  "kael-voss": "league.personalityKaelVoss",
+  "mara-hex": "league.personalityMaraHex",
+  "nyx-echo": "league.personalityNyxEcho",
+  "vektor-nine": "league.personalityVektorNine",
+  "rook-13": "league.personalityRook13",
+  "sable-kern": "league.personalitySableKern",
+  "orion-flare": "league.personalityOrionFlare",
+  "senna-ray": "league.personalitySennaRay",
+  "kestrel-void": "league.personalityKestrelVoid",
+  "ion-drift": "league.personalityIonDrift",
+};
+
+function localizedTeamMotto(teamId: LeagueTeamId, fallback: string): string {
+  const key = TEAM_MOTTO_KEYS[teamId];
+  return key ? uiText(key) : fallback;
+}
+
+function localizedCharacterPersonality(characterId: string, fallback: string): string {
+  const key = CHARACTER_PERSONALITY_KEYS[characterId];
+  return key ? uiText(key) : fallback;
+}
+
+function localizedDisciplineMode(mode: "tdm" | "ctf" | "one-flag"): string {
+  return uiText(mode === "tdm" ? "custom.modeTdm" : mode === "ctf" ? "custom.modeCtf" : "custom.modeOneFlag");
+}
+
+function localizedTrialLabel(mode: "tdm" | "ctf" | "one-flag"): string {
+  return uiText(mode === "tdm" ? "league.trialCanopy" : mode === "ctf" ? "league.trialFinal" : "league.trialClash");
 }
 
 export function createLeagueMenuController(actions: {
@@ -257,7 +303,7 @@ export function createLeagueMenuController(actions: {
     } catch (error) {
       profileReview = false;
       renderProfileSetup(
-        error instanceof Error ? error.message : "Review your selections.",
+        error instanceof Error ? error.message : uiText("league.reviewSelections"),
         "#league-profile-error",
       );
     }
@@ -272,27 +318,27 @@ export function createLeagueMenuController(actions: {
     if (profileReview) {
       const wingman = leagueCharacter(draft.selectedWingmanId);
       const reviewKicker = profile
-        ? "FINAL REVIEW · CHANGES NOT SAVED"
-        : "FINAL REVIEW · NOTHING SAVED YET";
-      const reviewCopy = profile
-        ? "Review the pending changes. You can return without saving or apply them as one update."
-        : "Check every choice before founding the team. You can still return and correct anything now.";
+        ? uiText("league.profileReviewUnsaved")
+        : uiText("league.profileReviewNew");
+      const reviewCopy = uiText(profile
+        ? "league.profileReviewChangesCopy"
+        : "league.profileReviewIdentityCopy");
       profileSetup.innerHTML = `
         <div class="league-profile-review">
           <span class="league-eyebrow">${reviewKicker}</span>
-          <h3 id="league-profile-review-heading" tabindex="-1">${profile ? "Confirm team changes" : "Confirm your arena identity"}</h3>
+          <h3 id="league-profile-review-heading" tabindex="-1">${uiText(profile ? "league.profileConfirmChanges" : "league.profileConfirmIdentity")}</h3>
           <p>${reviewCopy}</p>
           <div class="league-profile-lockup">
             <img src="${careerEmblemUrl(draft.emblemId)}" alt="${escapeHtml(draft.teamName)} emblem">
-            <div><small>TEAM</small><strong>${escapeHtml(draft.teamName)}</strong><span>Captain ${escapeHtml(draft.callsign)}</span></div>
+            <div><small>${uiText("common.team").toUpperCase()}</small><strong>${escapeHtml(draft.teamName)}</strong><span>${uiText("league.captain")} ${escapeHtml(draft.callsign)}</span></div>
           </div>
           <div class="league-profile-review-squad">
-            ${careerFighterOptionHtml("nova-vale", draft.captainSkinId, "CAPTAIN", true, draft.callsign)}
-            ${careerFighterOptionHtml(wingman.id, wingman.skinId, "WINGMAN", true)}
+            ${careerFighterOptionHtml("nova-vale", draft.captainSkinId, uiText("league.captainBadge"), true, draft.callsign)}
+            ${careerFighterOptionHtml(wingman.id, wingman.skinId, uiText("league.wingman"), true)}
           </div>
           <div class="league-profile-actions">
-            <button id="league-profile-edit" class="league-profile-secondary" type="button">Edit Choices</button>
-            <button id="league-profile-confirm" type="button">${profile ? "Save Changes" : "Found Team"}</button>
+            <button id="league-profile-edit" class="league-profile-secondary" type="button">${uiText("league.profileEdit")}</button>
+            <button id="league-profile-confirm" type="button">${uiText(profile ? "league.profileSave" : "league.profileFound")}</button>
           </div>
         </div>`;
       requiredButton("league-profile-edit").onclick = () => {
@@ -311,52 +357,52 @@ export function createLeagueMenuController(actions: {
 
     const emblemOptions = CAREER_PLAYER_EMBLEMS.map((emblem) => `
       <button class="league-profile-emblem${emblem.id === draft.emblemId ? " is-selected" : ""}" type="button" data-emblem-id="${emblem.id}" aria-pressed="${emblem.id === draft.emblemId}">
-        <img src="${careerEmblemUrl(emblem.id)}" alt=""><strong>${emblem.label}</strong><small>AVAILABLE</small>
+        <img src="${careerEmblemUrl(emblem.id)}" alt=""><strong>${emblem.label}</strong><small>${uiText("league.available")}</small>
       </button>`).join("");
     const skinOptions = V2_PLAYER_SKINS.map((skinId) =>
-      careerFighterOptionHtml("nova-vale", skinId, "CAPTAIN SKIN", skinId === draft.captainSkinId, playerSkinLabel(skinId), "data-skin-id"),
+      careerFighterOptionHtml("nova-vale", skinId, uiText("league.captainSkinBadge"), skinId === draft.captainSkinId, playerSkinLabel(skinId), "data-skin-id"),
     ).join("");
     const wingmanOptions = availableWingmen.map((characterId) => {
       const character = leagueCharacter(characterId);
-      return careerFighterOptionHtml(characterId, character.skinId, "AVAILABLE", characterId === draft.selectedWingmanId, undefined, "data-wingman-id");
+      return careerFighterOptionHtml(characterId, character.skinId, uiText("league.available"), characterId === draft.selectedWingmanId, undefined, "data-wingman-id");
     }).join("");
     const lockedOptions = lockedWingmen.map((characterId) => {
       const character = leagueCharacter(characterId);
       const teamId = wingmanUnlockTeamId(characterId)!;
       const team = leagueTeam(teamId);
-      return careerFighterOptionHtml(characterId, character.skinId, `LOCKED · DEFEAT ${team.shortName}`, false, undefined, "", true);
+      return careerFighterOptionHtml(characterId, character.skinId, uiText("league.lockedDefeat", { team: team.shortName }), false, undefined, "", true);
     }).join("");
     profileSetup.innerHTML = `
       <div class="league-profile-form">
         <div class="league-profile-intro">
-          <span class="league-eyebrow">YOUR TEAM · YOUR CHOICE</span>
-          <h3>${profile ? "Manage your team" : "Register for the circuit"}</h3>
-          <p>${profile ? "Manage identity, captain look and wingman in one place. Nothing changes until you review and save." : "Choose every detail yourself or use Random on any field. Random choices remain a preview until the final confirmation screen."}</p>
+          <span class="league-eyebrow">${uiText("league.profileChoice")}</span>
+          <h3>${uiText(profile ? "league.profileManage" : "league.profileRegister")}</h3>
+          <p>${uiText(profile ? "league.profileManageCopy" : "league.profileRegisterCopy")}</p>
         </div>
         ${errorMessage ? `<p id="league-profile-error" class="league-profile-error" role="alert" tabindex="-1">${escapeHtml(errorMessage)}</p>` : ""}
         <section class="league-profile-section league-profile-names">
-          <div class="league-profile-section-heading"><div><small>01 · IDENTITY</small><h4>Names</h4></div><button type="button" data-random="names">Random Both</button></div>
-          <label>Captain Callsign<div><input id="league-profile-callsign" maxlength="20" autocomplete="nickname"><button type="button" data-random="callsign">Random</button></div></label>
-          <label>Team Name<div><input id="league-profile-team-name" maxlength="28" autocomplete="organization"><button type="button" data-random="team-name">Random</button></div></label>
+          <div class="league-profile-section-heading"><div><small>01 · ${uiText("league.identity").toUpperCase()}</small><h4>${uiText("league.names")}</h4></div><button type="button" data-random="names">${uiText("league.randomBoth")}</button></div>
+          <label>${uiText("league.callsign")}<div><input id="league-profile-callsign" maxlength="20" autocomplete="nickname"><button type="button" data-random="callsign">${uiText("league.random")}</button></div></label>
+          <label>${uiText("league.teamName")}<div><input id="league-profile-team-name" maxlength="28" autocomplete="organization"><button type="button" data-random="team-name">${uiText("league.random")}</button></div></label>
         </section>
         <section class="league-profile-section">
-          <div class="league-profile-section-heading"><div><small>02 · CREST</small><h4>Team Emblem</h4></div><button type="button" data-random="emblem">Random</button></div>
+          <div class="league-profile-section-heading"><div><small>02 · ${uiText("league.crest").toUpperCase()}</small><h4>${uiText("league.teamEmblem")}</h4></div><button type="button" data-random="emblem">${uiText("league.random")}</button></div>
           <div class="league-profile-emblems">${emblemOptions}</div>
         </section>
         <section class="league-profile-section">
-          <div class="league-profile-section-heading"><div><small>03 · CAPTAIN</small><h4>Arena Skin</h4></div><button type="button" data-random="skin">Random</button></div>
+          <div class="league-profile-section-heading"><div><small>03 · ${uiText("league.captain").toUpperCase()}</small><h4>${uiText("league.arenaSkin")}</h4></div><button type="button" data-random="skin">${uiText("league.random")}</button></div>
           <div class="league-profile-fighter-grid is-skins">${skinOptions}</div>
         </section>
         <section class="league-profile-section">
-          <div class="league-profile-section-heading"><div><small>04 · SQUAD</small><h4>Wingman</h4></div><button type="button" data-random="wingman">Random Available</button></div>
-          <p class="league-profile-section-note">All fighters use identical gameplay rules. Three wingmen are free from the start; rival identities unlock when you defeat their team.</p>
+          <div class="league-profile-section-heading"><div><small>04 · ${uiText("league.squad").toUpperCase()}</small><h4>${uiText("league.wingman")}</h4></div><button type="button" data-random="wingman">${uiText("league.randomAvailable")}</button></div>
+          <p class="league-profile-section-note">${uiText("league.profileSquadCopy")}</p>
           <div class="league-profile-fighter-grid">${wingmanOptions}</div>
-          ${lockedOptions ? `<div class="league-profile-locked-heading"><small>SCOUTED · NOT YET UNLOCKED</small><span>Win league matches to expand the roster</span></div><div class="league-profile-fighter-grid is-locked">${lockedOptions}</div>` : ""}
+          ${lockedOptions ? `<div class="league-profile-locked-heading"><small>${uiText("league.scoutedLocked")}</small><span>${uiText("league.expandRoster")}</span></div><div class="league-profile-fighter-grid is-locked">${lockedOptions}</div>` : ""}
         </section>
         <div class="league-profile-actions">
-          ${profile ? `<button id="league-profile-cancel" class="league-profile-secondary" type="button">Cancel</button>` : ""}
-          <button id="league-profile-random-all" class="league-profile-secondary" type="button">Randomize All</button>
-          <button id="league-profile-review" type="button">Review Team</button>
+          ${profile ? `<button id="league-profile-cancel" class="league-profile-secondary" type="button">${uiText("common.cancel")}</button>` : ""}
+          <button id="league-profile-random-all" class="league-profile-secondary" type="button">${uiText("league.randomAll")}</button>
+          <button id="league-profile-review" type="button">${uiText("league.reviewTeam")}</button>
         </div>
       </div>`;
     const callsign = element("league-profile-callsign") as HTMLInputElement;
@@ -406,7 +452,7 @@ export function createLeagueMenuController(actions: {
       draft.teamName = teamName.value;
       if (draft.callsign.trim().length < 2 || draft.teamName.trim().length < 2) {
         renderProfileSetup(
-          "Callsign and team name need at least two characters.",
+          uiText("league.validationNames"),
           draft.callsign.trim().length < 2
             ? "#league-profile-callsign"
             : "#league-profile-team-name",
@@ -449,9 +495,17 @@ export function createLeagueMenuController(actions: {
         match.homeTeamId === active.playerTeamId ||
         match.awayTeamId === active.playerTeamId
       );
+      const opponentId = fixture
+        ? fixture.homeTeamId === active.playerTeamId
+          ? fixture.awayTeamId
+          : fixture.homeTeamId
+        : null;
+      const opponentName = opponentId ? displayTeamName(opponentId) : modeLabel;
       const result = fixture?.result;
       let state = round.index === active.currentRound ? "is-current" : "is-locked";
-      let resultLabel = round.index === active.currentRound ? "UP NEXT" : "LOCKED";
+      let resultLabel = round.index === active.currentRound
+        ? uiText("league.upNext")
+        : uiText("common.locked").toUpperCase();
       if (result) {
         const playerIsBlue = result.blueTeamId === active.playerTeamId;
         const playerScore = playerIsBlue ? result.blueScore : result.redScore;
@@ -462,36 +516,49 @@ export function createLeagueMenuController(actions: {
         state = outcome === "W"
           ? "is-win"
           : outcome === "D" ? "is-draw" : "is-loss";
-        resultLabel = `${outcome} ${playerScore}:${rivalScore}`;
+        const localizedOutcome = uiText(outcome === "W"
+          ? "league.winOutcomeShort"
+          : outcome === "D"
+            ? "league.drawOutcomeShort"
+            : "league.lossOutcomeShort");
+        resultLabel = `${localizedOutcome} ${playerScore}:${rivalScore}`;
       }
-      return `<span class="league-season-stop ${state}"><i>0${round.index + 1}</i><span><small>${modeLabel}</small><b>${resultLabel}</b></span></span>`;
+      return `<span class="league-season-stop ${state}">
+        <i aria-hidden="true">0${round.index + 1}</i>
+        ${opponentId ? `<img class="league-season-stop-emblem" src="${displayTeamEmblemUrl(opponentId)}" alt="">` : ""}
+        <span><small>${modeLabel}</small><strong>${escapeHtml(opponentName)}</strong><b>${resultLabel}</b></span>
+      </span>`;
     }).join("");
     const completed = Math.min(active.currentRound, active.rounds.length);
     const remaining = Math.max(0, active.rounds.length - completed);
-    return `<div class="league-season-track" aria-label="${completed} of ${active.rounds.length} matches complete, ${remaining} remaining">
-      <div class="league-season-track-summary"><small>${CURRENT_LEAGUE_CIRCUIT.name.toUpperCase()}</small><strong>${completed} OF ${active.rounds.length} COMPLETE</strong><span>${remaining} ${remaining === 1 ? "MATCH" : "MATCHES"} REMAIN</span></div>
+    return `<div class="league-season-track" aria-label="${uiText("league.matchProgress", { complete: completed, total: active.rounds.length })}">
+      <div class="league-season-track-summary"><small>${CURRENT_LEAGUE_CIRCUIT.name.toUpperCase()}</small><strong>${uiText("league.matchProgress", { complete: completed, total: active.rounds.length })}</strong><span>${uiText("league.matchesRemain", { count: remaining, matches: uiText(remaining === 1 ? "common.match" : "common.matches").toUpperCase() })}</span></div>
       <div>${stops}</div>
     </div>`;
   };
 
   const renderHeader = (hasSeason: boolean, isEditing: boolean): void => {
     element("league-header-kicker").textContent = isEditing
-      ? profile ? "CAREER · TEAM MANAGEMENT" : "CAREER · TEAM REGISTRATION"
+      ? profile ? uiText("league.careerTeamManagement") : uiText("league.careerRegistration")
       : hasSeason
-        ? `CAREER · ${CURRENT_LEAGUE_CIRCUIT.name.toUpperCase()}`
-        : "CAREER · CONTRACT BRIEFING";
+        ? uiText("league.careerCircuit", { circuit: CURRENT_LEAGUE_CIRCUIT.name.toUpperCase() })
+        : uiText("league.careerContract");
     element("league-header-title").textContent = isEditing
-      ? profile ? "Team Manager" : "Found Your Team"
+      ? profile ? uiText("league.teamManager") : uiText("league.foundTeamTitle")
       : hasSeason
-        ? "League HQ"
+        ? uiText("league.title")
         : CURRENT_LEAGUE_CIRCUIT.name;
     const standingsTitle = document.getElementById("league-standings-title");
-    if (standingsTitle) standingsTitle.textContent = `${CURRENT_LEAGUE_CIRCUIT.name} Standings`;
+    if (standingsTitle) {
+      standingsTitle.textContent = uiText("league.standingsTitle", {
+        circuit: CURRENT_LEAGUE_CIRCUIT.name,
+      });
+    }
   };
 
   const renderLeagueIntro = (): void => {
     if (!profile) return;
-    element("league-intro-title").textContent = `Lead ${profile.teamName}`;
+    element("league-intro-title").textContent = uiText("league.leadTeam", { team: profile.teamName });
     const introEmblem = element("league-intro-emblem") as HTMLImageElement;
     introEmblem.src = careerEmblemUrl(profile.emblemId);
     introEmblem.alt = `${profile.teamName} emblem`;
@@ -509,7 +576,7 @@ export function createLeagueMenuController(actions: {
       return `<article class="league-intro-stop">
         <span>0${round.index + 1}</span>
         <img src="${leagueTeamEmblemUrl(opponent.id)}" alt="${opponent.name}">
-        <div><small>${discipline.trialLabel}</small><strong>${discipline.modeLabel}</strong><i>${discipline.mapLabel} · vs ${opponent.name}</i></div>
+        <div><small>${localizedTrialLabel(discipline.mode)}</small><strong>${localizedDisciplineMode(discipline.mode)}</strong><i>${discipline.mapLabel} · VS ${opponent.name}</i></div>
       </article>`;
     }).join("");
   };
@@ -521,8 +588,12 @@ export function createLeagueMenuController(actions: {
     const commandStatus = document.getElementById("league-season-command-status");
     if (commandStatus) {
       commandStatus.textContent = active.status === "completed"
-        ? `${CURRENT_LEAGUE_CIRCUIT.name} · ${active.rounds.length} of ${active.rounds.length} complete`
-        : `${CURRENT_LEAGUE_CIRCUIT.name} · Match ${active.currentRound + 1} of ${active.rounds.length}`;
+        ? uiText("league.reviewRun", { circuit: CURRENT_LEAGUE_CIRCUIT.name })
+        : uiText("league.matchOf", {
+            circuit: CURRENT_LEAGUE_CIRCUIT.name,
+            match: active.currentRound + 1,
+            total: active.rounds.length,
+          });
     }
     const match = getCurrentPlayerMatch(active);
     const opponentId = getPlayerOpponent(active, match);
@@ -532,13 +603,13 @@ export function createLeagueMenuController(actions: {
       target.innerHTML = `
         <div class="league-season-complete">
           <img class="league-champion-emblem" src="${displayTeamEmblemUrl(champion.id)}" alt="${escapeHtml(championName)} emblem">
-          <div><span class="league-eyebrow">SEASON COMPLETE</span><h3>${escapeHtml(championName)} take the title</h3>
-          <p>You finished <strong>#${ownPosition}</strong> with <strong>${active.standings[active.playerTeamId].points} points</strong>.</p></div>
-          <button id="league-finish-new" type="button">Start New Season</button>
+          <div><span class="league-eyebrow">${uiText("league.seasonComplete")}</span><h3>${uiText("league.championTitle", { team: escapeHtml(championName) })}</h3>
+          <p>${uiText("league.finishLine", { position: ownPosition, points: active.standings[active.playerTeamId].points })}</p></div>
+          <button id="league-finish-new" type="button">${uiText("league.startNewSeason")}</button>
         </div>
         ${renderSeasonTrack(active)}`;
       requiredButton("league-finish-new").onclick = () => {
-        if (window.confirm("Replace this completed season with a new one?")) startSeason();
+        if (window.confirm(uiText("league.replaceSeasonConfirm"))) startSeason();
       };
       return;
     }
@@ -547,29 +618,49 @@ export function createLeagueMenuController(actions: {
     const discipline = foundersCircuitDiscipline(active.currentRound);
     const opponentStanding = active.standings[opponentId];
     const opponentLineup = renderOpponentLineup(active, opponentId);
+    const assetBase = import.meta.env?.BASE_URL ?? "/";
+    const ownCaptain = leagueCharacter(
+      active.teamRosters[active.playerTeamId][0],
+    );
+    const opponentCaptain = leagueCharacter(active.teamRosters[opponentId][0]);
+    const ownCaptainSkin = profile?.captainSkinId ?? ownCaptain.skinId;
+    const ownPortrait = `${assetBase}assets/ui/portraits/${
+      playerSkinPortraitAssetStem(ownCaptainSkin)
+    }.png`;
+    const opponentPortrait = `${assetBase}assets/ui/portraits/${
+      playerSkinPortraitAssetStem(opponentCaptain.skinId)
+    }.png`;
     target.style.setProperty("--opponent-color", opponent.primaryColor);
     target.innerHTML = `
-      <div class="league-fixture-meta">
-        <span class="league-eyebrow">${discipline.trialLabel.toUpperCase()} · MATCH ${active.currentRound + 1} OF ${active.rounds.length}</span>
-        <div class="league-fixture-title">
-          <img class="league-mini-emblem" src="${displayTeamEmblemUrl(active.playerTeamId)}" alt="${escapeHtml(ownTeamName)} emblem">
-          <div class="league-fixture-team"><small>YOUR SQUAD</small><strong>${escapeHtml(ownTeamName)}</strong></div>
+      <div class="league-matchup-hero">
+        <div class="league-matchup-stage" aria-hidden="true">
+          <span class="is-player" style="--skin-portrait:url('${ownPortrait}')"></span>
           <b>VS</b>
+          <span class="is-opponent" style="--skin-portrait:url('${opponentPortrait}')"></span>
         </div>
+        <div class="league-fixture-meta">
+          <span class="league-eyebrow">${localizedTrialLabel(discipline.mode).toUpperCase()} · ${uiText("common.match").toUpperCase()} ${active.currentRound + 1} / ${active.rounds.length}</span>
+          <div class="league-fixture-title">
+            <img class="league-mini-emblem" src="${displayTeamEmblemUrl(active.playerTeamId)}" alt="${escapeHtml(ownTeamName)} emblem">
+            <div class="league-fixture-team"><small>${uiText("league.yourSquad")}</small><strong>${escapeHtml(ownTeamName)}</strong></div>
+          </div>
+        </div>
+        <div class="league-opponent-copy">
+          <div class="league-opponent-heading">
+            <img class="league-opponent-emblem" src="${leagueTeamEmblemUrl(opponent.id)}" alt="${opponent.name} emblem">
+            <div><small>${uiText("league.nextOpponent")}</small><h3>${opponent.name}</h3><p>${localizedTeamMotto(opponent.id, opponent.motto)}</p></div>
+          </div>
+          <div class="league-opponent-form"><span>${uiText("league.tableRank", { position: sortedLeagueStandings(active).findIndex((row) => row.teamId === opponentId) + 1 })}</span><span>${uiText("league.pts", { points: opponentStanding.points })}</span><span>${opponentStanding.wins}-${opponentStanding.draws}-${opponentStanding.losses}</span></div>
+        </div>
+        <button id="league-play-next" type="button"><small>${discipline.mapLabel.toUpperCase()} · ${localizedDisciplineMode(discipline.mode).toUpperCase()} 2V2</small><strong>${uiText("league.enterArena")}</strong></button>
       </div>
-      <div class="league-opponent-copy">
-        <div class="league-opponent-heading">
-          <img class="league-opponent-emblem" src="${leagueTeamEmblemUrl(opponent.id)}" alt="${opponent.name} emblem">
-          <div><small>NEXT OPPONENT</small><h3>${opponent.name}</h3><p>${opponent.motto}</p></div>
-        </div>
-        <div class="league-opponent-form"><span>#${sortedLeagueStandings(active).findIndex((row) => row.teamId === opponentId) + 1} TABLE</span><span>${opponentStanding.points} PTS</span><span>${opponentStanding.wins}-${opponentStanding.draws}-${opponentStanding.losses}</span></div>
+      <div class="league-matchup-lower">
+        ${renderSeasonTrack(active)}
         <div class="league-opponent-lineup" aria-label="${opponent.name} expected lineup">
-          <small class="league-opponent-lineup-label">EXPECTED LINEUP</small>
+          <small class="league-opponent-lineup-label">${uiText("league.expectedLineup")}</small>
           ${opponentLineup}
         </div>
-      </div>
-      <button id="league-play-next" type="button"><small>${discipline.mapLabel.toUpperCase()} · ${discipline.modeLabel.toUpperCase()} 2V2</small><strong>Enter Arena</strong></button>
-      ${renderSeasonTrack(active)}`;
+      </div>`;
     requiredButton("league-play-next").onclick = () => {
       const route = readV2Route();
       window.location.search = buildLeagueMatchSearch(active, {
@@ -582,8 +673,12 @@ export function createLeagueMenuController(actions: {
 
   const renderRoster = (active: LeagueSeasonState): void => {
     const standing = active.standings[active.playerTeamId];
-    element("league-team-record").textContent =
-      `${standing.wins}W · ${standing.draws}D · ${standing.losses}L · ${standing.points} PTS`;
+    element("league-team-record").textContent = uiText("league.record", {
+      wins: standing.wins,
+      draws: standing.draws,
+      losses: standing.losses,
+      points: standing.points,
+    });
     const roster = element("league-player-roster");
     roster.replaceChildren(
       ...active.teamRosters[active.playerTeamId].map((characterId, index) =>
@@ -591,12 +686,12 @@ export function createLeagueMenuController(actions: {
           active,
           active.playerTeamId,
           characterId,
-          index === 0 ? "CAPTAIN" : "WINGMATE",
+          index === 0 ? uiText("league.captainBadge") : uiText("league.wingmateBadge"),
           true,
           index === 0 && profile
             ? {
                 name: profile.callsign,
-                personality: `Captain of ${profile.teamName}`,
+                personality: uiText("league.captainOf", { team: profile.teamName }),
                 visualStyle: playerSkinLabel(profile.captainSkinId),
                 skinId: profile.captainSkinId,
               }
@@ -608,7 +703,7 @@ export function createLeagueMenuController(actions: {
 
   const renderStandings = (active: LeagueSeasonState): void => {
     const target = element("league-standings");
-    target.innerHTML = `<div class="league-table-row league-table-head"><span>#</span><span>TEAM</span><span>P</span><span>W</span><span>D</span><span>L</span><strong>PTS</strong></div>`;
+    target.innerHTML = `<div class="league-table-row league-table-head"><span>#</span><span>${uiText("common.team").toUpperCase()}</span><span>${uiText("league.playedShort")}</span><span>${uiText("league.winsShort")}</span><span>${uiText("league.drawsShort")}</span><span>${uiText("league.lossesShort")}</span><strong>${uiText("common.pts")}</strong></div>`;
     sortedLeagueStandings(active).forEach((standing, index) => {
       const team = leagueTeam(standing.teamId);
       const teamName = displayTeamName(standing.teamId);
@@ -621,10 +716,14 @@ export function createLeagueMenuController(actions: {
       row.setAttribute("aria-pressed", String(standing.teamId === selectedTeamId));
       if (isPlayerTeam) {
         row.setAttribute("aria-current", "true");
-        row.setAttribute("aria-label", `${teamName}, your team, table position ${index + 1}, ${standing.points} points. Inspect team file.`);
+        row.setAttribute("aria-label", uiText("league.yourTeamRow", {
+          team: teamName,
+          position: index + 1,
+          points: standing.points,
+        }));
       }
-      row.title = `Inspect ${teamName} roster`;
-      row.innerHTML = `<span>${index + 1}</span><span><img class="league-table-emblem" src="${displayTeamEmblemUrl(team.id)}" alt=""><span class="league-table-team-name">${escapeHtml(teamName)}</span>${isPlayerTeam ? '<em class="league-you-badge">YOU</em>' : ""}</span><span>${standing.played}</span><span>${standing.wins}</span><span>${standing.draws}</span><span>${standing.losses}</span><strong>${standing.points}</strong>`;
+      row.title = uiText("league.inspectRoster", { team: teamName });
+      row.innerHTML = `<span>${index + 1}</span><span><img class="league-table-emblem" src="${displayTeamEmblemUrl(team.id)}" alt=""><span class="league-table-team-name">${escapeHtml(teamName)}</span>${isPlayerTeam ? `<em class="league-you-badge">${uiText("common.you").toUpperCase()}</em>` : ""}</span><span>${standing.played}</span><span>${standing.wins}</span><span>${standing.draws}</span><span>${standing.losses}</span><strong>${standing.points}</strong>`;
       row.onclick = () => {
         selectedTeamId = standing.teamId;
         renderStandings(active);
@@ -644,14 +743,9 @@ export function createLeagueMenuController(actions: {
       target.style.removeProperty("--team-color");
       target.innerHTML = `
         <div class="league-scouting-index">
-          <small>SCOUTING NETWORK</small>
-          <h3>Choose a team file</h3>
-          <p>The next opponent's expected lineup is pinned in the match dossier above. Select any team in ${CURRENT_LEAGUE_CIRCUIT.name} Standings to inspect its full roster and recorded performance.</p>
-          <div class="league-scouting-index-points" aria-label="Available scouting information">
-            <span><b>NEXT</b><i>Match dossier above</i></span>
-            <span><b>ROSTER</b><i>Fighter identities</i></span>
-            <span><b>FORM</b><i>Recorded career data</i></span>
-          </div>
+          <small>${uiText("league.scouting").toUpperCase()}</small>
+          <h3>${uiText("league.chooseTeam")}</h3>
+          <p>${uiText("league.chooseTeamCopy")}</p>
         </div>`;
       return;
     }
@@ -659,7 +753,8 @@ export function createLeagueMenuController(actions: {
     const teamName = displayTeamName(teamId);
     target.style.setProperty("--team-color", team.primaryColor);
     const isPlayerTeam = teamId === active.playerTeamId;
-    target.innerHTML = `<div class="league-detail-heading"><img class="league-large-emblem" src="${displayTeamEmblemUrl(team.id)}" alt="${escapeHtml(teamName)} emblem"><div><small>${isPlayerTeam ? "TEAM FILE" : "SCOUTING FILE"}</small><h3>${escapeHtml(teamName)}</h3><p>${isPlayerTeam && profile ? `Captain ${escapeHtml(profile.callsign)} · ${team.motto}` : team.motto}</p></div>${isPlayerTeam ? '<button id="league-team-file-manage" class="league-team-file-manage" type="button">Manage Team</button>' : ""}</div><div class="league-detail-roster"></div>`;
+    const teamMotto = localizedTeamMotto(team.id, team.motto);
+    target.innerHTML = `<div class="league-detail-heading"><img class="league-large-emblem" src="${displayTeamEmblemUrl(team.id)}" alt="${escapeHtml(teamName)} emblem"><div><small>${uiText(isPlayerTeam ? "league.teamFile" : "league.scoutingFile")}</small><h3>${escapeHtml(teamName)}</h3><p>${isPlayerTeam && profile ? `${uiText("league.captain")} ${escapeHtml(profile.callsign)} · ${teamMotto}` : teamMotto}</p></div>${isPlayerTeam ? `<button id="league-team-file-manage" class="league-team-file-manage" type="button">${uiText("league.manageTeam")}</button>` : ""}</div><div class="league-detail-roster"></div>`;
     const roster = target.querySelector<HTMLElement>(".league-detail-roster")!;
     roster.replaceChildren(
       ...active.teamRosters[teamId].map((characterId, index) => characterCard(
@@ -671,7 +766,7 @@ export function createLeagueMenuController(actions: {
         teamId === active.playerTeamId && index === 0 && profile
           ? {
               name: profile.callsign,
-              personality: `Captain of ${profile.teamName}`,
+              personality: uiText("league.captainOf", { team: profile.teamName }),
               visualStyle: playerSkinLabel(profile.captainSkinId),
               skinId: profile.captainSkinId,
             }
@@ -696,12 +791,14 @@ export function createLeagueMenuController(actions: {
     const proving = LEAGUE_CIRCUITS.find((circuit) => circuit.id === "proving")!;
     const contender = LEAGUE_CIRCUITS.find((circuit) => circuit.id === "contender")!;
     const apex = LEAGUE_CIRCUITS.find((circuit) => circuit.id === "apex")!;
+    const assetBase = import.meta.env?.BASE_URL ?? "/";
     element("league-pyramid").innerHTML = `
-      <div class="league-tier is-locked is-elite is-apex" role="listitem"><span>0${apex.tier}</span><div><small>${apex.levelLabel}</small><strong>${apex.name}</strong><p>${apex.description}</p></div><b>COMING SOON</b></div>
-      <div class="league-tier-connector" aria-hidden="true"><span>↑</span><small>ADVANCE</small></div>
-      <div class="league-tier is-locked is-contender" role="listitem"><span>0${contender.tier}</span><div><small>${contender.levelLabel}</small><strong>${contender.name}</strong><p>${contender.description}</p><div class="league-tier-rivals">${futureTeams}<i>+4</i></div></div><b>COMING SOON</b></div>
-      <div class="league-tier-connector is-qualification" aria-hidden="true"><span>↑</span><small>TOP 2 QUALIFY</small></div>
-      <div class="league-tier is-current is-proving" role="listitem"><span>0${proving.tier}</span><div><small>${proving.levelLabel} · CURRENT</small><strong>${proving.name}</strong><p>${proving.description}</p></div><b><span>YOU ARE HERE</span><small>TABLE #${ownPosition}</small></b></div>`;
+      <div class="league-tier is-current is-proving" role="listitem"><img src="${assetBase}assets/ui/menu/league-tier-proving-v1.png" alt=""><div><small>${uiText("league.entry")} · ${uiText("league.current")}</small><strong>${proving.name}</strong><p>${uiText("league.provingDescription")}</p></div><b><span>${uiText("league.youAreHere")}</span><small>${uiText("league.tablePosition", { position: ownPosition })}</small></b></div>
+      <div class="league-tier-connector is-qualification" aria-hidden="true"><span>↓</span><small>${uiText("league.qualify")}</small></div>
+      <div class="league-tier is-locked is-contender" role="listitem"><img src="${assetBase}assets/ui/menu/league-tier-contender-v1.png" alt=""><div><small>${uiText("league.advanced")}</small><strong>${contender.name}</strong><p>${uiText("league.contenderDescription")}</p><div class="league-tier-rivals">${futureTeams}<i>+4</i></div></div><b>${uiText("common.comingSoon").toUpperCase()}</b></div>
+      <div class="league-tier-connector" aria-hidden="true"><span>↓</span><small>${uiText("league.advance")}</small></div>
+      <div class="league-tier is-locked is-elite is-apex" role="listitem"><img src="${assetBase}assets/ui/menu/league-tier-apex-v1.png" alt=""><div><small>${uiText("league.championship")}</small><strong>${apex.name}</strong><p>${uiText("league.apexDescription")}</p></div><b>${uiText("common.comingSoon").toUpperCase()}</b></div>
+      <div class="league-path-reward"><img src="${assetBase}assets/league/arena-league-emblem.png" alt=""><div><small>${uiText("league.nextReward")}</small><strong>${uiText("league.rewardWingman")}</strong></div></div>`;
   };
 
   const renderProgression = (active: LeagueSeasonState): void => {
@@ -723,16 +820,42 @@ export function createLeagueMenuController(actions: {
       .map((characterId) => leagueCharacter(characterId).name)
       .join(" · ");
     const headline = event.promoted
-      ? "Qualification Earned"
+      ? uiText("league.qualificationEarned")
       : finalRound
-        ? "Circuit Complete"
+        ? uiText("league.circuitComplete")
         : won && positionDelta > 0
-          ? `Up ${positionDelta} Place${positionDelta === 1 ? "" : "s"}`
-          : won ? "Momentum Built" : drawn ? "Point Secured" : "The Climb Continues";
+          ? uiText("league.upPlaces", {
+              count: positionDelta,
+              places: uiText(positionDelta === 1 ? "league.place" : "league.places"),
+            })
+          : won
+            ? uiText("league.momentum")
+            : drawn
+              ? uiText("league.pointSecured")
+              : uiText("league.climbContinues");
+    const remainingMatches = active.rounds.length - active.currentRound;
+    const remainingLabel = uiText(remainingMatches === 1 ? "common.match" : "common.matches");
+    const progressionCopy = event.promoted
+      ? uiText("league.promotedCopy", {
+          circuit: CURRENT_LEAGUE_CIRCUIT.name,
+          next: LEAGUE_CIRCUITS.find((circuit) => circuit.id === "contender")!.name,
+        })
+      : finalRound
+        ? uiText("league.finalRoundCopy")
+        : rivalResultsShiftedTable
+          ? uiText("league.tableShiftCopy", {
+              position: event.newPosition,
+              remaining: remainingMatches,
+              matches: remainingLabel,
+            })
+          : uiText("league.remainingCopy", {
+              remaining: remainingMatches,
+              matches: remainingLabel,
+            });
     progression.innerHTML = `
       <div class="league-progression-card ${won ? "is-win" : drawn ? "is-draw" : "is-loss"}">
         <div class="league-progression-glow"></div>
-        <span class="league-eyebrow">${discipline.modeLabel.toUpperCase()} COMPLETE · MATCH ${event.roundIndex + 1} OF ${active.rounds.length}</span>
+        <span class="league-eyebrow">${uiText("league.modeComplete", { mode: localizedDisciplineMode(discipline.mode).toUpperCase(), match: event.roundIndex + 1, total: active.rounds.length })}</span>
         <h2>${headline}</h2>
         <div class="league-result-lockup">
           <div><img src="${displayTeamEmblemUrl(active.playerTeamId)}" alt="${escapeHtml(playerTeamName)}"><small>${escapeHtml(playerTeamName.toUpperCase())}</small></div>
@@ -740,14 +863,14 @@ export function createLeagueMenuController(actions: {
           <div><img src="${leagueTeamEmblemUrl(opponent.id)}" alt="${opponent.name}"><small>${opponent.name}</small></div>
         </div>
         <div class="league-rank-shift">
-          <div><small>BEFORE</small><strong>#${event.previousPosition}</strong></div>
+          <div><small>${uiText("league.before")}</small><strong>#${event.previousPosition}</strong></div>
           <span>→</span>
-          <div class="is-new"><small>NOW</small><strong>#${event.newPosition}</strong></div>
-          <div class="league-points-earned${pointsGained === 0 ? " is-zero" : ""}"><small>LEAGUE POINTS</small><strong>${pointsGained > 0 ? `+${pointsGained}` : "0"}</strong><span>${event.newPoints} TOTAL</span></div>
+          <div class="is-new"><small>${uiText("league.now")}</small><strong>#${event.newPosition}</strong></div>
+          <div class="league-points-earned${pointsGained === 0 ? " is-zero" : ""}"><small>${uiText("league.leaguePoints")}</small><strong>${pointsGained > 0 ? `+${pointsGained}` : "0"}</strong><span>${uiText("league.totalPoints", { points: event.newPoints })}</span></div>
         </div>
-        ${won ? `<div class="league-unlock-note"><small>RIVAL ROSTER AVAILABLE</small><strong>${escapeHtml(rivalRosterNames)}</strong><span>Select either fighter in Team Manager.</span></div>` : ""}
-        <p>${event.promoted ? `You reached a qualification place in the ${CURRENT_LEAGUE_CIRCUIT.name}. The ${LEAGUE_CIRCUITS.find((circuit) => circuit.id === "contender")!.name} is coming soon; review your final table and squad in League HQ.` : finalRound ? "Your first circuit is complete. Review the table, strengthen your squad and run it back." : rivalResultsShiftedTable ? `The other circuit result reshaped the table and moved you to #${event.newPosition}. ${active.rounds.length - active.currentRound} match${active.rounds.length - active.currentRound === 1 ? "" : "es"} remain.` : `${active.rounds.length - active.currentRound} match${active.rounds.length - active.currentRound === 1 ? "" : "es"} remain. Every result can reshape the table.`}</p>
-        <button id="league-progression-continue" type="button">Return to League HQ</button>
+        ${won ? `<div class="league-unlock-note"><small>${uiText("league.rivalRoster")}</small><strong>${escapeHtml(rivalRosterNames)}</strong><span>${uiText("league.selectRival")}</span></div>` : ""}
+        <p>${progressionCopy}</p>
+        <button id="league-progression-continue" type="button">${uiText("league.progressReturn")}</button>
       </div>`;
     requiredButton("league-progression-continue").onclick = () => {
       season = acknowledgeLeagueProgression(active);
@@ -801,10 +924,16 @@ export function createLeagueMenuController(actions: {
     get hasSave() { return Boolean(season || profile); },
     get homeMeta() {
       if (!season) return profile
-        ? `${profile.teamName} · contract ready`
-        : "TDM · One Flag · CTF · promotion awaits";
-      if (season.status === "completed") return `${CURRENT_LEAGUE_CIRCUIT.name} complete · review your run`;
-      return `${CURRENT_LEAGUE_CIRCUIT.name} · Match ${season.currentRound + 1} of ${season.rounds.length}`;
+        ? uiText("league.contractReady", { team: profile.teamName })
+        : uiText("league.promotionAwaits");
+      if (season.status === "completed") {
+        return uiText("league.reviewRun", { circuit: CURRENT_LEAGUE_CIRCUIT.name });
+      }
+      return uiText("league.matchOf", {
+        circuit: CURRENT_LEAGUE_CIRCUIT.name,
+        match: season.currentRound + 1,
+        total: season.rounds.length,
+      });
     },
     open(): void {
       root.classList.remove("is-hidden");
@@ -816,6 +945,10 @@ export function createLeagueMenuController(actions: {
       selectedTeamId = null;
       render();
       resetMenuScroll();
+    },
+    refresh(): void {
+      applyUiTranslations(root);
+      render();
     },
   };
 }
@@ -830,13 +963,13 @@ function renderOpponentLineup(
     const stats = leagueCharacterStats(season, opponentId, characterId) ?? emptyStats(characterId);
     const portraitAssetStem = playerSkinPortraitAssetStem(character.skinId);
     const performance = stats.matches > 0
-      ? `<div class="league-opponent-member-stats" aria-label="${character.name} recorded career performance"><b>${average(stats.kills, stats.matches)}<i>K/M</i></b><b>${average(stats.deaths, stats.matches)}<i>D/M</i></b><b>${stats.flagCaptures}<i>CAP</i></b></div>`
-      : `<span class="league-opponent-member-new">No season data</span>`;
+      ? `<div class="league-opponent-member-stats" aria-label="${character.name} ${uiText("league.recordedPerformance")}"><b>${average(stats.kills, stats.matches)}<i>${uiText("league.killsPerMatchShort")}</i></b><b>${average(stats.deaths, stats.matches)}<i>${uiText("league.deathsPerMatchShort")}</i></b><b>${stats.flagCaptures}<i>${uiText("league.capturesShort")}</i></b></div>`
+      : `<span class="league-opponent-member-new">${uiText("league.noSeasonData")}</span>`;
     return `
       <article class="league-opponent-member">
         <div class="league-opponent-member-portrait" style="--skin-portrait:url('${assetBase}assets/ui/portraits/${portraitAssetStem}.png')" aria-hidden="true"></div>
         <div class="league-opponent-member-copy">
-          <small>FIGHTER 0${index + 1}</small>
+          <small>${uiText("league.fighter")} 0${index + 1}</small>
           <strong>${character.name}</strong>
           <span>${character.visualStyle}</span>
           ${performance}
@@ -868,11 +1001,11 @@ function characterCard(
   card.innerHTML = `
     <div class="league-character-portrait" style="--skin-portrait:url('${assetBase}assets/ui/portraits/${portraitAssetStem}.png')"></div>
     <div class="league-character-info">
-      <small>${badge ?? `${currentTeam?.shortName ?? "ARENA"} &middot; COSMETIC FIGHTER`}</small>
+      <small>${badge ?? uiText("league.cosmeticFighter", { team: currentTeam?.shortName ?? "ARENA" })}</small>
       <strong>${escapeHtml(presentation?.name ?? character.name)}</strong>
-      <span>${escapeHtml(presentation?.personality ?? character.personality)}</span>
+      <span>${escapeHtml(presentation?.personality ?? localizedCharacterPersonality(character.id, character.personality))}</span>
       <em>${escapeHtml(presentation?.visualStyle ?? character.visualStyle)}</em>
-      ${showStats ? `<div class="league-character-stats" aria-label="Recorded career performance"><b>${average(stats.kills, stats.matches)}<i>K/M</i></b><b>${average(stats.deaths, stats.matches)}<i>D/M</i></b><b>${stats.flagCaptures}<i>CAP</i></b></div>` : ""}
+      ${showStats ? `<div class="league-character-stats" aria-label="${uiText("league.recordedPerformance")}"><b>${average(stats.kills, stats.matches)}<i>${uiText("league.killsPerMatchShort")}</i></b><b>${average(stats.deaths, stats.matches)}<i>${uiText("league.deathsPerMatchShort")}</i></b><b>${stats.flagCaptures}<i>${uiText("league.capturesShort")}</i></b></div>` : ""}
     </div>`;
   return card;
 }
@@ -897,7 +1030,7 @@ function careerFighterOptionHtml(
   return `<${tag} class="league-profile-fighter${selected ? " is-selected" : ""}${locked ? " is-locked" : ""}"${attribute}${interaction}>
     <span class="league-profile-fighter-portrait" style="--skin-portrait:url('${portrait}')" aria-hidden="true"></span>
     <span class="league-profile-fighter-copy"><small>${escapeHtml(badge)}</small><strong>${escapeHtml(displayName ?? character.name)}</strong><i>${escapeHtml(displayName ? playerSkinLabel(skinId) : character.visualStyle)}</i></span>
-    ${locked ? '<b aria-hidden="true">LOCKED</b>' : ""}
+    ${locked ? `<b aria-hidden="true">${uiText("common.locked").toUpperCase()}</b>` : ""}
   </${tag}>`;
 }
 

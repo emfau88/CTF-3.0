@@ -233,20 +233,20 @@ test("desktop P0 UI contract keeps Career primary and uses one outer menu scroll
     html,
     /id="v2-game-utility" class="v2-game-utility is-hidden" role="toolbar"/,
   );
-  assert.match(html, /id="v2-audio-label">SFX ON/);
+  assert.match(html, /id="v2-audio-label"[^>]*>SFX ON/);
   assert.match(baseCss, /--hud-armor:\s*#d8b867/);
   assert.match(baseCss, /\.v2-game-utility\s*\{/);
   assert.match(baseCss, /\.v2-game-utility\s*\{[^}]*z-index:\s*1960/);
   assert.match(baseCss, /\.v2-audio-button\.is-muted::after/);
-  assert.equal((html.match(/data-v2-fullscreen-control/g) ?? []).length, 4);
-  assert.match(html, /class="v2-screen-fullscreen-button v2-home-fullscreen-button is-hidden"/);
+  assert.equal((html.match(/data-v2-fullscreen-control/g) ?? []).length, 5);
+  assert.match(html, /class="v2-screen-fullscreen-button is-hidden"[^>]*data-v2-fullscreen-control/);
   assert.match(html, /id="v2-menu-setup"[\s\S]*data-v2-fullscreen-control/);
   assert.match(html, /id="v2-league-hub"[\s\S]*data-v2-fullscreen-control/);
   assert.match(baseCss, /\.v2-screen-fullscreen-button\s*\{/);
-  assert.match(baseCss, /\.v2-home-fullscreen-button\s*\{[^}]*position:\s*absolute[^}]*top:\s*0[^}]*right:\s*0/);
+  assert.match(html, /class="v2-home-utility"[\s\S]*data-v2-fullscreen-control/);
   assert.doesNotMatch(html, /v2-screen-fullscreen-button-icon-only/);
   assert.doesNotMatch(baseCss, /v2-screen-fullscreen-button-icon-only/);
-  assert.equal((html.match(/data-v2-fullscreen-label/g) ?? []).length, 4);
+  assert.equal((html.match(/data-v2-fullscreen-label/g) ?? []).length, 5);
   assert.match(mainSource, /querySelectorAll<HTMLButtonElement>\("\[data-v2-fullscreen-control\]"\)/);
   assert.match(mainSource, /setupV2FullscreenControls\(\)/);
   assert.match(mainSource, /aria-pressed/);

@@ -1,6 +1,15 @@
 # Bot AI Execution Roadmap
 
-Stand: 2026-06-23
+Stand der ursprünglichen Planung: 2026-06-23
+
+Statushinweis: 2026-08-24
+
+> Dieses Dokument bleibt als Ausführungshistorie erhalten. Die offenen
+> Checkboxen ab Bulk 5 sind **keine verlässliche aktuelle To-do-Liste** mehr:
+> spätere Audit-Phasen haben drei Schwierigkeitsprofile, Landmark-Routing,
+> difficulty-spezifische Sprünge und Team-Pickup-Reservierungen bereits
+> umgesetzt. Maßgeblich für erledigte und offene Arbeit ist der
+> [verifizierte Audit-Status](audits/CTF-3.0_Audit_STATUS_2026-08-05.md).
 
 ## Ziel
 
@@ -264,14 +273,14 @@ Erste Persoenlichkeiten:
 Persoenlichkeiten sollen nur Gewichtungen veraendern, keine Aktionen
 verbieten.
 
-## Naechster empfohlener Schritt
+## Aktuell empfohlener nächster Schritt (2026-08-24)
 
-Als naechstes sollte Bulk 4 vorbereitet werden:
+1. Easy, Normal und Hard in kurzen TDM-, CTF- und One-Flag-Spieltests
+   subjektiv kalibrieren.
+2. Den vollständigen 270-Match-Premium-Audit auf dem finalen Branch-Stand neu
+   erzeugen und besonders 4v4 Classic CTF vergleichen.
+3. Den gemeinsamen Map-Vertrag um ein Gate für mindestens zwei unabhängige
+   Wege von jeder Basis zum zentralen Objective erweitern.
 
-1. Die vorhandene Matrix von `2v2` und `4v4` auf `1v1`, `2v2`, `3v3`,
-   `4v4` erweitern.
-2. Die Matrix-Ergebnisse in den Diagnoseartefakten sichtbar machen.
-3. Danach erst konkrete Bot-Verhaltensfixes planen, wenn ein Modus oder eine
-   Teamgroesse messbar auffaellig ist.
-
-Damit bleiben kommende Bot-Verbesserungen vergleichbar und nachvollziehbar.
+Damit bleiben kommende Bot-Verbesserungen messbar, ohne historische offene
+Checkboxen fälschlich als aktuellen Implementierungsstand zu behandeln.

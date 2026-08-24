@@ -4,8 +4,10 @@
 
 **Move fast. Read the arena. Win the objective.**
 
-A desktop-first, browser-playable 2D top-down arena game built around movement,
-aim, route knowledge, weapon control and objective pressure.
+A browser-playable 2D top-down arena game built around movement, aim, route
+knowledge, weapon control and objective pressure. Keyboard and mouse remain the
+primary precision controls; a dedicated landscape touch layout supports mobile
+play.
 
 [**Play the current build**](https://emfau88.github.io/CTF-3.0/) ·
 [Run locally](#quick-start) ·
@@ -13,14 +15,48 @@ aim, route knowledge, weapon control and objective pressure.
 
 </div>
 
-![Core Arena start screen](docs/screenshots/start-screen.jpg)
+![Core Arena main menu on desktop](docs/screenshots/menu-refresh-2026-08-24-v2/main-menu-desktop-de.png)
 
 > [!NOTE]
 > Core Arena is in active development. The current public experience is a
-> single-player-versus-bots build with a complete Quick Play loop and the first
-> three-match League circuit. Progress is stored locally in the browser.
+> single-player-versus-bots build with instant Quick Start, a configurable
+> Custom Match flow and the first three-match League circuit. Progress and UI
+> language are stored locally in the browser. Online multiplayer, accounts and
+> cloud saves are not implemented.
 
-## Development update — August 8, 2026
+## Development update — August 24, 2026
+
+- The complete menu surface now uses the higher-fidelity **Arena Twilight**
+  visual system: a brighter sci-fi arena backdrop, beveled action cards,
+  stronger hierarchy and consistent framing across Main Menu, Custom Match,
+  League HQ, Settings and Help.
+- The three Main Menu actions now use purpose-built, alpha-transparent
+  ImageGen emblems for Career, Quick Start and Custom Match instead of generic
+  interface glyphs.
+- All new menu copy is available in **German and English**. Language changes
+  immediately and persists on the current device.
+- **Quick Start** launches a recommended match immediately. **Custom Match** is
+  now a four-step flow for mode, arena, teams and final review instead of one
+  dense form.
+- Premium-arena previews use the complete map image without cropping. On
+  desktop, Custom Match keeps a live match summary beside every setup step and
+  keeps the Arena navigation visible without page scrolling down to 1366 × 768.
+  The refreshed League HQ puts the complete next-match decision, current squad
+  and league path in the first desktop viewport; the detailed table remains
+  available below. It shows the playable Proving Circuit plus the planned
+  Contender and Apex circuits without presenting them as finished.
+- Menus adapt to desktop, compact landscape and mobile portrait viewports.
+  Fullscreen controls are synchronized across the menu and the compact
+  top-right match toolbar when the browser supports the Fullscreen API.
+- Mobile gameplay retains its separate compact action arc, top HUD and combat
+  log. The camera uses a closer 1120 × 640 minimum view and direct,
+  frame-rate-independent following.
+
+<p align="center">
+  <img src="docs/screenshots/menu-refresh-2026-08-24-v2/main-menu-mobile-de.png" width="300" alt="Core Arena main menu on mobile">
+</p>
+
+Recent gameplay and arena milestones remain in the current build:
 
 - **Helix Canopy v2.1** replaces the dense organic combat court with readable
   rectangular planters, three broad routes and a walkable under-glass helix.
@@ -39,18 +75,21 @@ aim, route knowledge, weapon control and objective pressure.
 - Premium-map resources now follow one readable baseline: four Health, two
   Armor and five weapon pickups per arena. Health restores 75 points, while
   Grenade and Shardcaster use dedicated in-game art instead of placeholders.
-- Automatic input detection now applies the same touch result to the Phaser
-  controls and the HTML utility bar, keeping the mobile menu at the top and
-  the fullscreen action out of the combat controls.
+- Automatic input detection applies the same touch result to the Phaser
+  controls and the HTML utility bar, keeping the mobile menu and fullscreen
+  action in the top-right toolbar rather than near combat buttons.
 - The mobile arena camera now shows a closer 1120 × 640 minimum view, follows
   the player with frame-rate-independent damping and snaps cleanly after
   respawns. Main Menu, Quick Play and League are available in portrait mode;
   landscape remains the intended match orientation.
 
-The source audit, verified implementation status, open work and screenshot
-evidence are collected in the
+The menu implementation and QA evidence are documented in the
+[menu refresh record](docs/MENU_REFRESH_2026-08-24.md). The source audit,
+verified gameplay implementation status and open work are collected in the
 [audit status](docs/audits/CTF-3.0_Audit_STATUS_2026-08-05.md) and
-[Phase 3 QA record](docs/qa/phase-3-mobile-runtime/README.md).
+[Phase 3 QA record](docs/qa/phase-3-mobile-runtime/README.md). The current
+practical maintainability, dependency and rendering assessment is captured in
+the [architecture stability check](docs/audits/ARCHITECTURE_STABILITY_2026-08-24.md).
 
 ## Vision
 
@@ -66,11 +105,13 @@ matches context without turning the arena into an RPG grind.
 
 ## What you can play today
 
-### Quick Play
+### Quick Start and Custom Match
 
-Configure a match, select an arena and fighter, and play from **1v1 through
-4v4**. You control one fighter while every other slot is filled by bots. Bot
-count and difficulty can be selected independently for the blue and red teams.
+Quick Start immediately launches a recommended TDM setup. Custom Match lets
+you select mode, premium arena, fighter and independent team configuration from
+**1v1 through 4v4**. You control one fighter while every other slot is filled
+by bots. Bot count and **Easy**, **Normal** or **Hard** difficulty can be set
+separately for the blue and red teams.
 
 | Mode | Objective | Match format |
 | --- | --- | --- |
@@ -78,7 +119,7 @@ count and difficulty can be selected independently for the blue and red teams.
 | **Classic CTF** | Steal and capture the enemy flag | First to 3, 3-minute limit |
 | **One Flag** | Control the neutral objective | First to 3, 3-minute limit |
 
-![Quick Play mode and flagship-arena selection](docs/screenshots/quick-play.jpg)
+![Custom Match premium-arena selection](docs/screenshots/menu-refresh-2026-08-24-v2/custom-match-arena-desktop-de.png)
 
 ### League
 
@@ -94,7 +135,7 @@ wingman unlocks. Defeat a rival team to make its fighters available in Team
 Manager. The Contender and Apex circuits are visible as honest future previews;
 only the Proving Circuit is currently playable.
 
-![League HQ with match dossier, squad and standings](docs/screenshots/league-hq.jpg)
+![League HQ with match dossier, squad, standings and progression path](docs/screenshots/menu-refresh-2026-08-24-v2/league-hq-desktop-de.png)
 
 ## Premium arenas
 
@@ -186,9 +227,32 @@ them. Arc Lash is always available and never consumes ammunition.
 | Hold `Tab` | Match statistics |
 | `M` | Pause and match menu |
 
-Core Arena is developed desktop-first. A tested landscape touch interface is
-available as a secondary control path with map-specific weapon buttons and a
-mobile-only compact HUD; desktop keyboard and mouse remain the primary target.
+Desktop keyboard and mouse remain the primary precision path. The menus are
+responsive in portrait and landscape; matches are intended for landscape.
+The touch interface has automated browser coverage for the rebuilt Helix map
+in all three modes and uses map-specific weapon buttons plus a compact HUD.
+Real-device GPU and touch-feel profiling remains an open release gate.
+
+## Audit and roadmap status
+
+The original technical audit was checked against the project and converted
+into six implemented phases:
+
+- reproducible map baselines and visual diagnostics
+- Helix Canopy v2.1 with aligned art and collision
+- independently configurable bot teams and three difficulty profiles
+- synchronized match start, mobile HUD/camera work and runtime reductions
+- consistent premium-map pickup economy and named map landmarks
+- landmark-aware bot strategy, pickup reservations and difficulty-specific
+  jump behavior across TDM, Classic CTF and One Flag
+
+The August 24 menu refresh is an additional product/UI phase, not a claim that
+the remaining gameplay work is finished. The important open gates are manual
+difficulty calibration, a clean full 270-match premium audit, a graph check for
+two independent base-to-objective routes, real mobile hardware profiling and
+League progression beyond the Proving Circuit. See the
+[verified audit status](docs/audits/CTF-3.0_Audit_STATUS_2026-08-05.md) for the
+detailed evidence and limitations.
 
 ## Technology
 
@@ -238,10 +302,10 @@ Development is focused on:
 - expanding League progression beyond the Proving Circuit
 - subjectively calibrating Easy, Normal and Hard bot profiles
 - re-baselining the full premium-map bot audit, especially 4v4 Classic CTF
-- extending the shared image/collision registration into a route-graph contract
-- profiling rendering on real mobile hardware without sacrificing map space
-- playtesting the new landmark-based bot routes, pickup coordination and
-  difficulty-specific jump behavior
+- adding a route-graph gate for two independent base-to-objective paths
+- profiling rendering and touch feel on real mobile hardware
+- splitting the large Phaser production chunk if profiling shows a meaningful
+  loading or caching benefit
 
 Online multiplayer, local PvP, account services and cloud saves are not part of
 the current playable build.

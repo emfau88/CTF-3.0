@@ -25,7 +25,22 @@ for (const mode of modes) {
     expect(utilityBox).not.toBeNull();
     expect(utilityBox!.y).toBeLessThanOrEqual(8);
     expect(844 - utilityBox!.x - utilityBox!.width).toBeLessThanOrEqual(8);
-    await expect(page.locator("#v2-fullscreen-button")).toBeHidden();
+    const fullscreenAvailable = await page.evaluate(() =>
+      document.fullscreenEnabled &&
+      typeof document.documentElement.requestFullscreen === "function"
+    );
+    if (fullscreenAvailable) {
+      await expect(page.locator("#v2-fullscreen-button")).toBeVisible();
+      if (mode === "tdm") {
+        await page.locator("#v2-fullscreen-button").click();
+        await expect.poll(() =>
+          page.evaluate(() => Boolean(document.fullscreenElement))
+        ).toBe(true);
+        await page.evaluate(() => document.exitFullscreen());
+      }
+    } else {
+      await expect(page.locator("#v2-fullscreen-button")).toBeHidden();
+    }
 
     expect(
       requestedUrls.some((url) =>

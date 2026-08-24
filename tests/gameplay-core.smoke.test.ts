@@ -287,8 +287,8 @@ test("quick play exposes separate bot counts and difficulty per team", () => {
     assert.match(html, new RegExp(`id="${elementId}"`));
   }
   assert.doesNotMatch(html, /id="v2-menu-team-size"/);
-  assert.match(html, /<option value="casual">Easy<\/option>/);
-  assert.match(html, /<option value="strong">Hard<\/option>/);
+  assert.match(html, /<option value="casual" data-i18n="common\.easy">Easy<\/option>/);
+  assert.match(html, /<option value="strong" data-i18n="common\.hard">Hard<\/option>/);
 });
 
 test("competitive arena set keeps skill shortcuts and contested rail control", () => {
