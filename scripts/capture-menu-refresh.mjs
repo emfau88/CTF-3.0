@@ -4,11 +4,11 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const outputDirectory = join(
+const outputDirectory = process.env.CORE_ARENA_SCREENSHOT_DIR ?? join(
   repositoryRoot,
   "docs",
   "screenshots",
-  "menu-refresh-2026-08-24",
+  "menu-refresh-2026-08-24-v2",
 );
 const baseUrl = process.env.CORE_ARENA_URL ??
   "http://127.0.0.1:5190/CTF-3.0/?scene=v2&menu=1";

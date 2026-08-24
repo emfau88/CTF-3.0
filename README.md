@@ -15,7 +15,7 @@ play.
 
 </div>
 
-![Core Arena main menu on desktop](docs/screenshots/menu-refresh-2026-08-24/main-menu-desktop-de.png)
+![Core Arena main menu on desktop](docs/screenshots/menu-refresh-2026-08-24-v2/main-menu-desktop-de.png)
 
 > [!NOTE]
 > Core Arena is in active development. The current public experience is a
@@ -30,16 +30,21 @@ play.
   visual system: a brighter sci-fi arena backdrop, beveled action cards,
   stronger hierarchy and consistent framing across Main Menu, Custom Match,
   League HQ, Settings and Help.
+- The three Main Menu actions now use purpose-built, alpha-transparent
+  ImageGen emblems for Career, Quick Start and Custom Match instead of generic
+  interface glyphs.
 - All new menu copy is available in **German and English**. Language changes
   immediately and persists on the current device.
 - **Quick Start** launches a recommended match immediately. **Custom Match** is
   now a four-step flow for mode, arena, teams and final review instead of one
   dense form.
 - Premium-arena previews use the complete map image without cropping. On
-  desktop, Custom Match keeps a live match summary beside every setup step.
-  The refreshed League HQ uses the real captain and opponent portraits in a
-  cinematic next-match stage and shows the playable Proving Circuit plus the
-  planned Contender and Apex circuits without presenting them as finished.
+  desktop, Custom Match keeps a live match summary beside every setup step and
+  keeps the Arena navigation visible without page scrolling down to 1366 × 768.
+  The refreshed League HQ puts the complete next-match decision, current squad
+  and league path in the first desktop viewport; the detailed table remains
+  available below. It shows the playable Proving Circuit plus the planned
+  Contender and Apex circuits without presenting them as finished.
 - Menus adapt to desktop, compact landscape and mobile portrait viewports.
   Fullscreen controls are synchronized across the menu and the compact
   top-right match toolbar when the browser supports the Fullscreen API.
@@ -48,7 +53,7 @@ play.
   frame-rate-independent following.
 
 <p align="center">
-  <img src="docs/screenshots/menu-refresh-2026-08-24/main-menu-mobile-de.png" width="300" alt="Core Arena main menu on mobile">
+  <img src="docs/screenshots/menu-refresh-2026-08-24-v2/main-menu-mobile-de.png" width="300" alt="Core Arena main menu on mobile">
 </p>
 
 Recent gameplay and arena milestones remain in the current build:
@@ -82,7 +87,9 @@ The menu implementation and QA evidence are documented in the
 [menu refresh record](docs/MENU_REFRESH_2026-08-24.md). The source audit,
 verified gameplay implementation status and open work are collected in the
 [audit status](docs/audits/CTF-3.0_Audit_STATUS_2026-08-05.md) and
-[Phase 3 QA record](docs/qa/phase-3-mobile-runtime/README.md).
+[Phase 3 QA record](docs/qa/phase-3-mobile-runtime/README.md). The current
+practical maintainability, dependency and rendering assessment is captured in
+the [architecture stability check](docs/audits/ARCHITECTURE_STABILITY_2026-08-24.md).
 
 ## Vision
 
@@ -112,7 +119,7 @@ separately for the blue and red teams.
 | **Classic CTF** | Steal and capture the enemy flag | First to 3, 3-minute limit |
 | **One Flag** | Control the neutral objective | First to 3, 3-minute limit |
 
-![Custom Match premium-arena selection](docs/screenshots/menu-refresh-2026-08-24/custom-match-arena-desktop-de.png)
+![Custom Match premium-arena selection](docs/screenshots/menu-refresh-2026-08-24-v2/custom-match-arena-desktop-de.png)
 
 ### League
 
@@ -128,7 +135,7 @@ wingman unlocks. Defeat a rival team to make its fighters available in Team
 Manager. The Contender and Apex circuits are visible as honest future previews;
 only the Proving Circuit is currently playable.
 
-![League HQ with match dossier, squad, standings and progression path](docs/screenshots/menu-refresh-2026-08-24/league-hq-desktop-de.png)
+![League HQ with match dossier, squad, standings and progression path](docs/screenshots/menu-refresh-2026-08-24-v2/league-hq-desktop-de.png)
 
 ## Premium arenas
 

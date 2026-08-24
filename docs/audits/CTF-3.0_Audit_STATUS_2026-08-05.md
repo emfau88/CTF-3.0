@@ -159,7 +159,19 @@ identifizierte Produktlücke:
 - Reproduzierbare, randlose Screenshots und der aktuelle QA-Vertrag stehen im
   [Menü-Refresh-Bericht](../MENU_REFRESH_2026-08-24.md).
 - Der finale Stand besteht 223/223 Unit-/Integrations-/Simulationstests,
-  Test-Typecheck, Production-Build und 9/9 Browser-E2E-Tests.
+  Test-Typecheck, Production-Build und 10/10 Browser-E2E-Tests.
+
+### Phase 8 — pragmatischer Architektur- und Stabilitätscheck
+
+- Core, Ports und Phaser-Adapter bleiben belastbar getrennt; ein Rewrite ist
+  ausdrücklich nicht gerechtfertigt.
+- Menü/CSS, einzelne Phaser-UI-Adapter, Test-Hotspots sowie der große öffentliche
+  Assetbestand sind die realen, aber lokal begrenzten Wartungsrisiken.
+- Die neuen Menüassets besitzen ausreichende Auflösungsreserve auf Desktop und
+  Mobile. High-DPI-Gameplay bleibt ein bewusst zu profilierender Schärfe-/GPU-
+  Trade-off.
+- Befund, Messwerte und kleine empfohlene Wartungspakete stehen im
+  [Architektur-Stabilitätscheck](ARCHITECTURE_STABILITY_2026-08-24.md).
 
 ## Einordnung meiner bisherigen Kommentare
 

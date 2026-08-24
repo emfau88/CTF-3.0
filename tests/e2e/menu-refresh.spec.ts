@@ -18,6 +18,7 @@ test("desktop menu is complete, bilingual, edge-to-edge and fullscreen-safe", as
   await expect(page.locator("#v2-menu-league")).toBeVisible();
   await expect(page.locator("#v2-menu-quick-start")).toBeVisible();
   await expect(page.locator("#v2-menu-play")).toBeVisible();
+  await expect(page.locator(".v2-home-imagegen-icon")).toHaveCount(3);
   await expect(page.locator("#v2-open-settings")).toBeVisible();
   await expect(page.locator("#v2-open-help")).toBeVisible();
 
@@ -63,6 +64,10 @@ test("desktop menu is complete, bilingual, edge-to-edge and fullscreen-safe", as
   await expect.poll(() => preview.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .toBeGreaterThan(0);
   expect(await preview.evaluate((image) => getComputedStyle(image).objectFit)).toBe("contain");
+  const nextBox = await page.locator("#v2-setup-next").boundingBox();
+  expect(nextBox).not.toBeNull();
+  expect(nextBox!.y + nextBox!.height).toBeLessThanOrEqual(900);
+  expect(await verticalOverflow(page)).toBeLessThanOrEqual(2);
 
   if (fullscreenAvailable) {
     expect(await page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
@@ -78,9 +83,31 @@ test("desktop menu is complete, bilingual, edge-to-edge and fullscreen-safe", as
   expect(diagnostics.failedRequests).toEqual([]);
 });
 
+test("compact desktop arena step keeps its navigation in view", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.addInitScript(() => localStorage.setItem("core-arena.ui-language", "de"));
+  await page.goto("?scene=v2&menu=1", { waitUntil: "domcontentloaded" });
+  await page.locator("#v2-menu-play").click();
+  await page.locator('[data-setup-step-target="arena"]').click();
+  await expect(page.locator("#v2-menu-arena-preview-image")).toBeVisible();
+
+  const nextBox = await page.locator("#v2-setup-next").boundingBox();
+  expect(nextBox).not.toBeNull();
+  expect(nextBox!.y).toBeGreaterThanOrEqual(0);
+  expect(nextBox!.y + nextBox!.height).toBeLessThanOrEqual(768);
+  expect(await verticalOverflow(page)).toBeLessThanOrEqual(2);
+  expect(await horizontalOverflow(page)).toBeLessThanOrEqual(2);
+});
+
 async function horizontalOverflow(page: Page): Promise<number> {
   return page.locator("#v2-main-menu").evaluate((menu) =>
     menu.scrollWidth - menu.clientWidth
+  );
+}
+
+async function verticalOverflow(page: Page): Promise<number> {
+  return page.locator("#v2-main-menu").evaluate((menu) =>
+    menu.scrollHeight - menu.clientHeight
   );
 }
 
