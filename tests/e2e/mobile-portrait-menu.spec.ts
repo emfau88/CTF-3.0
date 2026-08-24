@@ -49,8 +49,8 @@ test("mobile portrait exposes the responsive menu, setup and fullscreen", async 
   expect(backBox).not.toBeNull();
   expect(titleBox).not.toBeNull();
   expect(actionsBox).not.toBeNull();
-  expect(backBox!.x + backBox!.width).toBeLessThanOrEqual(titleBox!.x);
-  expect(titleBox!.x + titleBox!.width).toBeLessThanOrEqual(actionsBox!.x);
+  expect(rectanglesOverlap(backBox!, titleBox!)).toBe(false);
+  expect(rectanglesOverlap(titleBox!, actionsBox!)).toBe(false);
 
   for (const step of ["mode", "arena", "teams", "overview"] as const) {
     await page.locator(`[data-setup-step-target="${step}"]`).click();
@@ -72,6 +72,18 @@ test("mobile portrait exposes the responsive menu, setup and fullscreen", async 
   expect(diagnostics.errors).toEqual([]);
   expect(diagnostics.failedRequests).toEqual([]);
 });
+
+function rectanglesOverlap(
+  first: { x: number; y: number; width: number; height: number },
+  second: { x: number; y: number; width: number; height: number },
+): boolean {
+  return !(
+    first.x + first.width <= second.x ||
+    second.x + second.width <= first.x ||
+    first.y + first.height <= second.y ||
+    second.y + second.height <= first.y
+  );
+}
 
 async function expectViewportFill(
   page: Page,

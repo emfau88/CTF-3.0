@@ -495,6 +495,12 @@ export function createLeagueMenuController(actions: {
         match.homeTeamId === active.playerTeamId ||
         match.awayTeamId === active.playerTeamId
       );
+      const opponentId = fixture
+        ? fixture.homeTeamId === active.playerTeamId
+          ? fixture.awayTeamId
+          : fixture.homeTeamId
+        : null;
+      const opponentName = opponentId ? displayTeamName(opponentId) : modeLabel;
       const result = fixture?.result;
       let state = round.index === active.currentRound ? "is-current" : "is-locked";
       let resultLabel = round.index === active.currentRound
@@ -517,7 +523,11 @@ export function createLeagueMenuController(actions: {
             : "league.lossOutcomeShort");
         resultLabel = `${localizedOutcome} ${playerScore}:${rivalScore}`;
       }
-      return `<span class="league-season-stop ${state}"><i>0${round.index + 1}</i><span><small>${modeLabel}</small><b>${resultLabel}</b></span></span>`;
+      return `<span class="league-season-stop ${state}">
+        <i aria-hidden="true">0${round.index + 1}</i>
+        ${opponentId ? `<img class="league-season-stop-emblem" src="${displayTeamEmblemUrl(opponentId)}" alt="">` : ""}
+        <span><small>${modeLabel}</small><strong>${escapeHtml(opponentName)}</strong><b>${resultLabel}</b></span>
+      </span>`;
     }).join("");
     const completed = Math.min(active.currentRound, active.rounds.length);
     const remaining = Math.max(0, active.rounds.length - completed);
@@ -608,29 +618,49 @@ export function createLeagueMenuController(actions: {
     const discipline = foundersCircuitDiscipline(active.currentRound);
     const opponentStanding = active.standings[opponentId];
     const opponentLineup = renderOpponentLineup(active, opponentId);
+    const assetBase = import.meta.env?.BASE_URL ?? "/";
+    const ownCaptain = leagueCharacter(
+      active.teamRosters[active.playerTeamId][0],
+    );
+    const opponentCaptain = leagueCharacter(active.teamRosters[opponentId][0]);
+    const ownCaptainSkin = profile?.captainSkinId ?? ownCaptain.skinId;
+    const ownPortrait = `${assetBase}assets/ui/portraits/${
+      playerSkinPortraitAssetStem(ownCaptainSkin)
+    }.png`;
+    const opponentPortrait = `${assetBase}assets/ui/portraits/${
+      playerSkinPortraitAssetStem(opponentCaptain.skinId)
+    }.png`;
     target.style.setProperty("--opponent-color", opponent.primaryColor);
     target.innerHTML = `
-      <div class="league-fixture-meta">
-        <span class="league-eyebrow">${localizedTrialLabel(discipline.mode).toUpperCase()} · ${uiText("common.match").toUpperCase()} ${active.currentRound + 1} / ${active.rounds.length}</span>
-        <div class="league-fixture-title">
-          <img class="league-mini-emblem" src="${displayTeamEmblemUrl(active.playerTeamId)}" alt="${escapeHtml(ownTeamName)} emblem">
-          <div class="league-fixture-team"><small>${uiText("league.yourSquad")}</small><strong>${escapeHtml(ownTeamName)}</strong></div>
+      <div class="league-matchup-hero">
+        <div class="league-matchup-stage" aria-hidden="true">
+          <span class="is-player" style="--skin-portrait:url('${ownPortrait}')"></span>
           <b>VS</b>
+          <span class="is-opponent" style="--skin-portrait:url('${opponentPortrait}')"></span>
         </div>
+        <div class="league-fixture-meta">
+          <span class="league-eyebrow">${localizedTrialLabel(discipline.mode).toUpperCase()} · ${uiText("common.match").toUpperCase()} ${active.currentRound + 1} / ${active.rounds.length}</span>
+          <div class="league-fixture-title">
+            <img class="league-mini-emblem" src="${displayTeamEmblemUrl(active.playerTeamId)}" alt="${escapeHtml(ownTeamName)} emblem">
+            <div class="league-fixture-team"><small>${uiText("league.yourSquad")}</small><strong>${escapeHtml(ownTeamName)}</strong></div>
+          </div>
+        </div>
+        <div class="league-opponent-copy">
+          <div class="league-opponent-heading">
+            <img class="league-opponent-emblem" src="${leagueTeamEmblemUrl(opponent.id)}" alt="${opponent.name} emblem">
+            <div><small>${uiText("league.nextOpponent")}</small><h3>${opponent.name}</h3><p>${localizedTeamMotto(opponent.id, opponent.motto)}</p></div>
+          </div>
+          <div class="league-opponent-form"><span>${uiText("league.tableRank", { position: sortedLeagueStandings(active).findIndex((row) => row.teamId === opponentId) + 1 })}</span><span>${uiText("league.pts", { points: opponentStanding.points })}</span><span>${opponentStanding.wins}-${opponentStanding.draws}-${opponentStanding.losses}</span></div>
+        </div>
+        <button id="league-play-next" type="button"><small>${discipline.mapLabel.toUpperCase()} · ${localizedDisciplineMode(discipline.mode).toUpperCase()} 2V2</small><strong>${uiText("league.enterArena")}</strong></button>
       </div>
-      <div class="league-opponent-copy">
-        <div class="league-opponent-heading">
-          <img class="league-opponent-emblem" src="${leagueTeamEmblemUrl(opponent.id)}" alt="${opponent.name} emblem">
-          <div><small>${uiText("league.nextOpponent")}</small><h3>${opponent.name}</h3><p>${localizedTeamMotto(opponent.id, opponent.motto)}</p></div>
-        </div>
-        <div class="league-opponent-form"><span>${uiText("league.tableRank", { position: sortedLeagueStandings(active).findIndex((row) => row.teamId === opponentId) + 1 })}</span><span>${uiText("league.pts", { points: opponentStanding.points })}</span><span>${opponentStanding.wins}-${opponentStanding.draws}-${opponentStanding.losses}</span></div>
+      <div class="league-matchup-lower">
+        ${renderSeasonTrack(active)}
         <div class="league-opponent-lineup" aria-label="${opponent.name} expected lineup">
           <small class="league-opponent-lineup-label">${uiText("league.expectedLineup")}</small>
           ${opponentLineup}
         </div>
-      </div>
-      <button id="league-play-next" type="button"><small>${discipline.mapLabel.toUpperCase()} · ${localizedDisciplineMode(discipline.mode).toUpperCase()} 2V2</small><strong>${uiText("league.enterArena")}</strong></button>
-      ${renderSeasonTrack(active)}`;
+      </div>`;
     requiredButton("league-play-next").onclick = () => {
       const route = readV2Route();
       window.location.search = buildLeagueMatchSearch(active, {

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/src/styles/p0-desktop.css" />
     <link rel="stylesheet" href="/src/styles/p1-visual-polish.css" />
     <link rel="stylesheet" href="/src/styles/menu-refresh.css" />
+    <link rel="stylesheet" href="/src/styles/menu-fidelity.css" />
   </head>
   <body>
     <div id="game"></div>
@@ -232,6 +233,23 @@
               </label>
             </div>
           </div>
+          <aside id="v2-menu-match-dock" class="v2-match-dock" aria-live="polite">
+            <header>
+              <small data-i18n="custom.selectedMatch">Selected match</small>
+              <h3 data-i18n="custom.overviewHeading">Match overview</h3>
+            </header>
+            <div class="v2-match-dock-map">
+              <img id="v2-menu-dock-map" alt="" />
+              <span><small data-i18n="custom.arenaLabel">Arena</small><strong id="v2-menu-dock-arena"></strong></span>
+            </div>
+            <dl>
+              <div><dt data-i18n="custom.modeLabel">Mode</dt><dd id="v2-menu-dock-mode"></dd></div>
+              <div><dt data-i18n="custom.blueLabel">Blue</dt><dd id="v2-menu-dock-blue"></dd></div>
+              <div><dt data-i18n="custom.redLabel">Red</dt><dd id="v2-menu-dock-red"></dd></div>
+              <div><dt data-i18n="custom.fighterLabel">Fighter</dt><dd id="v2-menu-dock-fighter"></dd></div>
+            </dl>
+            <div class="v2-match-dock-progress" aria-hidden="true"><span class="is-active">1</span><i></i><span>2</span><i></i><span>3</span><i></i><span>4</span></div>
+          </aside>
           <div class="v2-quick-launch" data-setup-group="overview">
             <div class="v2-quick-launch-summary is-hidden">
               <small data-i18n="custom.selectedMatch">Selected Match</small>

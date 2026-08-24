@@ -55,11 +55,18 @@ test("premium arena picker keeps native value, radio state and callback in sync"
 
 test("Arena Twilight ships compact responsive backgrounds and three transparent tier badges", () => {
   const css = readFileSync(new URL("../src/styles/menu-refresh.css", import.meta.url), "utf8");
+  const fidelityCss = readFileSync(
+    new URL("../src/styles/menu-fidelity.css", import.meta.url),
+    "utf8",
+  );
   assert.match(css, /arena-twilight-desktop-v1\.webp/);
   assert.match(css, /arena-twilight-mobile-v1\.webp/);
   assert.match(css, /@media \(max-width: 620px\)/);
   assert.match(css, /orientation: landscape/);
   assert.match(css, /prefers-reduced-motion/);
+  assert.match(fidelityCss, /league-matchup-stage-v1\.webp/);
+  assert.match(fidelityCss, /\.v2-match-dock/);
+  assert.match(fidelityCss, /@media \(max-width: 620px\)/);
 
   for (const filename of [
     "league-tier-proving-v1.png",
@@ -79,4 +86,14 @@ test("Arena Twilight ships compact responsive backgrounds and three transparent 
     assert.equal(webp.toString("ascii", 8, 12), "WEBP", `${filename} WEBP signature`);
     assert.ok(webp.byteLength < 250_000, `${filename} stays compact`);
   }
+
+  const matchupStage = readFileSync(
+    new URL(
+      "../public/assets/ui/menu/league-matchup-stage-v1.webp",
+      import.meta.url,
+    ),
+  );
+  assert.equal(matchupStage.toString("ascii", 0, 4), "RIFF");
+  assert.equal(matchupStage.toString("ascii", 8, 12), "WEBP");
+  assert.ok(matchupStage.byteLength < 150_000, "matchup stage stays compact");
 });

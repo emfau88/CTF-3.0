@@ -12,12 +12,19 @@ bleiben getrennt davon.
 ## Umgesetzter Umfang
 
 - Hauptmenü mit drei klar getrennten Einstiegen: League, Schnellstart und
-  Eigenes Match.
+  Eigenes Match. Die finale Fidelity-Schicht übernimmt die stärkere
+  Mockup-Hierarchie mit großen Markenflächen, abgeschrägten Navigationskarten
+  und einer zusammenhängenden Utility-Leiste.
 - Eigenes Match als vier Schritte: Modus, Arena, Teams und Übersicht.
+- Auf Desktop bleibt eine live synchronisierte Match-Zusammenfassung in allen
+  vier Schritten sichtbar; auf Mobile wird sie zugunsten der Übersicht
+  ausgeblendet, während der vollständige vierte Prüfschritt erhalten bleibt.
 - Vollständige Premium-Map-Vorschau mit `object-fit: contain`; keine Arena wird
   für die Vorschau abgeschnitten.
 - League HQ mit Match-Dossier, Kader, Tabelle sowie sichtbarem Proving-,
-  Contender- und Apex-Pfad. Nur der Proving Circuit ist als spielbar markiert.
+  Contender- und Apex-Pfad. Der nächste Gegner wird auf einer dynamischen
+  Matchup-Bühne mit den echten Captain- und Gegnerporträts dargestellt. Nur der
+  Proving Circuit ist als spielbar markiert.
 - Zentrale DE/EN-Übersetzung für statische und dynamisch erzeugte Menütexte.
   Die Wahl wird in `localStorage` gespeichert und sofort angewendet.
 - Gemeinsame Desktop-, Tablet-, Mobile-Portrait- und kompakte
@@ -27,6 +34,9 @@ bleiben getrennt davon.
   davon räumlich getrennt.
 - Reproduzierbare Screenshot-Erzeugung über
   `scripts/capture-menu-refresh.mjs`.
+- Textfreier League-Bühnenhintergrund als 100-KB-WebP; alle variablen Inhalte,
+  Übersetzungen und Kämpfer bleiben echtes HTML beziehungsweise vorhandene
+  transparente Spielporträts.
 
 ## Visuelle Belege
 

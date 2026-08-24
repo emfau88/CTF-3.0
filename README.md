@@ -26,17 +26,20 @@ play.
 
 ## Development update — August 24, 2026
 
-- The complete menu surface now uses the new **Arena Twilight** visual system:
-  a calmer, brighter sci-fi arena backdrop, clearer hierarchy and consistent
-  panels across Main Menu, Custom Match, League HQ, Settings and Help.
+- The complete menu surface now uses the higher-fidelity **Arena Twilight**
+  visual system: a brighter sci-fi arena backdrop, beveled action cards,
+  stronger hierarchy and consistent framing across Main Menu, Custom Match,
+  League HQ, Settings and Help.
 - All new menu copy is available in **German and English**. Language changes
   immediately and persists on the current device.
 - **Quick Start** launches a recommended match immediately. **Custom Match** is
   now a four-step flow for mode, arena, teams and final review instead of one
   dense form.
-- Premium-arena previews use the complete map image without cropping. The
-  refreshed League HQ shows the playable Proving Circuit and the planned
-  Contender and Apex circuits without presenting the latter as finished.
+- Premium-arena previews use the complete map image without cropping. On
+  desktop, Custom Match keeps a live match summary beside every setup step.
+  The refreshed League HQ uses the real captain and opponent portraits in a
+  cinematic next-match stage and shows the playable Proving Circuit plus the
+  planned Contender and Apex circuits without presenting them as finished.
 - Menus adapt to desktop, compact landscape and mobile portrait viewports.
   Fullscreen controls are synchronized across the menu and the compact
   top-right match toolbar when the browser supports the Fullscreen API.

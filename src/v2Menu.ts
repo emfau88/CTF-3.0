@@ -78,6 +78,13 @@ interface V2MenuElements {
   readonly overviewBlue: HTMLElement;
   readonly overviewRed: HTMLElement;
   readonly overviewFighter: HTMLElement;
+  readonly dockMap: HTMLImageElement;
+  readonly dockArena: HTMLElement;
+  readonly dockMode: HTMLElement;
+  readonly dockBlue: HTMLElement;
+  readonly dockRed: HTMLElement;
+  readonly dockFighter: HTMLElement;
+  readonly matchDock: HTMLElement;
   readonly setupSteps: HTMLElement;
   readonly setupPrevious: HTMLButtonElement;
   readonly setupNext: HTMLButtonElement;
@@ -213,6 +220,9 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     elements.overviewMap.src = imageUrl;
     elements.overviewMap.alt = `${mapLabel} arena overview`;
     elements.overviewArena.textContent = mapLabel;
+    elements.dockMap.src = imageUrl;
+    elements.dockMap.alt = `${mapLabel} arena overview`;
+    elements.dockArena.textContent = mapLabel;
   };
 
   const syncLaunchSummary = (): void => {
@@ -237,6 +247,10 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     elements.overviewBlue.textContent = blueLabel;
     elements.overviewRed.textContent = redLabel;
     elements.overviewFighter.textContent = skin;
+    elements.dockMode.textContent = modeLabel;
+    elements.dockBlue.textContent = blueLabel;
+    elements.dockRed.textContent = redLabel;
+    elements.dockFighter.textContent = skin;
     elements.setupFooterSummary.textContent = `${modeLabel} · ${map}`;
   };
 
@@ -575,6 +589,13 @@ function readMenuElements(): V2MenuElements {
     overviewBlue: requiredElement<HTMLElement>("v2-menu-overview-blue"),
     overviewRed: requiredElement<HTMLElement>("v2-menu-overview-red"),
     overviewFighter: requiredElement<HTMLElement>("v2-menu-overview-fighter"),
+    dockMap: requiredElement<HTMLImageElement>("v2-menu-dock-map"),
+    dockArena: requiredElement<HTMLElement>("v2-menu-dock-arena"),
+    dockMode: requiredElement<HTMLElement>("v2-menu-dock-mode"),
+    dockBlue: requiredElement<HTMLElement>("v2-menu-dock-blue"),
+    dockRed: requiredElement<HTMLElement>("v2-menu-dock-red"),
+    dockFighter: requiredElement<HTMLElement>("v2-menu-dock-fighter"),
+    matchDock: requiredElement<HTMLElement>("v2-menu-match-dock"),
     setupSteps: requiredElement<HTMLElement>("v2-setup-steps"),
     setupPrevious: requiredElement<HTMLButtonElement>("v2-setup-previous"),
     setupNext: requiredElement<HTMLButtonElement>("v2-setup-next"),
@@ -837,6 +858,9 @@ function setupCustomMatchWizard(
   const groups = Array.from(
     elements.setup.querySelectorAll<HTMLElement>("[data-setup-group]"),
   );
+  const dockSteps = Array.from(
+    elements.matchDock.querySelectorAll<HTMLElement>(".v2-match-dock-progress span"),
+  );
   let activeStep: CustomSetupStep = "mode";
 
   const open = (step: CustomSetupStep): void => {
@@ -854,9 +878,13 @@ function setupCustomMatchWizard(
       if (active) button.setAttribute("aria-current", "step");
       button.classList.toggle("is-complete", index < activeIndex);
     }
+    dockSteps.forEach((marker, index) => {
+      marker.classList.toggle("is-active", index === activeIndex);
+      marker.classList.toggle("is-complete", index < activeIndex);
+    });
     elements.setupPrevious.classList.toggle("is-hidden", activeIndex === 0);
     elements.setupNext.classList.toggle("is-hidden", activeIndex === steps.length - 1);
-    if (step === "overview") syncPresentation();
+    syncPresentation();
     elements.setup.scrollIntoView?.({ block: "start" });
     elements.setup.focus({ preventScroll: true });
   };

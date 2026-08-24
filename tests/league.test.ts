@@ -371,6 +371,9 @@ test("custom match presents premium arena previews and a final match summary", (
   assert.match(html, /id="v2-setup-steps"/);
   assert.match(html, /data-i18n="custom\.preferences"/);
   assert.match(html, /id="v2-menu-overview-map"/);
+  assert.match(html, /id="v2-menu-match-dock"/);
+  assert.match(html, /id="v2-menu-dock-map"/);
+  assert.match(menuSource, /dockSteps\.forEach/);
   assert.match(menuSource, /helix-canopy-v2-1-overview\.png/);
   assert.match(menuSource, /drowned-sun-temple-v2-overview\.png/);
   assert.match(menuSource, /flow-circuit-v2-overview\.png/);
@@ -636,6 +639,12 @@ test("league profile reviews correctable choices before starting the season", ()
   assert.match(document.getElementById("league-next-match")!.textContent ?? "", /NO SEASON DATA/i);
   assert.equal(document.querySelectorAll(".league-season-stop").length, 3);
   assert.equal(document.querySelectorAll(".league-season-stop.is-current").length, 1);
+  assert.equal(document.querySelectorAll(".league-season-stop-emblem").length, 3);
+  assert.deepEqual(
+    Array.from(document.querySelectorAll(".league-season-stop strong"), (node) => node.textContent),
+    ["Grave Circuit", "Neon Phantoms", "Crimson Jackals"],
+  );
+  assert.match(document.querySelector(".league-season-stop.is-current b")?.textContent ?? "", /UP NEXT/i);
   assert.match(document.getElementById("league-pyramid")!.textContent ?? "", /Contender Circuit/);
   document.getElementById("league-manage-team")!.click();
   assert.equal(document.getElementById("league-header-title")!.textContent, "Team Manager");
