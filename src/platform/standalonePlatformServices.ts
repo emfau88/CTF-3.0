@@ -37,6 +37,7 @@ export function createStandalonePlatformServices(
     onEvent: (event) => dispatchLocalProductEvent(options.windowPort, event),
   });
   return {
+    profile: options.profile,
     analytics,
     save: options.storage,
     sdk: {

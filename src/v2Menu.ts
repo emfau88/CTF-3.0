@@ -40,6 +40,11 @@ import {
   withMatchEntryPoint,
   type PlatformServices,
 } from "./platform";
+import {
+  buildQualifierMatchSearch,
+  createQualifierRepository,
+  type QualifierAttemptKind,
+} from "./qualifier";
 
 interface V2MenuElements {
   readonly root: HTMLElement;
@@ -172,7 +177,7 @@ interface V2StatsElements {
 
 export function showGameplayV2Menu(
   statusMessage?: string,
-  platform?: Pick<PlatformServices, "analytics" | "save">,
+  platform?: Pick<PlatformServices, "analytics" | "save" | "profile">,
 ): void {
   const elements = readMenuElements();
   const route = readV2Route();
@@ -187,6 +192,24 @@ export function showGameplayV2Menu(
   elements.redBotDifficulty.value = route.redBotDifficulty;
   elements.controls.value = route.controls;
   const preferredSkin = loadPlayerSkinPreference();
+  const qualifierRepository = platform
+    ? createQualifierRepository(platform.save)
+    : null;
+  const startQualifier = (kind: QualifierAttemptKind): void => {
+    if (!platform || !qualifierRepository) return;
+    const started = qualifierRepository.start(kind);
+    if (started.started) {
+      platform.analytics.track("qualifier_started", {
+        mapId: "helix-canopy-v2",
+        mode: "tdm",
+      });
+    }
+    window.location.search = buildQualifierMatchSearch({
+      kind,
+      skin: loadPlayerSkinPreference(),
+      sfx: route.sfx,
+    });
+  };
 
   const syncArenaPreview = (): void => {
     const preview = QUICK_PLAY_ARENA_PREVIEWS[elements.map.value];
@@ -299,7 +322,11 @@ export function showGameplayV2Menu(
   elements.controls.disabled = false;
   elements.controlsHint.textContent = uiText("custom.controlsHint");
   const wizard = setupCustomMatchWizard(elements, syncQuickPlayPresentation);
-  const dialogs = setupMenuDialogs(elements.root);
+  const dialogs = setupMenuDialogs(elements.root, {
+    onStartTraining: platform?.profile.qualifierEnabled
+      ? () => startQualifier("training")
+      : undefined,
+  });
   const showHome = (): void => {
     elements.home.classList.remove("is-hidden");
     elements.setup.classList.add("is-hidden");
@@ -309,10 +336,20 @@ export function showGameplayV2Menu(
     focusMenuScreen(elements.root);
   };
   const syncLeagueHome = (): void => {
-    elements.leagueLabel.textContent = leagueController.hasSave
-      ? uiText("home.careerContinue")
-      : uiText("home.careerStart");
-    elements.leagueMeta.textContent = leagueController.homeMeta;
+    const qualifier = qualifierRepository?.load();
+    const needsQualifier = Boolean(
+      platform?.profile.qualifierEnabled &&
+      !leagueController.hasSave &&
+      qualifier?.status !== "qualified",
+    );
+    elements.leagueLabel.textContent = needsQualifier && qualifier?.status === "in-progress"
+      ? uiText("qualifier.resume")
+      : leagueController.hasSave
+        ? uiText("home.careerContinue")
+        : uiText("home.careerStart");
+    elements.leagueMeta.textContent = needsQualifier
+      ? uiText("qualifier.homeMeta")
+      : leagueController.homeMeta;
   };
   const leagueController = createLeagueMenuController({
     onBack: () => {
@@ -361,6 +398,14 @@ export function showGameplayV2Menu(
     }), "quick-start");
   };
   elements.enterLeague.onclick = () => {
+    if (
+      platform?.profile.qualifierEnabled &&
+      !leagueController.hasSave &&
+      qualifierRepository?.load().status !== "qualified"
+    ) {
+      startQualifier("first-run");
+      return;
+    }
     platform?.analytics.track("league_hq_opened", {
       hasCareer: leagueController.hasSave,
     });
@@ -919,13 +964,17 @@ function setupCustomMatchWizard(
   return { open };
 }
 
-function setupMenuDialogs(root: HTMLElement): { sync: () => void } {
+function setupMenuDialogs(
+  root: HTMLElement,
+  actions: { readonly onStartTraining?: () => void } = {},
+): { sync: () => void } {
   const settings = requiredElement<HTMLElement>("v2-settings-dialog");
   const help = requiredElement<HTMLElement>("v2-help-dialog");
   const settingsOpen = requiredElement<HTMLButtonElement>("v2-open-settings");
   const helpOpen = requiredElement<HTMLButtonElement>("v2-open-help");
   const settingsClose = requiredElement<HTMLButtonElement>("v2-settings-close");
   const helpClose = requiredElement<HTMLButtonElement>("v2-help-close");
+  const training = requiredElement<HTMLButtonElement>("v2-start-training");
   let returnFocus: HTMLElement | null = null;
 
   const syncModalState = (): void => {
@@ -953,6 +1002,8 @@ function setupMenuDialogs(root: HTMLElement): { sync: () => void } {
   helpOpen.onclick = () => open(help, helpClose);
   settingsClose.onclick = () => close(settings);
   helpClose.onclick = () => close(help);
+  training.classList.toggle("is-hidden", !actions.onStartTraining);
+  training.onclick = actions.onStartTraining ?? null;
   settings.querySelectorAll<HTMLButtonElement>("[data-ui-language]").forEach((button) => {
     button.onclick = () => {
       if (button.dataset.uiLanguage === "de" || button.dataset.uiLanguage === "en") {

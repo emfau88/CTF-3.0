@@ -4,7 +4,8 @@
 
 - **Status:** ACTIVE – CANONICAL ROADMAP
 - **Letzte Aktualisierung:** 2026-08-28
-- **Aktive Phase:** Phase 0 – Release-Baseline (`IN PROGRESS`)
+- **Aktive Phase:** Phase 2 – Qualifier und First-Run-Onboarding (`COMPLETE`)
+- **Nächste Phase:** Phase 3 – League-Einstieg und Karrierefluss (`PLANNED`)
 - **Kanonischer Ausgangsstand:** `main` @ `4ce36f5`
 - **Veröffentlichter Stand:** GitHub Pages, erfolgreicher Deploy vom 2026-08-24
 - **Aktiver Arbeitsbranch:** `codex/release-baseline`
@@ -35,8 +36,9 @@ sind; vorhandener Code allein reicht dafür nicht.
 - Im Workspace liegt untracked WIP. Es gehört nicht automatisch zum
   Release-Scope und wird weder gelöscht noch verschoben noch versehentlich
   gestaged.
-- Menschliche First-Run- und Karriere-Spieltests fehlen noch. Automatische
-  Stabilität ist daher nicht mit Produktvalidierung gleichzusetzen.
+- Im Ausgangsstand fehlten menschliche First-Run- und Karriere-Spieltests.
+  Der Phase-2-First-Run ist inzwischen manuell abgenommen; die vollständige
+  Karriere- und Produktvalidierung bleibt Aufgabe der Phasen 3 bis 5.
 
 ## Produktziel
 
@@ -104,7 +106,7 @@ Ein Release Candidate liegt erst vor, wenn:
 | --- | --- | --- | --- |
 | 0 – Release-Baseline | Sauberer, reproduzierbarer Ausgangspunkt | `AUTOMATED COMPLETE · MANUAL OPEN` | `main` @ `4ce36f5` bestätigt |
 | 1 – Produkt-/Plattformfundament | `ReleaseProfile`, `PlatformServices`, lokale Events | `COMPLETE` | durch Nutzer nach grüner automatischer Baseline freigegeben |
-| 2 – Qualifier und Onboarding | Ein-Klick-First-Run bis `QUALIFIED` | `PLANNED` | Phase 1 `COMPLETE` |
+| 2 – Qualifier und Onboarding | Ein-Klick-First-Run bis `QUALIFIED` | `COMPLETE` | Phase 1 `COMPLETE` |
 | 3 – League- und Karrierefluss | Kompakte Teamgründung und geschlossener Proving-Flow | `PLANNED` | Phase 2 `COMPLETE` |
 | 4 – Relevantes Recruitment | Wahrnehmbare KI-Archetypen ohne Statvorteile | `PLANNED` | Phase 3 `COMPLETE` |
 | 5 – Produktvalidierung | Getesteter kompletter Release-Slice | `PLANNED` | Phase 4 `COMPLETE` |
@@ -186,7 +188,7 @@ bevor Produktverhalten verändert wird.
 
 ## Phase 2 – Qualifier und First-Run-Onboarding
 
-**Status:** `PLANNED`
+**Status:** `COMPLETE`
 
 ### Ziel und Scope
 
@@ -206,11 +208,32 @@ Spiel öffnen → KARRIERE STARTEN → Qualifier → QUALIFIED
 
 ### Abnahmekriterien
 
-- Keine Softlocks bei Abbruch, Reload oder geschlossenem Browser.
-- Das ungewöhnliche Aim-/Waffentasten-Prinzip ist ohne Vorwissen verständlich.
-- Alle Hinweise sind DE/EN-fähig.
-- Relevante Desktop-Viewports sind browsergetestet.
-- Bestehende Spielmodi bleiben unverändert.
+- [x] Keine Softlocks bei Abbruch, Reload oder geschlossenem Browser.
+- [x] Das ungewöhnliche Aim-/Waffentasten-Prinzip ist ohne Vorwissen
+      verständlich und wird durch bestätigte Aktionen vermittelt.
+- [x] Alle Hinweise sind DE/EN-fähig.
+- [x] Relevante Desktop-Viewports sind browsergetestet.
+- [x] Bestehende Spielmodi bleiben unverändert.
+
+### Abschlussnachweis vom 2026-08-28
+
+- Frische Karriere startet mit einem Klick den festen 2v2-TDM-Qualifier auf
+  Helix Canopy; bestehende Karrieren bleiben als `Weiterspielen` erhalten.
+- Bewegung, Aim, Arc Lash, Pickup-Waffe und Sprung werden erst nach echten
+  Spieleraktionen bestätigt.
+- Abbruch führt sicher ins Hauptmenü zurück; Training ist über Hilfe erneut
+  startbar. Sieg, Niederlage und Unentschieden führen zu `QUALIFIED`, ohne
+  League-Punkte zu schreiben, und anschließend direkt zur Teamgründung.
+- Save-Zustand, Reload, Abbruch und qualifiziertes Training sind automatisiert
+  abgedeckt. Die bestehende Karriere wurde bei der manuellen Prüfung nicht
+  gelöscht; ein separater frischer Browser-Origin diente dem First-Run-Test.
+- `npm test`: 231/231 bestanden.
+- `npm run test:typecheck`: bestanden.
+- `npm run build`: bestanden.
+- `npm run test:e2e`: 12/12 bestanden, einschließlich vollständiger
+  Qualifier- und bestehender Menü-/Arena-Flows.
+- Manueller lokaler First-Run-Test und Übergang zur Teamgründung: vom Nutzer
+  am 2026-08-28 abgenommen.
 
 ## Phase 3 – League-Einstieg und Karrierefluss
 
@@ -428,6 +451,7 @@ Datenschutz-/Plattformentscheidung extern versendet:
 | Datum | Entscheidung | Begründung |
 | --- | --- | --- |
 | 2026-08-28 | Diese Datei wird kanonische Roadmap. | Eine fortgeschriebene Quelle verhindert widersprüchliche To-do-Listen. |
+| 2026-08-28 | Phase 2 ist vollständig abgenommen. | 231 automatische Checks, Typecheck, Build, 12 Browser-E2E-Tests und der manuelle First-Run bis zur Teamgründung sind grün. |
 | 2026-08-28 | Desktop-first, Mobile experimentell erhalten. | Präzisionssteuerung ist releasefähig; Touch bleibt eine Option ohne aktuelles Versprechen. |
 | 2026-08-28 | Qualifier vor Karriereausbau. | Verständnis und Combat müssen vor zusätzlicher Länge bewiesen werden. |
 | 2026-08-28 | Contender/Apex nur nach Phase-5-Gate. | Content ersetzt keine Produktvalidierung. |

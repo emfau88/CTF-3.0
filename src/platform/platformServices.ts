@@ -1,4 +1,5 @@
 import type { AnalyticsPort } from "./productEvents";
+import type { ReleaseProfile } from "./releaseProfile";
 
 export interface SavePort {
   getItem(key: string): string | null;
@@ -35,6 +36,7 @@ export interface AccountPort {
 }
 
 export interface PlatformServices {
+  readonly profile: ReleaseProfile;
   readonly analytics: AnalyticsPort;
   readonly save: SavePort;
   readonly sdk: PlatformSdkPort;
