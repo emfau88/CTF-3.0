@@ -24,6 +24,11 @@ play.
 > language are stored locally in the browser. Online multiplayer, accounts and
 > cloud saves are not implemented.
 
+The binding product sequence, release gates and current phase are maintained in
+the [canonical Core Arena release roadmap](docs/CORE_ARENA_RELEASE_ROADMAP.md).
+Older plans remain useful as historical or technical references, but are not
+the current release backlog.
+
 ## Development update — August 24, 2026
 
 - The complete menu surface now uses the higher-fidelity **Arena Twilight**
@@ -298,14 +303,17 @@ described in the
 
 Development is focused on:
 
-- bringing future arenas up to the Helix, Temple and Foundry quality bar
-- expanding League progression beyond the Proving Circuit
-- subjectively calibrating Easy, Normal and Hard bot profiles
-- re-baselining the full premium-map bot audit, especially 4v4 Classic CTF
-- adding a route-graph gate for two independent base-to-objective paths
-- profiling rendering and touch feel on real mobile hardware
-- splitting the large Phaser production chunk if profiling shows a meaningful
-  loading or caching benefit
+- completing the reproducible release baseline on `main` before product work;
+- introducing clean release-profile and platform-service boundaries;
+- building a one-click Qualifier and contextual first-run onboarding;
+- simplifying the transition into the three-match Proving Circuit;
+- making Recruitment meaningful through bot behavior rather than stat bonuses;
+- validating that full loop with new players before expanding Contender or Apex;
+- treating desktop as the supported release path while retaining mobile as an
+  experimental path.
+
+Audio is intentionally excluded from all of these phases. It will be handled
+only in the final audio-and-polish phase, including provenance and rights review.
 
 Online multiplayer, local PvP, account services and cloud saves are not part of
 the current playable build.

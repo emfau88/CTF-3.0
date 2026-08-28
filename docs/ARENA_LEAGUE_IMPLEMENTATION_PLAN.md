@@ -1,5 +1,11 @@
 # Arena League Implementation Plan
 
+> **HISTORICAL DOCUMENT**
+>
+> Dieses Dokument beschreibt einen früheren Produkt- und Umsetzungsstand. Die
+> aktuelle verbindliche Reihenfolge, Phasenstatus und Release-Gates stehen in
+> [CORE_ARENA_RELEASE_ROADMAP.md](CORE_ARENA_RELEASE_ROADMAP.md).
+
 Stand: 2026-07-13
 
 ## 1. Produktentscheidung

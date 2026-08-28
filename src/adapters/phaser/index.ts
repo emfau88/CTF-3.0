@@ -14,7 +14,6 @@ export { PhaserMobileInputAdapter } from "./PhaserMobileInputAdapter";
 export { PhaserArenaAudioPort } from "./PhaserArenaAudioPort";
 export { PhaserArenaHudPort } from "./PhaserArenaHudPort";
 export { PhaserWeaponEffectsPort } from "./PhaserWeaponEffectsPort";
-export { runPhaserGameBridgeSmokeCheck } from "./PhaserGameBridge.smoke";
 export { GameplayV2Scene } from "./scenes/GameplayV2Scene";
 export {
   GAMEPLAY_V2_HUD_SCENE_KEY,
