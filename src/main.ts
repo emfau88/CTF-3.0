@@ -45,10 +45,32 @@ import {
   toggleV2Fullscreen,
 } from "./v2Fullscreen";
 import { applyUiTranslations, onUiLanguageChange, uiText } from "./uiLocale";
+import {
+  CORE_ARENA_LIFECYCLE_EVENT,
+  STANDALONE_RELEASE_PROFILE,
+  createStandalonePlatformServices,
+  readMatchEntryPoint,
+} from "./platform";
 
 const search = new URLSearchParams(window.location.search);
+const platformServices = createStandalonePlatformServices({
+  profile: STANDALONE_RELEASE_PROFILE,
+  storage: window.localStorage,
+  windowPort: window,
+});
+void platformServices.sdk.initialize();
+const matchEntryPoint = readMatchEntryPoint(search);
+const lifecycleSubscription = platformServices.lifecycle.subscribe((state) => {
+  window.dispatchEvent(new CustomEvent(CORE_ARENA_LIFECYCLE_EVENT, {
+    detail: state,
+  }));
+});
+window.addEventListener("pagehide", () => {
+  lifecycleSubscription();
+  platformServices.lifecycle.dispose();
+}, { once: true });
 const leagueMatchContext = readLeagueMatchContext(search);
-const careerProfileRepository = createCareerProfileRepository(window.localStorage);
+const careerProfileRepository = createCareerProfileRepository(platformServices.save);
 let careerProfile = leagueMatchContext ? careerProfileRepository.load() : null;
 const routeState = readV2RouteState(search);
 const activeRoute = { ...routeState.route };
@@ -76,11 +98,15 @@ if (routeState.canStartMatch) {
 }
 const showV2Menu = Boolean(activeRoute.menu || routeIssues.length > 0);
 
+platformServices.analytics.track("app_opened", {
+  entryPoint: showV2Menu ? "menu" : matchEntryPoint,
+});
+
 applyUiTranslations(document);
 setupV2FullscreenControls();
 
 if (showV2Menu) {
-  showGameplayV2Menu(routeIssues[0]);
+  showGameplayV2Menu(routeIssues[0], platformServices);
 } else {
     const menuButton = document.querySelector<HTMLButtonElement>(
       "#v2-game-menu-button",
@@ -107,6 +133,8 @@ if (showV2Menu) {
       : "team-deathmatch";
     let latestStats: readonly MatchStatEntry[] = [];
     let matchEnded = false;
+    let matchStartedRecorded = false;
+    let matchCompletedRecorded = false;
     let leagueResultRecorded = false;
     const leagueOpponent = leagueMatchContext
       ? leagueTeam(leagueMatchContext.opponentId)
@@ -144,6 +172,13 @@ if (showV2Menu) {
       );
     };
     const showMenuRoute = (): void => {
+      if (!matchEnded && matchStartedRecorded) {
+        platformServices.analytics.track("match_abandoned", {
+          entryPoint: matchEntryPoint,
+          reason: "menu",
+        });
+        platformServices.sdk.gameplayStop();
+      }
       closeHeldScoreboard();
       hideGameplayV2Pause();
       hideGameplayV2Result();
@@ -156,6 +191,13 @@ if (showV2Menu) {
       }
     };
     const restartCurrentMatch = (): void => {
+      if (!matchEnded && matchStartedRecorded) {
+        platformServices.analytics.track("match_abandoned", {
+          entryPoint: matchEntryPoint,
+          reason: "restart",
+        });
+        platformServices.sdk.gameplayStop();
+      }
       closeHeldScoreboard();
       hideGameplayV2Pause();
       hideGameplayV2Result();
@@ -276,6 +318,15 @@ if (showV2Menu) {
       }>).detail;
       latestStats = detail.stats ?? latestStats;
       matchEnded = detail.phase === "ended";
+      if (detail.phase === "running" && !matchStartedRecorded) {
+        matchStartedRecorded = true;
+        platformServices.sdk.gameplayStart();
+        platformServices.analytics.track("match_started", {
+          entryPoint: matchEntryPoint,
+          mode: activeRoute.mode,
+          mapId: activeRoute.map,
+        });
+      }
       const respawnMs = Math.max(0, detail.playerRespawnMs ?? 0);
       const showRespawn = detail.playerLifeState === "falling" ||
         detail.playerLifeState === "dead" ||
@@ -289,9 +340,21 @@ if (showV2Menu) {
       if (detail.phase !== "ended" || !detail.result || !activeRoute) {
         return;
       }
+      if (!matchCompletedRecorded) {
+        matchCompletedRecorded = true;
+        platformServices.sdk.gameplayStop();
+        platformServices.analytics.track("match_completed", {
+          entryPoint: matchEntryPoint,
+          outcome: detail.result.kind === "draw"
+            ? "draw"
+            : detail.result.winnerEntryId === "blue"
+              ? "win"
+              : "loss",
+        });
+      }
       if (leagueMatchContext && !leagueResultRecorded) {
         leagueResultRecorded = true;
-        const repository = createLeagueRepository(window.localStorage);
+        const repository = createLeagueRepository(platformServices.save);
         const season = repository.load();
         if (season && season.seasonId === leagueMatchContext.seasonId) {
           const blueScore = detail.scores?.find((entry) => entry.teamId === "blue")?.score ?? 0;

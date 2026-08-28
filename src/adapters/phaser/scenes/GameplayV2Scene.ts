@@ -60,6 +60,10 @@ import {
 import { requiredV2CharacterSkinIds } from "../v2CharacterPresentation";
 import { bindArenaLoadingUi } from "../../../arenaLoadingUi";
 import { PhaserMatchStartOverlay } from "../PhaserMatchStartOverlay";
+import {
+  CORE_ARENA_LIFECYCLE_EVENT,
+  type PlatformLifecycleState,
+} from "../../../platform";
 
 export class GameplayV2Scene extends Phaser.Scene {
   private bridge?: PhaserGameBridge;
@@ -286,9 +290,10 @@ export class GameplayV2Scene extends Phaser.Scene {
     this.publishMatchState();
     window.addEventListener("v2-sfx-changed", this.handleSfxChanged);
     window.addEventListener("v2-overlay-state", this.handleOverlayState);
-    document.addEventListener(
-      "visibilitychange",
-      this.handleVisibilityChange,
+    this.pauseForVisibility = document.hidden || !document.hasFocus();
+    window.addEventListener(
+      CORE_ARENA_LIFECYCLE_EVENT,
+      this.handlePlatformLifecycle,
     );
 
     if (this.input.keyboard) {
@@ -324,9 +329,9 @@ export class GameplayV2Scene extends Phaser.Scene {
   private shutdown(): void {
     window.removeEventListener("v2-sfx-changed", this.handleSfxChanged);
     window.removeEventListener("v2-overlay-state", this.handleOverlayState);
-    document.removeEventListener(
-      "visibilitychange",
-      this.handleVisibilityChange,
+    window.removeEventListener(
+      CORE_ARENA_LIFECYCLE_EVENT,
+      this.handlePlatformLifecycle,
     );
     this.bridge?.dispose();
     this.mapPreviewRenderer?.dispose();
@@ -395,15 +400,11 @@ export class GameplayV2Scene extends Phaser.Scene {
     this.sound.mute = !enabled;
   };
 
-  private readonly handleVisibilityChange = (): void => {
-    if (document.hidden) {
-      this.pauseForVisibility = true;
-      this.skipNextFrame = true;
-      this.inputAdapter?.reset();
-      return;
-    }
-    this.pauseForVisibility = false;
+  private readonly handlePlatformLifecycle = (event: Event): void => {
+    const state = (event as CustomEvent<PlatformLifecycleState>).detail;
+    this.pauseForVisibility = state?.shouldPause ?? true;
     this.skipNextFrame = true;
+    this.inputAdapter?.reset();
   };
 
   private readonly handleOverlayState = (event: Event): void => {

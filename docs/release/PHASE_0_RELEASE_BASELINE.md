@@ -1,6 +1,6 @@
 # Phase 0 – Release-Baseline
 
-- **Status:** `IN PROGRESS`
+- **Status:** `AUTOMATED COMPLETE · MANUAL OPEN`
 - **Vorbereitet:** 2026-08-28
 - **Arbeitsbranch:** `codex/release-baseline`
 - **Basis:** `origin/main` @ `4ce36f5`
@@ -74,18 +74,18 @@ Es wird ausschließlich mit expliziten Dateipfaden gestaged, niemals mit
       dokumentiert.
 - [x] Sichere transitive Patches für `postcss` und `nanoid` angewandt; keine
       Major-Upgrades oder erzwungenen Fixes.
-- [ ] Verbleibenden niedrigen `esbuild`-Befund über ein kompatibles Vite-Paket
-      lösen und anschließend in einer sauberen Installation verifizieren.
+- [x] Verbleibenden niedrigen `esbuild`-Befund als lokales Devserver-Risiko
+      dokumentiert; kein ungeprüftes Vite-8-Major-Upgrade erzwungen.
 
 ### P0.3 – Automatische Baseline-Gates
 
 | Gate | Befehl | Status | Ergebnis/Evidenz |
 | --- | --- | --- | --- |
-| Unit/Integration/Simulation | `npm test` | `PASS*` | 223/223 vor Audit sowie 223/223 nach Patch mit isoliertem, versionsgleichem Dev-Harness |
-| Test-/Script-Typecheck | `npm run test:typecheck` | `PASS*` | vor Audit grün; Wiederholung mit frischem `npm ci` steht aus |
-| Produktions-Build | `npm run build` | `PASS*` | nach Patch grün; isolierte Wiederholung mit `--configLoader runner` ebenfalls grün |
-| Browser-E2E | `npm run test:e2e` | `PASS*` | 10/10 gegen den Produktions-Build; direkter npm-Aufruf in sauberer Installation noch zu wiederholen |
-| Produktions-Audit | `npm audit --omit=dev` | `OPEN` | `postcss`/`nanoid` behoben; 1 niedriger `esbuild`-Befund verbleibt |
+| Unit/Integration/Simulation | `npm test` | `PASS` | 223/223 in sauberem Clone am 2026-08-28 |
+| Test-/Script-Typecheck | `npm run test:typecheck` | `PASS` | in sauberem Clone am 2026-08-28 |
+| Produktions-Build | `npm run build` | `PASS` | Vite 7.3.5, 170 Module, in sauberem Clone am 2026-08-28 |
+| Browser-E2E | `npm run test:e2e` | `PASS` | 10/10 in sauberem Clone am 2026-08-28 |
+| Produktions-Audit | `npm audit --omit=dev` | `ACCEPTED LOW` | `postcss`/`nanoid` behoben; ein niedriger lokaler `esbuild`-Devserver-Befund bleibt dokumentiert |
 
 Ein Gate wird nur mit Datum, Ergebnis und gegebenenfalls einem Link auf
 gespeicherte QA-Evidenz auf `PASS` gesetzt.
@@ -100,13 +100,12 @@ traf auf einen bestätigten Windows-`EBUSY`-Lock in
 `node_modules/css-tree/cjs/data-patch.cjs`; unbekannte laufende Prozesse wurden
 bewusst nicht beendet.
 
-Die 223 Node-Tests wurden mit `tsx` 4.22.4 und den gepinnten Dev-Abhängigkeiten
-aus einer isolierten temporären Installation erneut ausgeführt und bestanden
-vollständig. Die zehn Browsertests wurden entsprechend mit Playwright 1.61.1
-gegen den aktuellen Produktions-Build ausgeführt und bestanden ebenfalls. Das
-belegt Code- und Browserfunktion, ersetzt aber nicht den abschließenden CI-Lauf
-mit frischem `npm ci`. Darum tragen die automatischen Gates bis zum erfolgreichen
-Pull-Request-Lauf ein Sternchen und Phase 0 bleibt offen.
+Anschließend wurde der Commit `3c8c37b` nach
+`C:\Users\madde\AppData\Local\Temp\core-arena-gates-3c8c37b` geklont und dort
+mit frischem `npm ci` geprüft. Alle 223 Node-Tests, Test-Typecheck,
+Produktionsbuild und 10/10 Playwright-Tests bestanden. Damit ist die lokale
+automatische Baseline reproduzierbar; der echte Pull-Request-Lauf bleibt Teil
+der Merge-Abnahme.
 
 #### Audit-Ergebnis
 
@@ -159,4 +158,5 @@ Phase 0 wechselt nur dann auf `COMPLETE`, wenn:
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-08-28 | Sauberen Clone mit `npm ci` sowie 223/223 Tests, Typecheck, Build und 10/10 E2E validiert; niedrigen esbuild-Befund akzeptiert und manuelle Produktgates offen gehalten. |
 | 2026-08-28 | Phase-0-Plan angelegt, Ausgangsstand und WIP-Schutz dokumentiert, automatische und manuelle Gates vorbereitet. |

@@ -102,8 +102,8 @@ Ein Release Candidate liegt erst vor, wenn:
 
 | Phase | Ergebnis | Status | Start-Gate |
 | --- | --- | --- | --- |
-| 0 – Release-Baseline | Sauberer, reproduzierbarer Ausgangspunkt | `IN PROGRESS` | `main` @ `4ce36f5` bestätigt |
-| 1 – Produkt-/Plattformfundament | `ReleaseProfile`, `PlatformServices`, lokale Events | `PLANNED` | Phase 0 `COMPLETE` |
+| 0 – Release-Baseline | Sauberer, reproduzierbarer Ausgangspunkt | `AUTOMATED COMPLETE · MANUAL OPEN` | `main` @ `4ce36f5` bestätigt |
+| 1 – Produkt-/Plattformfundament | `ReleaseProfile`, `PlatformServices`, lokale Events | `COMPLETE` | durch Nutzer nach grüner automatischer Baseline freigegeben |
 | 2 – Qualifier und Onboarding | Ein-Klick-First-Run bis `QUALIFIED` | `PLANNED` | Phase 1 `COMPLETE` |
 | 3 – League- und Karrierefluss | Kompakte Teamgründung und geschlossener Proving-Flow | `PLANNED` | Phase 2 `COMPLETE` |
 | 4 – Relevantes Recruitment | Wahrnehmbare KI-Archetypen ohne Statvorteile | `PLANNED` | Phase 3 `COMPLETE` |
@@ -115,7 +115,7 @@ Ein Release Candidate liegt erst vor, wenn:
 
 ## Phase 0 – Release-Baseline
 
-**Status:** `IN PROGRESS`
+**Status:** `AUTOMATED COMPLETE · MANUAL OPEN`
 
 **Ausführungsplan:** [PHASE_0_RELEASE_BASELINE.md](release/PHASE_0_RELEASE_BASELINE.md)
 
@@ -150,12 +150,12 @@ bevor Produktverhalten verändert wird.
 - [ ] Pull Requests führen Tests, Test-Typecheck, Build und Browser-E2E aus,
       ohne eine Pages-Veröffentlichung auszulösen.
 - [x] Smoke-Test-Code ist nicht mehr Teil des Produktions-Barrels.
-- [ ] Produktions-Dependency-Audit ist dokumentiert; angewandte Patches ändern
+- [x] Produktions-Dependency-Audit ist dokumentiert; angewandte Patches ändern
       kein Spielverhalten.
 - [x] `npm test` ist grün (223/223 am 2026-08-28).
 - [x] `npm run test:typecheck` ist grün (2026-08-28).
 - [x] `npm run build` ist grün (2026-08-28).
-- [ ] `npm run test:e2e` ist grün.
+- [x] `npm run test:e2e` ist grün (10/10 am 2026-08-28).
 - [ ] Eine komplette League-Saison ist manuell ohne Softlock spielbar.
 - [ ] Keine neuen blockierenden Browser-Konsolenfehler.
 - [x] Bisherige Evidenz ist im Phase-0-Plan eingetragen.
@@ -163,7 +163,9 @@ bevor Produktverhalten verändert wird.
 
 ## Phase 1 – Produkt- und Plattformfundament
 
-**Status:** `PLANNED`
+**Status:** `COMPLETE`
+
+**Evidenz:** [PHASE_1_PLATFORM_FOUNDATION.md](release/PHASE_1_PLATFORM_FOUNDATION.md)
 
 ### Ziel und Scope
 
@@ -177,10 +179,10 @@ bevor Produktverhalten verändert wird.
 
 ### Abnahmekriterien
 
-- Quick Start, Custom Match und League verhalten sich unverändert.
-- Kein SDK-Code liegt direkt in Menüs oder Gameplay-Core.
-- Events sind lokal prüfbar und senden noch keine externen Daten.
-- Gameplay-Core bleibt plattformunabhängig.
+- [x] Quick Start, Custom Match und League verhalten sich unverändert.
+- [x] Kein SDK-Code liegt direkt in Menüs oder Gameplay-Core.
+- [x] Events sind lokal prüfbar und senden noch keine externen Daten.
+- [x] Gameplay-Core bleibt plattformunabhängig.
 
 ## Phase 2 – Qualifier und First-Run-Onboarding
 
@@ -430,9 +432,11 @@ Datenschutz-/Plattformentscheidung extern versendet:
 | 2026-08-28 | Qualifier vor Karriereausbau. | Verständnis und Combat müssen vor zusätzlicher Länge bewiesen werden. |
 | 2026-08-28 | Contender/Apex nur nach Phase-5-Gate. | Content ersetzt keine Produktvalidierung. |
 | 2026-08-28 | Audio ausschließlich in Phase 9. | Fokus halten und Rechte-/Mixarbeit einmal systematisch abschließen. |
+| 2026-08-28 | Phase 1 nach vollständiger automatischer Baseline gestartet. | Der Nutzer hat den Start trotz noch offener manueller Phase-0-Produktabnahme ausdrücklich freigegeben; die offenen manuellen Gates bleiben sichtbar. |
 
 ## Änderungsverlauf
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-08-28 | Phase 1 mit Standalone-Releaseprofil, Plattformports und lokalen Produkt-Events abgeschlossen. |
 | 2026-08-28 | Kanonische Roadmap angelegt; Phase 0 aktiviert; Phasen 1–9, Gates und Audioausschluss festgelegt. |

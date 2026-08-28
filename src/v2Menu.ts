@@ -36,6 +36,10 @@ import {
   uiText,
   type UiCopyKey,
 } from "./uiLocale";
+import {
+  withMatchEntryPoint,
+  type PlatformServices,
+} from "./platform";
 
 interface V2MenuElements {
   readonly root: HTMLElement;
@@ -166,7 +170,10 @@ interface V2StatsElements {
   readonly close: HTMLButtonElement;
 }
 
-export function showGameplayV2Menu(statusMessage?: string): void {
+export function showGameplayV2Menu(
+  statusMessage?: string,
+  platform?: Pick<PlatformServices, "analytics" | "save">,
+): void {
   const elements = readMenuElements();
   const route = readV2Route();
   applyUiTranslations(document);
@@ -312,6 +319,8 @@ export function showGameplayV2Menu(statusMessage?: string): void {
       showHome();
       syncLeagueHome();
     },
+    storage: platform?.save,
+    analytics: platform?.analytics,
   });
   syncLeagueHome();
   elements.home.classList.toggle("is-hidden", Boolean(statusMessage));
@@ -337,7 +346,7 @@ export function showGameplayV2Menu(statusMessage?: string): void {
   elements.quickStart.onclick = () => {
     elements.status.textContent = uiText("custom.quickStatus");
     elements.status.classList.remove("is-hidden");
-    window.location.search = buildV2MatchSearch({
+    window.location.search = withMatchEntryPoint(buildV2MatchSearch({
       mode: QUICK_PLAY_DEFAULT_MODE,
       map: QUICK_PLAY_DEFAULT_MAP,
       players: "bot",
@@ -349,9 +358,12 @@ export function showGameplayV2Menu(statusMessage?: string): void {
       controls: route.controls,
       skin: loadPlayerSkinPreference(),
       sfx: route.sfx,
-    });
+    }), "quick-start");
   };
   elements.enterLeague.onclick = () => {
+    platform?.analytics.track("league_hq_opened", {
+      hasCareer: leagueController.hasSave,
+    });
     elements.home.classList.add("is-hidden");
     elements.setup.classList.add("is-hidden");
     resetMenuScroll(elements.root);
@@ -366,7 +378,7 @@ export function showGameplayV2Menu(statusMessage?: string): void {
     const redBots = readQuickPlayBotCount(elements.redBots);
     savePlayerSkinPreference(elements.skin.value as V2PlayerSkinId);
     resetMenuScroll(elements.root);
-    window.location.search = buildV2MatchSearch({
+    window.location.search = withMatchEntryPoint(buildV2MatchSearch({
       mode: elements.mode.value as typeof route.mode,
       map: elements.map.value,
       players: "bot",
@@ -382,7 +394,7 @@ export function showGameplayV2Menu(statusMessage?: string): void {
       controls: elements.controls.value as V2ControlsMode,
       skin: elements.skin.value as V2PlayerSkinId,
       sfx: elements.sfx.value === "off" ? "off" : "on",
-    });
+    }), "custom-match");
   };
   onUiLanguageChange(() => {
     applyUiTranslations(document);

@@ -49,6 +49,7 @@ import {
   type V2PlayerSkinId,
 } from "./v2Route";
 import { applyUiTranslations, uiText, type UiCopyKey } from "./uiLocale";
+import type { AnalyticsPort, SavePort } from "./platform";
 
 interface LeagueMenuController {
   readonly hasSave: boolean;
@@ -107,9 +108,12 @@ function localizedTrialLabel(mode: "tdm" | "ctf" | "one-flag"): string {
 
 export function createLeagueMenuController(actions: {
   readonly onBack: () => void;
+  readonly storage?: SavePort;
+  readonly analytics?: AnalyticsPort;
 }): LeagueMenuController {
-  const repository = createLeagueRepository(window.localStorage);
-  const profileRepository = createCareerProfileRepository(window.localStorage);
+  const storage = actions.storage ?? window.localStorage;
+  const repository = createLeagueRepository(storage);
+  const profileRepository = createCareerProfileRepository(storage);
   const root = element("v2-league-hub");
   const menuRoot = document.getElementById("v2-main-menu") ?? root;
   const header = root.querySelector<HTMLElement>(".league-header");
@@ -193,6 +197,7 @@ export function createLeagueMenuController(actions: {
   const startSeason = (): void => {
     if (!profile) return;
     season = createLeagueSeason(Date.now(), profile.selectedWingmanId);
+    actions.analytics?.track("league_started", { seasonId: season.seasonId });
     selectedTeamId = null;
     saveAndRender();
     resetMenuScroll();
@@ -291,6 +296,15 @@ export function createLeagueMenuController(actions: {
         repository.save(season);
       }
       profileRepository.save(profile);
+      if (!wasExistingProfile) {
+        actions.analytics?.track("team_created", {
+          selectedWingmanId: profile.selectedWingmanId,
+        });
+      }
+      actions.analytics?.track("wingman_selected", {
+        characterId: profile.selectedWingmanId,
+        source: "team-setup",
+      });
       editingProfile = false;
       profileReview = false;
       profileDraft = null;
