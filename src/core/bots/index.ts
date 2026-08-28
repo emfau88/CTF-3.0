@@ -80,8 +80,12 @@ export {
   type BotUtilityCandidate,
 } from "./BotDecisionUtility";
 export {
+  BOT_ARCHETYPE_PERSONALITIES,
   BOT_DIFFICULTY_PROFILES,
+  createBotArchetypePersonality,
   createBotPersonality,
+  isBotArchetypeId,
+  type BotArchetypeId,
   type BotDifficultyId,
   type BotDifficultyProfile,
   type BotPersonality,

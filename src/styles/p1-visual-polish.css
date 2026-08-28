@@ -343,6 +343,8 @@ button.league-profile-fighter:hover { border-color: rgb(102 197 223 / .64); tran
 .league-profile-fighter-copy small { color: #df5961; font-size: 9px; font-weight: 900; letter-spacing: .09em; }
 .league-profile-fighter-copy strong { overflow-wrap: anywhere; color: #e4eef0; font: 800 18px/1.05 var(--font-display); text-transform: uppercase; }
 .league-profile-fighter-copy i { color: #839ba2; font-size: 9px; font-style: normal; font-weight: 800; text-transform: uppercase; }
+.league-profile-fighter-copy > b { width: fit-content; margin-top: 3px; padding: 3px 5px; border: 1px solid rgb(102 197 223 / .35); color: #83d7ed; font-size: 8px; letter-spacing: .1em; }
+.league-profile-fighter-copy > em { color: #81979d; font-size: 9px; font-style: normal; line-height: 1.35; }
 .league-profile-fighter.is-locked { opacity: .54; filter: grayscale(.5); }
 .league-profile-fighter.is-locked > b { position: absolute; right: 8px; bottom: 7px; color: #a2b2b7; font-size: 9px; letter-spacing: .12em; }
 .league-profile-locked-heading { display: flex; justify-content: space-between; gap: 12px; margin: 20px 0 9px; padding-top: 15px; border-top: 1px solid rgb(123 166 178 / .15); }

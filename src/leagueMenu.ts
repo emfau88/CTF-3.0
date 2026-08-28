@@ -8,6 +8,7 @@ import {
   PLAYER_LEAGUE_TEAM_ID,
   STARTER_WINGMAN_IDS,
   foundersCircuitDiscipline,
+  completeRecruitment,
   createLeagueRepository,
   createLeagueSeason,
   getCurrentPlayerMatch,
@@ -21,6 +22,7 @@ import {
   type LeagueSeasonState,
   type LeagueTeamId,
 } from "./meta/league";
+import type { BotArchetypeId } from "./core/bots";
 import {
   CAREER_PLAYER_EMBLEMS,
   createCareerProfile,
@@ -88,6 +90,28 @@ const CHARACTER_PERSONALITY_KEYS: Readonly<Record<string, UiCopyKey>> = {
   "ion-drift": "league.personalityIonDrift",
 };
 
+const ARCHETYPE_COPY_KEYS: Readonly<Record<BotArchetypeId, {
+  readonly label: UiCopyKey;
+  readonly description: UiCopyKey;
+}>> = {
+  assault: {
+    label: "league.archetypeAssault",
+    description: "league.archetypeAssaultCopy",
+  },
+  guardian: {
+    label: "league.archetypeGuardian",
+    description: "league.archetypeGuardianCopy",
+  },
+  objective: {
+    label: "league.archetypeObjective",
+    description: "league.archetypeObjectiveCopy",
+  },
+  "all-rounder": {
+    label: "league.archetypeAllRounder",
+    description: "league.archetypeAllRounderCopy",
+  },
+};
+
 function localizedTeamMotto(teamId: LeagueTeamId, fallback: string): string {
   const key = TEAM_MOTTO_KEYS[teamId];
   return key ? uiText(key) : fallback;
@@ -96,6 +120,17 @@ function localizedTeamMotto(teamId: LeagueTeamId, fallback: string): string {
 function localizedCharacterPersonality(characterId: string, fallback: string): string {
   const key = CHARACTER_PERSONALITY_KEYS[characterId];
   return key ? uiText(key) : fallback;
+}
+
+function localizedArchetype(archetypeId: BotArchetypeId): {
+  readonly label: string;
+  readonly description: string;
+} {
+  const keys = ARCHETYPE_COPY_KEYS[archetypeId];
+  return {
+    label: uiText(keys.label),
+    description: uiText(keys.description),
+  };
 }
 
 function localizedDisciplineMode(mode: "tdm" | "ctf" | "one-flag"): string {
@@ -131,6 +166,7 @@ export function createLeagueMenuController(actions: {
   let profileDraft: CareerProfileDraft | null = null;
   let profileReturnFocusId: string | null = null;
   let activeModal: "progression" | "reset" | null = null;
+  let reportedRecruitmentSeasonId: string | null = null;
 
   const resetMenuScroll = (): void => {
     menuRoot.scrollTop = 0;
@@ -168,7 +204,13 @@ export function createLeagueMenuController(actions: {
     const previousModal = activeModal;
     activeModal = nextModal;
     if (nextModal === "progression") {
-      requiredButton("league-progression-continue").focus({
+      const continueButton = requiredButton("league-progression-continue");
+      const focusTarget = continueButton.disabled
+        ? progression.querySelector<HTMLButtonElement>(
+            "#league-recruitment-keep, [data-recruitment-choice]",
+          ) ?? continueButton
+        : continueButton;
+      focusTarget.focus({
         preventScroll: true,
       });
     } else if (nextModal === "reset") {
@@ -833,6 +875,13 @@ export function createLeagueMenuController(actions: {
     const rivalRosterNames = active.teamRosters[opponent.id]
       .map((characterId) => leagueCharacter(characterId).name)
       .join(" · ");
+    const recruitmentPending = active.recruitment.status === "pending";
+    if (recruitmentPending && reportedRecruitmentSeasonId !== active.seasonId) {
+      reportedRecruitmentSeasonId = active.seasonId;
+      actions.analytics?.track("recruitment_opened", {
+        seasonId: active.seasonId,
+      });
+    }
     const headline = event.promoted
       ? uiText("league.qualificationEarned")
       : finalRound
@@ -882,11 +931,50 @@ export function createLeagueMenuController(actions: {
           <div class="is-new"><small>${uiText("league.now")}</small><strong>#${event.newPosition}</strong></div>
           <div class="league-points-earned${pointsGained === 0 ? " is-zero" : ""}"><small>${uiText("league.leaguePoints")}</small><strong>${pointsGained > 0 ? `+${pointsGained}` : "0"}</strong><span>${uiText("league.totalPoints", { points: event.newPoints })}</span></div>
         </div>
-        ${won ? `<div class="league-unlock-note"><small>${uiText("league.rivalRoster")}</small><strong>${escapeHtml(rivalRosterNames)}</strong><span>${uiText("league.selectRival")}</span></div>` : ""}
+        ${recruitmentPending
+          ? recruitmentDecisionHtml(active, opponent.id)
+          : won
+          ? `<div class="league-unlock-note"><small>${uiText("league.rivalRoster")}</small><strong>${escapeHtml(rivalRosterNames)}</strong><span>${uiText("league.selectRival")}</span></div>`
+          : ""}
         <p>${progressionCopy}</p>
-        <button id="league-progression-continue" type="button">${uiText("league.progressReturn")}</button>
+        <button id="league-progression-continue" type="button"${recruitmentPending ? " disabled" : ""}>${uiText("league.progressReturn")}</button>
       </div>`;
+    const chooseRecruitment = (selectedCharacterId: string | null): void => {
+      if (!profile || active.recruitment.status !== "pending") return;
+      syncCareerUnlocks(profile, active.defeatedTeamIds);
+      const selectedWingmanId = selectedCharacterId ?? profile.selectedWingmanId;
+      season = completeRecruitment(active, selectedCharacterId);
+      if (selectedCharacterId) {
+        profile = updateCareerProfile(profile, {
+          callsign: profile.callsign,
+          teamName: profile.teamName,
+          emblemId: profile.emblemId,
+          captainSkinId: profile.captainSkinId,
+          selectedWingmanId,
+        });
+      }
+      actions.analytics?.track("wingman_selected", {
+        characterId: selectedWingmanId,
+        source: "recruitment",
+      });
+      saveAndRender();
+      requiredButton("league-progression-continue").focus({
+        preventScroll: true,
+      });
+    };
+    document.getElementById("league-recruitment-keep")?.addEventListener(
+      "click",
+      () => chooseRecruitment(null),
+    );
+    progression.querySelectorAll<HTMLButtonElement>(
+      "[data-recruitment-choice]",
+    ).forEach((button) => {
+      button.onclick = () => chooseRecruitment(
+        button.dataset.recruitmentChoice ?? null,
+      );
+    });
     requiredButton("league-progression-continue").onclick = () => {
+      if (active.recruitment.status === "pending") return;
       season = acknowledgeLeagueProgression(active);
       saveAndRender();
     };
@@ -967,6 +1055,55 @@ export function createLeagueMenuController(actions: {
   };
 }
 
+function recruitmentDecisionHtml(
+  season: LeagueSeasonState,
+  opponentId: LeagueTeamId,
+): string {
+  const currentWingmanId = season.teamRosters[season.playerTeamId][1];
+  const currentWingman = leagueCharacter(currentWingmanId);
+  const opponent = leagueTeam(opponentId);
+  const candidates = season.recruitment.candidateIds
+    .map((characterId) => recruitmentChoiceHtml(characterId, false))
+    .join("");
+  return `
+    <section class="league-recruitment-decision" aria-labelledby="league-recruitment-title">
+      <small>${uiText("league.recruitmentKicker")}</small>
+      <h3 id="league-recruitment-title">${uiText("league.recruitmentTitle")}</h3>
+      <p>${uiText("league.recruitmentCopy", {
+        team: opponent.name,
+        current: currentWingman.name,
+      })}</p>
+      <div class="league-recruitment-choices">
+        ${recruitmentChoiceHtml(currentWingmanId, true)}
+        ${candidates}
+      </div>
+      <span>${uiText("league.recruitmentUnlocked")}</span>
+    </section>`;
+}
+
+function recruitmentChoiceHtml(
+  characterId: string,
+  keepCurrent: boolean,
+): string {
+  const character = leagueCharacter(characterId);
+  const archetype = localizedArchetype(character.archetypeId);
+  const assetBase = import.meta.env?.BASE_URL ?? "/";
+  const portrait = `${assetBase}assets/ui/portraits/${
+    playerSkinPortraitAssetStem(character.skinId)
+  }.png`;
+  return `<button class="league-recruitment-choice" ${
+    keepCurrent
+      ? 'id="league-recruitment-keep"'
+      : `data-recruitment-choice="${character.id}"`
+  } type="button">
+    <span class="league-recruitment-portrait" style="--skin-portrait:url('${portrait}')" aria-hidden="true"></span>
+    <span><small>${uiText(
+      keepCurrent ? "league.recruitmentKeep" : "league.recruitmentChoose",
+      { name: character.name },
+    )}</small><strong>${character.name}</strong><b>${archetype.label}</b><i>${archetype.description}</i></span>
+  </button>`;
+}
+
 function renderOpponentLineup(
   season: LeagueSeasonState,
   opponentId: LeagueTeamId,
@@ -974,6 +1111,7 @@ function renderOpponentLineup(
   const assetBase = import.meta.env?.BASE_URL ?? "/";
   return season.teamRosters[opponentId].map((characterId, index) => {
     const character = leagueCharacter(characterId);
+    const archetype = localizedArchetype(character.archetypeId);
     const stats = leagueCharacterStats(season, opponentId, characterId) ?? emptyStats(characterId);
     const portraitAssetStem = playerSkinPortraitAssetStem(character.skinId);
     const performance = stats.matches > 0
@@ -986,6 +1124,7 @@ function renderOpponentLineup(
           <small>${uiText("league.fighter")} 0${index + 1}</small>
           <strong>${character.name}</strong>
           <span>${character.visualStyle}</span>
+          <b class="league-archetype-label">${archetype.label}</b>
           ${performance}
         </div>
       </article>`;
@@ -1006,6 +1145,7 @@ function characterCard(
   },
 ): HTMLElement {
   const character = leagueCharacter(characterId);
+  const archetype = localizedArchetype(character.archetypeId);
   const stats = leagueCharacterStats(season, teamId, characterId) ?? emptyStats(characterId);
   const currentTeam = leagueTeam(teamId);
   const assetBase = import.meta.env?.BASE_URL ?? "/";
@@ -1019,6 +1159,7 @@ function characterCard(
       <strong>${escapeHtml(presentation?.name ?? character.name)}</strong>
       <span>${escapeHtml(presentation?.personality ?? localizedCharacterPersonality(character.id, character.personality))}</span>
       <em>${escapeHtml(presentation?.visualStyle ?? character.visualStyle)}</em>
+      <b class="league-archetype-label">${archetype.label}</b>
       ${showStats ? `<div class="league-character-stats" aria-label="${uiText("league.recordedPerformance")}"><b>${average(stats.kills, stats.matches)}<i>${uiText("league.killsPerMatchShort")}</i></b><b>${average(stats.deaths, stats.matches)}<i>${uiText("league.deathsPerMatchShort")}</i></b><b>${stats.flagCaptures}<i>${uiText("league.capturesShort")}</i></b></div>` : ""}
     </div>`;
   return card;
@@ -1034,6 +1175,7 @@ function careerFighterOptionHtml(
   locked = false,
 ): string {
   const character = leagueCharacter(characterId);
+  const archetype = localizedArchetype(character.archetypeId);
   const assetBase = import.meta.env?.BASE_URL ?? "/";
   const portrait = `${assetBase}assets/ui/portraits/${playerSkinPortraitAssetStem(skinId)}.png`;
   const tag = locked || !dataAttribute ? "article" : "button";
@@ -1043,7 +1185,7 @@ function careerFighterOptionHtml(
     : "";
   return `<${tag} class="league-profile-fighter${selected ? " is-selected" : ""}${locked ? " is-locked" : ""}"${attribute}${interaction}>
     <span class="league-profile-fighter-portrait" style="--skin-portrait:url('${portrait}')" aria-hidden="true"></span>
-    <span class="league-profile-fighter-copy"><small>${escapeHtml(badge)}</small><strong>${escapeHtml(displayName ?? character.name)}</strong><i>${escapeHtml(displayName ? playerSkinLabel(skinId) : character.visualStyle)}</i></span>
+    <span class="league-profile-fighter-copy"><small>${escapeHtml(badge)}</small><strong>${escapeHtml(displayName ?? character.name)}</strong><i>${escapeHtml(displayName ? playerSkinLabel(skinId) : character.visualStyle)}</i>${displayName ? "" : `<b>${archetype.label}</b><em>${archetype.description}</em>`}</span>
     ${locked ? `<b aria-hidden="true">${uiText("common.locked").toUpperCase()}</b>` : ""}
   </${tag}>`;
 }

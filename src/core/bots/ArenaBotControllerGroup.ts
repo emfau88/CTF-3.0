@@ -20,6 +20,7 @@ import { ArenaBotTeamCoordinator } from "./BotTeamCoordinator";
 import {
   BOT_DIFFICULTY_PROFILES,
   type BotDifficultyId,
+  type BotPersonality,
 } from "./BotDifficulty";
 
 export interface ArenaBotControllerGroupOptions {
@@ -31,6 +32,7 @@ export interface ArenaBotControllerGroupOptions {
     Partial<Record<ArenaTeamId, BotDifficultyId>>
   >;
   readonly difficultyByActorId?: Readonly<Record<string, BotDifficultyId>>;
+  readonly personalityByActorId?: Readonly<Record<string, BotPersonality>>;
 }
 
 export interface ArenaBotDifficultyAssignment {
@@ -94,6 +96,7 @@ export function createArenaBotControllerGroup(
     humanActorIds = [],
     difficultyByTeam = {},
     difficultyByActorId = {},
+    personalityByActorId = {},
   } = options;
   const difficultyAssignments = participants.map((participant) => ({
     actorId: participant.actorId,
@@ -119,6 +122,7 @@ export function createArenaBotControllerGroup(
     participants,
     humanActorIds,
     difficultyProfileByActorId,
+    new Map(Object.entries(personalityByActorId)),
   );
   const controllers = participants.map((participant) => {
     const difficultyId = assignmentByActorId.get(participant.actorId) ??
@@ -134,7 +138,7 @@ export function createArenaBotControllerGroup(
         participant.slot,
         humanActorIds,
         difficulty,
-        undefined,
+        personalityByActorId[participant.actorId],
         coordinator,
         map,
       );
@@ -148,7 +152,7 @@ export function createArenaBotControllerGroup(
         undefined,
         undefined,
         difficulty,
-        undefined,
+        personalityByActorId[participant.actorId],
         coordinator,
         participant.slot,
       );
@@ -161,7 +165,7 @@ export function createArenaBotControllerGroup(
         undefined,
         undefined,
         difficulty,
-        undefined,
+        personalityByActorId[participant.actorId],
         coordinator,
         participant.slot,
       );

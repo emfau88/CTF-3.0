@@ -178,6 +178,7 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "Xeno Runner",
     personality: "Cool-headed when the arena gets loud",
     skinId: "alien-runner",
+    archetypeId: "all-rounder",
   },
   {
     id: "atlas-rho",
@@ -186,6 +187,7 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "Aegis Vanguard",
     personality: "Steady, earnest and impossible to hurry",
     skinId: "aegis-vanguard",
+    archetypeId: "guardian",
   },
   {
     id: "lyra-quell",
@@ -194,6 +196,7 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "Null Courier",
     personality: "Finds the quiet route through every firefight",
     skinId: "null-courier",
+    archetypeId: "objective",
   },
   {
     id: "dax-ember",
@@ -202,6 +205,7 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "Volt Hound",
     personality: "Turns every opening into forward pressure",
     skinId: "volt-hound",
+    archetypeId: "assault",
   },
   {
     id: "kael-voss",
@@ -210,6 +214,7 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "Mirejaw",
     personality: "Treats every match like a friendly grudge",
     skinId: "mirejaw",
+    archetypeId: "assault",
   },
   {
     id: "mara-hex",
@@ -218,6 +223,7 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "Null Courier",
     personality: "Deadpan, precise and secretly competitive",
     skinId: "null-courier",
+    archetypeId: "guardian",
   },
   {
     id: "nyx-echo",
@@ -226,6 +232,7 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "Scrapwing",
     personality: "Always has a shortcut and a bad joke",
     skinId: "scrapwing",
+    archetypeId: "objective",
   },
   {
     id: "vektor-nine",
@@ -234,6 +241,7 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "Prism Bastion",
     personality: "Makes dramatic entrances on purpose",
     skinId: "prism-bastion",
+    archetypeId: "all-rounder",
   },
   {
     id: "rook-13",
@@ -242,6 +250,7 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "AX-9 Mantis",
     personality: "Counts everything, including high-fives",
     skinId: "ax9-mantis",
+    archetypeId: "guardian",
   },
   {
     id: "sable-kern",
@@ -250,6 +259,7 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "Aegis Vanguard",
     personality: "Quietly dependable with a dry sense of humor",
     skinId: "aegis-vanguard",
+    archetypeId: "all-rounder",
   },
   {
     id: "orion-flare",
@@ -258,6 +268,7 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "Volt Hound",
     personality: "Celebrates every point like a championship",
     skinId: "volt-hound",
+    archetypeId: "assault",
   },
   {
     id: "senna-ray",
@@ -266,6 +277,7 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "Null Courier",
     personality: "Patient, observant and fond of long pauses",
     skinId: "null-courier",
+    archetypeId: "guardian",
   },
   {
     id: "kestrel-void",
@@ -274,6 +286,7 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "Xeno Runner",
     personality: "Cannot stand still while telling a story",
     skinId: "alien-runner",
+    archetypeId: "objective",
   },
   {
     id: "ion-drift",
@@ -282,6 +295,7 @@ export const LEAGUE_CHARACTERS: readonly LeagueCharacterDefinition[] = [
     visualStyle: "Briarhorn",
     personality: "Gentle off-field, gleefully chaotic on it",
     skinId: "briarhorn",
+    archetypeId: "all-rounder",
   },
 ];
 

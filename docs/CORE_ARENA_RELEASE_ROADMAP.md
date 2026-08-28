@@ -4,11 +4,11 @@
 
 - **Status:** ACTIVE – CANONICAL ROADMAP
 - **Letzte Aktualisierung:** 2026-08-28
-- **Aktive Phase:** Phase 3 – League-Einstieg und Karrierefluss (`COMPLETE`)
-- **Nächste Phase:** Phase 4 – Relevantes Recruitment (`PLANNED`)
+- **Aktive Phase:** Phase 4 – Relevantes Recruitment (`COMPLETE`)
+- **Nächste Phase:** Phase 5 – Produktvalidierung (`PLANNED`)
 - **Kanonischer Ausgangsstand:** `main` @ `4ce36f5`
 - **Veröffentlichter Stand:** GitHub Pages, erfolgreicher Deploy vom 2026-08-24
-- **Aktiver Arbeitsbranch:** `codex/release-baseline`
+- **Aktiver Arbeitsbranch:** `codex/phase-4-recruitment`
 
 > Diese Datei ist die verbindliche Produkt- und Release-Roadmap für Core Arena.
 > Frühere Produkt-, Audit- und Umsetzungspläne bleiben als historische oder
@@ -108,7 +108,7 @@ Ein Release Candidate liegt erst vor, wenn:
 | 1 – Produkt-/Plattformfundament | `ReleaseProfile`, `PlatformServices`, lokale Events | `COMPLETE` | durch Nutzer nach grüner automatischer Baseline freigegeben |
 | 2 – Qualifier und Onboarding | Ein-Klick-First-Run bis `QUALIFIED` | `COMPLETE` | Phase 1 `COMPLETE` |
 | 3 – League- und Karrierefluss | Kompakte Teamgründung und geschlossener Proving-Flow | `COMPLETE` | Phase 2 `COMPLETE` |
-| 4 – Relevantes Recruitment | Wahrnehmbare KI-Archetypen ohne Statvorteile | `PLANNED` | Phase 3 `COMPLETE` |
+| 4 – Relevantes Recruitment | Wahrnehmbare KI-Archetypen ohne Statvorteile | `COMPLETE` | Phase 3 `COMPLETE` |
 | 5 – Produktvalidierung | Getesteter kompletter Release-Slice | `PLANNED` | Phase 4 `COMPLETE` |
 | 6 – Karriereentscheidung | Kleine V1 oder validierter Ausbau | `PLANNED` | Phase-5-Datengate |
 | 7 – Portal-/Build-Vorbereitung | Schlanker Standalone-/CrazyGames-Build | `PLANNED` | Karrierescope festgelegt |
@@ -278,7 +278,7 @@ Spiel öffnen → KARRIERE STARTEN → Qualifier → QUALIFIED
 
 ## Phase 4 – Recruitment spielerisch relevant machen
 
-**Status:** `PLANNED`
+**Status:** `COMPLETE`
 
 ### Ziel und Scope
 
@@ -292,10 +292,40 @@ Spiel öffnen → KARRIERE STARTEN → Qualifier → QUALIFIED
 
 ### Abnahmekriterien
 
-- Archetypen sind in manuellen Matches wahrnehmbar.
-- Keine versteckten Stat- oder Waffenboni.
-- Save-, Roster- und Teamregeln bleiben stabil.
-- Jeder Archetyp kann in allen Release-Modi sinnvoll handeln.
+- [x] Archetypen sind in League HQ, Teammanager und Matchaufstellung klar
+      bezeichnet; der lokale Browsercheck bestätigt ihre Übernahme in reale
+      League-Matches.
+- [x] Keine versteckten Stat- oder Waffenboni.
+- [x] Save-, Roster- und Teamregeln bleiben stabil.
+- [x] Jeder Archetyp wird von den gemeinsamen TDM-, One-Flag- und
+      Classic-CTF-Controllern verarbeitet.
+
+### Abschlussnachweis vom 2026-08-28
+
+- Vier explizite, wertneutrale Entscheidungsarchetypen – offensiv, defensiv,
+  objective-orientiert und Allrounder – verändern nur Risiko,
+  Objective-/Zielpriorität, Ressourcenverhalten, Teamwork und Positionierung.
+- Nach dem ersten Rivalensieg zeigt der Ergebnisfluss den bisherigen Wingman
+  und beide Rivalenkandidaten. Die Rückkehr ins HQ bleibt bis zur Entscheidung
+  gesperrt; Behalten und Rekrutieren sind beide möglich.
+- Ein rekrutierter Kandidat wird als Spielerkopie freigeschaltet. Der
+  kanonische Rivalenkader bleibt unverändert und der Kandidat kann später im
+  Teammanager erneut ausgewählt werden.
+- Save-Normalisierung erhält gültige offene Recruitment-Entscheidungen und
+  neutralisiert ungültige Altzustände ohne bestehende Rivalenkader zu ändern.
+- Deterministische Coordinator-Tests belegen unterschiedliche CTF- und
+  One-Flag-Rollenpräferenzen sowie ausschließlich verhaltensbezogene Gewichte.
+- Der lokale Browsercheck zeigt die Archetypkennzeichnung im League HQ und
+  bestätigt, dass die Archetyp-IDs mit dem echten Helix-League-Match geladen
+  werden.
+- Der Karriere-E2E-Test durchläuft Recruitment, Auswahl, Folge-Matches,
+  Persistenz und den unveränderten Rivalenkader im vollständigen
+  Drei-Arenen-Circuit.
+- `npm test`: 233/233 bestanden.
+- `npm run test:typecheck`: bestanden.
+- `npm run build`: bestanden.
+- `npm run test:e2e`: 13/13 bestanden.
+- Audio und vorhandener Audio-WIP blieben vollständig unangetastet.
 
 ## Phase 5 – Proving Circuit validieren
 
@@ -472,6 +502,7 @@ Datenschutz-/Plattformentscheidung extern versendet:
 | 2026-08-28 | Diese Datei wird kanonische Roadmap. | Eine fortgeschriebene Quelle verhindert widersprüchliche To-do-Listen. |
 | 2026-08-28 | Phase 2 ist vollständig abgenommen. | 231 automatische Checks, Typecheck, Build, 12 Browser-E2E-Tests und der manuelle First-Run bis zur Teamgründung sind grün. |
 | 2026-08-28 | Phase 3 ist vollständig umgesetzt. | Der komplette Drei-Match-Proving-Flow über alle drei Premium-Arenen besteht 231 Checks und 13 Browser-E2E-Tests. |
+| 2026-08-28 | Phase 4 ist vollständig umgesetzt. | Vier statneutrale KI-Archetypen, First-Win-Recruitment und stabile Spieler-/Rivalenroster bestehen 233 Checks, Build, Typecheck, 13 Browser-E2E-Tests und den lokalen Browsercheck. |
 | 2026-08-28 | Desktop-first, Mobile experimentell erhalten. | Präzisionssteuerung ist releasefähig; Touch bleibt eine Option ohne aktuelles Versprechen. |
 | 2026-08-28 | Qualifier vor Karriereausbau. | Verständnis und Combat müssen vor zusätzlicher Länge bewiesen werden. |
 | 2026-08-28 | Contender/Apex nur nach Phase-5-Gate. | Content ersetzt keine Produktvalidierung. |
@@ -482,5 +513,6 @@ Datenschutz-/Plattformentscheidung extern versendet:
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-08-28 | Phase 4 mit verhaltensbasierten KI-Archetypen und einer verbindlichen First-Win-Recruitment-Entscheidung abgeschlossen. |
 | 2026-08-28 | Phase 1 mit Standalone-Releaseprofil, Plattformports und lokalen Produkt-Events abgeschlossen. |
 | 2026-08-28 | Kanonische Roadmap angelegt; Phase 0 aktiviert; Phasen 1–9, Gates und Audioausschluss festgelegt. |

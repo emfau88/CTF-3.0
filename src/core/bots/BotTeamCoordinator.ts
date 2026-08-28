@@ -9,6 +9,7 @@ import type { WorldMapData, WorldSnapshot } from "../world";
 import {
   BOT_DIFFICULTY_PROFILES,
   type BotDifficultyProfile,
+  type BotPersonality,
 } from "./BotDifficulty";
 import {
   selectBotRouteLandmark,
@@ -64,6 +65,10 @@ export class ArenaBotTeamCoordinator {
     private readonly difficultyByActorId: ReadonlyMap<
       string,
       BotDifficultyProfile
+    > = new Map(),
+    private readonly personalityByActorId: ReadonlyMap<
+      string,
+      BotPersonality
     > = new Map(),
   ) {}
 
@@ -128,6 +133,7 @@ export class ArenaBotTeamCoordinator {
     const reservations = new Map<string, number>();
     for (const actor of [...actors].sort(actorIdOrder)) {
       const difficulty = this.difficultyFor(actor.id);
+      const personality = this.personalityByActorId.get(actor.id);
       if (!difficulty.coordinatesCombatTargets) {
         this.assignments.set(actor.id, baseAssignment(actor.id, {
           reason: "tdm-independent-targeting",
@@ -140,13 +146,15 @@ export class ArenaBotTeamCoordinator {
           left,
           snapshot,
           reservations,
-          difficulty.id === "strong" ? .62 : .34,
+          (difficulty.id === "strong" ? .62 : .34) *
+            (personality ? .72 + personality.teamwork * .46 : 1),
         ) - coordinatedTargetCost(
           actor,
           right,
           snapshot,
           reservations,
-          difficulty.id === "strong" ? .62 : .34,
+          (difficulty.id === "strong" ? .62 : .34) *
+            (personality ? .72 + personality.teamwork * .46 : 1),
         ) ||
         left.id.localeCompare(right.id)
       )[0] ?? null;
@@ -176,7 +184,8 @@ export class ArenaBotTeamCoordinator {
       this.map.gameplay.combatZone ?? boundsRect(this.map),
     );
     const orderedForDefense = [...actors].sort((left, right) =>
-      distance(left.position, ownBase) - distance(right.position, ownBase) ||
+      defenseRoleCost(left, ownBase, this.personalityByActorId) -
+        defenseRoleCost(right, ownBase, this.personalityByActorId) ||
       left.id.localeCompare(right.id)
     );
     const fullTeamSize = snapshot.actors.filter((actor) =>
@@ -194,7 +203,8 @@ export class ArenaBotTeamCoordinator {
     const computedSupport = [...actors]
       .filter((actor) => actor.id !== computedDefender)
       .sort((left, right) =>
-        distance(left.position, midpoint) - distance(right.position, midpoint) ||
+        supportRoleCost(left, midpoint, this.personalityByActorId) -
+          supportRoleCost(right, midpoint, this.personalityByActorId) ||
         left.id.localeCompare(right.id)
       )[0]?.id ?? null;
     const defender = canKeepRoles
@@ -277,10 +287,21 @@ export class ArenaBotTeamCoordinator {
         actor.lifeState === "active"
       ) ?? null
       : null;
+    const flagPosition = flag?.position ?? centerOf(boundsRect(this.map));
     const orderedToFlag = [...actors].sort((left, right) =>
-      distance(left.position, flag?.position ?? centerOf(boundsRect(this.map))) -
-        distance(right.position, flag?.position ?? centerOf(boundsRect(this.map))) ||
-      left.id.localeCompare(right.id)
+      oneFlagPrimaryCost(
+        left,
+        flagPosition,
+        carrier,
+        teamId,
+        this.personalityByActorId,
+      ) - oneFlagPrimaryCost(
+        right,
+        flagPosition,
+        carrier,
+        teamId,
+        this.personalityByActorId,
+      ) || left.id.localeCompare(right.id)
     );
     const eligibleSupport = carrier?.teamId === teamId
       ? orderedToFlag.filter((actor) => actor.id !== carrier.id)
@@ -400,6 +421,45 @@ export class ArenaBotTeamCoordinator {
     return this.difficultyByActorId.get(actorId) ??
       BOT_DIFFICULTY_PROFILES.normal;
   }
+}
+
+function defenseRoleCost(
+  actor: Readonly<ActorState>,
+  base: WorldPosition,
+  personalities: ReadonlyMap<string, BotPersonality>,
+): number {
+  const personality = personalities.get(actor.id);
+  return distance(actor.position, base) - (personality
+    ? (personality.selfPreservation * .68 + personality.teamwork * .32) * 340
+    : 0);
+}
+
+function supportRoleCost(
+  actor: Readonly<ActorState>,
+  midpoint: WorldPosition,
+  personalities: ReadonlyMap<string, BotPersonality>,
+): number {
+  const personality = personalities.get(actor.id);
+  return distance(actor.position, midpoint) - (personality
+    ? (personality.teamwork * .65 + personality.objectiveFocus * .35) * 280
+    : 0);
+}
+
+function oneFlagPrimaryCost(
+  actor: Readonly<ActorState>,
+  flagPosition: WorldPosition,
+  carrier: Readonly<ActorState> | null,
+  teamId: TeamId,
+  personalities: ReadonlyMap<string, BotPersonality>,
+): number {
+  const personality = personalities.get(actor.id);
+  if (!personality) return distance(actor.position, flagPosition);
+  const roleAffinity = !carrier
+    ? personality.objectiveFocus * .8 + personality.aggression * .2
+    : carrier.teamId === teamId
+    ? personality.teamwork * .78 + personality.selfPreservation * .22
+    : personality.objectiveFocus * .58 + personality.aggression * .42;
+  return distance(actor.position, flagPosition) - roleAffinity * 360;
 }
 
 function basicOneFlagRole(

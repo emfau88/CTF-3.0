@@ -12,6 +12,7 @@ import {
   ArenaBotControllerGroup,
   ClassicCtfMode,
   createArenaBotControllerGroup,
+  createBotArchetypePersonality,
   createArenaRoster,
   createClassicCtfWorldState,
   createOneFlagWorldState,
@@ -173,6 +174,22 @@ export class GameplayV2Scene extends Phaser.Scene {
     const botParticipants = createArenaRoster(teamSizes).filter(
       (participant) => !humanActorIds.includes(participant.actorId),
     );
+    const leaguePersonalityByActorId = leagueRosterPresentation
+      ? {
+          "blue-player-2": createBotArchetypePersonality(
+            leagueRosterPresentation.playerWingmanArchetypeId,
+            2,
+          ),
+          "red-player": createBotArchetypePersonality(
+            leagueRosterPresentation.opponentArchetypeIds[0],
+            1,
+          ),
+          "red-player-2": createBotArchetypePersonality(
+            leagueRosterPresentation.opponentArchetypeIds[1],
+            2,
+          ),
+        }
+      : undefined;
     const botControllers = traversalSmokeSetup
       ? new ArenaBotControllerGroup([
           new BotTraversalSmokeController(traversalSmokeSetup),
@@ -190,6 +207,7 @@ export class GameplayV2Scene extends Phaser.Scene {
           blue: route.blueBotDifficulty,
           red: route.redBotDifficulty,
         },
+        personalityByActorId: leaguePersonalityByActorId,
       });
     this.sound.mute = route.sfx === "off";
     const runtime = new GameplayCoreRuntime({

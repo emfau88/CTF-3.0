@@ -12,6 +12,10 @@ import {
 } from "./leagueCatalog";
 import { getCurrentPlayerMatch, getPlayerOpponent } from "./leagueSeason";
 import type { LeagueSeasonState, LeagueTeamId } from "./leagueTypes";
+import {
+  isBotArchetypeId,
+  type BotArchetypeId,
+} from "../../core/bots";
 
 export interface LeagueMatchContext {
   readonly seasonId: string;
@@ -24,11 +28,16 @@ export interface LeagueMatchRosterPresentation {
   readonly captainSkinId: V2PlayerSkinId;
   readonly playerWingmanSkinId: V2PlayerSkinId;
   readonly opponentSkinIds: readonly [V2PlayerSkinId, V2PlayerSkinId];
+  readonly playerWingmanArchetypeId: BotArchetypeId;
+  readonly opponentArchetypeIds: readonly [BotArchetypeId, BotArchetypeId];
 }
 
 const LEAGUE_WINGMAN_SKIN_PARAM = "leagueWingmanSkin";
 const LEAGUE_OPPONENT_ONE_SKIN_PARAM = "leagueOpponentSkin1";
 const LEAGUE_OPPONENT_TWO_SKIN_PARAM = "leagueOpponentSkin2";
+const LEAGUE_WINGMAN_ARCHETYPE_PARAM = "leagueWingmanArchetype";
+const LEAGUE_OPPONENT_ONE_ARCHETYPE_PARAM = "leagueOpponentArchetype1";
+const LEAGUE_OPPONENT_TWO_ARCHETYPE_PARAM = "leagueOpponentArchetype2";
 
 export function readLeagueMatchContext(search: URLSearchParams): LeagueMatchContext | null {
   const roundIndex = Number(search.get("leagueRound"));
@@ -71,6 +80,13 @@ export function readLeagueMatchRosterPresentation(
     captainSkinId,
     playerWingmanSkinId,
     opponentSkinIds: [opponentOneSkinId, opponentTwoSkinId],
+    playerWingmanArchetypeId: readLeagueArchetype(
+      search.get(LEAGUE_WINGMAN_ARCHETYPE_PARAM),
+    ),
+    opponentArchetypeIds: [
+      readLeagueArchetype(search.get(LEAGUE_OPPONENT_ONE_ARCHETYPE_PARAM)),
+      readLeagueArchetype(search.get(LEAGUE_OPPONENT_TWO_ARCHETYPE_PARAM)),
+    ],
   };
 }
 
@@ -117,9 +133,25 @@ export function buildLeagueMatchSearch(
     LEAGUE_OPPONENT_TWO_SKIN_PARAM,
     leagueCharacter(opponentRoster[1]).skinId,
   );
+  params.set(
+    LEAGUE_WINGMAN_ARCHETYPE_PARAM,
+    leagueCharacter(playerWingmanId).archetypeId,
+  );
+  params.set(
+    LEAGUE_OPPONENT_ONE_ARCHETYPE_PARAM,
+    leagueCharacter(opponentRoster[0]).archetypeId,
+  );
+  params.set(
+    LEAGUE_OPPONENT_TWO_ARCHETYPE_PARAM,
+    leagueCharacter(opponentRoster[1]).archetypeId,
+  );
   return params.toString();
 }
 
 export function buildLeagueHubSearch(): string {
   return new URLSearchParams({ scene: "v2", menu: "1", leagueHub: "1" }).toString();
+}
+
+function readLeagueArchetype(value: string | null): BotArchetypeId {
+  return isBotArchetypeId(value) ? value : "all-rounder";
 }

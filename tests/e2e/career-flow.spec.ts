@@ -39,6 +39,7 @@ test("qualified first run creates a team and completes the three-arena Proving C
     { mode: "one-flag", map: "drowned-sun-temple-v2" },
     { mode: "ctf", map: "flow-circuit-v2" },
   ] as const;
+  let recruitedWingmanId: string | null = null;
 
   for (const [roundIndex, expected] of matches.entries()) {
     await page.locator("#league-play-next").click();
@@ -54,6 +55,16 @@ test("qualified first run creates a team and completes the three-arena Proving C
     await expect(page.locator("#league-progression")).toContainText(
       `MATCH ${roundIndex + 1} OF 3`,
     );
+    if (roundIndex === 0) {
+      const continueButton = page.locator("#league-progression-continue");
+      await expect(page.locator(".league-recruitment-choice")).toHaveCount(3);
+      await expect(continueButton).toBeDisabled();
+      const recruit = page.locator("[data-recruitment-choice]").first();
+      recruitedWingmanId = await recruit.getAttribute("data-recruitment-choice");
+      expect(recruitedWingmanId).not.toBeNull();
+      await recruit.click();
+      await expect(continueButton).toBeEnabled();
+    }
     await page.locator("#league-progression-continue").click();
   }
 
@@ -64,7 +75,9 @@ test("qualified first run creates a team and completes the three-arena Proving C
     season: JSON.parse(localStorage.getItem("core-arena.league.v2") ?? "null"),
   }));
   expect(persisted.profile.teamName).toBe("Comet Guard");
-  expect(persisted.profile.selectedWingmanId).toBe("lyra-quell");
+  expect(persisted.profile.selectedWingmanId).toBe(recruitedWingmanId);
+  expect(persisted.profile.unlockedWingmanIds).toContain(recruitedWingmanId);
+  expect(persisted.season.teamRosters["grave-circuit"]).toContain(recruitedWingmanId);
   expect(persisted.season.status).toBe("completed");
   expect(persisted.season.currentRound).toBe(3);
   expect(persisted.season.rounds).toHaveLength(3);

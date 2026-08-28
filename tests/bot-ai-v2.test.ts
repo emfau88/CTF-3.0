@@ -3,12 +3,14 @@ import test from "node:test";
 import {
   ArenaBotTeamCoordinator,
   assessCombatOpportunity,
+  BOT_ARCHETYPE_PERSONALITIES,
   BOT_DIFFICULTY_PROFILES,
   BotTargetSelector,
   BotUtilityArbiter,
   createActorState,
   createArenaBotControllerGroup,
   createArenaRoster,
+  createBotArchetypePersonality,
   createBotPersonality,
   createClassicCtfWorldState,
   createEmptyWorldState,
@@ -146,6 +148,83 @@ test("utility arbitration keeps a plausible intention but yields to emergencies"
     },
   ], 100, 700);
   assert.equal(emergency.selectedKind, "survive");
+});
+
+test("career archetypes expose distinct decision weights without gameplay stats", () => {
+  const assault = createBotArchetypePersonality("assault", 1);
+  const guardian = createBotArchetypePersonality("guardian", 2);
+  const objective = createBotArchetypePersonality("objective", 1);
+  const allRounder = createBotArchetypePersonality("all-rounder", 2);
+  assert.ok(assault.aggression > allRounder.aggression);
+  assert.ok(guardian.selfPreservation > assault.selfPreservation);
+  assert.ok(objective.objectiveFocus > guardian.objectiveFocus);
+  assert.ok(guardian.teamwork > assault.teamwork);
+  assert.equal(assault.lateralBias, -1);
+  assert.equal(guardian.lateralBias, 1);
+  assert.deepEqual(
+    Object.keys(BOT_ARCHETYPE_PERSONALITIES).sort(),
+    ["all-rounder", "assault", "guardian", "objective"],
+  );
+  for (const personality of [assault, guardian, objective, allRounder]) {
+    assert.equal("health" in personality, false);
+    assert.equal("damage" in personality, false);
+    assert.equal("speed" in personality, false);
+    assert.equal("weapon" in personality, false);
+  }
+});
+
+test("career archetypes influence CTF defense and One Flag runner roles", () => {
+  const roster = createArenaRoster(2);
+  const personalityByActorId = new Map([
+    ["blue-player", createBotArchetypePersonality("assault", 1)],
+    ["blue-player-2", createBotArchetypePersonality("guardian", 2)],
+    ["red-player", createBotArchetypePersonality("all-rounder", 1)],
+    ["red-player-2", createBotArchetypePersonality("objective", 2)],
+  ]);
+  const ctfWorld = createClassicCtfWorldState(HELIX_CANOPY_V2, {
+    teamSize: 2,
+  });
+  for (const actor of ctfWorld.actors.filter((entry) => entry.teamId === "blue")) {
+    actor.position = { x: 700, y: 500 };
+  }
+  const ctfCoordinator = new ArenaBotTeamCoordinator(
+    "classic-ctf",
+    HELIX_CANOPY_V2,
+    roster,
+    [],
+    new Map(),
+    personalityByActorId,
+  );
+  assert.equal(
+    ctfCoordinator.assignmentFor(
+      "blue-player-2",
+      createWorldSnapshot(ctfWorld),
+    )?.classicCtfRole,
+    "defender",
+  );
+
+  const oneFlagWorld = createOneFlagWorldState(DROWNED_SUN_TEMPLE_V2, {
+    teamSize: 2,
+  });
+  new OneFlagMode(DROWNED_SUN_TEMPLE_V2).initialize(oneFlagWorld);
+  for (const actor of oneFlagWorld.actors.filter((entry) => entry.teamId === "red")) {
+    actor.position = { x: 700, y: 500 };
+  }
+  const oneFlagCoordinator = new ArenaBotTeamCoordinator(
+    "one-flag",
+    DROWNED_SUN_TEMPLE_V2,
+    roster,
+    [],
+    new Map(),
+    personalityByActorId,
+  );
+  assert.equal(
+    oneFlagCoordinator.assignmentFor(
+      "red-player-2",
+      createWorldSnapshot(oneFlagWorld),
+    )?.oneFlagRole,
+    "runner",
+  );
 });
 
 test("team coordinator assigns dynamic CTF roles and distributes commands", () => {
