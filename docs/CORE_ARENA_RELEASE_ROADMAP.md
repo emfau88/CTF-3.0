@@ -4,8 +4,8 @@
 
 - **Status:** ACTIVE – CANONICAL ROADMAP
 - **Letzte Aktualisierung:** 2026-08-28
-- **Aktive Phase:** Phase 2 – Qualifier und First-Run-Onboarding (`COMPLETE`)
-- **Nächste Phase:** Phase 3 – League-Einstieg und Karrierefluss (`PLANNED`)
+- **Aktive Phase:** Phase 3 – League-Einstieg und Karrierefluss (`COMPLETE`)
+- **Nächste Phase:** Phase 4 – Relevantes Recruitment (`PLANNED`)
 - **Kanonischer Ausgangsstand:** `main` @ `4ce36f5`
 - **Veröffentlichter Stand:** GitHub Pages, erfolgreicher Deploy vom 2026-08-24
 - **Aktiver Arbeitsbranch:** `codex/release-baseline`
@@ -107,7 +107,7 @@ Ein Release Candidate liegt erst vor, wenn:
 | 0 – Release-Baseline | Sauberer, reproduzierbarer Ausgangspunkt | `AUTOMATED COMPLETE · MANUAL OPEN` | `main` @ `4ce36f5` bestätigt |
 | 1 – Produkt-/Plattformfundament | `ReleaseProfile`, `PlatformServices`, lokale Events | `COMPLETE` | durch Nutzer nach grüner automatischer Baseline freigegeben |
 | 2 – Qualifier und Onboarding | Ein-Klick-First-Run bis `QUALIFIED` | `COMPLETE` | Phase 1 `COMPLETE` |
-| 3 – League- und Karrierefluss | Kompakte Teamgründung und geschlossener Proving-Flow | `PLANNED` | Phase 2 `COMPLETE` |
+| 3 – League- und Karrierefluss | Kompakte Teamgründung und geschlossener Proving-Flow | `COMPLETE` | Phase 2 `COMPLETE` |
 | 4 – Relevantes Recruitment | Wahrnehmbare KI-Archetypen ohne Statvorteile | `PLANNED` | Phase 3 `COMPLETE` |
 | 5 – Produktvalidierung | Getesteter kompletter Release-Slice | `PLANNED` | Phase 4 `COMPLETE` |
 | 6 – Karriereentscheidung | Kleine V1 oder validierter Ausbau | `PLANNED` | Phase-5-Datengate |
@@ -237,7 +237,7 @@ Spiel öffnen → KARRIERE STARTEN → Qualifier → QUALIFIED
 
 ## Phase 3 – League-Einstieg und Karrierefluss
 
-**Status:** `PLANNED`
+**Status:** `COMPLETE`
 
 ### Ziel und Scope
 
@@ -252,10 +252,29 @@ Spiel öffnen → KARRIERE STARTEN → Qualifier → QUALIFIED
 
 ### Abnahmekriterien
 
-- Kein unnötiger Rückweg vom Qualifier bis League-Match 1.
-- Bestehende Saves sind ladbar oder nachvollziehbar migriert.
-- Der gesamte Proving Circuit ist ohne URL-Eingriff spielbar.
-- Matchreihenfolge und Dauer sind durch einen kurzen Spieltest bestätigt.
+- [x] Kein unnötiger Rückweg vom Qualifier bis League-Match 1.
+- [x] Bestehende Saves bleiben ladbar und Profile werden beim Einstieg
+      nachvollziehbar ergänzt.
+- [x] Der gesamte Proving Circuit ist ohne URL-Eingriff spielbar.
+- [x] Matchreihenfolge und drei unterschiedliche Premium-Arenen sind im
+      vollständigen Browser-Flow bestätigt.
+
+### Abschlussnachweis vom 2026-08-28
+
+- Teamgründung bündelt Callsign, Teamname, Emblem, Captain-Skin und
+  Starter-Wingman auf einer Oberfläche mit Zufallsvorschlägen und Review.
+- Der Proving Circuit führt in steigender taktischer Komplexität durch
+  Helix Canopy/TDM, Temple of the Drowned Sun/One Flag und Foundry
+  Circuit/Classic CTF.
+- Ergebnis, Tabellenbewegung, nächste Begegnung und Saisonabschluss bilden
+  einen durchgängigen Flow; bestehende lokale Karriere- und League-Saves
+  bleiben erhalten.
+- Ein neuer Browser-End-to-End-Test durchläuft Qualifier-Status,
+  Teamgründung, alle drei Matchstarts, Ergebnisrückkehr und Saisonabschluss.
+- `npm test`: 231/231 bestanden.
+- `npm run test:typecheck`: bestanden.
+- `npm run build`: bestanden.
+- `npm run test:e2e`: 13/13 bestanden.
 
 ## Phase 4 – Recruitment spielerisch relevant machen
 
@@ -452,6 +471,7 @@ Datenschutz-/Plattformentscheidung extern versendet:
 | --- | --- | --- |
 | 2026-08-28 | Diese Datei wird kanonische Roadmap. | Eine fortgeschriebene Quelle verhindert widersprüchliche To-do-Listen. |
 | 2026-08-28 | Phase 2 ist vollständig abgenommen. | 231 automatische Checks, Typecheck, Build, 12 Browser-E2E-Tests und der manuelle First-Run bis zur Teamgründung sind grün. |
+| 2026-08-28 | Phase 3 ist vollständig umgesetzt. | Der komplette Drei-Match-Proving-Flow über alle drei Premium-Arenen besteht 231 Checks und 13 Browser-E2E-Tests. |
 | 2026-08-28 | Desktop-first, Mobile experimentell erhalten. | Präzisionssteuerung ist releasefähig; Touch bleibt eine Option ohne aktuelles Versprechen. |
 | 2026-08-28 | Qualifier vor Karriereausbau. | Verständnis und Combat müssen vor zusätzlicher Länge bewiesen werden. |
 | 2026-08-28 | Contender/Apex nur nach Phase-5-Gate. | Content ersetzt keine Produktvalidierung. |

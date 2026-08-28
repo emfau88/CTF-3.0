@@ -169,14 +169,18 @@ test("defeating a rival permanently unlocks its wingmen without changing simulat
   assert.deepEqual(simulateLeagueMatch(season, before), simulateLeagueMatch(baseline, baselineMatch));
 });
 
-test("league season prioritizes the two premium arenas", () => {
+test("league season visits all three premium arenas in escalating modes", () => {
   assert.deepEqual(
     FOUNDERS_CIRCUIT_DISCIPLINES.map((discipline) => discipline.mapId),
     [
       "helix-canopy-v2",
       "drowned-sun-temple-v2",
-      "drowned-sun-temple-v2",
+      "flow-circuit-v2",
     ],
+  );
+  assert.deepEqual(
+    FOUNDERS_CIRCUIT_DISCIPLINES.map((discipline) => discipline.mode),
+    ["tdm", "one-flag", "ctf"],
   );
 });
 
@@ -303,7 +307,7 @@ test("league route carries the scheduled fixture context and cosmetic skin", () 
   completeCurrent(season);
   const finalSearch = new URLSearchParams(buildLeagueMatchSearch(season));
   assert.equal(finalSearch.get("mode"), "ctf");
-  assert.equal(finalSearch.get("map"), "drowned-sun-temple-v2");
+  assert.equal(finalSearch.get("map"), "flow-circuit-v2");
 });
 
 test("cosmetic skin preference accepts new skins and rejects invalid values", () => {
