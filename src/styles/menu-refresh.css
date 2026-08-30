@@ -561,11 +561,12 @@
 .v2-language-choice button.is-selected { border-color: var(--menu-cyan); background: rgb(34 106 118 / .82); color: #f0fbfb; box-shadow: inset 0 -3px var(--menu-cyan); }
 .v2-dialog-fullscreen { min-width: 128px; }
 .v2-settings-status { padding: 7px 9px; border: 1px solid rgb(101 195 207 / .32); color: #77cfdb; font-size: 9px; font-weight: 900; }
-.v2-help-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.v2-help-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .v2-help-grid section { min-height: 190px; display: grid; align-content: start; gap: 16px; padding: 18px; border: 1px solid rgb(188 214 215 / .2); border-radius: 6px; background: rgb(28 48 55 / .68); }
 .v2-help-grid section > span { color: #75d0dd; font-size: 34px; }
 .v2-help-grid section > div { display: grid; gap: 8px; }
 .v2-help-grid strong { color: #cbd8d9; font-size: 12px; font-weight: 600; line-height: 1.5; }
+.v2-help-training button { min-height: 40px; margin-top: 5px; border: 1px solid rgb(97 198 235 / .45); background: rgb(35 105 119 / .65); color: #effbfc; font: 900 10px var(--font-ui); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
 
 /* Compact desktop */
 @media (min-width: 901px) and (max-height: 800px) {

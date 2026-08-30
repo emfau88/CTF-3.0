@@ -1,5 +1,10 @@
 # Bot AI Execution Roadmap
 
+> **HISTORICAL SUBSYSTEM ROADMAP**
+>
+> Die aktuelle Produktreihenfolge und Release-Gates stehen in
+> [CORE_ARENA_RELEASE_ROADMAP.md](CORE_ARENA_RELEASE_ROADMAP.md).
+
 Stand der ursprünglichen Planung: 2026-06-23
 
 Statushinweis: 2026-08-24

@@ -12,6 +12,7 @@ import {
   ArenaBotControllerGroup,
   ClassicCtfMode,
   createArenaBotControllerGroup,
+  createBotArchetypePersonality,
   createArenaRoster,
   createClassicCtfWorldState,
   createOneFlagWorldState,
@@ -60,6 +61,18 @@ import {
 import { requiredV2CharacterSkinIds } from "../v2CharacterPresentation";
 import { bindArenaLoadingUi } from "../../../arenaLoadingUi";
 import { PhaserMatchStartOverlay } from "../PhaserMatchStartOverlay";
+import {
+  CORE_ARENA_LIFECYCLE_EVENT,
+  type TutorialAction,
+  type PlatformLifecycleState,
+} from "../../../platform";
+import {
+  QUALIFIER_TDM_CONFIG,
+  QUALIFIER_TUTORIAL_EVENT,
+  createQualifierWorld,
+  detectQualifierTutorialActions,
+  isQualifierMatch,
+} from "../../../qualifier";
 
 export class GameplayV2Scene extends Phaser.Scene {
   private bridge?: PhaserGameBridge;
@@ -74,6 +87,9 @@ export class GameplayV2Scene extends Phaser.Scene {
   private mapPreviewResize?: () => void;
   private hudScene?: GameplayV2HudScene;
   private matchStartOverlay?: PhaserMatchStartOverlay;
+  private qualifierActive = false;
+  private qualifierLastPointer?: { x: number; y: number };
+  private readonly qualifierReportedActions = new Set<TutorialAction>();
 
   constructor() {
     super("GameplayV2Scene");
@@ -119,6 +135,7 @@ export class GameplayV2Scene extends Phaser.Scene {
     const isClassicCtf = route.mode === "ctf";
     const isOneFlag = route.mode === "one-flag";
     const selectedMap = resolveWorldMap(route.map);
+    this.qualifierActive = isQualifierMatch(search);
     const collisionDiagnostics: ArenaCollisionDiagnostics =
       search.get("landmarkDebug") === "1"
         ? "landmarks"
@@ -157,6 +174,22 @@ export class GameplayV2Scene extends Phaser.Scene {
     const botParticipants = createArenaRoster(teamSizes).filter(
       (participant) => !humanActorIds.includes(participant.actorId),
     );
+    const leaguePersonalityByActorId = leagueRosterPresentation
+      ? {
+          "blue-player-2": createBotArchetypePersonality(
+            leagueRosterPresentation.playerWingmanArchetypeId,
+            2,
+          ),
+          "red-player": createBotArchetypePersonality(
+            leagueRosterPresentation.opponentArchetypeIds[0],
+            1,
+          ),
+          "red-player-2": createBotArchetypePersonality(
+            leagueRosterPresentation.opponentArchetypeIds[1],
+            2,
+          ),
+        }
+      : undefined;
     const botControllers = traversalSmokeSetup
       ? new ArenaBotControllerGroup([
           new BotTraversalSmokeController(traversalSmokeSetup),
@@ -174,6 +207,7 @@ export class GameplayV2Scene extends Phaser.Scene {
           blue: route.blueBotDifficulty,
           red: route.redBotDifficulty,
         },
+        personalityByActorId: leaguePersonalityByActorId,
       });
     this.sound.mute = route.sfx === "off";
     const runtime = new GameplayCoreRuntime({
@@ -181,15 +215,17 @@ export class GameplayV2Scene extends Phaser.Scene {
         ? new ClassicCtfMode(selectedMap)
         : isOneFlag
         ? new OneFlagMode(selectedMap)
-        : new TeamDeathmatchMode(),
+        : new TeamDeathmatchMode(
+          this.qualifierActive ? QUALIFIER_TDM_CONFIG : undefined,
+        ),
       createWorld: () => {
         const world = isClassicCtf
           ? createClassicCtfWorldState(selectedMap, { teamSizes })
           : isOneFlag
           ? createOneFlagWorldState(selectedMap, { teamSizes })
-          : createTeamDeathmatchWorldState(selectedMap, {
-            teamSizes,
-          });
+          : this.qualifierActive
+            ? createQualifierWorld(selectedMap, teamSizes)
+            : createTeamDeathmatchWorldState(selectedMap, { teamSizes });
         return traversalSmokeSetup
           ? configureBotTraversalSmokeWorld(world, traversalSmokeSetup)
           : world;
@@ -273,6 +309,12 @@ export class GameplayV2Scene extends Phaser.Scene {
       hud,
     });
     this.bridge.initialize();
+    if (this.qualifierActive) {
+      this.qualifierLastPointer = {
+        x: this.input.activePointer.x,
+        y: this.input.activePointer.y,
+      };
+    }
     if (this.hudScene) {
       this.matchStartOverlay = new PhaserMatchStartOverlay(this.hudScene);
       this.matchStartOverlay.render(this.bridge.snapshot.match);
@@ -286,9 +328,10 @@ export class GameplayV2Scene extends Phaser.Scene {
     this.publishMatchState();
     window.addEventListener("v2-sfx-changed", this.handleSfxChanged);
     window.addEventListener("v2-overlay-state", this.handleOverlayState);
-    document.addEventListener(
-      "visibilitychange",
-      this.handleVisibilityChange,
+    this.pauseForVisibility = document.hidden || !document.hasFocus();
+    window.addEventListener(
+      CORE_ARENA_LIFECYCLE_EVENT,
+      this.handlePlatformLifecycle,
     );
 
     if (this.input.keyboard) {
@@ -315,7 +358,18 @@ export class GameplayV2Scene extends Phaser.Scene {
       this.inputAdapter.reset();
       return;
     }
-    this.bridge.advance(this.inputAdapter.readFrame(delta));
+    const frame = this.inputAdapter.readFrame(delta);
+    const aimMoved = this.readQualifierAimMovement();
+    const result = this.bridge.advance(frame);
+    if (this.qualifierActive) {
+      for (const action of detectQualifierTutorialActions({
+        frame,
+        events: result.events,
+        aimMoved,
+      })) {
+        this.reportQualifierAction(action);
+      }
+    }
     this.matchStartOverlay?.render(this.bridge.snapshot.match);
     this.traversalSmokeOverlay?.render(this.bridge.snapshot);
     this.publishMatchState();
@@ -324,9 +378,9 @@ export class GameplayV2Scene extends Phaser.Scene {
   private shutdown(): void {
     window.removeEventListener("v2-sfx-changed", this.handleSfxChanged);
     window.removeEventListener("v2-overlay-state", this.handleOverlayState);
-    document.removeEventListener(
-      "visibilitychange",
-      this.handleVisibilityChange,
+    window.removeEventListener(
+      CORE_ARENA_LIFECYCLE_EVENT,
+      this.handlePlatformLifecycle,
     );
     this.bridge?.dispose();
     this.mapPreviewRenderer?.dispose();
@@ -349,6 +403,9 @@ export class GameplayV2Scene extends Phaser.Scene {
     this.mapPreviewResize = undefined;
     this.matchStartOverlay = undefined;
     this.hudScene = undefined;
+    this.qualifierActive = false;
+    this.qualifierLastPointer = undefined;
+    this.qualifierReportedActions.clear();
     this.pauseForVisibility = false;
     this.pauseForOverlay = false;
     this.skipNextFrame = false;
@@ -395,15 +452,11 @@ export class GameplayV2Scene extends Phaser.Scene {
     this.sound.mute = !enabled;
   };
 
-  private readonly handleVisibilityChange = (): void => {
-    if (document.hidden) {
-      this.pauseForVisibility = true;
-      this.skipNextFrame = true;
-      this.inputAdapter?.reset();
-      return;
-    }
-    this.pauseForVisibility = false;
+  private readonly handlePlatformLifecycle = (event: Event): void => {
+    const state = (event as CustomEvent<PlatformLifecycleState>).detail;
+    this.pauseForVisibility = state?.shouldPause ?? true;
     this.skipNextFrame = true;
+    this.inputAdapter?.reset();
   };
 
   private readonly handleOverlayState = (event: Event): void => {
@@ -414,6 +467,25 @@ export class GameplayV2Scene extends Phaser.Scene {
       this.inputAdapter?.reset();
     }
   };
+
+  private readQualifierAimMovement(): boolean {
+    if (!this.qualifierActive) return false;
+    const pointer = this.input.activePointer;
+    const previous = this.qualifierLastPointer;
+    this.qualifierLastPointer = { x: pointer.x, y: pointer.y };
+    return Boolean(previous && Math.hypot(
+      pointer.x - previous.x,
+      pointer.y - previous.y,
+    ) >= 8);
+  }
+
+  private reportQualifierAction(action: TutorialAction): void {
+    if (this.qualifierReportedActions.has(action)) return;
+    this.qualifierReportedActions.add(action);
+    window.dispatchEvent(new window.CustomEvent(QUALIFIER_TUTORIAL_EVENT, {
+      detail: { action },
+    }));
+  }
 
   private publishMatchState(): void {
     const hudState = this.bridge?.hudState;

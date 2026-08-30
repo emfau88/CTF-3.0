@@ -1,5 +1,11 @@
 # Verifizierter UI-, Gameplay- und Architektur-Maßnahmenplan
 
+> **HISTORICAL DOCUMENT**
+>
+> Diese Audit- und Planungsgrundlage bleibt als Evidenz erhalten. Die aktuelle
+> verbindliche Produktreihenfolge und Release-Gates stehen in
+> [CORE_ARENA_RELEASE_ROADMAP.md](CORE_ARENA_RELEASE_ROADMAP.md).
+
 Stand: 2026-07-13  
 Geprüfter Stand: `main` bei `1d651a5` (`Refine founders circuit and league UX`)  
 Fokus: PC/Desktop-Browser, V2 und Arena League  

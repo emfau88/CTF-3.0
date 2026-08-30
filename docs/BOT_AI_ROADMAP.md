@@ -1,5 +1,11 @@
 # Bot AI Roadmap
 
+> **HISTORICAL SUBSYSTEM ROADMAP**
+>
+> Als technische Entstehungsgeschichte weiterhin nützlich. Aktuelle
+> Release-Prioritäten und Gates stehen in
+> [CORE_ARENA_RELEASE_ROADMAP.md](CORE_ARENA_RELEASE_ROADMAP.md).
+
 ## Ziel
 
 Die Bots sollen nachvollziehbarer, aktiver und taktischer wirken, ohne das

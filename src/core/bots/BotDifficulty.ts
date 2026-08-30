@@ -31,6 +31,41 @@ export interface BotPersonality {
   readonly lateralBias: number;
 }
 
+export type BotArchetypeId =
+  | "assault"
+  | "guardian"
+  | "objective"
+  | "all-rounder";
+
+export const BOT_ARCHETYPE_PERSONALITIES: Readonly<
+  Record<BotArchetypeId, Omit<BotPersonality, "lateralBias">>
+> = {
+  assault: {
+    aggression: .92,
+    objectiveFocus: .52,
+    selfPreservation: .3,
+    teamwork: .56,
+  },
+  guardian: {
+    aggression: .4,
+    objectiveFocus: .68,
+    selfPreservation: .92,
+    teamwork: .86,
+  },
+  objective: {
+    aggression: .58,
+    objectiveFocus: .96,
+    selfPreservation: .58,
+    teamwork: .82,
+  },
+  "all-rounder": {
+    aggression: .68,
+    objectiveFocus: .74,
+    selfPreservation: .66,
+    teamwork: .72,
+  },
+};
+
 export const BOT_DIFFICULTY_PROFILES: Readonly<
   Record<BotDifficultyId, BotDifficultyProfile>
 > = {
@@ -107,6 +142,20 @@ export function createBotPersonality(
     teamwork: trait(actorId, "teamwork", .48, .88),
     lateralBias: slot % 2 === 0 ? 1 : -1,
   };
+}
+
+export function createBotArchetypePersonality(
+  archetypeId: BotArchetypeId,
+  slot: ArenaTeamSlot = 1,
+): BotPersonality {
+  return {
+    ...BOT_ARCHETYPE_PERSONALITIES[archetypeId],
+    lateralBias: slot % 2 === 0 ? 1 : -1,
+  };
+}
+
+export function isBotArchetypeId(value: unknown): value is BotArchetypeId {
+  return typeof value === "string" && value in BOT_ARCHETYPE_PERSONALITIES;
 }
 
 function trait(

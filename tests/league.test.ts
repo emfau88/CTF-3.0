@@ -39,6 +39,7 @@ import {
   getPlayerOpponent,
   leagueCharacter,
   readLeagueMatchContext,
+  readLeagueMatchRosterPresentation,
   simulateLeagueMatch,
   selectLeagueWingman,
 } from "../src/meta/league";
@@ -169,14 +170,18 @@ test("defeating a rival permanently unlocks its wingmen without changing simulat
   assert.deepEqual(simulateLeagueMatch(season, before), simulateLeagueMatch(baseline, baselineMatch));
 });
 
-test("league season prioritizes the two premium arenas", () => {
+test("league season visits all three premium arenas in escalating modes", () => {
   assert.deepEqual(
     FOUNDERS_CIRCUIT_DISCIPLINES.map((discipline) => discipline.mapId),
     [
       "helix-canopy-v2",
       "drowned-sun-temple-v2",
-      "drowned-sun-temple-v2",
+      "flow-circuit-v2",
     ],
+  );
+  assert.deepEqual(
+    FOUNDERS_CIRCUIT_DISCIPLINES.map((discipline) => discipline.mode),
+    ["tdm", "one-flag", "ctf"],
   );
 });
 
@@ -201,25 +206,21 @@ test("played result advances one round, updates points, and is idempotent", () =
   assert.equal(season.standings[season.playerTeamId].played, 1);
 });
 
-test("legacy recruitment completion never mutates a canonical rival roster", () => {
+test("first-win recruitment changes only the player wingman", () => {
   const season = createLeagueSeason(42);
-  for (let round = 0; round < 3; round += 1) completeCurrent(season);
-  assert.equal(season.currentRound, 3);
-  assert.equal(season.status, "completed");
-  assert.equal(season.recruitment.status, "completed");
-  assert.deepEqual(season.recruitment.candidateIds, []);
   const oldWingmate = season.teamRosters[season.playerTeamId][1];
-  const defeatedTeamId = season.defeatedTeamIds[0];
-  const recruit = LEAGUE_TEAMS.find((team) => team.id === defeatedTeamId)!.characterIds[0];
-  season.recruitment = {
-    status: "pending",
-    candidateIds: [recruit],
-    selectedCharacterId: null,
-  };
-  const sourceTeam = LEAGUE_TEAMS.find((team) => season.teamRosters[team.id].includes(recruit))!;
+  const defeatedTeamId = getPlayerOpponent(season)!;
+  const sourceTeam = LEAGUE_TEAMS.find((team) => team.id === defeatedTeamId)!;
   const sourceRoster = [...season.teamRosters[sourceTeam.id]];
+  completeCurrent(season);
+  assert.equal(season.currentRound, 1);
+  assert.equal(season.recruitment.status, "pending");
+  assert.deepEqual(season.recruitment.candidateIds, sourceRoster);
+  assert.equal(season.recruitment.selectedCharacterId, null);
+  const recruit = season.recruitment.candidateIds[0];
   completeRecruitment(season, recruit);
   assert.equal(season.recruitment.status, "completed");
+  assert.equal(season.recruitment.selectedCharacterId, recruit);
   assert.equal(season.teamRosters[season.playerTeamId][1], recruit);
   assert.deepEqual(season.teamRosters[sourceTeam.id], sourceRoster);
   assert.equal(season.teamRosters[sourceTeam.id].includes(oldWingmate), false);
@@ -266,12 +267,18 @@ test("character recruitment is cosmetic and cannot alter simulated results", () 
   );
 });
 
-test("league character catalog exposes cosmetic identity without power ratings", () => {
+test("league character catalog exposes decision archetypes without power ratings", () => {
+  const validArchetypes = new Set(["assault", "guardian", "objective", "all-rounder"]);
   for (const team of LEAGUE_TEAMS) {
     for (const characterId of team.characterIds) {
       const character = leagueCharacter(characterId);
       assert.equal("rating" in character, false);
       assert.equal("role" in character, false);
+      assert.equal("health" in character, false);
+      assert.equal("speed" in character, false);
+      assert.equal("damage" in character, false);
+      assert.equal("weapon" in character, false);
+      assert.ok(validArchetypes.has(character.archetypeId));
       assert.ok(character.visualStyle.length > 0);
       assert.ok(character.personality.length > 0);
     }
@@ -296,6 +303,18 @@ test("league route carries the scheduled fixture context and cosmetic skin", () 
   assert.equal(new URLSearchParams(search).get("map"), "helix-canopy-v2");
   assert.match(search, /teamSize=2/);
   assert.equal(new URLSearchParams(search).get("skin"), "briarhorn");
+  const presentation = readLeagueMatchRosterPresentation(new URLSearchParams(search));
+  const opponentId = getPlayerOpponent(season)!;
+  assert.equal(
+    presentation?.playerWingmanArchetypeId,
+    leagueCharacter(season.teamRosters[season.playerTeamId][1]).archetypeId,
+  );
+  assert.deepEqual(
+    presentation?.opponentArchetypeIds,
+    season.teamRosters[opponentId].map((characterId) =>
+      leagueCharacter(characterId).archetypeId
+    ),
+  );
   completeCurrent(season);
   const secondSearch = new URLSearchParams(buildLeagueMatchSearch(season));
   assert.equal(secondSearch.get("mode"), "one-flag");
@@ -303,7 +322,7 @@ test("league route carries the scheduled fixture context and cosmetic skin", () 
   completeCurrent(season);
   const finalSearch = new URLSearchParams(buildLeagueMatchSearch(season));
   assert.equal(finalSearch.get("mode"), "ctf");
-  assert.equal(finalSearch.get("map"), "drowned-sun-temple-v2");
+  assert.equal(finalSearch.get("map"), "flow-circuit-v2");
 });
 
 test("cosmetic skin preference accepts new skins and rejects invalid values", () => {
@@ -684,6 +703,9 @@ test("league profile reviews correctable choices before starting the season", ()
   const repository = createLeagueRepository(window.localStorage);
   const savedSeason = repository.load()!;
   completeCurrent(savedSeason);
+  const recruitmentCandidate = savedSeason.recruitment.candidateIds[0];
+  const defeatedTeamId = savedSeason.defeatedTeamIds[0];
+  const defeatedRoster = [...savedSeason.teamRosters[defeatedTeamId]];
   repository.save(savedSeason);
   controller.open();
   const progression = document.getElementById("league-progression")!;
@@ -692,8 +714,29 @@ test("league profile reviews correctable choices before starting the season", ()
   assert.equal(progression.getAttribute("aria-hidden"), "false");
   assert.equal(menuRoot.classList.contains("has-modal-open"), true);
   assert.equal(dashboard.inert, true);
-  assert.equal(document.activeElement?.id, "league-progression-continue");
+  assert.equal(document.querySelectorAll(".league-recruitment-choice").length, 3);
+  assert.equal(
+    (document.getElementById("league-progression-continue") as HTMLButtonElement).disabled,
+    true,
+  );
+  assert.equal(document.activeElement?.id, "league-recruitment-keep");
   assert.match(progression.textContent ?? "", /LEAGUE POINTS/);
+  document.querySelector<HTMLButtonElement>(
+    `[data-recruitment-choice="${recruitmentCandidate}"]`,
+  )!.click();
+  assert.equal(
+    createCareerProfileRepository(window.localStorage).load()?.selectedWingmanId,
+    recruitmentCandidate,
+  );
+  assert.deepEqual(
+    createLeagueRepository(window.localStorage).load()?.teamRosters[defeatedTeamId],
+    defeatedRoster,
+  );
+  assert.equal(
+    (document.getElementById("league-progression-continue") as HTMLButtonElement).disabled,
+    false,
+  );
+  assert.equal(document.activeElement?.id, "league-progression-continue");
   document.getElementById("league-progression-continue")!.click();
   assert.equal(progression.classList.contains("is-hidden"), true);
   assert.equal(progression.getAttribute("aria-hidden"), "true");

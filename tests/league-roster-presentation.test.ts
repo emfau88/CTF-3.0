@@ -11,12 +11,15 @@ import {
 import { createActorState } from "../src/core";
 import { resolveV2CharacterPresentation } from "../src/adapters/phaser/v2CharacterPresentation";
 
-test("league match routes carry captain, wingman, and expected opponent skins", () => {
+test("league match routes carry roster skins and decision archetypes", () => {
   const season = createLeagueSeason(99, "lyra-quell");
   selectLeagueWingman(season, "rook-13");
   const opponentId = getPlayerOpponent(season)!;
   const expectedOpponentSkins = season.teamRosters[opponentId].map(
     (characterId) => leagueCharacter(characterId).skinId,
+  );
+  const expectedOpponentArchetypes = season.teamRosters[opponentId].map(
+    (characterId) => leagueCharacter(characterId).archetypeId,
   );
   const search = new URLSearchParams(buildLeagueMatchSearch(season, {
     skin: "briarhorn",
@@ -26,8 +29,20 @@ test("league match routes carry captain, wingman, and expected opponent skins", 
     captainSkinId: "briarhorn",
     playerWingmanSkinId: "ax9-mantis",
     opponentSkinIds: expectedOpponentSkins,
+    playerWingmanArchetypeId: "guardian",
+    opponentArchetypeIds: expectedOpponentArchetypes,
   });
 
+  search.delete("leagueWingmanArchetype");
+  search.delete("leagueOpponentArchetype1");
+  search.delete("leagueOpponentArchetype2");
+  assert.deepEqual(readLeagueMatchRosterPresentation(search), {
+    captainSkinId: "briarhorn",
+    playerWingmanSkinId: "ax9-mantis",
+    opponentSkinIds: expectedOpponentSkins,
+    playerWingmanArchetypeId: "all-rounder",
+    opponentArchetypeIds: ["all-rounder", "all-rounder"],
+  });
   search.delete("leagueWingmanSkin");
   assert.equal(readLeagueMatchRosterPresentation(search), null);
 });

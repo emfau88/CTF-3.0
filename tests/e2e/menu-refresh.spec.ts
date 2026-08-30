@@ -9,6 +9,15 @@ test("desktop menu is complete, bilingual, edge-to-edge and fullscreen-safe", as
   await page.addInitScript(() => {
     localStorage.clear();
     localStorage.setItem("core-arena.ui-language", "de");
+    localStorage.setItem("core-arena.qualifier.v1", JSON.stringify({
+      version: 1,
+      status: "qualified",
+      attemptCount: 1,
+      activeAttempt: null,
+      qualifiedAt: "2026-08-28T00:00:00.000Z",
+      lastExitReason: null,
+      updatedAt: "2026-08-28T00:00:00.000Z",
+    }));
   });
   await page.goto("?scene=v2&menu=1", { waitUntil: "domcontentloaded" });
   await expect(page.locator("#v2-menu-home")).toBeVisible();

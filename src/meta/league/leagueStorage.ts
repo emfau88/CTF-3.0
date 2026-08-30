@@ -36,7 +36,10 @@ function isValidSeason(value: unknown): value is LeagueSeasonState {
     !LEAGUE_TEAMS.some((team) => team.id === season.playerTeamId) ||
     !["locked", "pending", "completed"].includes(season.recruitment.status) ||
     !Array.isArray(season.recruitment.candidateIds) ||
-    season.recruitment.candidateIds.some((id) => typeof id !== "string") ||
+    season.recruitment.candidateIds.some((id) =>
+      typeof id !== "string" ||
+      !LEAGUE_CHARACTERS.some((character) => character.id === id)
+    ) ||
     (
       season.recruitment.selectedCharacterId !== null &&
       typeof season.recruitment.selectedCharacterId !== "string"
@@ -100,6 +103,24 @@ function isValidCharacterStats(
 
 function normalizeRecruitment(season: LeagueSeasonState): LeagueSeasonState {
   if (season.recruitment.status !== "pending") return season;
+  const candidateIds = [...new Set(season.recruitment.candidateIds)].filter(
+    (characterId) => {
+      const character = LEAGUE_CHARACTERS.find((entry) => entry.id === characterId);
+      return Boolean(
+        character &&
+        character.teamId !== season.playerTeamId &&
+        season.defeatedTeamIds.includes(character.teamId),
+      );
+    },
+  );
+  if (candidateIds.length > 0) {
+    season.recruitment = {
+      status: "pending",
+      candidateIds,
+      selectedCharacterId: null,
+    };
+    return season;
+  }
   season.recruitment = {
     status: "completed",
     candidateIds: [],

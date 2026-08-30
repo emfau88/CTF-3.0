@@ -408,7 +408,20 @@ function recordPlayedCharacterStats(
   }
 }
 
-function openRecruitment(season: LeagueSeasonState): void {
+function openRecruitment(
+  season: LeagueSeasonState,
+  opponentId: LeagueTeamId,
+): void {
+  const candidateIds = [...season.teamRosters[opponentId]];
+  season.recruitment = {
+    status: candidateIds.length > 0 ? "pending" : "completed",
+    candidateIds,
+    selectedCharacterId: null,
+  };
+}
+
+function closeRecruitmentWithoutCandidates(season: LeagueSeasonState): void {
+  if (season.recruitment.status !== "locked") return;
   season.recruitment = {
     status: "completed",
     candidateIds: [],
@@ -457,6 +470,12 @@ export function completeLeagueRound(
   ) {
     season.defeatedTeamIds.push(opponentId);
   }
+  if (
+    playerResult.blueScore > playerResult.redScore &&
+    season.recruitment.status === "locked"
+  ) {
+    openRecruitment(season, opponentId);
+  }
 
   for (const match of round.matches) {
     if (match.id === playerMatch.id || match.result) continue;
@@ -467,7 +486,7 @@ export function completeLeagueRound(
   season.currentRound += 1;
   if (season.currentRound >= season.rounds.length) {
     season.status = "completed";
-    openRecruitment(season);
+    closeRecruitmentWithoutCandidates(season);
   }
   const currentTable = sortedLeagueStandings(season);
   const newPosition = currentTable.findIndex((row) => row.teamId === season.playerTeamId) + 1;

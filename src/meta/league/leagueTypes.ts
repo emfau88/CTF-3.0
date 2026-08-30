@@ -1,4 +1,5 @@
 import type { V2PlayerSkinId } from "../../v2Route";
+import type { BotArchetypeId } from "../../core/bots";
 
 export const LEAGUE_SAVE_VERSION = 2 as const;
 
@@ -17,6 +18,7 @@ export interface LeagueCharacterDefinition {
   readonly visualStyle: string;
   readonly personality: string;
   readonly skinId: V2PlayerSkinId;
+  readonly archetypeId: BotArchetypeId;
 }
 
 export interface LeagueTeamDefinition {

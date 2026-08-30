@@ -45,10 +45,54 @@ import {
   toggleV2Fullscreen,
 } from "./v2Fullscreen";
 import { applyUiTranslations, onUiLanguageChange, uiText } from "./uiLocale";
+import {
+  CORE_ARENA_LIFECYCLE_EVENT,
+  STANDALONE_RELEASE_PROFILE,
+  createStandalonePlatformServices,
+  readMatchEntryPoint,
+  type TutorialAction,
+} from "./platform";
+import {
+  QUALIFIER_TUTORIAL_ACTIONS,
+  QUALIFIER_TUTORIAL_EVENT,
+  buildQualifierMatchSearch,
+  createQualifierRepository,
+  isQualifierMatch,
+  readQualifierAttemptKind,
+} from "./qualifier";
+import { createQualifierGuide } from "./qualifierGuide";
 
 const search = new URLSearchParams(window.location.search);
+const platformServices = createStandalonePlatformServices({
+  profile: STANDALONE_RELEASE_PROFILE,
+  storage: window.localStorage,
+  windowPort: window,
+});
+void platformServices.sdk.initialize();
+const matchEntryPoint = readMatchEntryPoint(search);
+const qualifierActive = isQualifierMatch(search);
+const qualifierAttemptKind = readQualifierAttemptKind(search);
+const qualifierRepository = createQualifierRepository(platformServices.save);
+const qualifierStart = qualifierActive
+  ? qualifierRepository.start(qualifierAttemptKind)
+  : null;
+if (qualifierStart?.started) {
+  platformServices.analytics.track("qualifier_started", {
+    mapId: "helix-canopy-v2",
+    mode: "tdm",
+  });
+}
+const lifecycleSubscription = platformServices.lifecycle.subscribe((state) => {
+  window.dispatchEvent(new CustomEvent(CORE_ARENA_LIFECYCLE_EVENT, {
+    detail: state,
+  }));
+});
+window.addEventListener("pagehide", () => {
+  lifecycleSubscription();
+  platformServices.lifecycle.dispose();
+}, { once: true });
 const leagueMatchContext = readLeagueMatchContext(search);
-const careerProfileRepository = createCareerProfileRepository(window.localStorage);
+const careerProfileRepository = createCareerProfileRepository(platformServices.save);
 let careerProfile = leagueMatchContext ? careerProfileRepository.load() : null;
 const routeState = readV2RouteState(search);
 const activeRoute = { ...routeState.route };
@@ -76,11 +120,15 @@ if (routeState.canStartMatch) {
 }
 const showV2Menu = Boolean(activeRoute.menu || routeIssues.length > 0);
 
+platformServices.analytics.track("app_opened", {
+  entryPoint: showV2Menu ? "menu" : matchEntryPoint,
+});
+
 applyUiTranslations(document);
 setupV2FullscreenControls();
 
 if (showV2Menu) {
-  showGameplayV2Menu(routeIssues[0]);
+  showGameplayV2Menu(routeIssues[0], platformServices);
 } else {
     const menuButton = document.querySelector<HTMLButtonElement>(
       "#v2-game-menu-button",
@@ -107,6 +155,10 @@ if (showV2Menu) {
       : "team-deathmatch";
     let latestStats: readonly MatchStatEntry[] = [];
     let matchEnded = false;
+    let matchStartedRecorded = false;
+    let matchCompletedRecorded = false;
+    let qualifierResultRecorded = false;
+    let qualifierNavigationHandled = false;
     let leagueResultRecorded = false;
     const leagueOpponent = leagueMatchContext
       ? leagueTeam(leagueMatchContext.opponentId)
@@ -119,6 +171,59 @@ if (showV2Menu) {
     const respawnStatus = document.querySelector<HTMLElement>(
       "#v2-respawn-status",
     );
+    const qualifierGuide = qualifierActive
+      ? createQualifierGuide(
+        qualifierStart?.state.activeAttempt?.completedActions ?? [],
+      )
+      : null;
+    const abandonQualifier = (reason: "menu" | "restart" | "reload" | "closed"): void => {
+      if (!qualifierActive || !qualifierRepository.load().activeAttempt) return;
+      qualifierRepository.abandon(reason);
+      qualifierGuide?.hide();
+      platformServices.analytics.track("qualifier_abandoned", { reason });
+      if (qualifierAttemptKind === "first-run") {
+        platformServices.analytics.track("career_abandoned", {
+          stage: "qualifier",
+        });
+      }
+    };
+    const retryQualifier = (): void => {
+      qualifierNavigationHandled = true;
+      const started = qualifierRepository.start("training");
+      if (started.started) {
+        platformServices.analytics.track("qualifier_started", {
+          mapId: "helix-canopy-v2",
+          mode: "tdm",
+        });
+      }
+      window.location.search = buildQualifierMatchSearch({
+        kind: "training",
+        skin: activeRoute.skin,
+        sfx: activeRoute.sfx,
+      });
+    };
+    const continueToCareer = (): void => {
+      qualifierNavigationHandled = true;
+      qualifierGuide?.dispose();
+      window.location.search = buildLeagueHubSearch();
+    };
+    const handleQualifierAction = (event: Event): void => {
+      if (!qualifierActive) return;
+      const action = (event as CustomEvent<{ action?: TutorialAction }>).detail?.action;
+      if (!action || !QUALIFIER_TUTORIAL_ACTIONS.includes(action)) return;
+      const recorded = qualifierRepository.recordAction(action);
+      if (!recorded.recorded) return;
+      qualifierGuide?.complete(action);
+      platformServices.analytics.track("tutorial_action_completed", { action });
+    };
+    window.addEventListener(QUALIFIER_TUTORIAL_EVENT, handleQualifierAction);
+    window.addEventListener("pagehide", () => {
+      window.removeEventListener(QUALIFIER_TUTORIAL_EVENT, handleQualifierAction);
+      qualifierGuide?.dispose();
+      if (!qualifierNavigationHandled && !matchEnded) {
+        abandonQualifier("reload");
+      }
+    }, { once: true });
     const setIngameButtonsVisible = (visible: boolean): void => {
       const fullscreenAvailable = Boolean(
         !usesTouchControls &&
@@ -144,6 +249,17 @@ if (showV2Menu) {
       );
     };
     const showMenuRoute = (): void => {
+      if (qualifierActive) {
+        qualifierNavigationHandled = true;
+        abandonQualifier("menu");
+      }
+      if (!matchEnded && matchStartedRecorded) {
+        platformServices.analytics.track("match_abandoned", {
+          entryPoint: matchEntryPoint,
+          reason: "menu",
+        });
+        platformServices.sdk.gameplayStop();
+      }
       closeHeldScoreboard();
       hideGameplayV2Pause();
       hideGameplayV2Result();
@@ -156,6 +272,24 @@ if (showV2Menu) {
       }
     };
     const restartCurrentMatch = (): void => {
+      if (qualifierActive) {
+        qualifierNavigationHandled = true;
+        abandonQualifier("restart");
+        const restarted = qualifierRepository.start(qualifierAttemptKind);
+        if (restarted.started) {
+          platformServices.analytics.track("qualifier_started", {
+            mapId: "helix-canopy-v2",
+            mode: "tdm",
+          });
+        }
+      }
+      if (!matchEnded && matchStartedRecorded) {
+        platformServices.analytics.track("match_abandoned", {
+          entryPoint: matchEntryPoint,
+          reason: "restart",
+        });
+        platformServices.sdk.gameplayStop();
+      }
       closeHeldScoreboard();
       hideGameplayV2Pause();
       hideGameplayV2Result();
@@ -276,6 +410,15 @@ if (showV2Menu) {
       }>).detail;
       latestStats = detail.stats ?? latestStats;
       matchEnded = detail.phase === "ended";
+      if (detail.phase === "running" && !matchStartedRecorded) {
+        matchStartedRecorded = true;
+        platformServices.sdk.gameplayStart();
+        platformServices.analytics.track("match_started", {
+          entryPoint: matchEntryPoint,
+          mode: activeRoute.mode,
+          mapId: activeRoute.map,
+        });
+      }
       const respawnMs = Math.max(0, detail.playerRespawnMs ?? 0);
       const showRespawn = detail.playerLifeState === "falling" ||
         detail.playerLifeState === "dead" ||
@@ -289,9 +432,34 @@ if (showV2Menu) {
       if (detail.phase !== "ended" || !detail.result || !activeRoute) {
         return;
       }
+      if (!matchCompletedRecorded) {
+        matchCompletedRecorded = true;
+        platformServices.sdk.gameplayStop();
+        platformServices.analytics.track("match_completed", {
+          entryPoint: matchEntryPoint,
+          outcome: detail.result.kind === "draw"
+            ? "draw"
+            : detail.result.winnerEntryId === "blue"
+              ? "win"
+              : "loss",
+        });
+      }
+      const qualifierOutcome = detail.result.kind === "draw"
+        ? "draw"
+        : detail.result.winnerEntryId === "blue"
+          ? "win"
+          : "loss";
+      if (qualifierActive && !qualifierResultRecorded) {
+        qualifierResultRecorded = true;
+        qualifierRepository.complete();
+        qualifierGuide?.finish();
+        platformServices.analytics.track("qualifier_completed", {
+          outcome: qualifierOutcome,
+        });
+      }
       if (leagueMatchContext && !leagueResultRecorded) {
         leagueResultRecorded = true;
-        const repository = createLeagueRepository(window.localStorage);
+        const repository = createLeagueRepository(platformServices.save);
         const season = repository.load();
         if (season && season.seasonId === leagueMatchContext.seasonId) {
           const blueScore = detail.scores?.find((entry) => entry.teamId === "blue")?.score ?? 0;
@@ -321,16 +489,21 @@ if (showV2Menu) {
       setIngameButtonsVisible(false);
       respawnStatus?.classList.add("is-hidden");
       hideGameplayV2Pause();
+      qualifierGuide?.hide();
       releaseOverlayPause();
       showGameplayV2Result({
-        headline: detail.result.kind === "draw"
+        headline: qualifierActive
+          ? uiText("qualifier.qualified")
+          : detail.result.kind === "draw"
           ? uiText("common.draw")
           : leagueMatchContext
             ? detail.result.winnerEntryId === "blue"
               ? uiText("result.teamWins", { team: careerProfile?.teamName ?? "Iron Vanguard" })
               : uiText("result.teamWins", { team: leagueOpponentName ?? "Rivals" })
             : uiText("result.teamWins", { team: detail.result.winnerEntryId.toUpperCase() }),
-        detail: leagueMatchContext
+        detail: qualifierActive
+          ? uiText("qualifier.qualifiedCopy")
+          : leagueMatchContext
           ? uiText("result.leagueMatch", {
               match: leagueMatchContext.roundIndex + 1,
               mode: resultModeLabel(activeModeId),
@@ -357,10 +530,22 @@ if (showV2Menu) {
         stats: latestStats,
         humanActorIds,
         modeId: activeModeId,
-        onPlayAgain: leagueMatchContext ? showMenuRoute : restartCurrentMatch,
-        onMainMenu: showMenuRoute,
-        playAgainLabel: leagueMatchContext ? uiText("home.careerContinue") : uiText("result.playAgain"),
-        mainMenuLabel: leagueMatchContext ? uiText("league.title") : uiText("common.mainMenu"),
+        onPlayAgain: qualifierActive
+          ? continueToCareer
+          : leagueMatchContext
+            ? showMenuRoute
+            : restartCurrentMatch,
+        onMainMenu: qualifierActive ? retryQualifier : showMenuRoute,
+        playAgainLabel: qualifierActive
+          ? uiText("qualifier.createTeam")
+          : leagueMatchContext
+            ? uiText("home.careerContinue")
+            : uiText("result.playAgain"),
+        mainMenuLabel: qualifierActive
+          ? uiText("qualifier.retry")
+          : leagueMatchContext
+            ? uiText("league.title")
+            : uiText("common.mainMenu"),
       });
     });
   showArenaLoadingUi(
