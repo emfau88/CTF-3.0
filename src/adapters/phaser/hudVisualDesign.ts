@@ -70,6 +70,7 @@ export function drawWeaponStrip(
       readonly y: number;
       readonly radius: number;
       readonly available: boolean;
+      readonly selected: boolean;
     }[];
   },
 ): void {
@@ -94,18 +95,30 @@ export function drawWeaponStrip(
     const y = slot.y - half;
     const size = half * 2;
     graphics.fillStyle(
-      slot.available ? HUD_COLORS.panelRaised : HUD_COLORS.panel,
-      slot.available ? .84 : .36,
+      slot.selected
+        ? HUD_COLORS.blue
+        : slot.available
+        ? HUD_COLORS.panelRaised
+        : HUD_COLORS.panel,
+      slot.selected ? .22 : slot.available ? .84 : .36,
     );
     graphics.fillRoundedRect(x, y, size, size, Math.min(6, half * .22));
     graphics.lineStyle(
-      1,
-      slot.available ? HUD_COLORS.borderBright : HUD_COLORS.border,
-      slot.available ? .28 : .1,
+      slot.selected ? 3 : 1,
+      slot.selected
+        ? HUD_COLORS.blue
+        : slot.available
+        ? HUD_COLORS.borderBright
+        : HUD_COLORS.border,
+      slot.selected ? .96 : slot.available ? .28 : .1,
     );
     graphics.strokeRoundedRect(x, y, size, size, Math.min(6, half * .22));
     if (slot.available) {
-      graphics.lineStyle(2, HUD_COLORS.blue, .62)
+      graphics.lineStyle(
+        slot.selected ? 3 : 2,
+        HUD_COLORS.blue,
+        slot.selected ? 1 : .62,
+      )
         .beginPath()
         .moveTo(x + 7, y + 1)
         .lineTo(x + size - 7, y + 1)

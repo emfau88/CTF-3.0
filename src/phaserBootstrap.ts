@@ -9,6 +9,9 @@ export function createPhaserGame(): Phaser.Game {
     type: Phaser.AUTO,
     parent: "game",
     backgroundColor: "#050b12",
+    input: {
+      mouse: { preventDefaultWheel: true },
+    },
     scale: {
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,

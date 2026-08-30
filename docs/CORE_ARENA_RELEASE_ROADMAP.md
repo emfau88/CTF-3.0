@@ -3,12 +3,13 @@
 ## Dokumentstatus
 
 - **Status:** ACTIVE – CANONICAL ROADMAP
-- **Letzte Aktualisierung:** 2026-08-28
-- **Aktive Phase:** Phase 4 – Relevantes Recruitment (`COMPLETE`)
-- **Nächste Phase:** Phase 5 – Produktvalidierung (`PLANNED`)
-- **Kanonischer Ausgangsstand:** `main` @ `4ce36f5`
-- **Veröffentlichter Stand:** GitHub Pages, erfolgreicher Deploy vom 2026-08-24
-- **Aktiver Arbeitsbranch:** `codex/phase-4-recruitment`
+- **Letzte Aktualisierung:** 2026-08-30
+- **Aktive Phase:** Phase 5 – Produktvalidierung (`IN PROGRESS`)
+- **Nächstes Gate:** wiederholte Solo-Produktabnahme; externe Tests nach
+  Verfügbarkeit
+- **Kanonischer Integrationsstand:** `main` @ `9fcb7c9`
+- **Veröffentlichter Stand:** GitHub Pages, erfolgreicher Deploy vom 2026-08-30
+- **Aktiver Arbeitsbranch:** `codex/phase-5-hybrid-controls`
 
 > Diese Datei ist die verbindliche Produkt- und Release-Roadmap für Core Arena.
 > Frühere Produkt-, Audit- und Umsetzungspläne bleiben als historische oder
@@ -109,7 +110,7 @@ Ein Release Candidate liegt erst vor, wenn:
 | 2 – Qualifier und Onboarding | Ein-Klick-First-Run bis `QUALIFIED` | `COMPLETE` | Phase 1 `COMPLETE` |
 | 3 – League- und Karrierefluss | Kompakte Teamgründung und geschlossener Proving-Flow | `COMPLETE` | Phase 2 `COMPLETE` |
 | 4 – Relevantes Recruitment | Wahrnehmbare KI-Archetypen ohne Statvorteile | `COMPLETE` | Phase 3 `COMPLETE` |
-| 5 – Produktvalidierung | Getesteter kompletter Release-Slice | `PLANNED` | Phase 4 `COMPLETE` |
+| 5 – Produktvalidierung | Getesteter kompletter Release-Slice | `IN PROGRESS` | Phase 4 `COMPLETE` |
 | 6 – Karriereentscheidung | Kleine V1 oder validierter Ausbau | `PLANNED` | Phase-5-Datengate |
 | 7 – Portal-/Build-Vorbereitung | Schlanker Standalone-/CrazyGames-Build | `PLANNED` | Karrierescope festgelegt |
 | 8 – Release-Candidate-QA | Technisch und inhaltlich abgenommener Kandidat | `PLANNED` | Phase 7 `COMPLETE` |
@@ -209,8 +210,8 @@ Spiel öffnen → KARRIERE STARTEN → Qualifier → QUALIFIED
 ### Abnahmekriterien
 
 - [x] Keine Softlocks bei Abbruch, Reload oder geschlossenem Browser.
-- [x] Das ungewöhnliche Aim-/Waffentasten-Prinzip ist ohne Vorwissen
-      verständlich und wird durch bestätigte Aktionen vermittelt.
+- [x] Aim und Waffensteuerung werden ohne Vorwissen durch bestätigte Aktionen
+      vermittelt.
 - [x] Alle Hinweise sind DE/EN-fähig.
 - [x] Relevante Desktop-Viewports sind browsergetestet.
 - [x] Bestehende Spielmodi bleiben unverändert.
@@ -329,11 +330,59 @@ Spiel öffnen → KARRIERE STARTEN → Qualifier → QUALIFIED
 
 ## Phase 5 – Proving Circuit validieren
 
-**Status:** `PLANNED`
+**Status:** `IN PROGRESS`
+
+### Steuerungskorrektur vor dem nächsten Spieltest
+
+Die erste Eigenabnahme zeigte trotz funktionierender Direkttasten unnötige
+Steuerungsverwirrung. Deshalb wird der primäre Desktop-Pfad vor weiterem
+Karriere-Content an übliche Shooter-Konventionen angenähert:
+
+- Mausrad wechselt nur zwischen Arc Lash und tatsächlich aufgenommenen
+  Waffen mit Munition;
+- Linksklick feuert die gewählte Waffe; Pulse Repeater und Shardcaster bleiben
+  automatisch, alle anderen Waffen feuern einmal pro Klick;
+- die bestehenden HUD-Tasten bleiben parallele Direktfeuer-Kürzel und wählen
+  ihre Waffe zugleich für den nächsten Linksklick aus;
+- pro Frame entsteht höchstens eine Spieler-Waffenaktion; Munition, Cooldowns
+  und Schadensregeln sind für beide Eingabewege identisch;
+- Pickups erzwingen keinen Waffenwechsel. Nach der letzten Patrone fällt eine
+  nicht mehr nutzbare Auswahl sicher auf Arc Lash zurück;
+- der aktive Slot ist im HUD eindeutig hervorgehoben, Hilfe und Qualifier
+  lehren Mausrad plus Linksklick als Standard und die Tasten nur als Kürzel;
+- Touch-Steuerung, Bots, Saves, Balance und Audio bleiben unverändert.
+
+Technisches Gate:
+
+- [x] Auswahl- und Feuerregeln sind als testbare, Phaser-unabhängige Logik
+      gekapselt.
+- [x] Mausrad-Filter, Wrap-around, Pickup-/Leerzustand, Auto-/Einzelfeuer und
+      der Vorrang der Direkttasten sind automatisiert abgedeckt.
+- [x] Vollständige Tests, Typecheck, Build und Browser-E2E sind grün.
+- [x] Lokaler Desktop-Spieltest bestätigt HUD-Auswahl, Mausrad, Linksklick,
+      Direkttasten und Munitions-Fallback im echten Match.
+
+### Zwischennachweis vom 2026-08-30
+
+- `npm test`: 238/238 bestanden, einschließlich fünf neuer isolierter
+  Kontrolllogik-Checks.
+- `npm run test:typecheck`: bestanden.
+- `npm run build`: bestanden.
+- `npm run test:e2e`: 13/13 bestanden; der Qualifier nutzt nun Linksklick für
+  den automatisierten Arc-Lash-Nachweis.
+- Der lokale Canvas-Durchlauf bestätigte nacheinander: Arc Lash bleibt nach
+  dem Pulse-Pickup gewählt, Mausrad wählt Pulse, Linksklick verbraucht dessen
+  Munition, F/R feuern und übernehmen die Auswahl, und bei Munition 0 wird Arc
+  Lash wieder aktiv. Das HUD zeigte jeden Wechsel eindeutig; es gab keine
+  Browser-Konsolenfehler und keinen Seiten-Scroll durch das Mausrad.
+- Phase 5 bleibt bis zu den eigentlichen Produkt-Spieltests `IN PROGRESS`;
+  dieser technische Steuerungs-Slice ist abgenommen.
 
 ### Testaufbau
 
-- ungefähr 10–15 neue Spieler, Desktop, ohne Erklärung durch Beobachter;
+- zunächst wiederholte Solo-Abnahme durch den Entwickler/Owner; externe
+  Desktop-Spieler anschließend nach Verfügbarkeit, langfristig ungefähr
+  10–15 neue Spieler ohne Erklärung durch Beobachter;
 - Qualifier, League-Einstieg und möglichst alle drei Proving-Matches;
 - Messung von Zeit bis Gameplay, Steuerungsverwirrung,
   Qualifier-Abschluss, Match-1→2-Übergang, Circuit-Abschluss,
@@ -499,6 +548,7 @@ Datenschutz-/Plattformentscheidung extern versendet:
 
 | Datum | Entscheidung | Begründung |
 | --- | --- | --- |
+| 2026-08-30 | Desktop erhält eine Hybridsteuerung aus Mausrad/Linksklick und bestehenden Direkttasten. | Der vertraute Shooter-Pfad senkt die Einstiegshürde, während die präzisen Kürzel erhalten bleiben; beide Wege teilen Munition und Cooldowns. |
 | 2026-08-28 | Diese Datei wird kanonische Roadmap. | Eine fortgeschriebene Quelle verhindert widersprüchliche To-do-Listen. |
 | 2026-08-28 | Phase 2 ist vollständig abgenommen. | 231 automatische Checks, Typecheck, Build, 12 Browser-E2E-Tests und der manuelle First-Run bis zur Teamgründung sind grün. |
 | 2026-08-28 | Phase 3 ist vollständig umgesetzt. | Der komplette Drei-Match-Proving-Flow über alle drei Premium-Arenen besteht 231 Checks und 13 Browser-E2E-Tests. |
@@ -513,6 +563,7 @@ Datenschutz-/Plattformentscheidung extern versendet:
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-08-30 | Phase 5 gestartet und die aus der Eigenabnahme abgeleitete Hybridsteuerung als erste Steuerungskorrektur umgesetzt. |
 | 2026-08-28 | Phase 4 mit verhaltensbasierten KI-Archetypen und einer verbindlichen First-Win-Recruitment-Entscheidung abgeschlossen. |
 | 2026-08-28 | Phase 1 mit Standalone-Releaseprofil, Plattformports und lokalen Produkt-Events abgeschlossen. |
 | 2026-08-28 | Kanonische Roadmap angelegt; Phase 0 aktiviert; Phasen 1–9, Gates und Audioausschluss festgelegt. |

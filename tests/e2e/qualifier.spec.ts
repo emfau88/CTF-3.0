@@ -33,9 +33,9 @@ test("fresh Career starts the guided qualifier in one click and can recover to t
   await page.waitForTimeout(120);
   await page.mouse.move(560, 360);
   await expect(guide.locator("h2")).toHaveText("Arc Lash");
-  await page.keyboard.down("f");
+  await page.mouse.down();
   await page.waitForTimeout(120);
-  await page.keyboard.up("f");
+  await page.mouse.up();
   await expect(guide.locator("h2")).toHaveText("Pickup weapon");
   await page.keyboard.down("Space");
   await page.waitForTimeout(120);

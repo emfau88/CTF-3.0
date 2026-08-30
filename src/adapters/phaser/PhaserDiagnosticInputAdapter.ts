@@ -18,6 +18,11 @@ import type { InputAdapterPort } from "../input";
 import { drawRadialCooldownWipe } from "./PhaserRadialCooldown";
 import { resolveDesktopAimDirection } from "./desktopAim";
 import {
+  cycleDesktopWeaponSelection,
+  normalizeDesktopWeaponSelection,
+  resolveDesktopWeaponFire,
+} from "./desktopWeaponControls";
+import {
   calculateWeaponStripLayout,
   formatCooldownSeconds,
   type WeaponStripLayout,
@@ -100,6 +105,9 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   private discWasHeld = false;
   private grenadeWasHeld = false;
   private shardWasHeld = false;
+  private leftPointerWasHeld = false;
+  private pendingWeaponCycle = 0;
+  private selectedWeaponId: WeaponId = "whip";
   private teamDefendWasHeld = false;
   private teamFollowWasHeld = false;
   private teamAttackWasHeld = false;
@@ -204,6 +212,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       grenade: this.createKeyLabel("G"),
       shard: this.createKeyLabel("X"),
     };
+    scene.input.on(Phaser.Input.Events.POINTER_WHEEL, this.handleWheel, this);
     uiScene.scale.on("resize", this.layout, this);
     this.layout(uiScene.scale.gameSize);
   }
@@ -247,7 +256,14 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     if (this.profile === "diagnostic" && fireSpecial) {
       actions.push({ action: "fireSpecial", phase: "held" });
     }
-    this.appendWeaponActions(actions, blueActorId, aim, aimTarget);
+    this.applyPendingWeaponCycle();
+    this.appendWeaponActions(
+      actions,
+      blueActorId,
+      aim,
+      aimTarget,
+      pointer.leftButtonDown(),
+    );
     this.readTeamCommand();
     if (
       this.profile === "diagnostic" &&
@@ -287,6 +303,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     this.discWasHeld = this.keys.disc.isDown;
     this.grenadeWasHeld = this.keys.grenade.isDown;
     this.shardWasHeld = this.keys.shard.isDown;
+    this.leftPointerWasHeld = pointer.leftButtonDown();
     this.draw();
     return {
       sequence: ++this.sequence,
@@ -310,6 +327,9 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     this.discWasHeld = false;
     this.grenadeWasHeld = false;
     this.shardWasHeld = false;
+    this.leftPointerWasHeld = false;
+    this.pendingWeaponCycle = 0;
+    this.selectedWeaponId = "whip";
     this.teamDefendWasHeld = false;
     this.teamFollowWasHeld = false;
     this.teamAttackWasHeld = false;
@@ -318,6 +338,11 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
   }
 
   dispose(): void {
+    this.scene.input.off(
+      Phaser.Input.Events.POINTER_WHEEL,
+      this.handleWheel,
+      this,
+    );
     this.uiScene.scale.off("resize", this.layout, this);
     for (const key of Object.values(this.keys)) {
       key.destroy();
@@ -414,32 +439,102 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
     actorId: string | undefined,
     direction: WorldPosition,
     targetPosition: WorldPosition,
+    pointerHeld: boolean,
   ): void {
-    for (const [weaponId, held, wasHeld] of [
-      ["rocket", this.keys.rocket.isDown, this.rocketWasHeld],
-      ["rail", this.keys.rail.isDown, this.railWasHeld],
-      ["whip", this.keys.whip.isDown, this.whipWasHeld],
-      [
-        "pulse",
-        this.keys.pulse.isDown && !this.keys.shift.isDown,
-        this.pulseWasHeld,
+    const resolution = resolveDesktopWeaponFire({
+      selectedWeaponId: this.selectedWeaponId,
+      roster: this.activeWeaponIds(),
+      available: (weaponId) => this.weaponAvailable(weaponId),
+      directTriggers: [
+        {
+          weaponId: "rocket",
+          held: this.keys.rocket.isDown,
+          wasHeld: this.rocketWasHeld,
+        },
+        {
+          weaponId: "rail",
+          held: this.keys.rail.isDown,
+          wasHeld: this.railWasHeld,
+        },
+        {
+          weaponId: "whip",
+          held: this.keys.whip.isDown,
+          wasHeld: this.whipWasHeld,
+        },
+        {
+          weaponId: "pulse",
+          held: this.keys.pulse.isDown && !this.keys.shift.isDown,
+          wasHeld: this.pulseWasHeld,
+        },
+        {
+          weaponId: "disc",
+          held: this.keys.disc.isDown,
+          wasHeld: this.discWasHeld,
+        },
+        {
+          weaponId: "grenade",
+          held: this.keys.grenade.isDown,
+          wasHeld: this.grenadeWasHeld,
+        },
+        {
+          weaponId: "shard",
+          held: this.keys.shard.isDown,
+          wasHeld: this.shardWasHeld,
+        },
       ],
-      ["disc", this.keys.disc.isDown, this.discWasHeld],
-      ["grenade", this.keys.grenade.isDown, this.grenadeWasHeld],
-      ["shard", this.keys.shard.isDown, this.shardWasHeld],
-    ] as const) {
-      const automatic = weaponId === "pulse" || weaponId === "shard";
-      if (held && (automatic || !wasHeld)) {
-        const action: CoreActionIntent = {
-          action: "fireWeapon",
-          phase: "pressed",
-          actorId,
-          ...(weaponId === "whip" ? {} : { direction }),
-          payload: { weaponId, targetPosition },
-        };
-        actions.push(action);
-      }
+      pointerHeld,
+      pointerWasHeld: this.leftPointerWasHeld,
+    });
+    this.setSelectedWeapon(resolution.selectedWeaponId);
+    if (!resolution.fireWeaponId) return;
+
+    const weaponId = resolution.fireWeaponId;
+    actions.push({
+      action: "fireWeapon",
+      phase: "pressed",
+      actorId,
+      ...(weaponId === "whip" ? {} : { direction }),
+      payload: { weaponId, targetPosition },
+    });
+  }
+
+  private handleWheel(
+    _pointer: Phaser.Input.Pointer,
+    _currentlyOver: readonly Phaser.GameObjects.GameObject[],
+    _deltaX: number,
+    deltaY: number,
+  ): void {
+    if (deltaY === 0) return;
+    this.pendingWeaponCycle += deltaY > 0 ? 1 : -1;
+  }
+
+  private applyPendingWeaponCycle(): void {
+    if (this.pendingWeaponCycle === 0) {
+      this.setSelectedWeapon(this.normalizedSelectedWeapon());
+      return;
     }
+    const selected = cycleDesktopWeaponSelection(
+      this.selectedWeaponId,
+      this.pendingWeaponCycle,
+      this.activeWeaponIds(),
+      (weaponId) => this.weaponAvailable(weaponId),
+    );
+    this.pendingWeaponCycle = 0;
+    this.setSelectedWeapon(selected);
+  }
+
+  private normalizedSelectedWeapon(): WeaponId {
+    return normalizeDesktopWeaponSelection(
+      this.selectedWeaponId,
+      this.activeWeaponIds(),
+      (weaponId) => this.weaponAvailable(weaponId),
+    );
+  }
+
+  private setSelectedWeapon(weaponId: WeaponId): void {
+    if (weaponId === this.selectedWeaponId) return;
+    this.selectedWeaponId = weaponId;
+    this.lastDrawSignature = "";
   }
 
   private readRedMoveDirection(): WorldPosition {
@@ -485,13 +580,15 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
 
   private draw(): void {
     const activeWeaponIds = this.activeWeaponIds();
+    const selectedWeaponId = this.normalizedSelectedWeapon();
+    this.setSelectedWeapon(selectedWeaponId);
     const signature = activeWeaponIds.map((weaponId) => {
       const status = this.weaponStatus?.(weaponId) ?? {
         ammo: weaponId === "whip" ? null : 0,
         cooldownMs: 0,
       };
       return `${weaponId}:${status.ammo ?? "na"}:${Math.ceil(status.cooldownMs / 100)}`;
-    }).join("|");
+    }).concat(`selected:${selectedWeaponId}`).join("|");
     if (signature === this.lastDrawSignature) return;
     this.lastDrawSignature = signature;
     const active = new Set(activeWeaponIds);
@@ -506,6 +603,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
           y: control.y,
           radius: control.radius,
           available: this.weaponAvailable(weaponId),
+          selected: weaponId === selectedWeaponId,
         };
       }),
     });
@@ -533,7 +631,7 @@ export class PhaserDiagnosticInputAdapter implements InputAdapterPort {
       this.weaponViews[weaponId]
         .setVisible(true)
         .setAlpha(available ? 1 : .34)
-        .setScale(baseScale);
+        .setScale(baseScale * (weaponId === selectedWeaponId ? 1.08 : 1));
       badge.image
         .setPosition(control.x + badgeOffset, control.y + badgeOffset)
         .setScale(micro ? .065 : compact ? .085 : .1)
