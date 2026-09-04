@@ -3,13 +3,16 @@
 ## Dokumentstatus
 
 - **Status:** ACTIVE – CANONICAL ROADMAP
-- **Letzte Aktualisierung:** 2026-08-30
+- **Letzte Aktualisierung:** 2026-09-04
 - **Aktive Phase:** Phase 5 – Produktvalidierung (`IN PROGRESS`)
 - **Nächstes Gate:** wiederholte Solo-Produktabnahme; externe Tests nach
   Verfügbarkeit
-- **Kanonischer Integrationsstand:** `main` @ `9fcb7c9`
-- **Veröffentlichter Stand:** GitHub Pages, erfolgreicher Deploy vom 2026-08-30
+- **Zuletzt belegter Integrationsstand:** `main` @ `9fcb7c9` (2026-08-30)
+- **Zuletzt belegter veröffentlichter Stand:** GitHub Pages, erfolgreicher
+  Deploy vom 2026-08-30; bei nächster Umsetzung erneut prüfen
 - **Aktiver Arbeitsbranch:** `codex/phase-5-hybrid-controls`
+- **Nächste geplante Umsetzung:** Phase 6, Variante B in Etappen;
+  [Bulk-Plan](release/PHASE_6_CAREER_EXPANSION_PLAN.md) erstellt, Code noch nicht begonnen
 
 > Diese Datei ist die verbindliche Produkt- und Release-Roadmap für Core Arena.
 > Frühere Produkt-, Audit- und Umsetzungspläne bleiben als historische oder
@@ -68,7 +71,13 @@ einer späteren, datenbasierten Entscheidung als experimentell behandelt.
 - Recruitment verändert Verhalten und Rollenpräferenz, nicht Lebenspunkte,
   Geschwindigkeit, Schaden oder Waffenwerte.
 - Vor der Proving-Validierung entstehen keine neuen Waffen oder Arenen.
-- Contender und Apex werden erst nach dem Phase-5-Datengate gebaut.
+- Variante B ist die gewählte Planungsrichtung: drei Proving-, drei
+  Contender- und drei Apex-Matches; keine Sechs-Team-Ligen in diesem Ausbau.
+- Contender erst nach dokumentiertem positivem Phase-5-Solo-Entwicklungsgate;
+  Apex zusätzlich erst nach bestandener Sechs-Match-Abnahme und Freigabe.
+- Fehlende externe First-Run-Tests blockieren nicht allein die Entwicklung,
+  bleiben aber als offene Releasevalidierung sichtbar; Solo-/Bot-Tests sind
+  kein Ersatz für unabhängige Spielerbeobachtung.
 - CrazyGames ist der erste strukturierte Portaltest; Kongregate und Y8 folgen
   bei positivem Ergebnis. Poki/GamePix setzen eine neue Mobile-Entscheidung
   voraus.
@@ -111,8 +120,8 @@ Ein Release Candidate liegt erst vor, wenn:
 | 3 – League- und Karrierefluss | Kompakte Teamgründung und geschlossener Proving-Flow | `COMPLETE` | Phase 2 `COMPLETE` |
 | 4 – Relevantes Recruitment | Wahrnehmbare KI-Archetypen ohne Statvorteile | `COMPLETE` | Phase 3 `COMPLETE` |
 | 5 – Produktvalidierung | Getesteter kompletter Release-Slice | `IN PROGRESS` | Phase 4 `COMPLETE` |
-| 6 – Karriereentscheidung | Kleine V1 oder validierter Ausbau | `PLANNED` | Phase-5-Datengate |
-| 7 – Portal-/Build-Vorbereitung | Schlanker Standalone-/CrazyGames-Build | `PLANNED` | Karrierescope festgelegt |
+| 6 – Karriereausbau, Variante B | Erst sechs, nach Abnahme neun Karriere-Matches | `PLANNED` | Positives Phase-5-Solo-Entwicklungsgate; Bulk-Plan liegt vor |
+| 7 – Portal-/Build-Vorbereitung | Schlanker Standalone-/CrazyGames-Build | `PLANNED` | Phase 6 `COMPLETE`, Karrierescope abgenommen |
 | 8 – Release-Candidate-QA | Technisch und inhaltlich abgenommener Kandidat | `PLANNED` | Phase 7 `COMPLETE` |
 | 9 – Audio und finaler Polish | Rechteklarer Gesamtmix und finaler RC | `PLANNED` | Phase 8 `COMPLETE` |
 
@@ -378,6 +387,21 @@ Technisches Gate:
 - Phase 5 bleibt bis zu den eigentlichen Produkt-Spieltests `IN PROGRESS`;
   dieser technische Steuerungs-Slice ist abgenommen.
 
+### Integrationsprüfung vom 2026-09-04
+
+- Remote-Stand neu abgerufen: `origin/main` steht unverändert auf `9fcb7c9`;
+  Hybridsteuerung `37e197f` liegt auf `codex/phase-5-hybrid-controls` und ist
+  noch nicht in `main` integriert.
+- `npm.cmd test`: 238/238 bestanden.
+- `npm.cmd run test:typecheck`: bestanden.
+- `npm.cmd run build`: bestanden; nur der bekannte Hinweis zum großen
+  Phaser-Bundle, kein Buildfehler.
+- `npm.cmd run test:e2e`: 13/13 bestanden.
+- Der Branch ist damit technisch integrationsbereit. Phase 5 bleibt wegen der
+  offenen Owner-/Produktabnahme `IN PROGRESS`; Merge ist keine Produktabnahme.
+- Nutzer-WIP einschließlich `package-lock.json`, Konzeptbildern, neuen Assets,
+  `characterSpecialIdle.ts`, Audio und `tmp/` bleibt außerhalb des Commits.
+
 ### Testaufbau
 
 - zunächst wiederholte Solo-Abnahme durch den Entwickler/Owner; externe
@@ -396,31 +420,78 @@ Technisches Gate:
 - Schwaches Combat-Gefühl → Werte und Feedback gezielt kalibrieren.
 - Mehr Karriere-Content erst bei einem tragfähigen Gesamtloop.
 
+Für den stufenweisen Ausbau ist eine dokumentierte Solo-Entwicklungsfreigabe
+möglich: technische Baseline grün, vollständige echte Proving-Durchläufe ohne
+Save-/Flow-Blocker und positives Owner-Urteil zu Steuerung, Recruitment und
+Weiterspielwunsch. Der konkrete Prüfablauf steht in Bulk 0 des
+[Phase-6-Plans](release/PHASE_6_CAREER_EXPANSION_PLAN.md). Diese Freigabe ist
+noch nicht erteilt; die Planung allein schließt Phase 5 nicht ab.
+
+Unabhängige First-Run-Evidenz bleibt bis zu externen Tests offen. Für diese
+Entwicklungsfreigabe müssen nicht erst 10–15 Mitspieler gefunden werden;
+ein Release-Nachweis aus einer Ein-Personen-Stichprobe wird daraus nicht.
+
 Testfragen, Stichprobe und Erfolgsschwellen werden vor dem ersten externen Test
 versioniert festgelegt, damit das Gate nicht nachträglich passend gemacht wird.
 
-## Phase 6 – Karriereumfang entscheiden
+## Phase 6 – Karriereausbau, Variante B
 
 **Status:** `PLANNED`
 
-### Variante A – Kleine erste Veröffentlichung
+**Ausführungsplan:** [PHASE_6_CAREER_EXPANSION_PLAN.md](release/PHASE_6_CAREER_EXPANSION_PLAN.md)
+
+### Entscheidung und Umfang vom 2026-08-31
+
+Variante B ist als stufenweiser Umsetzungsplan gewählt. In diesem Schritt
+wurden nur Plan und Roadmap erstellt/aktualisiert, keine Spiellogik geändert.
+Detailregeln, Tests, Save-Migration und Wiederaufnahmepunkte stehen im
+Ausführungsplan. Alle Bulks sind noch `PLANNED`.
+
+- Zuerst Contender: drei zusätzliche Matches, zwei bereits vorhandene neue
+  Rivalenteams im spielbaren Kader und ein weiterer sieggebundener
+  Recruitment-Moment.
+- Danach verpflichtende Abnahme des vollständigen Sechs-Match-Wegs.
+- Erst bei positivem Gate und Freigabe Apex: drei weitere Matches und ein
+  echter Karriereabschluss; insgesamt neun gewertete Matches auf dem
+  erfolgreichen Weg, ohne Qualifier und Wiederholungsversuche.
+- Je vier Teams und drei Spielermatches pro Circuit; die bisherige
+  Sechs-Team-Ankündigung für Contender wird bei dessen Umsetzung korrigiert.
+- Top 2 in Proving/Contender qualifizieren; bei Nichtqualifikation nur den
+  aktuellen Circuit wiederholen. Apex-Platz 1 gewinnt den Titel.
+- Teamidentität, Wingman und Freischaltungen bleiben beim Aufstieg erhalten.
+- Vorhandene Arenen, Modi, Figuren und Botprofile wiederverwenden;
+  Schwierigkeit durch KI-Verhalten, Reaktion und Zielverhalten, nicht Statboni.
+- V2-Saves sicher übernehmen; Rückrollbarkeit von Code und Browserdaten
+  getrennt behandeln. Keine Audioarbeit vor Phase 9.
+
+### Arbeitspakete und Abnahme
+
+1. Bulk 0: integrierte Startbasis und Phase-5-Solo-Gate prüfen.
+2. Bulk 1: circuitabhängiges Modell, Proving unverändert erhalten.
+3. Bulk 2: echte Karriereoperationen und sichere V3-Saves.
+4. Bulk 3: Contender durchgängig spielbar machen.
+5. Bulk 4: Sechs-Match-Abnahme; Pflichtstopp vor Apex.
+6. Bulk 5: Apex und Titel-/Nichttitel-Abschluss.
+7. Bulk 6: Gesamt-QA, Owner-Abnahme und Integrationsübergabe.
+
+- [ ] Phase-5-Solo-Entwicklungsfreigabe dokumentiert.
+- [ ] Migration, Aufstieg, Nichtqualifikation und Recruitment abgesichert.
+- [ ] Sechs-Match-Weg technisch und durch den Owner abgenommen.
+- [ ] Apex-Fortsetzung ausdrücklich freigegeben.
+- [ ] Neun-Match-Weg einschließlich Abschluss und Wiederholung abgenommen.
+- [ ] Roadmap, Tests, Save-Rückrollprobe und tatsächlicher Integrationsstand belegt.
+
+Coming-soon-Circuits werden erst als spielbar bezeichnet, wenn sie vollständig
+implementiert und technisch abgenommen sind. Phase 6 wird erst nach der
+zusätzlichen Produktabnahme `COMPLETE`; ein grüner automatisierter Flow allein
+genügt nicht.
+
+### Variante A – Bewusste Rückfalloption, nicht parallel in Umsetzung
 
 - Qualifier, drei Proving-Matches, ein Recruitment-Moment;
 - Quick Start und Custom Match;
-- geschlossener, hochwertiger kleiner Release statt künstlicher Länge.
-
-### Variante B – Vollständige V1-Karriere
-
-Nur nach positivem Phase-5-Gate:
-
-- Contender und Apex mit jeweils drei bis vier Matches;
-- insgesamt ungefähr neun bis zwölf Karriere-Matches;
-- stärkere Gegner durch bessere Entscheidungen, nicht Statboni;
-- weitere Rivalen und Recruitment-Entscheidungen;
-- vorhandene Maps und Modi wiederverwenden.
-
-Coming-soon-Circuits werden erst als spielbar bezeichnet, wenn sie vollständig
-implementiert und abgenommen sind.
+- bleibt nur eine mögliche neue Scope-Entscheidung, falls die Validierung
+  gegen den Ausbau spricht; kein stiller Wechsel weg von Variante B.
 
 ## Phase 7 – Portal- und Build-Vorbereitung
 
@@ -524,7 +595,9 @@ Datenschutz-/Plattformentscheidung extern versendet:
 | --- | --- | --- |
 | Combat ist stabil, aber für neue Spieler nicht attraktiv genug | Beobachtete First-Run-Tests statt weiterer Content-Annahmen | Phase 5 |
 | Recruitment bleibt kosmetisch | Archetypen und verständliche Darstellung validieren | Phase 4–5 |
-| Drei Matches wirken zu kurz | Kleine V1 gegen Karriereausbau anhand Daten entscheiden | Phase 6 |
+| Mehr Matches verlängern nur denselben Loop | Variante B etappenweise; Sechs-Match-Gate vor Apex, Variante A nur nach neuer Scope-Entscheidung | Phase 5–6 |
+| Circuit-Wechsel beschädigt bestehende Saves | V3-Migration mit erhaltenem V2-Stand, Profil-Backup, idempotenten Übergängen und Rückrollprobe | Phase 6, Bulk 2/4/6 |
+| Nur Solo-Tests verfügbar | Entwicklung nach dokumentiertem Solo-Gate; unabhängige First-Run-Evidenz bis zu externen Tests offen halten | Phase 5 bis Release |
 | Mobile ist umfangreich, aber nicht abgenommen | Code erhalten, nicht als Releaseversprechen behandeln | nach erstem Portaltest |
 | Build ist für Portale zu groß | aktive Assets, Preload und Messung optimieren | Phase 7 |
 | Audioherkunft ist teilweise unklar | keine frühe Audiointegration; kompletter Rechte-Gate | Phase 9 |
@@ -548,6 +621,9 @@ Datenschutz-/Plattformentscheidung extern versendet:
 
 | Datum | Entscheidung | Begründung |
 | --- | --- | --- |
+| 2026-09-04 | Den technisch grünen Hybridsteuerungs-Branch vor Phase-6-Code sauber integrieren. | Circuit-/Save-Arbeit soll auf dem tatsächlich getesteten Desktop-Steuerungsstand aufbauen; die offene Produktabnahme bleibt davon getrennt. |
+| 2026-08-31 | Variante B als 3+3+3-Match-Ausbau planen; zuerst Contender, danach Sechs-Match-Gate, erst dann Apex. | Der Nutzer bevorzugt die längere Karriere; kleine prüfbare Etappen begrenzen Risiko und verhindern ungeprüfte Zusatzlänge. |
+| 2026-08-31 | Solo-Entwicklungsfreigabe und externe Releasevalidierung getrennt dokumentieren. | Der Owner hat keine feste Testergruppe; Entwicklung kann nach echter Solo-Abnahme fortgesetzt werden, ohne unabhängige Testevidenz zu behaupten. |
 | 2026-08-30 | Desktop erhält eine Hybridsteuerung aus Mausrad/Linksklick und bestehenden Direkttasten. | Der vertraute Shooter-Pfad senkt die Einstiegshürde, während die präzisen Kürzel erhalten bleiben; beide Wege teilen Munition und Cooldowns. |
 | 2026-08-28 | Diese Datei wird kanonische Roadmap. | Eine fortgeschriebene Quelle verhindert widersprüchliche To-do-Listen. |
 | 2026-08-28 | Phase 2 ist vollständig abgenommen. | 231 automatische Checks, Typecheck, Build, 12 Browser-E2E-Tests und der manuelle First-Run bis zur Teamgründung sind grün. |
@@ -563,6 +639,8 @@ Datenschutz-/Plattformentscheidung extern versendet:
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-04 | Rubrik 1/Bulk 0 gestartet: Remote- und WIP-Schutz geprüft; 238 Tests, Typecheck, Build und 13 E2E-Tests erneut grün. Hybridsteuerung noch nicht als in `main` behauptet. |
+| 2026-08-31 | Phase-6-Bulk-Plan erstellt und Variante B konkretisiert: Vier-Team-Circuits, 3+3+3 Matches, Save-/Aufstiegsregeln und Pflicht-Gate nach sechs Matches. Keine Spiellogik geändert; Phase 5 bleibt offen und Phase 6 `PLANNED`. |
 | 2026-08-30 | Phase 5 gestartet und die aus der Eigenabnahme abgeleitete Hybridsteuerung als erste Steuerungskorrektur umgesetzt. |
 | 2026-08-28 | Phase 4 mit verhaltensbasierten KI-Archetypen und einer verbindlichen First-Win-Recruitment-Entscheidung abgeschlossen. |
 | 2026-08-28 | Phase 1 mit Standalone-Releaseprofil, Plattformports und lokalen Produkt-Events abgeschlossen. |
