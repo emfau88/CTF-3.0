@@ -7,10 +7,11 @@
 - **Aktive Phase:** Phase 5 – Produktvalidierung (`IN PROGRESS`)
 - **Nächstes Gate:** wiederholte Solo-Produktabnahme; externe Tests nach
   Verfügbarkeit
-- **Zuletzt belegter Integrationsstand:** `main` @ `9fcb7c9` (2026-08-30)
-- **Zuletzt belegter veröffentlichter Stand:** GitHub Pages, erfolgreicher
-  Deploy vom 2026-08-30; bei nächster Umsetzung erneut prüfen
-- **Aktiver Arbeitsbranch:** `codex/phase-5-hybrid-controls`
+- **Kanonischer Integrationsstand:** `main` @ `3f6d88b` (PR #6, 2026-09-04)
+- **Veröffentlichter Stand:** GitHub Pages @ `3f6d88b`; Deploy #53 am
+  2026-09-04 erfolgreich abgeschlossen
+- **Aktiver Arbeitsbranch:** `codex/phase-6-career-expansion`, direkt von
+  `main` @ `3f6d88b`
 - **Nächste geplante Umsetzung:** Phase 6, Variante B in Etappen;
   [Bulk-Plan](release/PHASE_6_CAREER_EXPANSION_PLAN.md) erstellt, Code noch nicht begonnen
 
@@ -401,6 +402,20 @@ Technisches Gate:
   offenen Owner-/Produktabnahme `IN PROGRESS`; Merge ist keine Produktabnahme.
 - Nutzer-WIP einschließlich `package-lock.json`, Konzeptbildern, neuen Assets,
   `characterSpecialIdle.ts`, Audio und `tmp/` bleibt außerhalb des Commits.
+- PR #6 bestand die GitHub-CI am 2026-09-04 in 7:55 Minuten und wurde danach
+  als Merge-Commit `3f6d88b` in `main` integriert. GitHub bestätigt den PR als
+  `Merged`; der anschließende Pages-Deploy #53 wird getrennt nachgewiesen.
+- Der neue Arbeitsbranch `codex/phase-6-career-expansion` basiert direkt auf
+  diesem Merge. Die Integration schließt nicht automatisch das weiterhin
+  offene Phase-5-Produktgate.
+- Pages-Lauf #53 bestand Build und Deployment in 3:58 Minuten. Sein
+  Karriere-E2E war einmal flaky und bestand beim automatischen Retry
+  (`12 passed`, `1 flaky`). Da derselbe E2E lokal und im PR-Lauf bestand, ist
+  die Veröffentlichung nicht blockiert; die Flake-Ursache bleibt vor Bulk 1
+  als Stabilitätsbeobachtung offen.
+- Live-Smoke auf `https://emfau88.github.io/CTF-3.0/` bestätigt Hauptmenü und
+  die veröffentlichte deutsche Hilfe mit Mausrad-Waffenwechsel, Linksklick als
+  Primärfeuer und fortbestehenden Direktfeuer-Kürzeln.
 
 ### Testaufbau
 
@@ -507,6 +522,8 @@ genügt nicht.
 - Standalone- und CrazyGames-Build aus derselben Codebasis;
 - CrazyGames-SDK ausschließlich über `PlatformServices`;
 - `Gameplay start/stop`, Locale, Fokus, Pause, Fullscreen und Lifecycle;
+- GitHub-Actions-Warnungen zur erzwungenen Node-24-Ausführung der noch auf
+  Node 20 zielenden offiziellen Actions auflösen und den Deploy erneut prüfen;
 - lokaler Save als sicherer Fallback; zunächst keine Werbung.
 
 ### Abnahmekriterien
@@ -598,6 +615,7 @@ Datenschutz-/Plattformentscheidung extern versendet:
 | Mehr Matches verlängern nur denselben Loop | Variante B etappenweise; Sechs-Match-Gate vor Apex, Variante A nur nach neuer Scope-Entscheidung | Phase 5–6 |
 | Circuit-Wechsel beschädigt bestehende Saves | V3-Migration mit erhaltenem V2-Stand, Profil-Backup, idempotenten Übergängen und Rückrollprobe | Phase 6, Bulk 2/4/6 |
 | Nur Solo-Tests verfügbar | Entwicklung nach dokumentiertem Solo-Gate; unabhängige First-Run-Evidenz bis zu externen Tests offen halten | Phase 5 bis Release |
+| GitHub Actions erzwingt Node 24 für auf Node 20 zielende Action-Versionen | Offizielle Action-Versionen in eigenem Build-Infrastruktur-Slice aktualisieren und vollständige CI/Pages-Pipeline prüfen | Phase 7 |
 | Mobile ist umfangreich, aber nicht abgenommen | Code erhalten, nicht als Releaseversprechen behandeln | nach erstem Portaltest |
 | Build ist für Portale zu groß | aktive Assets, Preload und Messung optimieren | Phase 7 |
 | Audioherkunft ist teilweise unklar | keine frühe Audiointegration; kompletter Rechte-Gate | Phase 9 |
@@ -639,6 +657,8 @@ Datenschutz-/Plattformentscheidung extern versendet:
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-04 | Öffentlichen Pages-Stand nach Deploy #53 direkt geprüft: Menü lädt und die neue deutsche Hybridsteuerung ist in der Hilfe sichtbar; CI-Flake und Action-Runtime-Warnungen bleiben transparent dokumentiert. |
+| 2026-09-04 | PR #6 nach grüner CI als `3f6d88b` in `main` integriert, Pages-Deploy #53 erfolgreich und `codex/phase-6-career-expansion` direkt davon angelegt; ein beim Retry bestandener Karriere-E2E-Flake bleibt vermerkt, Produktgate weiterhin offen. |
 | 2026-09-04 | Rubrik 1/Bulk 0 gestartet: Remote- und WIP-Schutz geprüft; 238 Tests, Typecheck, Build und 13 E2E-Tests erneut grün. Hybridsteuerung noch nicht als in `main` behauptet. |
 | 2026-08-31 | Phase-6-Bulk-Plan erstellt und Variante B konkretisiert: Vier-Team-Circuits, 3+3+3 Matches, Save-/Aufstiegsregeln und Pflicht-Gate nach sechs Matches. Keine Spiellogik geändert; Phase 5 bleibt offen und Phase 6 `PLANNED`. |
 | 2026-08-30 | Phase 5 gestartet und die aus der Eigenabnahme abgeleitete Hybridsteuerung als erste Steuerungskorrektur umgesetzt. |

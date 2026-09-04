@@ -240,9 +240,10 @@ Umsetzungs-/Veröffentlichungsauftrag; dieser Plan löst sie nicht aus.
 **Voraussetzung:** Umsetzungsfreigabe für diesen Plan.
 
 - Aktiven Ordner, Branch, Diff, Nutzer-WIP und aktuellen Remote-/Main-Stand
-  prüfen. Letztbelegt ist Hybridsteuerung `37e197f` auf
-  `codex/phase-5-hybrid-controls`; ihre Integration vor neuem Featurebranch
-  prüfen, nicht voraussetzen. Keine Arbeit auf veraltetem lokalem `main`.
+  prüfen. Integrationsbasis ist nach grüner PR-#6-CI der Merge-Commit
+  `3f6d88b`; `codex/phase-6-career-expansion` wurde direkt davon angelegt.
+  Vor Bulk 1 Remote und Branch trotzdem erneut prüfen. Keine Arbeit auf dem
+  weiterhin veralteten lokalen `main`.
 - Isolierte Save-Fixtures/Tests vorbereiten. Bestehende Suite, Typecheck,
   Build und E2E als frische Baseline ausführen.
 - Phase-5-Solo-Abnahme protokollieren: zwei vollständige echte
@@ -449,7 +450,7 @@ damalige Baseline, kein neuer Lauf für diesen Plan.
 
 | Bulk | Status | Ergebnis / noch offen |
 | --- | --- | --- |
-| 0 – Startbasis/Proving-Gate | `IN PROGRESS` | Remote/WIP geprüft; 238 Tests, Typecheck, Build und 13 E2E grün; Integration und Owner-Freigabe noch offen |
+| 0 – Startbasis/Proving-Gate | `IN PROGRESS` | PR #6 als `3f6d88b` integriert und auf Pages veröffentlicht; 238 Tests, Typecheck, Build und 13 E2E lokal/PR grün; ein Pages-E2E-Flake bestand beim Retry; Stabilitätsprüfung und Owner-Freigabe offen |
 | 1 – Circuit-Modell | `PLANNED` | Noch keine Implementierung |
 | 2 – Karriere/Saves | `PLANNED` | Noch keine Implementierung |
 | 3 – Contender | `PLANNED` | Noch keine Implementierung |
@@ -463,8 +464,9 @@ Bei Unterbrechung zusätzlich uncommitted Arbeit und letzten tatsächlich
 bestandenen Test nennen. Beim Wiederaufnehmen zuerst Status/Diff prüfen;
 nichts aus einer bloßen früheren Absicht als erledigt übernehmen.
 
-Aktueller Wiederaufnahmepunkt: **Bulk 0; Hybridsteuerung und Plan selektiv
-integrieren. Danach bleibt die Owner-/Produktabnahme vor Bulk 1 offen.**
+Aktueller Wiederaufnahmepunkt: **Bulk 0; Integration und Pages-Deploy
+abgeschlossen. Vor Bulk 1 den einmaligen Karriere-E2E-Flake prüfen und danach
+Owner-/Produktabnahme bestätigen.**
 
 Planprüfung am 2026-08-31: lokale Dokumentlinks und Codeblock-Paare geprüft,
 sieben Bulk-Abschnitte mit sieben `PLANNED`-Einträgen sowie neun eindeutige
@@ -475,5 +477,8 @@ Keine Spieltests neu ausgeführt, da ausschließlich Markdown geändert wurde.
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-04 | Öffentlichen Stand nach Deploy #53 direkt geprüft: Hauptmenü lädt und die deutsche Hilfe beschreibt Mausrad, Linksklick und Direktfeuer-Kürzel korrekt. Rubrik 1 ist damit technisch integriert/veröffentlicht; Bulk 0 bleibt wegen Flake-Prüfung und Owner-Produktgate `IN PROGRESS`. |
+| 2026-09-04 | Pages-Deploy #53 für `3f6d88b` erfolgreich in 3:58 Minuten. Build und Deploy bestanden; Karriere-E2E einmal flaky und beim Retry bestanden (`12 passed`, `1 flaky`). Öffentliche Veröffentlichung bestätigt, Flake vor Bulk 1 beobachten. |
+| 2026-09-04 | PR #6 bestand die GitHub-CI, wurde als `3f6d88b` in `main` integriert und GitHub-seitig als `Merged` bestätigt. Phase-6-Branch direkt darauf angelegt; Pages-Deploy und Owner-Go bleiben als getrennte Gates offen. |
 | 2026-09-04 | Bulk 0 begonnen: `origin/main` und Featurebranch geprüft; Nutzer-WIP abgegrenzt; 238/238 Tests, Typecheck, isoliert wiederholter Build und 13/13 Browser-E2E bestanden. Hybridsteuerung `37e197f` ist noch nicht in `main`, Owner-Go noch offen. |
 | 2026-08-31 | Variante B in sieben prüfbare Bulks gegliedert; 3+3+3-Match-Scope, Aufstieg/Retry/Titel, Recruitment, V3-Migration und Sechs-Match-Gate festgelegt. Nur Dokumentation geändert. |
