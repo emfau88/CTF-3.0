@@ -1,13 +1,15 @@
 import {
   buildLeagueMatchSearch,
   acknowledgeLeagueProgression,
-  CHALLENGER_PREVIEW_TEAM_IDS,
-  CURRENT_LEAGUE_CIRCUIT,
+  advanceLeagueCareer,
+  canAdvanceLeagueCareer,
+  canRetryLeagueCareerCircuit,
   LEAGUE_CIRCUITS,
   LEAGUE_TEAMS,
   PLAYER_LEAGUE_TEAM_ID,
   STARTER_WINGMAN_IDS,
   leagueCircuitDiscipline,
+  leagueCircuit,
   completeRecruitment,
   createLeagueCareer,
   createLeagueCareerRepository,
@@ -18,6 +20,7 @@ import {
   leagueCharacterStats,
   leagueTeam,
   selectLeagueWingman,
+  retryLeagueCareerCircuit,
   sortedLeagueStandings,
   type LeagueCharacterStats,
   type LeagueSeasonState,
@@ -184,6 +187,12 @@ export function createLeagueMenuController(actions: {
     teamId === PLAYER_LEAGUE_TEAM_ID && profile
       ? careerEmblemUrl(profile.emblemId)
       : leagueTeamEmblemUrl(teamId);
+
+  const activeCircuit = () => leagueCircuit(season?.circuitId ?? "proving");
+
+  const contenderTeamIds = (): LeagueTeamId[] => leagueCircuit("contender")
+    .teamIds
+    .filter((teamId) => teamId !== PLAYER_LEAGUE_TEAM_ID);
 
   const syncModalState = (): void => {
     const progressionOpen = !progression.classList.contains("is-hidden");
@@ -592,7 +601,7 @@ export function createLeagueMenuController(actions: {
     const completed = Math.min(active.currentRound, active.rounds.length);
     const remaining = Math.max(0, active.rounds.length - completed);
     return `<div class="league-season-track" aria-label="${uiText("league.matchProgress", { complete: completed, total: active.rounds.length })}">
-      <div class="league-season-track-summary"><small>${CURRENT_LEAGUE_CIRCUIT.name.toUpperCase()}</small><strong>${uiText("league.matchProgress", { complete: completed, total: active.rounds.length })}</strong><span>${uiText("league.matchesRemain", { count: remaining, matches: uiText(remaining === 1 ? "common.match" : "common.matches").toUpperCase() })}</span></div>
+      <div class="league-season-track-summary"><small>${leagueCircuit(active.circuitId ?? "proving").name.toUpperCase()}</small><strong>${uiText("league.matchProgress", { complete: completed, total: active.rounds.length })}</strong><span>${uiText("league.matchesRemain", { count: remaining, matches: uiText(remaining === 1 ? "common.match" : "common.matches").toUpperCase() })}</span></div>
       <div>${stops}</div>
     </div>`;
   };
@@ -601,17 +610,17 @@ export function createLeagueMenuController(actions: {
     element("league-header-kicker").textContent = isEditing
       ? profile ? uiText("league.careerTeamManagement") : uiText("league.careerRegistration")
       : hasSeason
-        ? uiText("league.careerCircuit", { circuit: CURRENT_LEAGUE_CIRCUIT.name.toUpperCase() })
+        ? uiText("league.careerCircuit", { circuit: activeCircuit().name.toUpperCase() })
         : uiText("league.careerContract");
     element("league-header-title").textContent = isEditing
       ? profile ? uiText("league.teamManager") : uiText("league.foundTeamTitle")
       : hasSeason
         ? uiText("league.title")
-        : CURRENT_LEAGUE_CIRCUIT.name;
+        : activeCircuit().name;
     const standingsTitle = document.getElementById("league-standings-title");
     if (standingsTitle) {
       standingsTitle.textContent = uiText("league.standingsTitle", {
-        circuit: CURRENT_LEAGUE_CIRCUIT.name,
+        circuit: activeCircuit().name,
       });
     }
   };
@@ -648,9 +657,9 @@ export function createLeagueMenuController(actions: {
     const commandStatus = document.getElementById("league-season-command-status");
     if (commandStatus) {
       commandStatus.textContent = active.status === "completed"
-        ? uiText("league.reviewRun", { circuit: CURRENT_LEAGUE_CIRCUIT.name })
+        ? uiText("league.reviewRun", { circuit: leagueCircuit(active.circuitId ?? "proving").name })
         : uiText("league.matchOf", {
-            circuit: CURRENT_LEAGUE_CIRCUIT.name,
+            circuit: leagueCircuit(active.circuitId ?? "proving").name,
             match: active.currentRound + 1,
             total: active.rounds.length,
           });
@@ -660,17 +669,42 @@ export function createLeagueMenuController(actions: {
     if (active.status === "completed" || !match || !opponentId) {
       const champion = leagueTeam(table[0].teamId);
       const championName = displayTeamName(champion.id);
+      const circuit = leagueCircuit(active.circuitId ?? "proving");
+      const action = career && profile && canAdvanceLeagueCareer(career)
+        ? `<button id="league-advance-contender" type="button">${uiText("league.advanceContender")}</button>`
+        : career && profile && canRetryLeagueCareerCircuit(career)
+          ? `<button id="league-retry-circuit" type="button">${uiText("league.retryCircuit", { circuit: circuit.name })}</button>`
+          : circuit.id === "contender"
+            ? `<p class="league-completion-note">${uiText("league.apexAwaiting")}</p><button id="league-finish-new" type="button">${uiText("league.startNewSeason")}</button>`
+            : `<button id="league-finish-new" type="button">${uiText("league.startNewSeason")}</button>`;
       target.innerHTML = `
         <div class="league-season-complete">
           <img class="league-champion-emblem" src="${displayTeamEmblemUrl(champion.id)}" alt="${escapeHtml(championName)} emblem">
           <div><span class="league-eyebrow">${uiText("league.seasonComplete")}</span><h3>${uiText("league.championTitle", { team: escapeHtml(championName) })}</h3>
           <p>${uiText("league.finishLine", { position: ownPosition, points: active.standings[active.playerTeamId].points })}</p></div>
-          <button id="league-finish-new" type="button">${uiText("league.startNewSeason")}</button>
+          <div class="league-completion-actions">${action}</div>
         </div>
         ${renderSeasonTrack(active)}`;
-      requiredButton("league-finish-new").onclick = () => {
+      document.getElementById("league-advance-contender")?.addEventListener("click", () => {
+        if (!career || !profile) return;
+        advanceLeagueCareer(career, Date.now(), profile.selectedWingmanId);
+        season = career.season;
+        selectedTeamId = null;
+        actions.analytics?.track("league_started", { seasonId: season.seasonId });
+        saveAndRender();
+        resetMenuScroll();
+      });
+      document.getElementById("league-retry-circuit")?.addEventListener("click", () => {
+        if (!career || !profile) return;
+        retryLeagueCareerCircuit(career, Date.now(), profile.selectedWingmanId);
+        season = career.season;
+        selectedTeamId = null;
+        saveAndRender();
+        resetMenuScroll();
+      });
+      document.getElementById("league-finish-new")?.addEventListener("click", () => {
         if (window.confirm(uiText("league.replaceSeasonConfirm"))) startSeason();
-      };
+      });
       return;
     }
     const opponent = leagueTeam(opponentId);
@@ -844,7 +878,7 @@ export function createLeagueMenuController(actions: {
     const ownPosition = sortedLeagueStandings(active).findIndex(
       (row) => row.teamId === active.playerTeamId
     ) + 1;
-    const futureTeams = CHALLENGER_PREVIEW_TEAM_IDS.map((teamId) => {
+    const contenderTeams = contenderTeamIds().map((teamId) => {
       const team = leagueTeam(teamId);
       return `<img src="${leagueTeamEmblemUrl(team.id)}" alt="${team.name}" title="${team.name}">`;
     }).join("");
@@ -852,10 +886,13 @@ export function createLeagueMenuController(actions: {
     const contender = LEAGUE_CIRCUITS.find((circuit) => circuit.id === "contender")!;
     const apex = LEAGUE_CIRCUITS.find((circuit) => circuit.id === "apex")!;
     const assetBase = import.meta.env?.BASE_URL ?? "/";
+    const currentCircuitId = active.circuitId ?? "proving";
+    const provingCurrent = currentCircuitId === "proving";
+    const contenderCurrent = currentCircuitId === "contender";
     element("league-pyramid").innerHTML = `
-      <div class="league-tier is-current is-proving" role="listitem"><img src="${assetBase}assets/ui/menu/league-tier-proving-v1.png" alt=""><div><small>${uiText("league.entry")} · ${uiText("league.current")}</small><strong>${proving.name}</strong><p>${uiText("league.provingDescription")}</p></div><b><span>${uiText("league.youAreHere")}</span><small>${uiText("league.tablePosition", { position: ownPosition })}</small></b></div>
+      <div class="league-tier ${provingCurrent ? "is-current" : ""} is-proving" role="listitem"><img src="${assetBase}assets/ui/menu/league-tier-proving-v1.png" alt=""><div><small>${uiText("league.entry")} · ${provingCurrent ? uiText("league.current") : uiText("league.qualificationEarned")}</small><strong>${proving.name}</strong><p>${uiText("league.provingDescription")}</p></div><b><span>${provingCurrent ? uiText("league.youAreHere") : uiText("league.qualificationEarned")}</span><small>${provingCurrent ? uiText("league.tablePosition", { position: ownPosition }) : proving.name}</small></b></div>
       <div class="league-tier-connector is-qualification" aria-hidden="true"><span>↓</span><small>${uiText("league.qualify")}</small></div>
-      <div class="league-tier is-locked is-contender" role="listitem"><img src="${assetBase}assets/ui/menu/league-tier-contender-v1.png" alt=""><div><small>${uiText("league.advanced")}</small><strong>${contender.name}</strong><p>${uiText("league.contenderDescription")}</p><div class="league-tier-rivals">${futureTeams}<i>+4</i></div></div><b>${uiText("common.comingSoon").toUpperCase()}</b></div>
+      <div class="league-tier ${contenderCurrent ? "is-current" : ""} is-contender" role="listitem"><img src="${assetBase}assets/ui/menu/league-tier-contender-v1.png" alt=""><div><small>${uiText("league.advanced")} · ${contenderCurrent ? uiText("league.current") : uiText("league.qualify")}</small><strong>${contender.name}</strong><p>${uiText("league.contenderDescription")}</p><div class="league-tier-rivals">${contenderTeams}</div></div><b>${contenderCurrent ? `<span>${uiText("league.youAreHere")}</span><small>${uiText("league.tablePosition", { position: ownPosition })}</small>` : uiText("league.advanceContender")}</b></div>
       <div class="league-tier-connector" aria-hidden="true"><span>↓</span><small>${uiText("league.advance")}</small></div>
       <div class="league-tier is-locked is-elite is-apex" role="listitem"><img src="${assetBase}assets/ui/menu/league-tier-apex-v1.png" alt=""><div><small>${uiText("league.championship")}</small><strong>${apex.name}</strong><p>${uiText("league.apexDescription")}</p></div><b>${uiText("common.comingSoon").toUpperCase()}</b></div>
       <div class="league-path-reward"><img src="${assetBase}assets/league/arena-league-emblem.png" alt=""><div><small>${uiText("league.nextReward")}</small><strong>${uiText("league.rewardWingman")}</strong></div></div>`;
@@ -903,10 +940,12 @@ export function createLeagueMenuController(actions: {
     const remainingMatches = active.rounds.length - active.currentRound;
     const remainingLabel = uiText(remainingMatches === 1 ? "common.match" : "common.matches");
     const progressionCopy = event.promoted
-      ? uiText("league.promotedCopy", {
-          circuit: CURRENT_LEAGUE_CIRCUIT.name,
-          next: LEAGUE_CIRCUITS.find((circuit) => circuit.id === "contender")!.name,
-        })
+      ? active.circuitId === "proving"
+        ? uiText("league.contenderReadyCopy")
+        : uiText("league.promotedCopy", {
+            circuit: leagueCircuit(active.circuitId ?? "proving").name,
+            next: LEAGUE_CIRCUITS.find((circuit) => circuit.id === "apex")!.name,
+          })
       : finalRound
         ? uiText("league.finalRoundCopy")
         : rivalResultsShiftedTable
@@ -1036,10 +1075,10 @@ export function createLeagueMenuController(actions: {
         ? uiText("league.contractReady", { team: profile.teamName })
         : uiText("league.promotionAwaits");
       if (season.status === "completed") {
-        return uiText("league.reviewRun", { circuit: CURRENT_LEAGUE_CIRCUIT.name });
+        return uiText("league.reviewRun", { circuit: activeCircuit().name });
       }
       return uiText("league.matchOf", {
-        circuit: CURRENT_LEAGUE_CIRCUIT.name,
+        circuit: activeCircuit().name,
         match: season.currentRound + 1,
         total: season.rounds.length,
       });

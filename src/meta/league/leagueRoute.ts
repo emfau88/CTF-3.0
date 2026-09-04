@@ -7,6 +7,7 @@ import {
 } from "../../v2Route";
 import {
   leagueCircuitDiscipline,
+  leagueCircuit,
   leagueCharacter,
   LEAGUE_TEAMS,
 } from "./leagueCatalog";
@@ -110,11 +111,16 @@ export function buildLeagueMatchSearch(
     season.circuitId ?? "proving",
     season.currentRound,
   );
+  const circuit = leagueCircuit(season.circuitId ?? "proving");
   const params = new URLSearchParams(buildV2MatchSearch({
     mode: discipline.mode,
     map: discipline.mapId,
     players: "bot",
     teamSize: 2,
+    blueBots: 1,
+    redBots: 2,
+    blueBotDifficulty: circuit.playerBotDifficulty,
+    redBotDifficulty: circuit.opponentBotDifficulties[season.currentRound],
     controls: preferences.controls ?? "auto",
     skin: preferences.skin ?? "alien-runner",
     sfx: preferences.sfx ?? "on",

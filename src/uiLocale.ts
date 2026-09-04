@@ -347,6 +347,10 @@ const EN = {
   "league.recruitmentUnlocked": "All candidates remain unlocked in Team Manager.",
   "league.promotedCopy": "You reached a qualification place in {circuit}. {next} is in development; review your final table and squad in League HQ.",
   "league.finalRoundCopy": "Your first circuit is complete. Review the table, strengthen your squad and run it back.",
+  "league.advanceContender": "Enter Contender Circuit",
+  "league.retryCircuit": "Retry {circuit}",
+  "league.apexAwaiting": "Contender complete. Apex remains the final future circuit.",
+  "league.contenderReadyCopy": "You qualified for Contender. Return to League HQ, review your table and start the next circuit when ready.",
   "league.tableShiftCopy": "The other result moved you to #{position}. {remaining} {matches} remain.",
   "league.remainingCopy": "{remaining} {matches} remain. Every result can reshape the table.",
 } as const;
@@ -697,6 +701,10 @@ const DE: Record<UiCopyKey, string> = {
   "league.recruitmentUnlocked": "Alle Kandidaten bleiben in der Teamverwaltung freigeschaltet.",
   "league.promotedCopy": "Du hast einen Qualifikationsplatz im {circuit} erreicht. {next} ist in Entwicklung; prüfe Tabelle und Kader im League HQ.",
   "league.finalRoundCopy": "Dein erster Circuit ist beendet. Prüfe die Tabelle, verstärke den Kader und starte erneut.",
+  "league.advanceContender": "Contender Circuit starten",
+  "league.retryCircuit": "{circuit} wiederholen",
+  "league.apexAwaiting": "Contender abgeschlossen. Apex bleibt der finale Circuit für einen späteren Schritt.",
+  "league.contenderReadyCopy": "Du hast dich für Contender qualifiziert. Kehre ins League HQ zurück, prüfe die Tabelle und starte den nächsten Circuit, wenn du bereit bist.",
   "league.tableShiftCopy": "Das andere Ergebnis verschiebt dich auf Platz #{position}. Noch {remaining} {matches}.",
   "league.remainingCopy": "Noch {remaining} {matches}. Jedes Ergebnis kann die Tabelle verändern.",
 };

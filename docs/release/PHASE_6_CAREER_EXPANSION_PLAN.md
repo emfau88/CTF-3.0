@@ -455,8 +455,8 @@ damalige Baseline, kein neuer Lauf für diesen Plan.
 | 0 – Startbasis/Proving-Gate | `IN PROGRESS` | PR #6 als `3f6d88b` integriert und auf Pages veröffentlicht; Fokus-Karriereflow fünfmal hintereinander bestanden; Owner-/Produktfreigabe bleibt offen |
 | 1 – Circuit-Modell | `COMPLETE` | Datenmodell, strikter Resolver und Regressionstests umgesetzt; 240 Unit-Tests, Typecheck, Produktionsbuild und 13 Playwright-E2E grün; Commit folgt |
 | 2 – Karriere/Saves | `COMPLETE` | Schlanke V3-Karrierehülle, V2-Übernahme und Wiederholungs-/Aufstiegsoperationen umgesetzt; Unit-, Typ- und Build-Gates grün |
-| 3 – Contender | `IN PROGRESS` | Nächster Schritt: HQ und reale Contender-Matches verbinden |
-| 4 – Sechs-Match-Gate | `PLANNED` | Pflichtprüfung vor Apex |
+| 3 – Contender | `COMPLETE` | Aufstieg, Wiederholung, HQ-Anzeige und drei reale Contender-Matches umgesetzt; 243 Unit-Tests, Typecheck, Build und 13 Playwright-E2E grün |
+| 4 – Sechs-Match-Gate | `IN PROGRESS` | Sicht- und Ablaufsprüfung vor der bewussten Apex-Entscheidung |
 | 5 – Apex/Abschluss | `PLANNED` | Nur nach Bulk 4 und Freigabe |
 | 6 – Gesamtabnahme | `PLANNED` | Danach Phase 7, kein automatischer Release |
 
@@ -466,9 +466,9 @@ Bei Unterbrechung zusätzlich uncommitted Arbeit und letzten tatsächlich
 bestandenen Test nennen. Beim Wiederaufnehmen zuerst Status/Diff prüfen;
 nichts aus einer bloßen früheren Absicht als erledigt übernehmen.
 
-Aktueller Wiederaufnahmepunkt: **Bulk 3.** Bulk 2 ist als schlanke
-V3-Karrierehülle abgeschlossen; als Nächstes werden Aufstieg und drei
-Contender-Matches im HQ sichtbar/spielbar verbunden.
+Aktueller Wiederaufnahmepunkt: **Bulk 4.** Proving → Contender ist als
+Sechs-Match-Weg implementiert; nun technische und sichtbare Gate-Prüfung
+abschließen, bevor Apex überhaupt entschieden wird.
 
 Planprüfung am 2026-08-31: lokale Dokumentlinks und Codeblock-Paare geprüft,
 sieben Bulk-Abschnitte mit sieben `PLANNED`-Einträgen sowie neun eindeutige
@@ -479,6 +479,7 @@ Keine Spieltests neu ausgeführt, da ausschließlich Markdown geändert wurde.
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-04 | Bulk 3 abgeschlossen: Top 2 in Proving bietet im HQ den bewussten Einstieg in Contender; Platz 3/4 wiederholt nur den aktuellen Circuit. Contender startet mit einer frischen Drei-Match-Tabelle, behält Profil/Freischaltungen, zeigt alle drei Rivalen und führt genau einen weiteren sieggebundenen Recruitment-Moment aus. Die Routen nutzen Helix One Flag, Foundry TDM und Temple CTF; der letzte Gegner läuft auf `strong`, ohne Statboni. 243 Unit-Tests, Typecheck, Produktionsbuild und ein vollständiger 13/13-Playwright-Lauf auf Port 4202 bestanden. Apex bleibt gesperrt. |
 | 2026-09-04 | Bulk 2 abgeschlossen: `core-arena.league.v3` hält die aktive Liga, Versuche und Qualifikationen. Ein gültiger V2-Proving-Stand wird beim ersten Laden übernommen und bleibt als V2-Quelle erhalten. Aufstieg und Wiederholung sind als kleine testbare Operationen vorbereitet; keine Parallel-Tab-, Cloud- oder Archivlogik eingeführt. V3-Schreiben geschieht bei Matchresultat, Kaderwahl und HQ-Aktionen. Unit-Tests, Typecheck und Produktionsbuild bestanden. |
 | 2026-09-04 | Bulk 1 abgeschlossen: Proving, Contender und Apex besitzen nun je einen kanonischen Vier-Team-/Drei-Match-Katalog mit Arenen, Modi, Zielwerten, KI-Profilen und Aufstiegsregel. Route, Simulation, Tabelle, Statistiken und HQ verwenden einen gemeinsamen circuitabhängigen Resolver. V2-Saves ohne Circuit-ID laden weiterhin als Proving; ungültige Runden werden nicht mehr still geklemmt. 240 Unit-Tests, Typecheck, Produktionsbuild und ein isolierter 13/13-Playwright-Lauf auf Port 4198 bestanden. Keine zusätzlichen Circuits wurden freigeschaltet und keine Audio-Datei berührt. |
 | 2026-09-04 | Den zuvor einmaligen Karriere-E2E-Flake als isolierten Flow fünfmal direkt hintereinander wiederholt: 5/5 bestanden. Das technische Stabilitätssignal ersetzt nicht die weiterhin offene Owner-/Produktabnahme. |

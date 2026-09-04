@@ -47,8 +47,8 @@ export interface LeagueCircuitDefinition extends LeagueCircuitPresentation {
 
 /**
  * Product-facing career hierarchy and the canonical rules for every planned
- * circuit. Only Proving is exposed in the menu today; later circuits remain
- * previews until their save/progression flow is implemented.
+ * circuit. Proving and Contender are exposed in the career flow; Apex remains
+ * a preview until its own conclusion flow is implemented.
  */
 export const LEAGUE_CIRCUITS: readonly LeagueCircuitDefinition[] = [
   {
@@ -73,8 +73,8 @@ export const LEAGUE_CIRCUITS: readonly LeagueCircuitDefinition[] = [
     tier: 2,
     name: "Contender Circuit",
     levelLabel: "ADVANCED",
-    description: "A four-team, three-match advanced circuit planned for a future season.",
-    availability: "coming-soon",
+    description: "A four-team, three-match advanced circuit for qualified squads.",
+    availability: "current",
     teamIds: ["iron-vanguard", "void-runners", "grave-circuit", "solar-wardens"],
     disciplines: [
       { mode: "one-flag", modeLabel: "One Flag", trialLabel: "Solar Relay", mapId: "helix-canopy-v2", mapLabel: "Helix Canopy", scoreTarget: 3 },
