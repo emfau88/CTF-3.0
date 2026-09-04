@@ -12,8 +12,9 @@
   2026-09-04 erfolgreich abgeschlossen
 - **Aktiver Arbeitsbranch:** `codex/phase-6-career-expansion`, direkt von
   `main` @ `3f6d88b`
-- **Nächste geplante Umsetzung:** Phase 6, Variante B in Etappen;
-  [Bulk-Plan](release/PHASE_6_CAREER_EXPANSION_PLAN.md) erstellt, Code noch nicht begonnen
+- **Nächste geplante Umsetzung:** Vor Phase-6-Bulk 5 die ausdrückliche
+  Owner-Entscheidung zu Apex einholen; Proving → Contender ist technisch
+  spielbar und im [Bulk-Plan](release/PHASE_6_CAREER_EXPANSION_PLAN.md) belegt
 
 > Diese Datei ist die verbindliche Produkt- und Release-Roadmap für Core Arena.
 > Frühere Produkt-, Audit- und Umsetzungspläne bleiben als historische oder
@@ -121,7 +122,7 @@ Ein Release Candidate liegt erst vor, wenn:
 | 3 – League- und Karrierefluss | Kompakte Teamgründung und geschlossener Proving-Flow | `COMPLETE` | Phase 2 `COMPLETE` |
 | 4 – Relevantes Recruitment | Wahrnehmbare KI-Archetypen ohne Statvorteile | `COMPLETE` | Phase 3 `COMPLETE` |
 | 5 – Produktvalidierung | Getesteter kompletter Release-Slice | `IN PROGRESS` | Phase 4 `COMPLETE` |
-| 6 – Karriereausbau, Variante B | Erst sechs, nach Abnahme neun Karriere-Matches | `PLANNED` | Positives Phase-5-Solo-Entwicklungsgate; Bulk-Plan liegt vor |
+| 6 – Karriereausbau, Variante B | Erst sechs, nach Abnahme neun Karriere-Matches | `IN PROGRESS` | Proving → Contender technisch abgeschlossen; Owner-Entscheidung vor Apex offen |
 | 7 – Portal-/Build-Vorbereitung | Schlanker Standalone-/CrazyGames-Build | `PLANNED` | Phase 6 `COMPLETE`, Karrierescope abgenommen |
 | 8 – Release-Candidate-QA | Technisch und inhaltlich abgenommener Kandidat | `PLANNED` | Phase 7 `COMPLETE` |
 | 9 – Audio und finaler Polish | Rechteklarer Gesamtmix und finaler RC | `PLANNED` | Phase 8 `COMPLETE` |
@@ -451,17 +452,19 @@ versioniert festgelegt, damit das Gate nicht nachträglich passend gemacht wird.
 
 ## Phase 6 – Karriereausbau, Variante B
 
-**Status:** `IN PROGRESS` – Bulk 1 vorbereitet/implementiert, ohne neue
-spielbare Circuits oder Abschluss der Phase-5-Produktabnahme.
+**Status:** `IN PROGRESS` – Proving → Contender ist technisch als
+Sechs-Match-Weg spielbar. Owner-/Produktabnahme und die bewusste
+Apex-Fortsetzung bleiben offen.
 
 **Ausführungsplan:** [PHASE_6_CAREER_EXPANSION_PLAN.md](release/PHASE_6_CAREER_EXPANSION_PLAN.md)
 
 ### Entscheidung und Umfang vom 2026-08-31
 
-Variante B ist als stufenweiser Umsetzungsplan gewählt. Bulk 1 hat das
-datengetriebene Circuit-Fundament umgesetzt; Contender und Apex sind weiterhin
-sichtbare Vorschauen, nicht spielbar. Detailregeln, Tests, Save-Migration und
-Wiederaufnahmepunkte stehen im Ausführungsplan.
+Variante B ist als stufenweiser Umsetzungsplan gewählt. Bulk 1–3 haben das
+datengetriebene Circuit-Fundament, die V3-Karrierehülle und den spielbaren
+Contender umgesetzt. Bulk 4 hat den frischen Sechs-Match-Weg technisch
+wiederholt geprüft; Apex bleibt weiterhin eine sichtbare Vorschau. Detailregeln,
+Tests, Save-Migration und Wiederaufnahmepunkte stehen im Ausführungsplan.
 
 - Zuerst Contender: drei zusätzliche Matches, zwei bereits vorhandene neue
   Rivalenteams im spielbaren Kader und ein weiterer sieggebundener
@@ -658,6 +661,7 @@ Datenschutz-/Plattformentscheidung extern versendet:
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-04 | Bulk 4 technisch geschlossen: Der frische Proving→Contender-Flow bestand dreimal direkt hintereinander; zuvor waren Unit-, Typ-, Produktionsbuild- und vollständige Browser-Gates grün. Das ersetzt ausdrücklich nicht den Owner-/Produktdurchlauf. Apex bleibt bis zu einer bewussten Freigabe gesperrt. |
 | 2026-09-04 | Öffentlichen Pages-Stand nach Deploy #53 direkt geprüft: Menü lädt und die neue deutsche Hybridsteuerung ist in der Hilfe sichtbar; CI-Flake und Action-Runtime-Warnungen bleiben transparent dokumentiert. |
 | 2026-09-04 | PR #6 nach grüner CI als `3f6d88b` in `main` integriert, Pages-Deploy #53 erfolgreich und `codex/phase-6-career-expansion` direkt davon angelegt; ein beim Retry bestandener Karriere-E2E-Flake bleibt vermerkt, Produktgate weiterhin offen. |
 | 2026-09-04 | Bulk 3 abgeschlossen: Proving → Contender im HQ spielbar verbunden. Bei Top 2 startet bewusst eine frische Contender-Tabelle, bei Scheitern wird nur die aktuelle Liga wiederholt; Profil/Freischaltungen bleiben. Drei Contender-Matches mit den geplanten Maps/Modi sowie `strong` nur im finalen CTF sind durch Unit-, Typ-, Build- und vollständigen 13/13-Browserlauf belegt. Apex bleibt gesperrt; Bulk 4 ist das Pflichtgate. |
