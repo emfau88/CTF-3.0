@@ -3,13 +3,15 @@
 ## Status und Auftrag
 
 - Stand: 2026-09-04.
-- Status: `PLANNED` – ausführbarer Plan erstellt, Umsetzung noch nicht begonnen.
+- Status: `IN PROGRESS` – Bulk 1 ist technisch umgesetzt; die
+  Produktabnahme aus Phase 5 bleibt getrennt offen.
 - Übergeordnete Quelle: [kanonische Release-Roadmap](../CORE_ARENA_RELEASE_ROADMAP.md).
 - Gewählte Richtung: erst Contender und sechs zusammenhängende Matches,
   danach Apex und Abschluss nur nach bestandenem Zwischen-Gate.
-- Aktiver Auftrag: Planung und Dokumentation; keine Spiellogikänderung,
-  Veröffentlichung oder vorweggenommene Abnahme.
-- Startpunkt bei späterer Umsetzungsfreigabe: **Bulk 0**.
+- Aktiver Auftrag: datengetriebenes Circuit-Fundament; keine Freischaltung
+  weiterer Circuits, Veröffentlichung oder vorweggenommene Produktabnahme.
+- Aktueller Umsetzungsstand: **Bulk 1 abgeschlossen**; als Nächstes folgt
+  Bulk 2 (Karrierehülle und sichere V3-Saves).
 
 Dieser Plan konkretisiert Phase 6. Er ersetzt weder die Release-Roadmap noch
 deren Phase-5-, RC-, Rechte- oder Audio-Gates. Ein Bulk ist ein abgegrenztes
@@ -450,8 +452,8 @@ damalige Baseline, kein neuer Lauf für diesen Plan.
 
 | Bulk | Status | Ergebnis / noch offen |
 | --- | --- | --- |
-| 0 – Startbasis/Proving-Gate | `IN PROGRESS` | PR #6 als `3f6d88b` integriert und auf Pages veröffentlicht; 238 Tests, Typecheck, Build und 13 E2E lokal/PR grün; ein Pages-E2E-Flake bestand beim Retry; Stabilitätsprüfung und Owner-Freigabe offen |
-| 1 – Circuit-Modell | `PLANNED` | Noch keine Implementierung |
+| 0 – Startbasis/Proving-Gate | `IN PROGRESS` | PR #6 als `3f6d88b` integriert und auf Pages veröffentlicht; Fokus-Karriereflow fünfmal hintereinander bestanden; Owner-/Produktfreigabe bleibt offen |
+| 1 – Circuit-Modell | `COMPLETE` | Datenmodell, strikter Resolver und Regressionstests umgesetzt; 240 Unit-Tests, Typecheck, Produktionsbuild und 13 Playwright-E2E grün; Commit folgt |
 | 2 – Karriere/Saves | `PLANNED` | Noch keine Implementierung |
 | 3 – Contender | `PLANNED` | Noch keine Implementierung |
 | 4 – Sechs-Match-Gate | `PLANNED` | Pflichtprüfung vor Apex |
@@ -464,9 +466,8 @@ Bei Unterbrechung zusätzlich uncommitted Arbeit und letzten tatsächlich
 bestandenen Test nennen. Beim Wiederaufnehmen zuerst Status/Diff prüfen;
 nichts aus einer bloßen früheren Absicht als erledigt übernehmen.
 
-Aktueller Wiederaufnahmepunkt: **Bulk 0; Integration und Pages-Deploy
-abgeschlossen. Vor Bulk 1 den einmaligen Karriere-E2E-Flake prüfen und danach
-Owner-/Produktabnahme bestätigen.**
+Aktueller Wiederaufnahmepunkt: **Bulk 1 abgeschlossen.** Den abgegrenzten
+Fundament-Commit sichern; danach Bulk 2 (Karrierehülle/V3-Saves) beginnen.
 
 Planprüfung am 2026-08-31: lokale Dokumentlinks und Codeblock-Paare geprüft,
 sieben Bulk-Abschnitte mit sieben `PLANNED`-Einträgen sowie neun eindeutige
@@ -477,6 +478,8 @@ Keine Spieltests neu ausgeführt, da ausschließlich Markdown geändert wurde.
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-04 | Bulk 1 abgeschlossen: Proving, Contender und Apex besitzen nun je einen kanonischen Vier-Team-/Drei-Match-Katalog mit Arenen, Modi, Zielwerten, KI-Profilen und Aufstiegsregel. Route, Simulation, Tabelle, Statistiken und HQ verwenden einen gemeinsamen circuitabhängigen Resolver. V2-Saves ohne Circuit-ID laden weiterhin als Proving; ungültige Runden werden nicht mehr still geklemmt. 240 Unit-Tests, Typecheck, Produktionsbuild und ein isolierter 13/13-Playwright-Lauf auf Port 4198 bestanden. Keine zusätzlichen Circuits wurden freigeschaltet und keine Audio-Datei berührt. |
+| 2026-09-04 | Den zuvor einmaligen Karriere-E2E-Flake als isolierten Flow fünfmal direkt hintereinander wiederholt: 5/5 bestanden. Das technische Stabilitätssignal ersetzt nicht die weiterhin offene Owner-/Produktabnahme. |
 | 2026-09-04 | Öffentlichen Stand nach Deploy #53 direkt geprüft: Hauptmenü lädt und die deutsche Hilfe beschreibt Mausrad, Linksklick und Direktfeuer-Kürzel korrekt. Rubrik 1 ist damit technisch integriert/veröffentlicht; Bulk 0 bleibt wegen Flake-Prüfung und Owner-Produktgate `IN PROGRESS`. |
 | 2026-09-04 | Pages-Deploy #53 für `3f6d88b` erfolgreich in 3:58 Minuten. Build und Deploy bestanden; Karriere-E2E einmal flaky und beim Retry bestanden (`12 passed`, `1 flaky`). Öffentliche Veröffentlichung bestätigt, Flake vor Bulk 1 beobachten. |
 | 2026-09-04 | PR #6 bestand die GitHub-CI, wurde als `3f6d88b` in `main` integriert und GitHub-seitig als `Merged` bestätigt. Phase-6-Branch direkt darauf angelegt; Pages-Deploy und Owner-Go bleiben als getrennte Gates offen. |

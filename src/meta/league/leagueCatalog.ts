@@ -1,9 +1,11 @@
 import type {
   LeagueCharacterDefinition,
+  LeagueCircuitId,
   LeagueTeamDefinition,
   LeagueTeamId,
 } from "./leagueTypes";
 import type { V2ModeId } from "../../v2Route";
+import type { BotDifficultyId } from "../../core/bots";
 
 export const PLAYER_LEAGUE_TEAM_ID: LeagueTeamId = "iron-vanguard";
 export const FOUNDERS_CIRCUIT_TEAM_IDS: readonly LeagueTeamId[] = [
@@ -23,7 +25,7 @@ export const STARTER_WINGMAN_IDS = [
 ] as const;
 
 export interface LeagueCircuitPresentation {
-  readonly id: "proving" | "contender" | "apex";
+  readonly id: LeagueCircuitId;
   readonly tier: 1 | 2 | 3;
   readonly name: string;
   readonly levelLabel: string;
@@ -31,12 +33,24 @@ export interface LeagueCircuitPresentation {
   readonly availability: "current" | "coming-soon";
 }
 
+export interface LeagueCircuitDefinition extends LeagueCircuitPresentation {
+  readonly teamIds: readonly [LeagueTeamId, LeagueTeamId, LeagueTeamId, LeagueTeamId];
+  readonly disciplines: readonly [LeagueDiscipline, LeagueDiscipline, LeagueDiscipline];
+  readonly playerBotDifficulty: BotDifficultyId;
+  readonly opponentBotDifficulties: readonly [
+    BotDifficultyId,
+    BotDifficultyId,
+    BotDifficultyId,
+  ];
+  readonly advancementRule: "top-two" | "champion";
+}
+
 /**
- * Product-facing career hierarchy. The domain model still runs one opening
- * season; future circuits stay explicitly labelled as previews until their
- * schedules and progression state actually exist.
+ * Product-facing career hierarchy and the canonical rules for every planned
+ * circuit. Only Proving is exposed in the menu today; later circuits remain
+ * previews until their save/progression flow is implemented.
  */
-export const LEAGUE_CIRCUITS: readonly LeagueCircuitPresentation[] = [
+export const LEAGUE_CIRCUITS: readonly LeagueCircuitDefinition[] = [
   {
     id: "proving",
     tier: 1,
@@ -44,14 +58,32 @@ export const LEAGUE_CIRCUITS: readonly LeagueCircuitPresentation[] = [
     levelLabel: "ENTRY",
     description: "A focused three-match campaign. Top two earn qualification status.",
     availability: "current",
+    teamIds: ["iron-vanguard", "crimson-jackals", "neon-phantoms", "grave-circuit"],
+    disciplines: [
+      { mode: "tdm", modeLabel: "Team Deathmatch", trialLabel: "Canopy Skirmish", mapId: "helix-canopy-v2", mapLabel: "Helix Canopy", scoreTarget: 10 },
+      { mode: "one-flag", modeLabel: "One Flag", trialLabel: "Drowned Sun Clash", mapId: "drowned-sun-temple-v2", mapLabel: "Temple of the Drowned Sun", scoreTarget: 3 },
+      { mode: "ctf", modeLabel: "Classic CTF", trialLabel: "Foundry Final", mapId: "flow-circuit-v2", mapLabel: "Foundry Circuit", scoreTarget: 3 },
+    ],
+    playerBotDifficulty: "normal",
+    opponentBotDifficulties: ["normal", "normal", "normal"],
+    advancementRule: "top-two",
   },
   {
     id: "contender",
     tier: 2,
     name: "Contender Circuit",
     levelLabel: "ADVANCED",
-    description: "A deeper six-team circuit planned for a future season.",
+    description: "A four-team, three-match advanced circuit planned for a future season.",
     availability: "coming-soon",
+    teamIds: ["iron-vanguard", "void-runners", "grave-circuit", "solar-wardens"],
+    disciplines: [
+      { mode: "one-flag", modeLabel: "One Flag", trialLabel: "Solar Relay", mapId: "helix-canopy-v2", mapLabel: "Helix Canopy", scoreTarget: 3 },
+      { mode: "tdm", modeLabel: "Team Deathmatch", trialLabel: "Grave Pressure", mapId: "flow-circuit-v2", mapLabel: "Foundry Circuit", scoreTarget: 10 },
+      { mode: "ctf", modeLabel: "Classic CTF", trialLabel: "Void Current", mapId: "drowned-sun-temple-v2", mapLabel: "Temple of the Drowned Sun", scoreTarget: 3 },
+    ],
+    playerBotDifficulty: "normal",
+    opponentBotDifficulties: ["normal", "normal", "strong"],
+    advancementRule: "top-two",
   },
   {
     id: "apex",
@@ -60,6 +92,15 @@ export const LEAGUE_CIRCUITS: readonly LeagueCircuitPresentation[] = [
     levelLabel: "CHAMPIONSHIP · HIGHEST",
     description: "The championship tier and the final Core Arena title.",
     availability: "coming-soon",
+    teamIds: ["iron-vanguard", "void-runners", "solar-wardens", "neon-phantoms"],
+    disciplines: [
+      { mode: "one-flag", modeLabel: "One Flag", trialLabel: "Neon Crown", mapId: "flow-circuit-v2", mapLabel: "Foundry Circuit", scoreTarget: 3 },
+      { mode: "tdm", modeLabel: "Team Deathmatch", trialLabel: "Solar Siege", mapId: "drowned-sun-temple-v2", mapLabel: "Temple of the Drowned Sun", scoreTarget: 10 },
+      { mode: "ctf", modeLabel: "Classic CTF", trialLabel: "Void Finale", mapId: "helix-canopy-v2", mapLabel: "Helix Canopy", scoreTarget: 3 },
+    ],
+    playerBotDifficulty: "normal",
+    opponentBotDifficulties: ["strong", "strong", "strong"],
+    advancementRule: "champion",
   },
 ];
 
@@ -74,37 +115,28 @@ export interface LeagueDiscipline {
   readonly scoreTarget: number;
 }
 
-export const FOUNDERS_CIRCUIT_DISCIPLINES: readonly LeagueDiscipline[] = [
-  {
-    mode: "tdm",
-    modeLabel: "Team Deathmatch",
-    trialLabel: "Canopy Skirmish",
-    mapId: "helix-canopy-v2",
-    mapLabel: "Helix Canopy",
-    scoreTarget: 10,
-  },
-  {
-    mode: "one-flag",
-    modeLabel: "One Flag",
-    trialLabel: "Drowned Sun Clash",
-    mapId: "drowned-sun-temple-v2",
-    mapLabel: "Temple of the Drowned Sun",
-    scoreTarget: 3,
-  },
-  {
-    mode: "ctf",
-    modeLabel: "Classic CTF",
-    trialLabel: "Foundry Final",
-    mapId: "flow-circuit-v2",
-    mapLabel: "Foundry Circuit",
-    scoreTarget: 3,
-  },
-];
+export const FOUNDERS_CIRCUIT_DISCIPLINES: readonly LeagueDiscipline[] =
+  LEAGUE_CIRCUITS[0].disciplines;
+
+export function leagueCircuit(circuitId: LeagueCircuitId): LeagueCircuitDefinition {
+  const circuit = LEAGUE_CIRCUITS.find((entry) => entry.id === circuitId);
+  if (!circuit) throw new Error(`Unknown league circuit: ${circuitId}`);
+  return circuit;
+}
+
+export function leagueCircuitDiscipline(
+  circuitId: LeagueCircuitId,
+  roundIndex: number,
+): LeagueDiscipline {
+  const discipline = leagueCircuit(circuitId).disciplines[roundIndex];
+  if (!Number.isInteger(roundIndex) || !discipline) {
+    throw new RangeError(`Circuit ${circuitId} has no round ${roundIndex + 1}.`);
+  }
+  return discipline;
+}
 
 export function foundersCircuitDiscipline(roundIndex: number): LeagueDiscipline {
-  return FOUNDERS_CIRCUIT_DISCIPLINES[
-    Math.max(0, Math.min(FOUNDERS_CIRCUIT_DISCIPLINES.length - 1, roundIndex))
-  ];
+  return leagueCircuitDiscipline("proving", roundIndex);
 }
 
 export const LEAGUE_TEAMS: readonly LeagueTeamDefinition[] = [

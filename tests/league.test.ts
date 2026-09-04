@@ -26,6 +26,7 @@ import {
 } from "../src/careerProfile";
 import {
   LEAGUE_STORAGE_KEY,
+  LEAGUE_CIRCUITS,
   LEAGUE_TEAMS,
   STARTER_WINGMAN_IDS,
   FOUNDERS_CIRCUIT_DISCIPLINES,
@@ -34,10 +35,13 @@ import {
   completeLeagueRound,
   completeRecruitment,
   createLeagueRepository,
+  createLeagueCircuitSchedule,
   createLeagueSeason,
   getCurrentPlayerMatch,
   getPlayerOpponent,
   leagueCharacter,
+  leagueCircuit,
+  leagueCircuitDiscipline,
   readLeagueMatchContext,
   readLeagueMatchRosterPresentation,
   simulateLeagueMatch,
@@ -132,6 +136,71 @@ test("opening circuit creates a complete three-match single round robin", () => 
   }
   assert.ok(season.teamRosters["solar-wardens"]);
   assert.ok(season.teamRosters["void-runners"]);
+});
+
+test("all circuit definitions keep their planned teams, disciplines, and difficulty profile", () => {
+  assert.deepEqual(LEAGUE_CIRCUITS.map((circuit) => circuit.id), [
+    "proving",
+    "contender",
+    "apex",
+  ]);
+  assert.deepEqual(leagueCircuit("contender").teamIds, [
+    "iron-vanguard", "void-runners", "grave-circuit", "solar-wardens",
+  ]);
+  assert.deepEqual(leagueCircuit("contender").disciplines.map(({ mapId, mode }) => [mapId, mode]), [
+    ["helix-canopy-v2", "one-flag"],
+    ["flow-circuit-v2", "tdm"],
+    ["drowned-sun-temple-v2", "ctf"],
+  ]);
+  assert.deepEqual(leagueCircuit("contender").opponentBotDifficulties, [
+    "normal", "normal", "strong",
+  ]);
+  assert.deepEqual(leagueCircuit("apex").teamIds, [
+    "iron-vanguard", "void-runners", "solar-wardens", "neon-phantoms",
+  ]);
+  assert.deepEqual(leagueCircuit("apex").disciplines.map(({ mapId, mode }) => [mapId, mode]), [
+    ["flow-circuit-v2", "one-flag"],
+    ["drowned-sun-temple-v2", "tdm"],
+    ["helix-canopy-v2", "ctf"],
+  ]);
+  assert.deepEqual(leagueCircuit("apex").opponentBotDifficulties, [
+    "strong", "strong", "strong",
+  ]);
+  assert.equal(leagueCircuit("proving").availability, "current");
+  assert.equal(leagueCircuit("contender").availability, "coming-soon");
+  assert.equal(leagueCircuit("apex").availability, "coming-soon");
+});
+
+test("circuit schedules follow the documented opponent order without clamping rounds", () => {
+  const contender = createLeagueSeason(101, "atlas-rho", "contender");
+  assert.equal(contender.circuitId, "contender");
+  assert.deepEqual(contender.teamIds, leagueCircuit("contender").teamIds);
+  const opponents = contender.rounds.map((round) => {
+    const fixture = round.matches.find((match) =>
+      match.homeTeamId === contender.playerTeamId || match.awayTeamId === contender.playerTeamId,
+    )!;
+    return fixture.homeTeamId === contender.playerTeamId
+      ? fixture.awayTeamId
+      : fixture.homeTeamId;
+  });
+  assert.deepEqual(opponents, ["solar-wardens", "grave-circuit", "void-runners"]);
+  assert.deepEqual(
+    contender.rounds.map((_, roundIndex) => {
+      contender.currentRound = roundIndex;
+      const search = new URLSearchParams(buildLeagueMatchSearch(contender));
+      return [search.get("map"), search.get("mode")];
+    }),
+    [
+      ["helix-canopy-v2", "one-flag"],
+      ["flow-circuit-v2", "tdm"],
+      ["drowned-sun-temple-v2", "ctf"],
+    ],
+  );
+  assert.equal(createLeagueCircuitSchedule(leagueCircuit("apex").teamIds).length, 3);
+  assert.throws(() => leagueCircuitDiscipline("proving", 3), RangeError);
+  assert.throws(() => createLeagueCircuitSchedule([
+    "iron-vanguard", "iron-vanguard", "neon-phantoms", "grave-circuit",
+  ]), /exactly four distinct teams/);
 });
 
 test("career profile persists identity and exposes three free starter wingmen", () => {
@@ -355,6 +424,10 @@ test("versioned repository round-trips valid saves and rejects corrupt data", ()
   const season = createLeagueSeason(7);
   repository.save(season);
   assert.deepEqual(repository.load(), season);
+  const legacyProvingSave = { ...season } as { circuitId?: unknown };
+  delete legacyProvingSave.circuitId;
+  values.set(LEAGUE_STORAGE_KEY, JSON.stringify(legacyProvingSave));
+  assert.equal(repository.load()?.circuitId, undefined);
   values.set(LEAGUE_STORAGE_KEY, "{broken");
   assert.equal(repository.load(), null);
   values.set(LEAGUE_STORAGE_KEY, JSON.stringify({ ...season, version: 999 }));

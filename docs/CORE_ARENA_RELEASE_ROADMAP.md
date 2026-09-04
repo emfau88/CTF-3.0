@@ -451,16 +451,17 @@ versioniert festgelegt, damit das Gate nicht nachträglich passend gemacht wird.
 
 ## Phase 6 – Karriereausbau, Variante B
 
-**Status:** `PLANNED`
+**Status:** `IN PROGRESS` – Bulk 1 vorbereitet/implementiert, ohne neue
+spielbare Circuits oder Abschluss der Phase-5-Produktabnahme.
 
 **Ausführungsplan:** [PHASE_6_CAREER_EXPANSION_PLAN.md](release/PHASE_6_CAREER_EXPANSION_PLAN.md)
 
 ### Entscheidung und Umfang vom 2026-08-31
 
-Variante B ist als stufenweiser Umsetzungsplan gewählt. In diesem Schritt
-wurden nur Plan und Roadmap erstellt/aktualisiert, keine Spiellogik geändert.
-Detailregeln, Tests, Save-Migration und Wiederaufnahmepunkte stehen im
-Ausführungsplan. Alle Bulks sind noch `PLANNED`.
+Variante B ist als stufenweiser Umsetzungsplan gewählt. Bulk 1 hat das
+datengetriebene Circuit-Fundament umgesetzt; Contender und Apex sind weiterhin
+sichtbare Vorschauen, nicht spielbar. Detailregeln, Tests, Save-Migration und
+Wiederaufnahmepunkte stehen im Ausführungsplan.
 
 - Zuerst Contender: drei zusätzliche Matches, zwei bereits vorhandene neue
   Rivalenteams im spielbaren Kader und ein weiterer sieggebundener
@@ -659,6 +660,8 @@ Datenschutz-/Plattformentscheidung extern versendet:
 | --- | --- |
 | 2026-09-04 | Öffentlichen Pages-Stand nach Deploy #53 direkt geprüft: Menü lädt und die neue deutsche Hybridsteuerung ist in der Hilfe sichtbar; CI-Flake und Action-Runtime-Warnungen bleiben transparent dokumentiert. |
 | 2026-09-04 | PR #6 nach grüner CI als `3f6d88b` in `main` integriert, Pages-Deploy #53 erfolgreich und `codex/phase-6-career-expansion` direkt davon angelegt; ein beim Retry bestandener Karriere-E2E-Flake bleibt vermerkt, Produktgate weiterhin offen. |
+| 2026-09-04 | Bulk 1 abgeschlossen: Kanonischer Circuit-Katalog für Proving, Contender und Apex, gemeinsamer strikter Disziplinresolver und V2-kompatibler Circuit-Marker. Proving bleibt die einzige spielbare Saison; 240 Unit-Tests, Typecheck, Build und ein isolierter 13/13-Playwright-Lauf auf Port 4198 grün. Audio unberührt. |
+| 2026-09-04 | Den einmaligen Karriere-E2E-Flake mit fünf fokussierten direkten Wiederholungen geprüft: 5/5 bestanden. Das Owner-/Produktgate bleibt ausdrücklich offen. |
 | 2026-09-04 | Rubrik 1/Bulk 0 gestartet: Remote- und WIP-Schutz geprüft; 238 Tests, Typecheck, Build und 13 E2E-Tests erneut grün. Hybridsteuerung noch nicht als in `main` behauptet. |
 | 2026-08-31 | Phase-6-Bulk-Plan erstellt und Variante B konkretisiert: Vier-Team-Circuits, 3+3+3 Matches, Save-/Aufstiegsregeln und Pflicht-Gate nach sechs Matches. Keine Spiellogik geändert; Phase 5 bleibt offen und Phase 6 `PLANNED`. |
 | 2026-08-30 | Phase 5 gestartet und die aus der Eigenabnahme abgeleitete Hybridsteuerung als erste Steuerungskorrektur umgesetzt. |

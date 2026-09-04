@@ -11,6 +11,13 @@ export type LeagueTeamId =
   | "solar-wardens"
   | "void-runners";
 
+/**
+ * A circuit identifies the fixed three-match season ruleset. It is optional
+ * on persisted V2 saves so existing Proving saves remain loadable until the
+ * career-save migration in the next bulk.
+ */
+export type LeagueCircuitId = "proving" | "contender" | "apex";
+
 export interface LeagueCharacterDefinition {
   readonly id: string;
   readonly name: string;
@@ -103,6 +110,7 @@ export interface LeagueSeasonState {
   readonly version: typeof LEAGUE_SAVE_VERSION;
   readonly seasonId: string;
   readonly simulationSeed: number;
+  readonly circuitId?: LeagueCircuitId;
   status: "active" | "completed";
   currentRound: number;
   readonly playerTeamId: LeagueTeamId;

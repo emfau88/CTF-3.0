@@ -7,7 +7,7 @@ import {
   LEAGUE_TEAMS,
   PLAYER_LEAGUE_TEAM_ID,
   STARTER_WINGMAN_IDS,
-  foundersCircuitDiscipline,
+  leagueCircuitDiscipline,
   completeRecruitment,
   createLeagueRepository,
   createLeagueSeason,
@@ -541,7 +541,7 @@ export function createLeagueMenuController(actions: {
 
   const renderSeasonTrack = (active: LeagueSeasonState): string => {
     const stops = active.rounds.map((round) => {
-      const discipline = foundersCircuitDiscipline(round.index);
+      const discipline = leagueCircuitDiscipline(active.circuitId ?? "proving", round.index);
       const modeLabel = discipline.mode === "tdm"
         ? "TDM"
         : discipline.mode === "one-flag"
@@ -628,7 +628,7 @@ export function createLeagueMenuController(actions: {
         ? match.awayTeamId
         : match.homeTeamId;
       const opponent = leagueTeam(opponentId);
-      const discipline = foundersCircuitDiscipline(round.index);
+      const discipline = leagueCircuitDiscipline(preview.circuitId ?? "proving", round.index);
       return `<article class="league-intro-stop">
         <span>0${round.index + 1}</span>
         <img src="${leagueTeamEmblemUrl(opponent.id)}" alt="${opponent.name}">
@@ -671,7 +671,7 @@ export function createLeagueMenuController(actions: {
     }
     const opponent = leagueTeam(opponentId);
     const ownTeamName = displayTeamName(active.playerTeamId);
-    const discipline = foundersCircuitDiscipline(active.currentRound);
+    const discipline = leagueCircuitDiscipline(active.circuitId ?? "proving", active.currentRound);
     const opponentStanding = active.standings[opponentId];
     const opponentLineup = renderOpponentLineup(active, opponentId);
     const assetBase = import.meta.env?.BASE_URL ?? "/";
@@ -871,7 +871,7 @@ export function createLeagueMenuController(actions: {
     const rivalResultsShiftedTable = !won && positionDelta !== 0;
     const finalRound = event.roundIndex === active.rounds.length - 1;
     const playerTeamName = displayTeamName(active.playerTeamId);
-    const discipline = foundersCircuitDiscipline(event.roundIndex);
+    const discipline = leagueCircuitDiscipline(active.circuitId ?? "proving", event.roundIndex);
     const rivalRosterNames = active.teamRosters[opponent.id]
       .map((characterId) => leagueCharacter(characterId).name)
       .join(" · ");

@@ -6,7 +6,7 @@ import {
   type V2SfxMode,
 } from "../../v2Route";
 import {
-  foundersCircuitDiscipline,
+  leagueCircuitDiscipline,
   leagueCharacter,
   LEAGUE_TEAMS,
 } from "./leagueCatalog";
@@ -106,7 +106,10 @@ export function buildLeagueMatchSearch(
   if (!playerWingmanId || opponentRoster?.length !== 2) {
     throw new Error("League fixture has no complete cosmetic roster.");
   }
-  const discipline = foundersCircuitDiscipline(season.currentRound);
+  const discipline = leagueCircuitDiscipline(
+    season.circuitId ?? "proving",
+    season.currentRound,
+  );
   const params = new URLSearchParams(buildV2MatchSearch({
     mode: discipline.mode,
     map: discipline.mapId,

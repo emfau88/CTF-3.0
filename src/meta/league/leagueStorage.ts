@@ -1,4 +1,4 @@
-import { LEAGUE_CHARACTERS, LEAGUE_TEAMS } from "./leagueCatalog";
+import { LEAGUE_CHARACTERS, LEAGUE_CIRCUITS, LEAGUE_TEAMS } from "./leagueCatalog";
 import {
   LEAGUE_SAVE_VERSION,
   type LeagueCharacterStats,
@@ -20,6 +20,8 @@ function isValidSeason(value: unknown): value is LeagueSeasonState {
     season.version !== LEAGUE_SAVE_VERSION ||
     typeof season.seasonId !== "string" ||
     typeof season.simulationSeed !== "number" ||
+    (season.circuitId !== undefined &&
+      !LEAGUE_CIRCUITS.some((circuit) => circuit.id === season.circuitId)) ||
     !Number.isInteger(season.currentRound) ||
     season.currentRound! < 0 ||
     season.currentRound! > 3 ||
