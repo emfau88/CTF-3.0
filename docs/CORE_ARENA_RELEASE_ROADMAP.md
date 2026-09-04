@@ -211,7 +211,8 @@ Spiel öffnen → KARRIERE STARTEN → Qualifier → QUALIFIED
 
 - höchstens ein Klick bis Gameplay;
 - Desktop, 2v2 TDM, Helix Canopy, ungefähr 90 Sekunden;
-- Arc Lash plus höchstens eine Pickup-Waffe;
+- Arc Lash mit bewusst begrenztem Qualifier-Loot: zwei Pulse- und zwei
+  Rocket-Launcher-Spawnpunkte;
 - keine League-Punkte und Qualifikation unabhängig vom Ergebnis;
 - kontextuelle, aktionsbestätigte Hinweise für Bewegung, Aim, Arc Lash,
   Waffenpickup und Sprung;
@@ -417,6 +418,30 @@ Technisches Gate:
 - Live-Smoke auf `https://emfau88.github.io/CTF-3.0/` bestätigt Hauptmenü und
   die veröffentlichte deutsche Hilfe mit Mausrad-Waffenwechsel, Linksklick als
   Primärfeuer und fortbestehenden Direktfeuer-Kürzeln.
+
+### Combat-Ökonomie-Korrektur vom 2026-09-04
+
+- Der feste Helix-Qualifier erhält zusätzlich zu zwei Pulse-Pickups je einen
+  Rocket Launcher mittig vor der blauen und roten Base, außerhalb der
+  Spawnzonen. Der reguläre Helix-Map-Pool bleibt unverändert.
+- Bei einem regulären Kampftod fallen alle tatsächlich getragenen
+  Spezialwaffen mit ihrer exakten Restmunition als separate, nicht respawnende
+  Drops. Sie können vier Sekunden lang aufgenommen werden; Teilaufnahmen
+  lassen die noch vorhandene Munition liegen. Stürze aus der Map erzeugen
+  bewusst keine Waffen-Drops.
+- Classic CTF behält die übliche, bereits vorhandene Flaggenregel bei: Stirbt
+  ein Träger, fällt die gegnerische Flagge an seiner Position. Berührt ihr
+  eigenes Team sie, kehrt sie sofort zur eigenen Base zurück; ohne Berührung
+  läuft weiterhin der separate Fünf-Sekunden-Flaggen-Timeout ab.
+- Death-Drops zeigen im Spiel Restmunition und verbleibende Sekunden direkt am
+  Pickup an. Audio, Saves, reguläre Karten-Pickup-Respawns und One Flag bleiben
+  außerhalb dieses Slices unverändert.
+- Bots bewerten solche Drops nur im TDM und nur als nahe Gelegenheit; in CTF
+  und One Flag zieht ein Objective sie daher nicht vom Flaggenziel ab.
+
+**Technischer Nachweis:** `npm.cmd test` 248/248, `npm.cmd run test:typecheck`,
+`npm.cmd run build` und `npm.cmd run test:e2e` 13/13 bestanden. Der lokale
+Qualifier-Canvas lud die neue Kartenvariante ohne Konsolenfehler.
 
 ### Testaufbau
 
@@ -661,6 +686,7 @@ Datenschutz-/Plattformentscheidung extern versendet:
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-04 | Combat-Ökonomie-Slice umgesetzt: Qualifier hat nun zwei Pulse- und zwei symmetrische Rocket-Pickups mittig vor den Basen, außerhalb der Spawnzonen. Kampftode droppen jede getragene Spezialwaffe mit exakter Restmunition für vier Sekunden; Teilaufnahme, Ablauf und Ausschluss bei Stürzen sind automatisiert abgedeckt. Classic CTFs Rückgabe einer eigenen gedroppten Flagge per Berührung wurde als Regressionstest festgeschrieben. Audio blieb unberührt. |
 | 2026-09-04 | Bulk 4 technisch geschlossen: Der frische Proving→Contender-Flow bestand dreimal direkt hintereinander; zuvor waren Unit-, Typ-, Produktionsbuild- und vollständige Browser-Gates grün. Das ersetzt ausdrücklich nicht den Owner-/Produktdurchlauf. Apex bleibt bis zu einer bewussten Freigabe gesperrt. |
 | 2026-09-04 | Öffentlichen Pages-Stand nach Deploy #53 direkt geprüft: Menü lädt und die neue deutsche Hybridsteuerung ist in der Hilfe sichtbar; CI-Flake und Action-Runtime-Warnungen bleiben transparent dokumentiert. |
 | 2026-09-04 | PR #6 nach grüner CI als `3f6d88b` in `main` integriert, Pages-Deploy #53 erfolgreich und `codex/phase-6-career-expansion` direkt davon angelegt; ein beim Retry bestandener Karriere-E2E-Flake bleibt vermerkt, Produktgate weiterhin offen. |

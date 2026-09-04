@@ -2,6 +2,7 @@ import type { GameEvent } from "../events";
 import type { GameMode } from "../modes";
 import type { WorldState } from "../world";
 import { cancelSpawnProtection } from "../actors";
+import { spawnWeaponDeathDrops } from "../pickups";
 
 export function dispatchModeEvents(
   mode: GameMode,
@@ -29,6 +30,7 @@ function dispatchGameplayEvent(
   event: GameEvent,
 ): void {
   frameEvents.push(event);
+  frameEvents.push(...spawnWeaponDeathDrops(world, event));
   if (
     (event.type === "objective.flagPickedUp" ||
       event.type === "objective.flagCaptured") &&

@@ -147,18 +147,30 @@ function syncPickupState(
   color: number,
 ): void {
   const active = pickup.lifeState === "active";
-  const progressBucket = active ? -1 : Math.ceil(pickup.respawnRemainingMs / 100);
-  const signature = `${pickup.lifeState}:${progressBucket}`;
+  const deathDrop = pickup.origin === "death-drop";
+  const progressBucket = deathDrop
+    ? Math.ceil((pickup.expiresRemainingMs ?? 0) / 100)
+    : active ? -1 : Math.ceil(pickup.respawnRemainingMs / 100);
+  const signature = `${pickup.lifeState}:${pickup.value}:${progressBucket}:${pickup.origin}`;
   if (signature === view.stateSignature) return;
   view.stateSignature = signature;
   view.stateRing.clear();
+  const seconds = deathDrop
+    ? Math.max(1, Math.ceil((pickup.expiresRemainingMs ?? 0) / 1000))
+    : Math.max(1, Math.ceil(pickup.respawnRemainingMs / 1000));
   view.respawnLabel
-    .setVisible(!active)
-    .setText(Math.max(1, Math.ceil(pickup.respawnRemainingMs / 1000)).toString());
-  if (active) return;
+    .setVisible(deathDrop || !active)
+    .setText(deathDrop ? `${pickup.value} · ${seconds}s` : seconds.toString());
+  if (active && !deathDrop) return;
   const radius = 29;
   view.stateRing.lineStyle(1.5, color, .22).strokeCircle(0, 2, radius);
-  const progress = pickup.respawnDelayMs > 0
+  const progress = deathDrop
+    ? Phaser.Math.Clamp(
+      (pickup.expiresRemainingMs ?? 0) / (pickup.expiresAfterMs ?? 1),
+      0,
+      1,
+    )
+    : pickup.respawnDelayMs > 0
     ? Phaser.Math.Clamp(
       1 - pickup.respawnRemainingMs / pickup.respawnDelayMs,
       0,
