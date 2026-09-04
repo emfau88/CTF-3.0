@@ -188,8 +188,10 @@ shortcuts and the contested Forge Heart at its center.
 ## Weapons
 
 Every arena gives each fighter the unlimited **Arc Lash** as a dependable
-standard weapon, then adds at most three contested pickup weapons. This keeps
-the HUD compact while allowing every map to have its own combat rhythm.
+standard weapon, then adds at most three contested pickup weapons. The mouse
+wheel cycles through weapons that are currently usable and left click fires
+the selected weapon. The displayed weapon keys remain direct-fire shortcuts
+and also select that weapon for the next click.
 
 | Weapon | In-game art | Combat role |
 | --- | --- | --- |
@@ -218,14 +220,16 @@ them. Arc Lash is always available and never consumes ammunition.
 | --- | --- |
 | `WASD` | Move |
 | Mouse | Aim |
+| Mouse wheel | Select Arc Lash or a collected weapon with ammunition |
+| Left click | Fire the selected weapon |
 | `Space` | Jump |
-| `Q` | Fire Rocket when available |
-| `E` | Fire Rail when available |
-| `F` | Use Arc Lash when available |
-| `R` | Fire Pulse Repeater when available |
-| `C` | Throw Ricochet Disc when available |
-| `G` | Lob Grenade at the cursor |
-| `X` | Fire Shardcaster when available |
+| `Q` | Direct-fire and select Rocket when available |
+| `E` | Direct-fire and select Rail when available |
+| `F` | Direct-fire and select Arc Lash |
+| `R` | Direct-fire and select Pulse Repeater when available |
+| `C` | Direct-fire and select Ricochet Disc when available |
+| `G` | Direct-fire and select Lob Grenade when available |
+| `X` | Direct-fire and select Shardcaster when available |
 | `Home` | Re-center the manually panned spectator camera |
 | `Shift` + `R` | Restart a finished match |
 | `1` / `2` / `3` | Defend / Follow / Attack squad command |
