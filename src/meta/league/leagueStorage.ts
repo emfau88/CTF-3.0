@@ -1,11 +1,15 @@
 import { LEAGUE_CHARACTERS, LEAGUE_CIRCUITS, LEAGUE_TEAMS } from "./leagueCatalog";
+import { migrateLeagueSeasonToCareer } from "./leagueCareer";
 import {
+  LEAGUE_CAREER_SAVE_VERSION,
   LEAGUE_SAVE_VERSION,
   type LeagueCharacterStats,
+  type LeagueCareerState,
   type LeagueSeasonState,
 } from "./leagueTypes";
 
 export const LEAGUE_STORAGE_KEY = "core-arena.league.v2";
+export const LEAGUE_CAREER_STORAGE_KEY = "core-arena.league.v3";
 
 export interface LeagueStoragePort {
   getItem(key: string): string | null;
@@ -13,7 +17,7 @@ export interface LeagueStoragePort {
   removeItem(key: string): void;
 }
 
-function isValidSeason(value: unknown): value is LeagueSeasonState {
+export function isValidLeagueSeason(value: unknown): value is LeagueSeasonState {
   if (!value || typeof value !== "object") return false;
   const season = value as Partial<LeagueSeasonState>;
   if (
@@ -85,6 +89,26 @@ function isValidSeason(value: unknown): value is LeagueSeasonState {
     validDefeatedTeams && validCharacterStats;
 }
 
+function isValidCareer(value: unknown): value is LeagueCareerState {
+  if (!value || typeof value !== "object") return false;
+  const career = value as Partial<LeagueCareerState>;
+  if (
+    career.version !== LEAGUE_CAREER_SAVE_VERSION ||
+    (career.activeCircuitId !== "proving" && career.activeCircuitId !== "contender") ||
+    !career.attempts ||
+    !Number.isInteger(career.attempts.proving) || career.attempts.proving < 0 ||
+    !Number.isInteger(career.attempts.contender) || career.attempts.contender < 0 ||
+    !Array.isArray(career.qualifiedCircuitIds) ||
+    career.qualifiedCircuitIds.some((id) =>
+      !LEAGUE_CIRCUITS.some((circuit) => circuit.id === id)
+    ) ||
+    !isValidLeagueSeason(career.season) ||
+    (career.season.circuitId ?? "proving") !== career.activeCircuitId ||
+    typeof career.updatedAt !== "string"
+  ) return false;
+  return career.attempts[career.activeCircuitId] > 0;
+}
+
 function isValidCharacterStats(
   key: string,
   value: unknown,
@@ -146,7 +170,7 @@ export function createLeagueRepository(storage: LeagueStoragePort) {
         const raw = storage.getItem(LEAGUE_STORAGE_KEY);
         if (!raw) return null;
         const parsed: unknown = JSON.parse(raw);
-        return isValidSeason(parsed)
+        return isValidLeagueSeason(parsed)
           ? normalizeRecruitment(normalizeRivalRosters(parsed))
           : null;
       } catch {
@@ -160,4 +184,39 @@ export function createLeagueRepository(storage: LeagueStoragePort) {
       storage.removeItem(LEAGUE_STORAGE_KEY);
     },
   };
+}
+
+export function createLeagueCareerRepository(storage: LeagueStoragePort) {
+  return {
+    load(): LeagueCareerState | null {
+      try {
+        const raw = storage.getItem(LEAGUE_CAREER_STORAGE_KEY);
+        if (raw !== null) {
+          const parsed: unknown = JSON.parse(raw);
+          return isValidCareer(parsed)
+            ? normalizeCareer(parsed)
+            : null;
+        }
+        const legacy = createLeagueRepository(storage).load();
+        if (!legacy) return null;
+        const migrated = migrateLeagueSeasonToCareer(legacy);
+        storage.setItem(LEAGUE_CAREER_STORAGE_KEY, JSON.stringify(migrated));
+        return migrated;
+      } catch {
+        return null;
+      }
+    },
+    save(career: LeagueCareerState): void {
+      storage.setItem(LEAGUE_CAREER_STORAGE_KEY, JSON.stringify(career));
+    },
+    clear(): void {
+      storage.removeItem(LEAGUE_CAREER_STORAGE_KEY);
+      storage.removeItem(LEAGUE_STORAGE_KEY);
+    },
+  };
+}
+
+function normalizeCareer(career: LeagueCareerState): LeagueCareerState {
+  normalizeRecruitment(normalizeRivalRosters(career.season));
+  return career;
 }

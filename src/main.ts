@@ -16,7 +16,7 @@ import {
 import {
   buildLeagueHubSearch,
   completeLeagueRound,
-  createLeagueRepository,
+  createLeagueCareerRepository,
   leagueTeam,
   readLeagueMatchContext,
 } from "./meta/league";
@@ -459,9 +459,10 @@ if (showV2Menu) {
       }
       if (leagueMatchContext && !leagueResultRecorded) {
         leagueResultRecorded = true;
-        const repository = createLeagueRepository(platformServices.save);
-        const season = repository.load();
-        if (season && season.seasonId === leagueMatchContext.seasonId) {
+        const repository = createLeagueCareerRepository(platformServices.save);
+        const career = repository.load();
+        const season = career?.season;
+        if (career && season && season.seasonId === leagueMatchContext.seasonId) {
           const blueScore = detail.scores?.find((entry) => entry.teamId === "blue")?.score ?? 0;
           const redScore = detail.scores?.find((entry) => entry.teamId === "red")?.score ?? 0;
           completeLeagueRound(season, {
@@ -479,7 +480,8 @@ if (showV2Menu) {
               flagReturns: entry.flagReturns,
             })),
           });
-          repository.save(season);
+          career.season = season;
+          repository.save(career);
           if (careerProfile && syncCareerUnlocks(careerProfile, season.defeatedTeamIds)) {
             careerProfileRepository.save(careerProfile);
           }

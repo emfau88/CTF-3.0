@@ -2,6 +2,7 @@ import type { V2PlayerSkinId } from "../../v2Route";
 import type { BotArchetypeId } from "../../core/bots";
 
 export const LEAGUE_SAVE_VERSION = 2 as const;
+export const LEAGUE_CAREER_SAVE_VERSION = 3 as const;
 
 export type LeagueTeamId =
   | "iron-vanguard"
@@ -17,6 +18,7 @@ export type LeagueTeamId =
  * career-save migration in the next bulk.
  */
 export type LeagueCircuitId = "proving" | "contender" | "apex";
+export type LeaguePlayableCircuitId = "proving" | "contender";
 
 export interface LeagueCharacterDefinition {
   readonly id: string;
@@ -122,6 +124,20 @@ export interface LeagueSeasonState {
   defeatedTeamIds: LeagueTeamId[];
   recruitment: LeagueRecruitmentState;
   lastProgression: LeagueProgressionEvent | null;
+  updatedAt: string;
+}
+
+/**
+ * The small V3 envelope keeps the active three-match season and the minimum
+ * cross-circuit progress needed for Proving → Contender. Career identity and
+ * unlocked fighters remain in the existing career profile.
+ */
+export interface LeagueCareerState {
+  readonly version: typeof LEAGUE_CAREER_SAVE_VERSION;
+  activeCircuitId: LeaguePlayableCircuitId;
+  attempts: Record<LeaguePlayableCircuitId, number>;
+  qualifiedCircuitIds: LeagueCircuitId[];
+  season: LeagueSeasonState;
   updatedAt: string;
 }
 

@@ -9,7 +9,8 @@ import {
   STARTER_WINGMAN_IDS,
   leagueCircuitDiscipline,
   completeRecruitment,
-  createLeagueRepository,
+  createLeagueCareer,
+  createLeagueCareerRepository,
   createLeagueSeason,
   getCurrentPlayerMatch,
   getPlayerOpponent,
@@ -147,7 +148,7 @@ export function createLeagueMenuController(actions: {
   readonly analytics?: AnalyticsPort;
 }): LeagueMenuController {
   const storage = actions.storage ?? window.localStorage;
-  const repository = createLeagueRepository(storage);
+  const repository = createLeagueCareerRepository(storage);
   const profileRepository = createCareerProfileRepository(storage);
   const root = element("v2-league-hub");
   const menuRoot = document.getElementById("v2-main-menu") ?? root;
@@ -158,7 +159,8 @@ export function createLeagueMenuController(actions: {
   const progression = element("league-progression");
   const resetDialog = element("league-reset-confirm");
   const seasonTools = element("league-season-tools") as HTMLDetailsElement;
-  let season = repository.load();
+  let career = repository.load();
+  let season = career?.season ?? null;
   let profile = profileRepository.load();
   let selectedTeamId: LeagueTeamId | null = null;
   let editingProfile = !profile;
@@ -231,14 +233,15 @@ export function createLeagueMenuController(actions: {
   };
 
   const saveAndRender = (): void => {
-    if (season) repository.save(season);
+    if (career) repository.save(career);
     if (profile) profileRepository.save(profile);
     render();
   };
 
   const startSeason = (): void => {
     if (!profile) return;
-    season = createLeagueSeason(Date.now(), profile.selectedWingmanId);
+    career = createLeagueCareer(Date.now(), profile.selectedWingmanId);
+    season = career.season;
     actions.analytics?.track("league_started", { seasonId: season.seasonId });
     selectedTeamId = null;
     saveAndRender();
@@ -335,7 +338,8 @@ export function createLeagueMenuController(actions: {
       }
       if (season) {
         selectLeagueWingman(season, profile.selectedWingmanId);
-        repository.save(season);
+        if (career) career.season = season;
+        if (career) repository.save(career);
       }
       profileRepository.save(profile);
       if (!wasExistingProfile) {
@@ -944,6 +948,7 @@ export function createLeagueMenuController(actions: {
       syncCareerUnlocks(profile, active.defeatedTeamIds);
       const selectedWingmanId = selectedCharacterId ?? profile.selectedWingmanId;
       season = completeRecruitment(active, selectedCharacterId);
+      if (career) career.season = season;
       if (selectedCharacterId) {
         profile = updateCareerProfile(profile, {
           callsign: profile.callsign,
@@ -976,6 +981,7 @@ export function createLeagueMenuController(actions: {
     requiredButton("league-progression-continue").onclick = () => {
       if (active.recruitment.status === "pending") return;
       season = acknowledgeLeagueProgression(active);
+      if (career) career.season = season;
       saveAndRender();
     };
     progression.classList.remove("is-hidden");
@@ -1016,6 +1022,7 @@ export function createLeagueMenuController(actions: {
   requiredButton("league-reset-confirm-button").onclick = () => {
     resetDialog.classList.add("is-hidden");
     repository.clear();
+    career = null;
     season = null;
     render();
     resetMenuScroll();
@@ -1039,7 +1046,8 @@ export function createLeagueMenuController(actions: {
     },
     open(): void {
       root.classList.remove("is-hidden");
-      season = repository.load();
+      career = repository.load();
+      season = career?.season ?? null;
       profile = profileRepository.load();
       editingProfile = !profile;
       profileReview = false;
