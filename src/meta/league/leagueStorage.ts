@@ -1,5 +1,7 @@
 import { LEAGUE_CHARACTERS, LEAGUE_CIRCUITS, LEAGUE_TEAMS } from "./leagueCatalog";
 import { migrateLeagueSeasonToCareer } from "./leagueCareer";
+import { CAREER_PROFILE_STORAGE_KEY, isCareerProfile, type CareerProfile } from "../../careerProfile";
+import { CareerSaveError } from "../../careerSaveGuard";
 import {
   LEAGUE_CAREER_SAVE_VERSION,
   LEAGUE_SAVE_VERSION,
@@ -10,6 +12,8 @@ import {
 
 export const LEAGUE_STORAGE_KEY = "core-arena.league.v2";
 export const LEAGUE_CAREER_STORAGE_KEY = "core-arena.league.v3";
+export const LEAGUE_MIGRATION_PROFILE_BACKUP_KEY = `${CAREER_PROFILE_STORAGE_KEY}.pre-league-v3`;
+export const LEAGUE_RESET_BACKUP_KEY = "core-arena.league.before-reset";
 
 export interface LeagueStoragePort {
   getItem(key: string): string | null;
@@ -94,6 +98,8 @@ function isValidCareer(value: unknown): value is LeagueCareerState {
   const career = value as Partial<LeagueCareerState>;
   if (
     career.version !== LEAGUE_CAREER_SAVE_VERSION ||
+    (career.revision !== undefined && (!Number.isSafeInteger(career.revision) || career.revision < 0)) ||
+    (career.profile !== undefined && !isCareerProfile(career.profile)) ||
     (career.activeCircuitId !== "proving" && career.activeCircuitId !== "contender") ||
     !career.attempts ||
     !Number.isInteger(career.attempts.proving) || career.attempts.proving < 0 ||
@@ -187,33 +193,148 @@ export function createLeagueRepository(storage: LeagueStoragePort) {
 }
 
 export function createLeagueCareerRepository(storage: LeagueStoragePort) {
+  type Snapshot = { career: string | null; legacy: string | null; profile: string | null };
+  let expected: Snapshot | undefined;
+  const read = (): Snapshot => {
+    try {
+      return {
+        career: storage.getItem(LEAGUE_CAREER_STORAGE_KEY),
+        legacy: storage.getItem(LEAGUE_STORAGE_KEY),
+        profile: storage.getItem(CAREER_PROFILE_STORAGE_KEY),
+      };
+    } catch { throw new CareerSaveError("read"); }
+  };
+  const parse = (raw: string): unknown => {
+    try { return JSON.parse(raw); }
+    catch { throw new CareerSaveError("corrupt"); }
+  };
+  const checkVersion = (value: unknown, version: number): void => {
+    if (value && typeof value === "object" && "version" in value && value.version !== version) {
+      throw new CareerSaveError("version");
+    }
+  };
+  const assertCurrent = (): Snapshot => {
+    const current = read();
+    if (!expected) {
+      if (current.career || current.legacy) throw new CareerSaveError("stale");
+      expected = current;
+    }
+    if (Object.keys(current).some((key) => current[key as keyof Snapshot] !== expected![key as keyof Snapshot])) {
+      throw new CareerSaveError("stale");
+    }
+    return current;
+  };
+  const write = (key: string, raw: string): void => {
+    try { storage.setItem(key, raw); }
+    catch { throw new CareerSaveError("write"); }
+  };
+  const profileFrom = (snapshot: Snapshot): CareerProfile | null => {
+    if (snapshot.career) {
+      const value = parse(snapshot.career) as { profile?: unknown } | null;
+      if (value?.profile !== undefined && value.profile !== null) {
+        if (!isCareerProfile(value.profile)) throw new CareerSaveError("corrupt");
+        return value.profile;
+      }
+    }
+    if (snapshot.profile === null) return null;
+    const profile = parse(snapshot.profile);
+    checkVersion(profile, 1);
+    if (!isCareerProfile(profile)) throw new CareerSaveError("corrupt");
+    return profile;
+  };
   return {
     load(): LeagueCareerState | null {
-      try {
-        const raw = storage.getItem(LEAGUE_CAREER_STORAGE_KEY);
-        if (raw !== null) {
-          const parsed: unknown = JSON.parse(raw);
-          return isValidCareer(parsed)
-            ? normalizeCareer(parsed)
-            : null;
+      const snapshot = read();
+      expected = undefined;
+      let career: LeagueCareerState | null = null;
+      if (snapshot.career !== null) {
+        const parsed = parse(snapshot.career);
+        checkVersion(parsed, LEAGUE_CAREER_SAVE_VERSION);
+        if (isResetMarker(parsed)) {
+          profileFrom(snapshot);
+        } else {
+          try {
+            if (!isValidCareer(parsed)) throw new CareerSaveError("corrupt");
+          } catch { throw new CareerSaveError("corrupt"); }
+          career = normalizeCareer(parsed);
         }
-        const legacy = createLeagueRepository(storage).load();
-        if (!legacy) return null;
-        const migrated = migrateLeagueSeasonToCareer(legacy);
-        storage.setItem(LEAGUE_CAREER_STORAGE_KEY, JSON.stringify(migrated));
-        return migrated;
-      } catch {
-        return null;
+      } else if (snapshot.legacy !== null) {
+        const legacy = parse(snapshot.legacy);
+        checkVersion(legacy, LEAGUE_SAVE_VERSION);
+        try {
+          if (!isValidLeagueSeason(legacy)) throw new CareerSaveError("corrupt");
+        } catch { throw new CareerSaveError("corrupt"); }
+        career = migrateLeagueSeasonToCareer(normalizeRecruitment(normalizeRivalRosters(legacy as LeagueSeasonState)));
+      }
+      const profile = profileFrom(snapshot);
+      if (career && profile) career.profile = profile;
+      expected = snapshot;
+      return career;
+    },
+    loadProfile(): CareerProfile | null {
+      return profileFrom(expected ?? read());
+    },
+    /** Production callers hold withCareerSaveLock across this synchronous transaction. */
+    save(career: LeagueCareerState, profile = career.profile): void {
+      const snapshot = assertCurrent();
+      const next = { ...career, revision: (career.revision ?? 0) + 1, ...(profile ? { profile } : {}) };
+      if (!isValidCareer(next)) throw new CareerSaveError("corrupt");
+      if (snapshot.career === null && snapshot.legacy !== null && snapshot.profile !== null) {
+        try {
+          if (storage.getItem(LEAGUE_MIGRATION_PROFILE_BACKUP_KEY) === null) {
+            write(LEAGUE_MIGRATION_PROFILE_BACKUP_KEY, snapshot.profile);
+          }
+        } catch { throw new CareerSaveError("write"); }
+      }
+      const raw = JSON.stringify(next);
+      write(LEAGUE_CAREER_STORAGE_KEY, raw);
+      expected = { ...snapshot, career: raw };
+      Object.assign(career, next);
+      // The V3 document is authoritative even if this compatibility mirror fails.
+      if (profile) {
+        const profileRaw = JSON.stringify(profile);
+        try {
+          storage.setItem(CAREER_PROFILE_STORAGE_KEY, profileRaw);
+          expected.profile = profileRaw;
+        } catch { /* Read the committed embedded profile on the next load. */ }
       }
     },
-    save(career: LeagueCareerState): void {
-      storage.setItem(LEAGUE_CAREER_STORAGE_KEY, JSON.stringify(career));
+    saveProfile(profile: CareerProfile): void {
+      const snapshot = assertCurrent();
+      const reset = snapshot.career !== null && isResetMarker(parse(snapshot.career));
+      if (!reset && (snapshot.career !== null || snapshot.legacy !== null)) {
+        throw new CareerSaveError("stale");
+      }
+      if (!isCareerProfile(profile)) throw new CareerSaveError("corrupt");
+      const raw = JSON.stringify(profile);
+      if (reset) {
+        const marker = JSON.stringify({ version: 3, reset: true, profile });
+        write(LEAGUE_CAREER_STORAGE_KEY, marker);
+        expected = { ...snapshot, career: marker };
+        return;
+      }
+      write(CAREER_PROFILE_STORAGE_KEY, raw);
+      expected = { ...snapshot, profile: raw };
     },
     clear(): void {
-      storage.removeItem(LEAGUE_CAREER_STORAGE_KEY);
-      storage.removeItem(LEAGUE_STORAGE_KEY);
+      const snapshot = assertCurrent();
+      const profile = profileFrom(snapshot);
+      write(LEAGUE_RESET_BACKUP_KEY, JSON.stringify(snapshot));
+      // One atomic marker prevents an old V2 season resurfacing after a partial reset.
+      const raw = JSON.stringify({ version: 3, reset: true, profile });
+      write(LEAGUE_CAREER_STORAGE_KEY, raw);
+      expected = { ...snapshot, career: raw };
+    },
+    exportBackup(): string {
+      return JSON.stringify(read(), null, 2);
     },
   };
+}
+
+function isResetMarker(value: unknown): boolean {
+  return Boolean(value && typeof value === "object" && "version" in value && value.version === 3 &&
+    "reset" in value && value.reset === true && "profile" in value &&
+    (value.profile === null || isCareerProfile(value.profile)));
 }
 
 function normalizeCareer(career: LeagueCareerState): LeagueCareerState {

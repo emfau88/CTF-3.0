@@ -23,6 +23,7 @@ import {
   retryLeagueCareerCircuit,
   sortedLeagueStandings,
   type LeagueCharacterStats,
+  type LeagueCareerState,
   type LeagueSeasonState,
   type LeagueTeamId,
 } from "./meta/league";
@@ -30,7 +31,6 @@ import type { BotArchetypeId } from "./core/bots";
 import {
   CAREER_PLAYER_EMBLEMS,
   createCareerProfile,
-  createCareerProfileRepository,
   careerEmblemUrl,
   foundersRecruitableWingmanIds,
   randomCallsign,
@@ -56,6 +56,8 @@ import {
 } from "./v2Route";
 import { applyUiTranslations, uiText, type UiCopyKey } from "./uiLocale";
 import type { AnalyticsPort, SavePort } from "./platform";
+import { withCareerSaveLock } from "./careerSaveGuard";
+import { createCareerSaveNotice } from "./careerSaveUi";
 
 interface LeagueMenuController {
   readonly hasSave: boolean;
@@ -152,7 +154,6 @@ export function createLeagueMenuController(actions: {
 }): LeagueMenuController {
   const storage = actions.storage ?? window.localStorage;
   const repository = createLeagueCareerRepository(storage);
-  const profileRepository = createCareerProfileRepository(storage);
   const root = element("v2-league-hub");
   const menuRoot = document.getElementById("v2-main-menu") ?? root;
   const header = root.querySelector<HTMLElement>(".league-header");
@@ -162,9 +163,39 @@ export function createLeagueMenuController(actions: {
   const progression = element("league-progression");
   const resetDialog = element("league-reset-confirm");
   const seasonTools = element("league-season-tools") as HTMLDetailsElement;
-  let career = repository.load();
-  let season = career?.season ?? null;
-  let profile = profileRepository.load();
+  let career: LeagueCareerState | null = null;
+  let season: LeagueSeasonState | null = null;
+  let profile: CareerProfile | null = null;
+  let saveIssue: unknown = null;
+  let saving = false;
+  const loadState = (): void => {
+    try {
+      career = repository.load();
+      season = career?.season ?? null;
+      profile = repository.loadProfile();
+      saveIssue = null;
+    } catch (error) {
+      career = null;
+      season = null;
+      profile = null;
+      saveIssue = error;
+    }
+  };
+  loadState();
+  const saveNotice = createCareerSaveNotice(root, "league-save-error", () => {
+    loadState();
+    editingProfile = !profile;
+    profileDraft = null;
+    profileReview = false;
+    render();
+  }, () => repository.exportBackup());
+  root.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement;
+    if (saving || (saveIssue && !target.closest("#league-save-error, #league-back"))) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }, true);
   let selectedTeamId: LeagueTeamId | null = null;
   let editingProfile = !profile;
   let profileReview = false;
@@ -241,26 +272,49 @@ export function createLeagueMenuController(actions: {
     }
   };
 
-  const saveAndRender = (): void => {
-    if (career) repository.save(career);
-    if (profile) profileRepository.save(profile);
-    render();
+  const saveAndRender = async (renderAfter = true): Promise<boolean> => {
+    if (saving || saveIssue) return false;
+    saving = true;
+    root.setAttribute("aria-busy", "true");
+    try {
+      await withCareerSaveLock(() => {
+        if (career) repository.save(career, profile ?? undefined);
+        else if (profile) repository.saveProfile(profile);
+      });
+      if (renderAfter) render();
+      return true;
+    } catch (error) {
+      loadState();
+      saveIssue = error;
+      render();
+      return false;
+    } finally {
+      saving = false;
+      root.removeAttribute("aria-busy");
+    }
   };
 
-  const startSeason = (): void => {
+  const startSeason = async (): Promise<void> => {
     if (!profile) return;
     career = createLeagueCareer(Date.now(), profile.selectedWingmanId);
     season = career.season;
     actions.analytics?.track("league_started", { seasonId: season.seasonId });
     selectedTeamId = null;
-    saveAndRender();
+    if (!await saveAndRender()) return;
     resetMenuScroll();
   };
 
   const render = (): void => {
-    if (profile && season && syncCareerUnlocks(profile, season.defeatedTeamIds)) {
-      profileRepository.save(profile);
+    if (saveIssue) {
+      for (const section of [empty, dashboard, profileSetup, progression, resetDialog]) section.classList.add("is-hidden");
+      menuRoot.classList.remove("has-modal-open");
+      if (header) header.inert = false;
+      activeModal = null;
+      saveNotice.show(saveIssue, true);
+      return;
     }
+    saveNotice.hide();
+    if (profile && season) syncCareerUnlocks(profile, season.defeatedTeamIds);
     renderHeader(Boolean(season), editingProfile);
     profileSetup.classList.toggle("is-hidden", !editingProfile);
     empty.classList.toggle("is-hidden", editingProfile || Boolean(season) || !profile);
@@ -324,7 +378,7 @@ export function createLeagueMenuController(actions: {
     return profileDraft;
   };
 
-  const finishProfileSetup = (): void => {
+  const finishProfileSetup = async (): Promise<void> => {
     const draft = ensureProfileDraft();
     const returnFocusId = profileReturnFocusId;
     const wasExistingProfile = Boolean(profile);
@@ -348,9 +402,8 @@ export function createLeagueMenuController(actions: {
       if (season) {
         selectLeagueWingman(season, profile.selectedWingmanId);
         if (career) career.season = season;
-        if (career) repository.save(career);
       }
-      profileRepository.save(profile);
+      if (!await saveAndRender(false)) return;
       if (!wasExistingProfile) {
         actions.analytics?.track("team_created", {
           selectedWingmanId: profile.selectedWingmanId,
@@ -685,21 +738,21 @@ export function createLeagueMenuController(actions: {
           <div class="league-completion-actions">${action}</div>
         </div>
         ${renderSeasonTrack(active)}`;
-      document.getElementById("league-advance-contender")?.addEventListener("click", () => {
+      document.getElementById("league-advance-contender")?.addEventListener("click", async () => {
         if (!career || !profile) return;
         advanceLeagueCareer(career, Date.now(), profile.selectedWingmanId);
         season = career.season;
         selectedTeamId = null;
         actions.analytics?.track("league_started", { seasonId: season.seasonId });
-        saveAndRender();
+        if (!await saveAndRender()) return;
         resetMenuScroll();
       });
-      document.getElementById("league-retry-circuit")?.addEventListener("click", () => {
+      document.getElementById("league-retry-circuit")?.addEventListener("click", async () => {
         if (!career || !profile) return;
         retryLeagueCareerCircuit(career, Date.now(), profile.selectedWingmanId);
         season = career.season;
         selectedTeamId = null;
-        saveAndRender();
+        if (!await saveAndRender()) return;
         resetMenuScroll();
       });
       document.getElementById("league-finish-new")?.addEventListener("click", () => {
@@ -982,7 +1035,7 @@ export function createLeagueMenuController(actions: {
         <p>${progressionCopy}</p>
         <button id="league-progression-continue" type="button"${recruitmentPending ? " disabled" : ""}>${uiText("league.progressReturn")}</button>
       </div>`;
-    const chooseRecruitment = (selectedCharacterId: string | null): void => {
+    const chooseRecruitment = async (selectedCharacterId: string | null): Promise<void> => {
       if (!profile || active.recruitment.status !== "pending") return;
       syncCareerUnlocks(profile, active.defeatedTeamIds);
       const selectedWingmanId = selectedCharacterId ?? profile.selectedWingmanId;
@@ -1001,7 +1054,7 @@ export function createLeagueMenuController(actions: {
         characterId: selectedWingmanId,
         source: "recruitment",
       });
-      saveAndRender();
+      if (!await saveAndRender()) return;
       requiredButton("league-progression-continue").focus({
         preventScroll: true,
       });
@@ -1017,11 +1070,11 @@ export function createLeagueMenuController(actions: {
         button.dataset.recruitmentChoice ?? null,
       );
     });
-    requiredButton("league-progression-continue").onclick = () => {
+    requiredButton("league-progression-continue").onclick = async () => {
       if (active.recruitment.status === "pending") return;
       season = acknowledgeLeagueProgression(active);
       if (career) career.season = season;
-      saveAndRender();
+      await saveAndRender();
     };
     progression.classList.remove("is-hidden");
   };
@@ -1058,18 +1111,22 @@ export function createLeagueMenuController(actions: {
     event.preventDefault();
     cancelReset();
   };
-  requiredButton("league-reset-confirm-button").onclick = () => {
+  requiredButton("league-reset-confirm-button").onclick = async () => {
+    if (saving || saveIssue) return;
+    saving = true;
     resetDialog.classList.add("is-hidden");
-    repository.clear();
-    career = null;
-    season = null;
+    try {
+      await withCareerSaveLock(() => repository.clear());
+      loadState();
+    } catch (error) { loadState(); saveIssue = error; }
+    finally { saving = false; }
     render();
     resetMenuScroll();
-    requiredButton("league-new-season").focus({ preventScroll: true });
+    if (!saveIssue) requiredButton("league-new-season").focus({ preventScroll: true });
   };
 
   return {
-    get hasSave() { return Boolean(season || profile); },
+    get hasSave() { return Boolean(season || profile || saveIssue); },
     get homeMeta() {
       if (!season) return profile
         ? uiText("league.contractReady", { team: profile.teamName })
@@ -1085,9 +1142,7 @@ export function createLeagueMenuController(actions: {
     },
     open(): void {
       root.classList.remove("is-hidden");
-      career = repository.load();
-      season = career?.season ?? null;
-      profile = profileRepository.load();
+      loadState();
       editingProfile = !profile;
       profileReview = false;
       profileDraft = null;

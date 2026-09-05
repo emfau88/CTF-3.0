@@ -5,6 +5,19 @@ const dom = new JSDOM("<!doctype html><html><body></body></html>", {
 });
 
 const { window } = dom;
+// Model the exclusive browser lock for unit/DOM tests; cross-tab behavior is
+// additionally exercised with Chromium's real Web Locks in the browser suite.
+let careerLockTail: Promise<unknown> = Promise.resolve();
+Object.defineProperty(window.navigator, "locks", {
+  configurable: true,
+  value: {
+    request: (_name: string, write: () => unknown) => {
+      const result = careerLockTail.then(write);
+      careerLockTail = result.catch(() => {});
+      return result;
+    },
+  },
+});
 
 for (const [key, value] of Object.entries({
   window,

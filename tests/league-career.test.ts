@@ -56,11 +56,14 @@ test("career save migrates an existing V2 Proving season without removing it", (
   const legacy = createLeagueSeason(44, "lyra-quell");
   createLeagueRepository(storage).save(legacy);
 
-  const career = createLeagueCareerRepository(storage).load()!;
+  const repository = createLeagueCareerRepository(storage);
+  const career = repository.load()!;
   assert.equal(career.activeCircuitId, "proving");
   assert.equal(career.season.seasonId, legacy.seasonId);
   assert.equal(career.season.teamRosters[career.season.playerTeamId][1], "lyra-quell");
   assert.equal(storage.has(LEAGUE_STORAGE_KEY), true);
+  assert.equal(storage.has(LEAGUE_CAREER_STORAGE_KEY), false);
+  repository.save(career);
   assert.equal(storage.has(LEAGUE_CAREER_STORAGE_KEY), true);
 });
 

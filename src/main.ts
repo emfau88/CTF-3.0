@@ -15,8 +15,8 @@ import {
 } from "./arenaLoadingUi";
 import {
   buildLeagueHubSearch,
-  completeLeagueRound,
   createLeagueCareerRepository,
+  type CompleteLeagueMatchInput,
   leagueTeam,
   readLeagueMatchContext,
 } from "./meta/league";
@@ -24,7 +24,6 @@ import {
   careerEmblemUrl,
   createCareerProfileRepository,
   resolveCareerCaptainSkin,
-  syncCareerUnlocks,
 } from "./careerProfile";
 import {
   goToGameplayV2Menu,
@@ -61,6 +60,8 @@ import {
   readQualifierAttemptKind,
 } from "./qualifier";
 import { createQualifierGuide } from "./qualifierGuide";
+import { persistCareerMatch } from "./persistCareerMatch";
+import { createCareerSaveNotice } from "./careerSaveUi";
 
 const search = new URLSearchParams(window.location.search);
 const platformServices = createStandalonePlatformServices({
@@ -160,6 +161,37 @@ if (showV2Menu) {
     let qualifierResultRecorded = false;
     let qualifierNavigationHandled = false;
     let leagueResultRecorded = false;
+    let leagueResultPending = false;
+    let leagueSaveFailed = false;
+    let pendingLeagueResult: CompleteLeagueMatchInput | null = null;
+    const resultSaveNotice = leagueMatchContext ? createCareerSaveNotice(
+      document.getElementById("v2-result-card")!, "league-result-save-error",
+      () => { void saveLeagueResult(); },
+      () => createLeagueCareerRepository(platformServices.save).exportBackup(),
+    ) : null;
+    const saveLeagueResult = async (): Promise<void> => {
+      if (leagueResultPending || leagueResultRecorded || !pendingLeagueResult) return;
+      leagueResultPending = true;
+      try {
+        await persistCareerMatch(platformServices.save, pendingLeagueResult);
+        leagueResultRecorded = true;
+        leagueSaveFailed = false;
+        resultSaveNotice?.hide();
+      } catch (error) {
+        leagueSaveFailed = true;
+        resultSaveNotice?.show(error);
+      } finally {
+        leagueResultPending = false;
+        const continueButton = document.getElementById("v2-result-play-again") as HTMLButtonElement | null;
+        if (continueButton) continueButton.disabled = !leagueResultRecorded;
+      }
+    };
+    window.addEventListener("beforeunload", (event) => {
+      if (pendingLeagueResult && !leagueResultRecorded) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    });
     const leagueOpponent = leagueMatchContext
       ? leagueTeam(leagueMatchContext.opponentId)
       : null;
@@ -457,35 +489,15 @@ if (showV2Menu) {
           outcome: qualifierOutcome,
         });
       }
-      if (leagueMatchContext && !leagueResultRecorded) {
-        leagueResultRecorded = true;
-        const repository = createLeagueCareerRepository(platformServices.save);
-        const career = repository.load();
-        const season = career?.season;
-        if (career && season && season.seasonId === leagueMatchContext.seasonId) {
-          const blueScore = detail.scores?.find((entry) => entry.teamId === "blue")?.score ?? 0;
-          const redScore = detail.scores?.find((entry) => entry.teamId === "red")?.score ?? 0;
-          completeLeagueRound(season, {
-            seasonId: leagueMatchContext.seasonId,
-            matchId: leagueMatchContext.matchId,
-            roundIndex: leagueMatchContext.roundIndex,
-            blueScore,
-            redScore,
-            stats: latestStats.map((entry) => ({
-              actorId: entry.actorId,
-              kills: entry.kills,
-              deaths: entry.deaths,
-              flagPickups: entry.flagPickups,
-              flagCaptures: entry.flagCaptures,
-              flagReturns: entry.flagReturns,
-            })),
-          });
-          career.season = season;
-          repository.save(career);
-          if (careerProfile && syncCareerUnlocks(careerProfile, season.defeatedTeamIds)) {
-            careerProfileRepository.save(careerProfile);
-          }
-        }
+      if (leagueMatchContext && !pendingLeagueResult) {
+        pendingLeagueResult = {
+          seasonId: leagueMatchContext.seasonId,
+          matchId: leagueMatchContext.matchId,
+          roundIndex: leagueMatchContext.roundIndex,
+          blueScore: detail.scores?.find((entry) => entry.teamId === "blue")?.score ?? 0,
+          redScore: detail.scores?.find((entry) => entry.teamId === "red")?.score ?? 0,
+          stats: latestStats.map((entry) => ({ ...entry })),
+        };
       }
       closeHeldScoreboard();
       setIngameButtonsVisible(false);
@@ -549,6 +561,10 @@ if (showV2Menu) {
             ? uiText("league.title")
             : uiText("common.mainMenu"),
       });
+      if (leagueMatchContext) {
+        (document.getElementById("v2-result-play-again") as HTMLButtonElement).disabled = !leagueResultRecorded;
+        if (!leagueSaveFailed) void saveLeagueResult();
+      }
     });
   showArenaLoadingUi(
     getWorldMap(activeRoute.map)?.displayName ?? "Arena",

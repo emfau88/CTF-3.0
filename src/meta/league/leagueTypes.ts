@@ -1,5 +1,6 @@
 import type { V2PlayerSkinId } from "../../v2Route";
 import type { BotArchetypeId } from "../../core/bots";
+import type { CareerProfile } from "../../careerProfile";
 
 export const LEAGUE_SAVE_VERSION = 2 as const;
 export const LEAGUE_CAREER_SAVE_VERSION = 3 as const;
@@ -134,6 +135,9 @@ export interface LeagueSeasonState {
  */
 export interface LeagueCareerState {
   readonly version: typeof LEAGUE_CAREER_SAVE_VERSION;
+  revision?: number;
+  /** Committed together with the season; the separate profile key is a mirror. */
+  profile?: CareerProfile;
   activeCircuitId: LeaguePlayableCircuitId;
   attempts: Record<LeaguePlayableCircuitId, number>;
   qualifiedCircuitIds: LeagueCircuitId[];

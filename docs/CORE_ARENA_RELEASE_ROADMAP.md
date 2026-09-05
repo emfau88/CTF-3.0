@@ -3,7 +3,7 @@
 ## Dokumentstatus
 
 - **Status:** ACTIVE – CANONICAL ROADMAP
-- **Letzte Aktualisierung:** 2026-09-04
+- **Letzte Aktualisierung:** 2026-09-05
 - **Aktive Phase:** Phase 5 – Produktvalidierung (`IN PROGRESS`)
 - **Nächstes Gate:** wiederholte Solo-Produktabnahme; externe Tests nach
   Verfügbarkeit
@@ -487,7 +487,9 @@ Apex-Fortsetzung bleiben offen.
 
 Variante B ist als stufenweiser Umsetzungsplan gewählt. Bulk 1–3 haben das
 datengetriebene Circuit-Fundament, die V3-Karrierehülle und den spielbaren
-Contender umgesetzt. Bulk 4 hat den frischen Sechs-Match-Weg technisch
+Contender umgesetzt. Die ergänzende Save-Absicherung vom 2026-09-05 schützt
+V3 gegen veraltete Tabs, doppelte Ergebniswrites und fehlgeschlagene
+Profilspiegelungen. Bulk 4 hat den frischen Sechs-Match-Weg technisch
 wiederholt geprüft; Apex bleibt weiterhin eine sichtbare Vorschau. Detailregeln,
 Tests, Save-Migration und Wiederaufnahmepunkte stehen im Ausführungsplan.
 
@@ -519,7 +521,8 @@ Tests, Save-Migration und Wiederaufnahmepunkte stehen im Ausführungsplan.
 7. Bulk 6: Gesamt-QA, Owner-Abnahme und Integrationsübergabe.
 
 - [ ] Phase-5-Solo-Entwicklungsfreigabe dokumentiert.
-- [ ] Migration, Aufstieg, Nichtqualifikation und Recruitment abgesichert.
+- [x] Migration, Aufstieg, Nichtqualifikation und Recruitment technisch
+      abgesichert; Owner-Abnahme bleibt separat offen.
 - [ ] Sechs-Match-Weg technisch und durch den Owner abgenommen.
 - [ ] Apex-Fortsetzung ausdrücklich freigegeben.
 - [ ] Neun-Match-Weg einschließlich Abschluss und Wiederholung abgenommen.
@@ -669,6 +672,7 @@ Datenschutz-/Plattformentscheidung extern versendet:
 | Datum | Entscheidung | Begründung |
 | --- | --- | --- |
 | 2026-09-04 | Den technisch grünen Hybridsteuerungs-Branch vor Phase-6-Code sauber integrieren. | Circuit-/Save-Arbeit soll auf dem tatsächlich getesteten Desktop-Steuerungsstand aufbauen; die offene Produktabnahme bleibt davon getrennt. |
+| 2026-09-05 | V3-Karriere vor Apex gegen Schreibkonflikte und Speicherfehler absichern. | Ein längerer Karriereweg ist nur sinnvoll, wenn ein Matchresultat weder verloren gehen noch doppelt zählen kann. |
 | 2026-08-31 | Variante B als 3+3+3-Match-Ausbau planen; zuerst Contender, danach Sechs-Match-Gate, erst dann Apex. | Der Nutzer bevorzugt die längere Karriere; kleine prüfbare Etappen begrenzen Risiko und verhindern ungeprüfte Zusatzlänge. |
 | 2026-08-31 | Solo-Entwicklungsfreigabe und externe Releasevalidierung getrennt dokumentieren. | Der Owner hat keine feste Testergruppe; Entwicklung kann nach echter Solo-Abnahme fortgesetzt werden, ohne unabhängige Testevidenz zu behaupten. |
 | 2026-08-30 | Desktop erhält eine Hybridsteuerung aus Mausrad/Linksklick und bestehenden Direkttasten. | Der vertraute Shooter-Pfad senkt die Einstiegshürde, während die präzisen Kürzel erhalten bleiben; beide Wege teilen Munition und Cooldowns. |
@@ -686,6 +690,7 @@ Datenschutz-/Plattformentscheidung extern versendet:
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-05 | Save-Absicherung ergänzt: V3 enthält den bestätigten Profilstand zusammen mit dem Karrierefortschritt; die ältere Profilkopie bleibt nur ein Spiegel. V2 wird erst beim erfolgreichen V3-Write migriert und sichert das Profil davor einmalig. Ergebnis-, Recruitment-, Team- und Reset-Aktionen werden durch eine Browser-Schreibsperre und einen Revisionsvergleich geschützt; alte Tabs können keinen neueren Stand überschreiben. Fehlerhafte, fremdversionierte oder nicht lesbare Daten werden nicht still als neue Karriere interpretiert. Im HQ und nach einem League-Match erscheinen ein verständlicher Fehler, erneutes Laden sowie ein Export der vorhandenen Save-Rohdaten. Bestehen: 257/257 Tests, Typecheck, Produktionsbuild und 13/13 Browser-E2E. Kein Audio geändert. |
 | 2026-09-04 | Combat-Ökonomie-Slice umgesetzt: Qualifier hat nun zwei Pulse- und zwei symmetrische Rocket-Pickups mittig vor den Basen, außerhalb der Spawnzonen. Kampftode droppen jede getragene Spezialwaffe mit exakter Restmunition für vier Sekunden; Teilaufnahme, Ablauf und Ausschluss bei Stürzen sind automatisiert abgedeckt. Classic CTFs Rückgabe einer eigenen gedroppten Flagge per Berührung wurde als Regressionstest festgeschrieben. Audio blieb unberührt. |
 | 2026-09-04 | Bulk 4 technisch geschlossen: Der frische Proving→Contender-Flow bestand dreimal direkt hintereinander; zuvor waren Unit-, Typ-, Produktionsbuild- und vollständige Browser-Gates grün. Das ersetzt ausdrücklich nicht den Owner-/Produktdurchlauf. Apex bleibt bis zu einer bewussten Freigabe gesperrt. |
 | 2026-09-04 | Öffentlichen Pages-Stand nach Deploy #53 direkt geprüft: Menü lädt und die neue deutsche Hybridsteuerung ist in der Hilfe sichtbar; CI-Flake und Action-Runtime-Warnungen bleiben transparent dokumentiert. |

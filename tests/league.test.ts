@@ -658,7 +658,7 @@ test("quick play mode cards sync the route select and support arrow navigation",
   assert.deepEqual(selected, ["one-flag", "tdm"]);
 });
 
-test("league profile reviews correctable choices before starting the season", () => {
+test("league profile reviews correctable choices before starting the season", async () => {
   window.localStorage.clear();
   document.body.innerHTML = leagueMenuFixture();
   const controller = createLeagueMenuController({ onBack: () => {} });
@@ -691,6 +691,7 @@ test("league profile reviews correctable choices before starting the season", ()
   correctedName.dispatchEvent(new Event("input"));
   document.getElementById("league-profile-review")!.click();
   document.getElementById("league-profile-confirm")!.click();
+  await new Promise(setImmediate);
   const savedProfile = createCareerProfileRepository(window.localStorage).load()!;
   assert.equal(savedProfile.teamName, "Comet Vanguard");
   assert.equal(savedProfile.callsign, "Vector");
@@ -703,6 +704,7 @@ test("league profile reviews correctable choices before starting the season", ()
   assert.equal(document.getElementById("league-intro-title")!.textContent, "Lead Comet Vanguard");
   menuRoot.scrollTop = 380;
   document.getElementById("league-new-season")!.click();
+  await new Promise(setImmediate);
   assert.equal(menuRoot.scrollTop, 0);
   assert.equal(document.getElementById("league-header-title")!.textContent, "League HQ");
   assert.equal(document.getElementById("league-dashboard")!.classList.contains("is-hidden"), false);
@@ -761,6 +763,7 @@ test("league profile reviews correctable choices before starting the season", ()
   document.getElementById("league-profile-review")!.click();
   assert.match(document.getElementById("league-profile-setup")!.textContent ?? "", /CHANGES NOT SAVED/);
   document.getElementById("league-profile-confirm")!.click();
+  await new Promise(setImmediate);
   assert.equal(createCareerProfileRepository(window.localStorage).load()?.selectedWingmanId, "dax-ember");
   assert.equal(createCareerProfileRepository(window.localStorage).load()?.captainSkinId, "briarhorn");
   assert.equal(createLeagueCareerRepository(window.localStorage).load()?.season.teamRosters["iron-vanguard"][1], "dax-ember");
@@ -806,6 +809,7 @@ test("league profile reviews correctable choices before starting the season", ()
   document.querySelector<HTMLButtonElement>(
     `[data-recruitment-choice="${recruitmentCandidate}"]`,
   )!.click();
+  await new Promise(setImmediate);
   assert.equal(
     createCareerProfileRepository(window.localStorage).load()?.selectedWingmanId,
     recruitmentCandidate,
@@ -820,6 +824,7 @@ test("league profile reviews correctable choices before starting the season", ()
   );
   assert.equal(document.activeElement?.id, "league-progression-continue");
   document.getElementById("league-progression-continue")!.click();
+  await new Promise(setImmediate);
   assert.equal(progression.classList.contains("is-hidden"), true);
   assert.equal(progression.getAttribute("aria-hidden"), "true");
   assert.equal(menuRoot.classList.contains("has-modal-open"), false);
@@ -884,7 +889,7 @@ test("next-match dossier shows recorded opponent performance when scouting data 
   window.localStorage.clear();
 });
 
-test("season reset requires confirmation and preserves career identity and unlocks", () => {
+test("season reset requires confirmation and preserves career identity and unlocks", async () => {
   window.localStorage.clear();
   const profile = seedCareerProfile();
   syncCareerUnlocks(profile, ["crimson-jackals"]);
@@ -899,7 +904,9 @@ test("season reset requires confirmation and preserves career identity and unloc
   document.getElementById("league-reset")!.click();
   assert.ok(repository.load());
   document.getElementById("league-reset-confirm-button")!.click();
-  assert.equal(repository.load(), null);
+  await new Promise(setImmediate);
+  assert.equal(createLeagueCareerRepository(window.localStorage).load(), null);
+  assert.ok(repository.load(), "V2 remains available as a rollback source");
   const preserved = createCareerProfileRepository(window.localStorage).load()!;
   assert.equal(preserved.selectedWingmanId, "kael-voss");
   assert.ok(preserved.unlockedWingmanIds.includes("kael-voss"));
