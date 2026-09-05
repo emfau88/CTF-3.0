@@ -2,14 +2,17 @@
 
 ## Status und Auftrag
 
-- Stand: 2026-09-04.
-- Status: `PLANNED` – ausführbarer Plan erstellt, Umsetzung noch nicht begonnen.
+- Stand: 2026-09-05.
+- Status: `IN PROGRESS` – Proving → Contender ist technisch als
+  Sechs-Match-Weg umgesetzt und wiederholt geprüft. Die Produktabnahme aus
+  Phase 5 sowie die bewusste Apex-Entscheidung bleiben getrennt offen.
 - Übergeordnete Quelle: [kanonische Release-Roadmap](../CORE_ARENA_RELEASE_ROADMAP.md).
 - Gewählte Richtung: erst Contender und sechs zusammenhängende Matches,
   danach Apex und Abschluss nur nach bestandenem Zwischen-Gate.
-- Aktiver Auftrag: Planung und Dokumentation; keine Spiellogikänderung,
-  Veröffentlichung oder vorweggenommene Abnahme.
-- Startpunkt bei späterer Umsetzungsfreigabe: **Bulk 0**.
+- Aktiver Auftrag: den technischen Sechs-Match-Gate-Bericht festhalten; keine
+  Apex-Freischaltung, Veröffentlichung oder vorweggenommene Produktabnahme.
+- Aktueller Umsetzungsstand: **Bulk 1–4 technisch abgeschlossen**; als
+  Nächstes braucht Bulk 5 eine ausdrückliche Apex-Freigabe.
 
 Dieser Plan konkretisiert Phase 6. Er ersetzt weder die Release-Roadmap noch
 deren Phase-5-, RC-, Rechte- oder Audio-Gates. Ein Bulk ist ein abgegrenztes
@@ -171,7 +174,7 @@ Match-IDs sind nur zusammen mit eindeutigem Circuit-Versuch gültig.
 - Neuer Karriere-Save unter `core-arena.league.v3`. Der bisherige
   `core-arena.league.v2` bleibt als unveränderter Migrationsausgangspunkt
   erhalten; kein laufendes Dual-Write alter und neuer Karriereformate.
-- Vor der ersten Migration zusätzlich das vorhandene Profil unter
+- Beim ersten erfolgreichen V3-Write das vorhandene Profil zusätzlich unter
   `core-arena.career-profile.v1.pre-league-v3` einmalig sichern. Ist eine
   erforderliche Sicherung oder der neue Save nicht schreibbar: Migration
   abbrechen, Ursprungsdaten erhalten und verständlichen Fehler zeigen.
@@ -182,8 +185,10 @@ Match-IDs sind nur zusammen mit eindeutigem Circuit-Versuch gültig.
 - Migration muss wiederholbar ohne Doppeleffekte sein. Ein gültiger V3-Save
   gewinnt beim Laden vor V2. Ein beschädigter oder unbekannt neuer V3-Save
   darf nicht still auf V2 oder eine frische Karriere zurückfallen.
-- Fehler anzeigen und Daten erhalten; Neustart/Wiederherstellung nur bewusst
-  nach Sicherung und Bestätigung. Kein unaufgefordertes Löschen von localStorage.
+- Fehler anzeigen und Daten erhalten. HQ und Ergebniskarte bieten erneutes
+  Laden sowie einen Export der vorhandenen Save-Rohdaten. Eine Import- oder
+  automatische Wiederherstellungsfunktion gehört nicht zu diesem Bulk; kein
+  unaufgefordertes Löschen von localStorage.
 - Validierung prüft IDs, Teilnehmer, Spielplan, Ergebnis-/Rundenkonsistenz,
   endliche zulässige Zahlen, Qualifikation, Auswahlen und offene Entscheidungen.
   Unbekannte Circuit-/Match-IDs oder widersprüchliche Ergebnisse sind kein
@@ -196,9 +201,9 @@ Match-IDs sind nur zusammen mit eindeutigem Circuit-Versuch gültig.
   Aktion in UI/Navigation als abgeschlossen. Keine Teilmutation des noch
   nicht erfolgreich gespeicherten Zustands.
 - V3 ist führend für Karrierefortschritt, aktuellen Wingman und verdiente
-  Freischaltungen. Bestehende Profil-Freischaltungen werden übernommen.
-  Identität/Kosmetik bleiben im Profil; dessen Auswahl-/Unlock-Spiegel wird
-  nach erfolgreichem V3-Write aktualisiert und beim Laden abgeglichen.
+  Freischaltungen. Der bestätigte Profilstand liegt mit der Karriere im selben
+  V3-Dokument; die ältere Profilkopie wird anschließend nur gespiegelt und ist
+  bei einem Spiegel-Fehler nicht führend.
 - Ein gescheiterter Profil-Spiegel darf weder das bereits gespeicherte Match
   doppelt zählen noch Freischaltungen verlieren. Synchronisierung erneut
   versuchen und Fehler kenntlich machen. Teammanager-Auswahlen nutzen
@@ -208,8 +213,9 @@ Match-IDs sind nur zusammen mit eindeutigem Circuit-Versuch gültig.
   dürfen weder einen Aufstieg duplizieren noch einen neueren Save überschreiben.
   Konkurrierende Schreibzugriffe im Browser serialisieren und die gespeicherte
   Revision innerhalb dieses Schutzes prüfen; bloßes vorheriges Lesen genügt
-  nicht. Ist das nicht zuverlässig möglich, nur einen schreibenden Karriere-Tab
-  zulassen. Ein veralteter Schreibversuch wird abgewiesen.
+  nicht. In Browsern ohne diese Sperre wird der Save bewusst nicht geschrieben;
+  die UI erklärt die Voraussetzung. Ein veralteter Schreibversuch wird
+  abgewiesen.
 
 ### Was ein Rückgängig-Machen leisten kann
 
@@ -240,9 +246,10 @@ Umsetzungs-/Veröffentlichungsauftrag; dieser Plan löst sie nicht aus.
 **Voraussetzung:** Umsetzungsfreigabe für diesen Plan.
 
 - Aktiven Ordner, Branch, Diff, Nutzer-WIP und aktuellen Remote-/Main-Stand
-  prüfen. Letztbelegt ist Hybridsteuerung `37e197f` auf
-  `codex/phase-5-hybrid-controls`; ihre Integration vor neuem Featurebranch
-  prüfen, nicht voraussetzen. Keine Arbeit auf veraltetem lokalem `main`.
+  prüfen. Integrationsbasis ist nach grüner PR-#6-CI der Merge-Commit
+  `3f6d88b`; `codex/phase-6-career-expansion` wurde direkt davon angelegt.
+  Vor Bulk 1 Remote und Branch trotzdem erneut prüfen. Keine Arbeit auf dem
+  weiterhin veralteten lokalen `main`.
 - Isolierte Save-Fixtures/Tests vorbereiten. Bestehende Suite, Typecheck,
   Build und E2E als frische Baseline ausführen.
 - Phase-5-Solo-Abnahme protokollieren: zwei vollständige echte
@@ -449,11 +456,11 @@ damalige Baseline, kein neuer Lauf für diesen Plan.
 
 | Bulk | Status | Ergebnis / noch offen |
 | --- | --- | --- |
-| 0 – Startbasis/Proving-Gate | `IN PROGRESS` | Remote/WIP geprüft; 238 Tests, Typecheck, Build und 13 E2E grün; Integration und Owner-Freigabe noch offen |
-| 1 – Circuit-Modell | `PLANNED` | Noch keine Implementierung |
-| 2 – Karriere/Saves | `PLANNED` | Noch keine Implementierung |
-| 3 – Contender | `PLANNED` | Noch keine Implementierung |
-| 4 – Sechs-Match-Gate | `PLANNED` | Pflichtprüfung vor Apex |
+| 0 – Startbasis/Proving-Gate | `IN PROGRESS` | PR #6 als `3f6d88b` integriert und auf Pages veröffentlicht; Fokus-Karriereflow fünfmal hintereinander bestanden; Owner-/Produktfreigabe bleibt offen |
+| 1 – Circuit-Modell | `COMPLETE` | Datenmodell, strikter Resolver und Regressionstests umgesetzt; 240 Unit-Tests, Typecheck, Produktionsbuild und 13 Playwright-E2E grün; Commit folgt |
+| 2 – Karriere/Saves | `COMPLETE` | V3-Karrierehülle, V2-Übernahme, Wiederholung/Aufstieg und Safe-Write-Nachtrag umgesetzt: Profil im V3-Dokument, V2-Profilbackup, Revisionsvergleich, Browser-Schreibsperre, Fehler-/Export-UI. 257 Tests, Typecheck, Produktionsbuild und 13 Playwright-E2E grün |
+| 3 – Contender | `COMPLETE` | Aufstieg, Wiederholung, HQ-Anzeige und drei reale Contender-Matches umgesetzt; 243 Unit-Tests, Typecheck, Build und 13 Playwright-E2E grün |
+| 4 – Sechs-Match-Gate | `COMPLETE` (technisch) | Frischer Sechs-Match-Flow dreimal in Folge grün; Owner-/Produkturteil bleibt offen |
 | 5 – Apex/Abschluss | `PLANNED` | Nur nach Bulk 4 und Freigabe |
 | 6 – Gesamtabnahme | `PLANNED` | Danach Phase 7, kein automatischer Release |
 
@@ -463,8 +470,10 @@ Bei Unterbrechung zusätzlich uncommitted Arbeit und letzten tatsächlich
 bestandenen Test nennen. Beim Wiederaufnehmen zuerst Status/Diff prüfen;
 nichts aus einer bloßen früheren Absicht als erledigt übernehmen.
 
-Aktueller Wiederaufnahmepunkt: **Bulk 0; Hybridsteuerung und Plan selektiv
-integrieren. Danach bleibt die Owner-/Produktabnahme vor Bulk 1 offen.**
+Aktueller Wiederaufnahmepunkt: **Entscheidung vor Bulk 5.** Proving →
+Contender ist als Sechs-Match-Weg technisch abgenommen. Vor Apex braucht es
+die bewusste Owner-Entscheidung zum Spielrhythmus; ohne sie bleibt Apex
+gesperrt.
 
 Planprüfung am 2026-08-31: lokale Dokumentlinks und Codeblock-Paare geprüft,
 sieben Bulk-Abschnitte mit sieben `PLANNED`-Einträgen sowie neun eindeutige
@@ -473,7 +482,21 @@ Keine Spieltests neu ausgeführt, da ausschließlich Markdown geändert wurde.
 
 ## Änderungsprotokoll
 
+Lokaler Nachweis für den CI-Nachtrag vom 2026-09-05: Produktionsbuild und
+Test-Typecheck bestanden; vollständiger Browserlauf 13/13 in 1,3 Minuten
+ohne Retry bestanden. Remote-CI wird nach dem Push getrennt geprüft.
+
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-05 | CI-Nachtrag: PR-Run `33975877726` erreichte während Contender das 30-Sekunden-Gesamtlimit des Sechs-Match-Tests. Dessen Budget beträgt nun 120 Sekunden; lokale Assertions bleiben zeitlich begrenzt, jeder Ergebnis-Write wird vor der Rückkehr ins HQ ausdrücklich geprüft. Kein belegter Race-Condition-Fehler im Ergebnisbutton; die vorläufige Änderung daran wurde verworfen. Trace/Screenshot werden bei Browserfehlern als CI-Artefakt aufbewahrt. |
+| 2026-09-04 | Bulk 4 technisch abgeschlossen: Der frische vollständige Proving→Contender-Flow lief dreimal direkt hintereinander grün (18 geroutete Matchstarts, sechs Recruitment-Momente und V3-Persistenz). Zusätzlich sind die Unit-, Typ-, Produktionsbuild- und vollständigen 13/13-Playwright-Gates aus Bulk 3 grün. Ein lokaler Sichtcheck traf auf einen bereits aktiven Qualifier-Spielstand und wurde nicht verändert. Das ist bewusst kein behaupteter Owner-/Produktdurchlauf; Apex bleibt gesperrt, bis dessen Fortsetzung ausdrücklich entschieden ist. |
+| 2026-09-04 | Bulk 3 abgeschlossen: Top 2 in Proving bietet im HQ den bewussten Einstieg in Contender; Platz 3/4 wiederholt nur den aktuellen Circuit. Contender startet mit einer frischen Drei-Match-Tabelle, behält Profil/Freischaltungen, zeigt alle drei Rivalen und führt genau einen weiteren sieggebundenen Recruitment-Moment aus. Die Routen nutzen Helix One Flag, Foundry TDM und Temple CTF; der letzte Gegner läuft auf `strong`, ohne Statboni. 243 Unit-Tests, Typecheck, Produktionsbuild und ein vollständiger 13/13-Playwright-Lauf auf Port 4202 bestanden. Apex bleibt gesperrt. |
+| 2026-09-05 | Bulk-2-Nachtrag abgeschlossen: V3 wird erst beim erfolgreichen Write angelegt; der V2-Ausgangspunkt bleibt unverändert, das V1-Profil erhält davor eine einmalige Sicherung. Karriereprofil und Saison werden zusammen im V3-Dokument geschrieben, die V1-Kopie ist nur noch Spiegel. Web Locks und Snapshot-/Revisionsvergleich verhindern veraltete Tabs und Doppelresultate. Speicherfehler lassen Daten liegen und zeigen Wiederholen/Laden sowie Rohdatenexport. 257 Unit-/Integrationschecks, Typecheck, Produktionsbuild und 13/13 Playwright-E2E bestanden. |
+| 2026-09-04 | Bulk 2 abgeschlossen: `core-arena.league.v3` hält die aktive Liga, Versuche und Qualifikationen. Ein gültiger V2-Proving-Stand wird beim ersten Laden übernommen und bleibt als V2-Quelle erhalten. Aufstieg und Wiederholung sind als kleine testbare Operationen vorbereitet; keine Parallel-Tab-, Cloud- oder Archivlogik eingeführt. V3-Schreiben geschieht bei Matchresultat, Kaderwahl und HQ-Aktionen. Unit-Tests, Typecheck und Produktionsbuild bestanden. |
+| 2026-09-04 | Bulk 1 abgeschlossen: Proving, Contender und Apex besitzen nun je einen kanonischen Vier-Team-/Drei-Match-Katalog mit Arenen, Modi, Zielwerten, KI-Profilen und Aufstiegsregel. Route, Simulation, Tabelle, Statistiken und HQ verwenden einen gemeinsamen circuitabhängigen Resolver. V2-Saves ohne Circuit-ID laden weiterhin als Proving; ungültige Runden werden nicht mehr still geklemmt. 240 Unit-Tests, Typecheck, Produktionsbuild und ein isolierter 13/13-Playwright-Lauf auf Port 4198 bestanden. Keine zusätzlichen Circuits wurden freigeschaltet und keine Audio-Datei berührt. |
+| 2026-09-04 | Den zuvor einmaligen Karriere-E2E-Flake als isolierten Flow fünfmal direkt hintereinander wiederholt: 5/5 bestanden. Das technische Stabilitätssignal ersetzt nicht die weiterhin offene Owner-/Produktabnahme. |
+| 2026-09-04 | Öffentlichen Stand nach Deploy #53 direkt geprüft: Hauptmenü lädt und die deutsche Hilfe beschreibt Mausrad, Linksklick und Direktfeuer-Kürzel korrekt. Rubrik 1 ist damit technisch integriert/veröffentlicht; Bulk 0 bleibt wegen Flake-Prüfung und Owner-Produktgate `IN PROGRESS`. |
+| 2026-09-04 | Pages-Deploy #53 für `3f6d88b` erfolgreich in 3:58 Minuten. Build und Deploy bestanden; Karriere-E2E einmal flaky und beim Retry bestanden (`12 passed`, `1 flaky`). Öffentliche Veröffentlichung bestätigt, Flake vor Bulk 1 beobachten. |
+| 2026-09-04 | PR #6 bestand die GitHub-CI, wurde als `3f6d88b` in `main` integriert und GitHub-seitig als `Merged` bestätigt. Phase-6-Branch direkt darauf angelegt; Pages-Deploy und Owner-Go bleiben als getrennte Gates offen. |
 | 2026-09-04 | Bulk 0 begonnen: `origin/main` und Featurebranch geprüft; Nutzer-WIP abgegrenzt; 238/238 Tests, Typecheck, isoliert wiederholter Build und 13/13 Browser-E2E bestanden. Hybridsteuerung `37e197f` ist noch nicht in `main`, Owner-Go noch offen. |
 | 2026-08-31 | Variante B in sieben prüfbare Bulks gegliedert; 3+3+3-Match-Scope, Aufstieg/Retry/Titel, Recruitment, V3-Migration und Sechs-Match-Gate festgelegt. Nur Dokumentation geändert. |

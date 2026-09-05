@@ -26,6 +26,8 @@ import {
 } from "../src/careerProfile";
 import {
   LEAGUE_STORAGE_KEY,
+  LEAGUE_CAREER_STORAGE_KEY,
+  LEAGUE_CIRCUITS,
   LEAGUE_TEAMS,
   STARTER_WINGMAN_IDS,
   FOUNDERS_CIRCUIT_DISCIPLINES,
@@ -34,10 +36,14 @@ import {
   completeLeagueRound,
   completeRecruitment,
   createLeagueRepository,
+  createLeagueCareerRepository,
+  createLeagueCircuitSchedule,
   createLeagueSeason,
   getCurrentPlayerMatch,
   getPlayerOpponent,
   leagueCharacter,
+  leagueCircuit,
+  leagueCircuitDiscipline,
   readLeagueMatchContext,
   readLeagueMatchRosterPresentation,
   simulateLeagueMatch,
@@ -132,6 +138,76 @@ test("opening circuit creates a complete three-match single round robin", () => 
   }
   assert.ok(season.teamRosters["solar-wardens"]);
   assert.ok(season.teamRosters["void-runners"]);
+});
+
+test("all circuit definitions keep their planned teams, disciplines, and difficulty profile", () => {
+  assert.deepEqual(LEAGUE_CIRCUITS.map((circuit) => circuit.id), [
+    "proving",
+    "contender",
+    "apex",
+  ]);
+  assert.deepEqual(leagueCircuit("contender").teamIds, [
+    "iron-vanguard", "void-runners", "grave-circuit", "solar-wardens",
+  ]);
+  assert.deepEqual(leagueCircuit("contender").disciplines.map(({ mapId, mode }) => [mapId, mode]), [
+    ["helix-canopy-v2", "one-flag"],
+    ["flow-circuit-v2", "tdm"],
+    ["drowned-sun-temple-v2", "ctf"],
+  ]);
+  assert.deepEqual(leagueCircuit("contender").opponentBotDifficulties, [
+    "normal", "normal", "strong",
+  ]);
+  assert.deepEqual(leagueCircuit("apex").teamIds, [
+    "iron-vanguard", "void-runners", "solar-wardens", "neon-phantoms",
+  ]);
+  assert.deepEqual(leagueCircuit("apex").disciplines.map(({ mapId, mode }) => [mapId, mode]), [
+    ["flow-circuit-v2", "one-flag"],
+    ["drowned-sun-temple-v2", "tdm"],
+    ["helix-canopy-v2", "ctf"],
+  ]);
+  assert.deepEqual(leagueCircuit("apex").opponentBotDifficulties, [
+    "strong", "strong", "strong",
+  ]);
+  assert.equal(leagueCircuit("proving").availability, "current");
+  assert.equal(leagueCircuit("contender").availability, "current");
+  assert.equal(leagueCircuit("apex").availability, "coming-soon");
+});
+
+test("circuit schedules follow the documented opponent order without clamping rounds", () => {
+  const contender = createLeagueSeason(101, "atlas-rho", "contender");
+  assert.equal(contender.circuitId, "contender");
+  assert.deepEqual(contender.teamIds, leagueCircuit("contender").teamIds);
+  const opponents = contender.rounds.map((round) => {
+    const fixture = round.matches.find((match) =>
+      match.homeTeamId === contender.playerTeamId || match.awayTeamId === contender.playerTeamId,
+    )!;
+    return fixture.homeTeamId === contender.playerTeamId
+      ? fixture.awayTeamId
+      : fixture.homeTeamId;
+  });
+  assert.deepEqual(opponents, ["solar-wardens", "grave-circuit", "void-runners"]);
+  assert.deepEqual(
+    contender.rounds.map((_, roundIndex) => {
+      contender.currentRound = roundIndex;
+      const search = new URLSearchParams(buildLeagueMatchSearch(contender));
+      return [
+        search.get("map"),
+        search.get("mode"),
+        search.get("blueBotDifficulty"),
+        search.get("redBotDifficulty"),
+      ];
+    }),
+    [
+      ["helix-canopy-v2", "one-flag", "normal", "normal"],
+      ["flow-circuit-v2", "tdm", "normal", "normal"],
+      ["drowned-sun-temple-v2", "ctf", "normal", "strong"],
+    ],
+  );
+  assert.equal(createLeagueCircuitSchedule(leagueCircuit("apex").teamIds).length, 3);
+  assert.throws(() => leagueCircuitDiscipline("proving", 3), RangeError);
+  assert.throws(() => createLeagueCircuitSchedule([
+    "iron-vanguard", "iron-vanguard", "neon-phantoms", "grave-circuit",
+  ]), /exactly four distinct teams/);
 });
 
 test("career profile persists identity and exposes three free starter wingmen", () => {
@@ -355,6 +431,10 @@ test("versioned repository round-trips valid saves and rejects corrupt data", ()
   const season = createLeagueSeason(7);
   repository.save(season);
   assert.deepEqual(repository.load(), season);
+  const legacyProvingSave = { ...season } as { circuitId?: unknown };
+  delete legacyProvingSave.circuitId;
+  values.set(LEAGUE_STORAGE_KEY, JSON.stringify(legacyProvingSave));
+  assert.equal(repository.load()?.circuitId, undefined);
   values.set(LEAGUE_STORAGE_KEY, "{broken");
   assert.equal(repository.load(), null);
   values.set(LEAGUE_STORAGE_KEY, JSON.stringify({ ...season, version: 999 }));
@@ -578,7 +658,7 @@ test("quick play mode cards sync the route select and support arrow navigation",
   assert.deepEqual(selected, ["one-flag", "tdm"]);
 });
 
-test("league profile reviews correctable choices before starting the season", () => {
+test("league profile reviews correctable choices before starting the season", async () => {
   window.localStorage.clear();
   document.body.innerHTML = leagueMenuFixture();
   const controller = createLeagueMenuController({ onBack: () => {} });
@@ -611,6 +691,7 @@ test("league profile reviews correctable choices before starting the season", ()
   correctedName.dispatchEvent(new Event("input"));
   document.getElementById("league-profile-review")!.click();
   document.getElementById("league-profile-confirm")!.click();
+  await new Promise(setImmediate);
   const savedProfile = createCareerProfileRepository(window.localStorage).load()!;
   assert.equal(savedProfile.teamName, "Comet Vanguard");
   assert.equal(savedProfile.callsign, "Vector");
@@ -623,6 +704,7 @@ test("league profile reviews correctable choices before starting the season", ()
   assert.equal(document.getElementById("league-intro-title")!.textContent, "Lead Comet Vanguard");
   menuRoot.scrollTop = 380;
   document.getElementById("league-new-season")!.click();
+  await new Promise(setImmediate);
   assert.equal(menuRoot.scrollTop, 0);
   assert.equal(document.getElementById("league-header-title")!.textContent, "League HQ");
   assert.equal(document.getElementById("league-dashboard")!.classList.contains("is-hidden"), false);
@@ -673,7 +755,7 @@ test("league profile reviews correctable choices before starting the season", ()
   assert.equal(document.activeElement?.getAttribute("data-wingman-id"), "dax-ember");
   assert.equal(createCareerProfileRepository(window.localStorage).load()?.selectedWingmanId, "lyra-quell");
   document.getElementById("league-profile-cancel")!.click();
-  assert.equal(createLeagueRepository(window.localStorage).load()?.teamRosters["iron-vanguard"][1], "lyra-quell");
+  assert.equal(createLeagueCareerRepository(window.localStorage).load()?.season.teamRosters["iron-vanguard"][1], "lyra-quell");
   assert.equal(document.activeElement?.id, "league-manage-team");
   document.getElementById("league-manage-team")!.click();
   document.querySelector<HTMLButtonElement>('[data-wingman-id="dax-ember"]')!.click();
@@ -681,9 +763,10 @@ test("league profile reviews correctable choices before starting the season", ()
   document.getElementById("league-profile-review")!.click();
   assert.match(document.getElementById("league-profile-setup")!.textContent ?? "", /CHANGES NOT SAVED/);
   document.getElementById("league-profile-confirm")!.click();
+  await new Promise(setImmediate);
   assert.equal(createCareerProfileRepository(window.localStorage).load()?.selectedWingmanId, "dax-ember");
   assert.equal(createCareerProfileRepository(window.localStorage).load()?.captainSkinId, "briarhorn");
-  assert.equal(createLeagueRepository(window.localStorage).load()?.teamRosters["iron-vanguard"][1], "dax-ember");
+  assert.equal(createLeagueCareerRepository(window.localStorage).load()?.season.teamRosters["iron-vanguard"][1], "dax-ember");
   assert.equal(window.localStorage.getItem(PLAYER_SKIN_STORAGE_KEY), null);
   assert.equal(document.activeElement?.id, "league-manage-team");
   const ownRow = document.querySelector<HTMLButtonElement>('.league-table-row[aria-current="true"]')!;
@@ -699,14 +782,16 @@ test("league profile reviews correctable choices before starting the season", ()
   assert.equal(resetDialog.classList.contains("is-hidden"), true);
   assert.equal(menuRoot.classList.contains("has-modal-open"), false);
   assert.equal(document.activeElement?.id, "league-season-options");
-  assert.ok(window.localStorage.getItem(LEAGUE_STORAGE_KEY));
-  const repository = createLeagueRepository(window.localStorage);
-  const savedSeason = repository.load()!;
+  assert.ok(window.localStorage.getItem(LEAGUE_CAREER_STORAGE_KEY));
+  const repository = createLeagueCareerRepository(window.localStorage);
+  const savedCareer = repository.load()!;
+  const savedSeason = savedCareer.season;
   completeCurrent(savedSeason);
   const recruitmentCandidate = savedSeason.recruitment.candidateIds[0];
   const defeatedTeamId = savedSeason.defeatedTeamIds[0];
   const defeatedRoster = [...savedSeason.teamRosters[defeatedTeamId]];
-  repository.save(savedSeason);
+  savedCareer.season = savedSeason;
+  repository.save(savedCareer);
   controller.open();
   const progression = document.getElementById("league-progression")!;
   const dashboard = document.getElementById("league-dashboard")!;
@@ -724,12 +809,13 @@ test("league profile reviews correctable choices before starting the season", ()
   document.querySelector<HTMLButtonElement>(
     `[data-recruitment-choice="${recruitmentCandidate}"]`,
   )!.click();
+  await new Promise(setImmediate);
   assert.equal(
     createCareerProfileRepository(window.localStorage).load()?.selectedWingmanId,
     recruitmentCandidate,
   );
   assert.deepEqual(
-    createLeagueRepository(window.localStorage).load()?.teamRosters[defeatedTeamId],
+    createLeagueCareerRepository(window.localStorage).load()?.season.teamRosters[defeatedTeamId],
     defeatedRoster,
   );
   assert.equal(
@@ -738,6 +824,7 @@ test("league profile reviews correctable choices before starting the season", ()
   );
   assert.equal(document.activeElement?.id, "league-progression-continue");
   document.getElementById("league-progression-continue")!.click();
+  await new Promise(setImmediate);
   assert.equal(progression.classList.contains("is-hidden"), true);
   assert.equal(progression.getAttribute("aria-hidden"), "true");
   assert.equal(menuRoot.classList.contains("has-modal-open"), false);
@@ -802,7 +889,7 @@ test("next-match dossier shows recorded opponent performance when scouting data 
   window.localStorage.clear();
 });
 
-test("season reset requires confirmation and preserves career identity and unlocks", () => {
+test("season reset requires confirmation and preserves career identity and unlocks", async () => {
   window.localStorage.clear();
   const profile = seedCareerProfile();
   syncCareerUnlocks(profile, ["crimson-jackals"]);
@@ -817,7 +904,9 @@ test("season reset requires confirmation and preserves career identity and unloc
   document.getElementById("league-reset")!.click();
   assert.ok(repository.load());
   document.getElementById("league-reset-confirm-button")!.click();
-  assert.equal(repository.load(), null);
+  await new Promise(setImmediate);
+  assert.equal(createLeagueCareerRepository(window.localStorage).load(), null);
+  assert.ok(repository.load(), "V2 remains available as a rollback source");
   const preserved = createCareerProfileRepository(window.localStorage).load()!;
   assert.equal(preserved.selectedWingmanId, "kael-voss");
   assert.ok(preserved.unlockedWingmanIds.includes("kael-voss"));

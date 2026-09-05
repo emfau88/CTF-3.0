@@ -1,8 +1,8 @@
 import {
   LEAGUE_CHARACTERS,
   LEAGUE_TEAMS,
-  FOUNDERS_CIRCUIT_TEAM_IDS,
-  foundersCircuitDiscipline,
+  leagueCircuit,
+  leagueCircuitDiscipline,
   PLAYER_LEAGUE_TEAM_ID,
   STARTER_WINGMAN_IDS,
 } from "./leagueCatalog";
@@ -10,6 +10,7 @@ import {
   LEAGUE_SAVE_VERSION,
   type CompleteLeagueMatchInput,
   type LeagueCharacterStats,
+  type LeagueCircuitId,
   type LeagueMatchResultRecord,
   type LeagueScheduledMatch,
   type LeagueSeasonState,
@@ -34,7 +35,12 @@ function random01(seed: number): number {
   return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
 }
 
-function createSchedule(teamIds: readonly LeagueTeamId[]): LeagueSeasonState["rounds"] {
+export function createLeagueCircuitSchedule(
+  teamIds: readonly LeagueTeamId[],
+): LeagueSeasonState["rounds"] {
+  if (teamIds.length !== 4 || new Set(teamIds).size !== 4) {
+    throw new Error("A league circuit requires exactly four distinct teams.");
+  }
   const ids = [...teamIds];
   const fixed = ids[0];
   let rotating = ids.slice(1);
@@ -142,6 +148,7 @@ function mutableCharacterStats(
 export function createLeagueSeason(
   seed = Date.now(),
   selectedWingmanId: string = STARTER_WINGMAN_IDS[0],
+  circuitId: LeagueCircuitId = "proving",
 ): LeagueSeasonState {
   const safeSeed = Math.abs(Math.trunc(seed)) || 1;
   const selectedWingman = LEAGUE_CHARACTERS.find(
@@ -150,6 +157,7 @@ export function createLeagueSeason(
   if (!selectedWingman || selectedWingmanId === "nova-vale") {
     throw new Error("The selected wingman is not a valid league fighter.");
   }
+  const circuit = leagueCircuit(circuitId);
   const teamRosters = Object.fromEntries(
     LEAGUE_TEAMS.map((team) => [team.id, [...team.characterIds]])
   ) as LeagueSeasonState["teamRosters"];
@@ -173,14 +181,15 @@ export function createLeagueSeason(
     version: LEAGUE_SAVE_VERSION,
     seasonId: `season-${safeSeed.toString(36)}`,
     simulationSeed: safeSeed,
+    circuitId,
     status: "active",
     currentRound: 0,
     playerTeamId: PLAYER_LEAGUE_TEAM_ID,
-    teamIds: [...FOUNDERS_CIRCUIT_TEAM_IDS],
+    teamIds: [...circuit.teamIds],
     teamRosters,
     standings,
     characterStats,
-    rounds: createSchedule(FOUNDERS_CIRCUIT_TEAM_IDS),
+    rounds: createLeagueCircuitSchedule(circuit.teamIds),
     defeatedTeamIds: [],
     recruitment: {
       status: "locked",
@@ -256,7 +265,10 @@ function normalizedPerformance(season: LeagueSeasonState, teamId: LeagueTeamId):
     const againstScore = match.result.blueTeamId === teamId
       ? match.result.redScore
       : match.result.blueScore;
-    return total + (forScore - againstScore) / foundersCircuitDiscipline(round.index).scoreTarget;
+    return total + (forScore - againstScore) / leagueCircuitDiscipline(
+      season.circuitId ?? "proving",
+      round.index,
+    ).scoreTarget;
   }, 0);
 }
 
@@ -304,7 +316,7 @@ function addSimulatedCharacterStats(
   seed: number,
   roundIndex: number,
 ): void {
-  const discipline = foundersCircuitDiscipline(roundIndex);
+  const discipline = leagueCircuitDiscipline(season.circuitId ?? "proving", roundIndex);
   season.teamRosters[teamId].forEach((characterId, index) => {
     const stats = mutableCharacterStats(season, teamId, characterId);
     const roll = random01(seed + index * 73);
@@ -328,7 +340,10 @@ export function simulateLeagueMatch(
   match: LeagueScheduledMatch
 ): LeagueMatchResultRecord {
   const seed = season.simulationSeed + hashText(match.id);
-  const discipline = foundersCircuitDiscipline(match.roundIndex);
+  const discipline = leagueCircuitDiscipline(
+    season.circuitId ?? "proving",
+    match.roundIndex,
+  );
   const homeTeam = LEAGUE_TEAMS.find((team) => team.id === match.homeTeamId)!;
   const awayTeam = LEAGUE_TEAMS.find((team) => team.id === match.awayTeamId)!;
   const formEdge = teamForm(season, match.homeTeamId) - teamForm(season, match.awayTeamId);

@@ -15,6 +15,8 @@ import type {
 } from "../world";
 import type { BotDifficultyProfile } from "./BotDifficulty";
 
+const DEATH_DROP_OPPORTUNITY_RANGE = 260;
+
 export interface BotStrategicPickupOptions {
   readonly map: Pick<WorldMapData, "weaponRoster" | "registration">;
   readonly snapshot: WorldSnapshot;
@@ -106,6 +108,10 @@ export function selectBotStrategicPickup(
     .filter((pickup) =>
       pickup.lifeState === "active" &&
       !excludedPickupIds.has(pickup.id) &&
+      (pickup.origin !== "death-drop" ||
+        (snapshot.modeId === "team-deathmatch" &&
+          distance(actor.position, pickup.position) <=
+            DEATH_DROP_OPPORTUNITY_RANGE)) &&
       !weaponPickupReservedForHuman(
         pickup,
         actor,

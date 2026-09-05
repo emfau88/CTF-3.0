@@ -3,16 +3,18 @@
 ## Dokumentstatus
 
 - **Status:** ACTIVE – CANONICAL ROADMAP
-- **Letzte Aktualisierung:** 2026-09-04
+- **Letzte Aktualisierung:** 2026-09-05
 - **Aktive Phase:** Phase 5 – Produktvalidierung (`IN PROGRESS`)
 - **Nächstes Gate:** wiederholte Solo-Produktabnahme; externe Tests nach
   Verfügbarkeit
-- **Zuletzt belegter Integrationsstand:** `main` @ `9fcb7c9` (2026-08-30)
-- **Zuletzt belegter veröffentlichter Stand:** GitHub Pages, erfolgreicher
-  Deploy vom 2026-08-30; bei nächster Umsetzung erneut prüfen
-- **Aktiver Arbeitsbranch:** `codex/phase-5-hybrid-controls`
-- **Nächste geplante Umsetzung:** Phase 6, Variante B in Etappen;
-  [Bulk-Plan](release/PHASE_6_CAREER_EXPANSION_PLAN.md) erstellt, Code noch nicht begonnen
+- **Kanonischer Integrationsstand:** `main` @ `3f6d88b` (PR #6, 2026-09-04)
+- **Veröffentlichter Stand:** GitHub Pages @ `3f6d88b`; Deploy #53 am
+  2026-09-04 erfolgreich abgeschlossen
+- **Aktiver Arbeitsbranch:** `codex/phase-6-career-expansion`, direkt von
+  `main` @ `3f6d88b`
+- **Nächste geplante Umsetzung:** Vor Phase-6-Bulk 5 die ausdrückliche
+  Owner-Entscheidung zu Apex einholen; Proving → Contender ist technisch
+  spielbar und im [Bulk-Plan](release/PHASE_6_CAREER_EXPANSION_PLAN.md) belegt
 
 > Diese Datei ist die verbindliche Produkt- und Release-Roadmap für Core Arena.
 > Frühere Produkt-, Audit- und Umsetzungspläne bleiben als historische oder
@@ -120,7 +122,7 @@ Ein Release Candidate liegt erst vor, wenn:
 | 3 – League- und Karrierefluss | Kompakte Teamgründung und geschlossener Proving-Flow | `COMPLETE` | Phase 2 `COMPLETE` |
 | 4 – Relevantes Recruitment | Wahrnehmbare KI-Archetypen ohne Statvorteile | `COMPLETE` | Phase 3 `COMPLETE` |
 | 5 – Produktvalidierung | Getesteter kompletter Release-Slice | `IN PROGRESS` | Phase 4 `COMPLETE` |
-| 6 – Karriereausbau, Variante B | Erst sechs, nach Abnahme neun Karriere-Matches | `PLANNED` | Positives Phase-5-Solo-Entwicklungsgate; Bulk-Plan liegt vor |
+| 6 – Karriereausbau, Variante B | Erst sechs, nach Abnahme neun Karriere-Matches | `IN PROGRESS` | Proving → Contender technisch abgeschlossen; Owner-Entscheidung vor Apex offen |
 | 7 – Portal-/Build-Vorbereitung | Schlanker Standalone-/CrazyGames-Build | `PLANNED` | Phase 6 `COMPLETE`, Karrierescope abgenommen |
 | 8 – Release-Candidate-QA | Technisch und inhaltlich abgenommener Kandidat | `PLANNED` | Phase 7 `COMPLETE` |
 | 9 – Audio und finaler Polish | Rechteklarer Gesamtmix und finaler RC | `PLANNED` | Phase 8 `COMPLETE` |
@@ -209,7 +211,8 @@ Spiel öffnen → KARRIERE STARTEN → Qualifier → QUALIFIED
 
 - höchstens ein Klick bis Gameplay;
 - Desktop, 2v2 TDM, Helix Canopy, ungefähr 90 Sekunden;
-- Arc Lash plus höchstens eine Pickup-Waffe;
+- Arc Lash mit bewusst begrenztem Qualifier-Loot: zwei Pulse- und zwei
+  Rocket-Launcher-Spawnpunkte;
 - keine League-Punkte und Qualifikation unabhängig vom Ergebnis;
 - kontextuelle, aktionsbestätigte Hinweise für Bewegung, Aim, Arc Lash,
   Waffenpickup und Sprung;
@@ -401,6 +404,44 @@ Technisches Gate:
   offenen Owner-/Produktabnahme `IN PROGRESS`; Merge ist keine Produktabnahme.
 - Nutzer-WIP einschließlich `package-lock.json`, Konzeptbildern, neuen Assets,
   `characterSpecialIdle.ts`, Audio und `tmp/` bleibt außerhalb des Commits.
+- PR #6 bestand die GitHub-CI am 2026-09-04 in 7:55 Minuten und wurde danach
+  als Merge-Commit `3f6d88b` in `main` integriert. GitHub bestätigt den PR als
+  `Merged`; der anschließende Pages-Deploy #53 wird getrennt nachgewiesen.
+- Der neue Arbeitsbranch `codex/phase-6-career-expansion` basiert direkt auf
+  diesem Merge. Die Integration schließt nicht automatisch das weiterhin
+  offene Phase-5-Produktgate.
+- Pages-Lauf #53 bestand Build und Deployment in 3:58 Minuten. Sein
+  Karriere-E2E war einmal flaky und bestand beim automatischen Retry
+  (`12 passed`, `1 flaky`). Da derselbe E2E lokal und im PR-Lauf bestand, ist
+  die Veröffentlichung nicht blockiert; die Flake-Ursache bleibt vor Bulk 1
+  als Stabilitätsbeobachtung offen.
+- Live-Smoke auf `https://emfau88.github.io/CTF-3.0/` bestätigt Hauptmenü und
+  die veröffentlichte deutsche Hilfe mit Mausrad-Waffenwechsel, Linksklick als
+  Primärfeuer und fortbestehenden Direktfeuer-Kürzeln.
+
+### Combat-Ökonomie-Korrektur vom 2026-09-04
+
+- Der feste Helix-Qualifier erhält zusätzlich zu zwei Pulse-Pickups je einen
+  Rocket Launcher mittig vor der blauen und roten Base, außerhalb der
+  Spawnzonen. Der reguläre Helix-Map-Pool bleibt unverändert.
+- Bei einem regulären Kampftod fallen alle tatsächlich getragenen
+  Spezialwaffen mit ihrer exakten Restmunition als separate, nicht respawnende
+  Drops. Sie können vier Sekunden lang aufgenommen werden; Teilaufnahmen
+  lassen die noch vorhandene Munition liegen. Stürze aus der Map erzeugen
+  bewusst keine Waffen-Drops.
+- Classic CTF behält die übliche, bereits vorhandene Flaggenregel bei: Stirbt
+  ein Träger, fällt die gegnerische Flagge an seiner Position. Berührt ihr
+  eigenes Team sie, kehrt sie sofort zur eigenen Base zurück; ohne Berührung
+  läuft weiterhin der separate Fünf-Sekunden-Flaggen-Timeout ab.
+- Death-Drops zeigen im Spiel Restmunition und verbleibende Sekunden direkt am
+  Pickup an. Audio, Saves, reguläre Karten-Pickup-Respawns und One Flag bleiben
+  außerhalb dieses Slices unverändert.
+- Bots bewerten solche Drops nur im TDM und nur als nahe Gelegenheit; in CTF
+  und One Flag zieht ein Objective sie daher nicht vom Flaggenziel ab.
+
+**Technischer Nachweis:** `npm.cmd test` 248/248, `npm.cmd run test:typecheck`,
+`npm.cmd run build` und `npm.cmd run test:e2e` 13/13 bestanden. Der lokale
+Qualifier-Canvas lud die neue Kartenvariante ohne Konsolenfehler.
 
 ### Testaufbau
 
@@ -436,16 +477,21 @@ versioniert festgelegt, damit das Gate nicht nachträglich passend gemacht wird.
 
 ## Phase 6 – Karriereausbau, Variante B
 
-**Status:** `PLANNED`
+**Status:** `IN PROGRESS` – Proving → Contender ist technisch als
+Sechs-Match-Weg spielbar. Owner-/Produktabnahme und die bewusste
+Apex-Fortsetzung bleiben offen.
 
 **Ausführungsplan:** [PHASE_6_CAREER_EXPANSION_PLAN.md](release/PHASE_6_CAREER_EXPANSION_PLAN.md)
 
 ### Entscheidung und Umfang vom 2026-08-31
 
-Variante B ist als stufenweiser Umsetzungsplan gewählt. In diesem Schritt
-wurden nur Plan und Roadmap erstellt/aktualisiert, keine Spiellogik geändert.
-Detailregeln, Tests, Save-Migration und Wiederaufnahmepunkte stehen im
-Ausführungsplan. Alle Bulks sind noch `PLANNED`.
+Variante B ist als stufenweiser Umsetzungsplan gewählt. Bulk 1–3 haben das
+datengetriebene Circuit-Fundament, die V3-Karrierehülle und den spielbaren
+Contender umgesetzt. Die ergänzende Save-Absicherung vom 2026-09-05 schützt
+V3 gegen veraltete Tabs, doppelte Ergebniswrites und fehlgeschlagene
+Profilspiegelungen. Bulk 4 hat den frischen Sechs-Match-Weg technisch
+wiederholt geprüft; Apex bleibt weiterhin eine sichtbare Vorschau. Detailregeln,
+Tests, Save-Migration und Wiederaufnahmepunkte stehen im Ausführungsplan.
 
 - Zuerst Contender: drei zusätzliche Matches, zwei bereits vorhandene neue
   Rivalenteams im spielbaren Kader und ein weiterer sieggebundener
@@ -475,7 +521,8 @@ Ausführungsplan. Alle Bulks sind noch `PLANNED`.
 7. Bulk 6: Gesamt-QA, Owner-Abnahme und Integrationsübergabe.
 
 - [ ] Phase-5-Solo-Entwicklungsfreigabe dokumentiert.
-- [ ] Migration, Aufstieg, Nichtqualifikation und Recruitment abgesichert.
+- [x] Migration, Aufstieg, Nichtqualifikation und Recruitment technisch
+      abgesichert; Owner-Abnahme bleibt separat offen.
 - [ ] Sechs-Match-Weg technisch und durch den Owner abgenommen.
 - [ ] Apex-Fortsetzung ausdrücklich freigegeben.
 - [ ] Neun-Match-Weg einschließlich Abschluss und Wiederholung abgenommen.
@@ -507,6 +554,8 @@ genügt nicht.
 - Standalone- und CrazyGames-Build aus derselben Codebasis;
 - CrazyGames-SDK ausschließlich über `PlatformServices`;
 - `Gameplay start/stop`, Locale, Fokus, Pause, Fullscreen und Lifecycle;
+- GitHub-Actions-Warnungen zur erzwungenen Node-24-Ausführung der noch auf
+  Node 20 zielenden offiziellen Actions auflösen und den Deploy erneut prüfen;
 - lokaler Save als sicherer Fallback; zunächst keine Werbung.
 
 ### Abnahmekriterien
@@ -598,6 +647,7 @@ Datenschutz-/Plattformentscheidung extern versendet:
 | Mehr Matches verlängern nur denselben Loop | Variante B etappenweise; Sechs-Match-Gate vor Apex, Variante A nur nach neuer Scope-Entscheidung | Phase 5–6 |
 | Circuit-Wechsel beschädigt bestehende Saves | V3-Migration mit erhaltenem V2-Stand, Profil-Backup, idempotenten Übergängen und Rückrollprobe | Phase 6, Bulk 2/4/6 |
 | Nur Solo-Tests verfügbar | Entwicklung nach dokumentiertem Solo-Gate; unabhängige First-Run-Evidenz bis zu externen Tests offen halten | Phase 5 bis Release |
+| GitHub Actions erzwingt Node 24 für auf Node 20 zielende Action-Versionen | Offizielle Action-Versionen in eigenem Build-Infrastruktur-Slice aktualisieren und vollständige CI/Pages-Pipeline prüfen | Phase 7 |
 | Mobile ist umfangreich, aber nicht abgenommen | Code erhalten, nicht als Releaseversprechen behandeln | nach erstem Portaltest |
 | Build ist für Portale zu groß | aktive Assets, Preload und Messung optimieren | Phase 7 |
 | Audioherkunft ist teilweise unklar | keine frühe Audiointegration; kompletter Rechte-Gate | Phase 9 |
@@ -622,6 +672,7 @@ Datenschutz-/Plattformentscheidung extern versendet:
 | Datum | Entscheidung | Begründung |
 | --- | --- | --- |
 | 2026-09-04 | Den technisch grünen Hybridsteuerungs-Branch vor Phase-6-Code sauber integrieren. | Circuit-/Save-Arbeit soll auf dem tatsächlich getesteten Desktop-Steuerungsstand aufbauen; die offene Produktabnahme bleibt davon getrennt. |
+| 2026-09-05 | V3-Karriere vor Apex gegen Schreibkonflikte und Speicherfehler absichern. | Ein längerer Karriereweg ist nur sinnvoll, wenn ein Matchresultat weder verloren gehen noch doppelt zählen kann. |
 | 2026-08-31 | Variante B als 3+3+3-Match-Ausbau planen; zuerst Contender, danach Sechs-Match-Gate, erst dann Apex. | Der Nutzer bevorzugt die längere Karriere; kleine prüfbare Etappen begrenzen Risiko und verhindern ungeprüfte Zusatzlänge. |
 | 2026-08-31 | Solo-Entwicklungsfreigabe und externe Releasevalidierung getrennt dokumentieren. | Der Owner hat keine feste Testergruppe; Entwicklung kann nach echter Solo-Abnahme fortgesetzt werden, ohne unabhängige Testevidenz zu behaupten. |
 | 2026-08-30 | Desktop erhält eine Hybridsteuerung aus Mausrad/Linksklick und bestehenden Direkttasten. | Der vertraute Shooter-Pfad senkt die Einstiegshürde, während die präzisen Kürzel erhalten bleiben; beide Wege teilen Munition und Cooldowns. |
@@ -637,8 +688,22 @@ Datenschutz-/Plattformentscheidung extern versendet:
 
 ## Änderungsverlauf
 
+CI-Nachtrag vom 2026-09-05 lokal geprüft: Build, Test-Typecheck und 13/13
+Browser-E2E in 1,3 Minuten ohne Retry grün. Das Remote-Gate wird nach dem
+Push separat geprüft; die Veröffentlichung erfolgt erst nach Integration.
+
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-05 | PR-Run `33975877726` scheiterte im Sechs-Match-Browserflow am Gesamtlimit von 30 Sekunden; Unit-Tests, Typecheck und Build waren grün. Die anfängliche Vermutung eines klickbaren Zeitfensters vor der Ergebnissperre wurde durch die synchrone Ausführung widerlegt; kein Gameplay-Fix dafür übernommen. Nur dieser lange E2E erhält 120 Sekunden Gesamtbudget, einzelne Assertions behalten ihre Limits. Nach jedem Match wird die gespeicherte Saison-ID und nächste Runde geprüft. Fehlgeschlagene Browserläufe liefern künftig Trace/Screenshot als CI-Artefakt. |
+| 2026-09-05 | Save-Absicherung ergänzt: V3 enthält den bestätigten Profilstand zusammen mit dem Karrierefortschritt; die ältere Profilkopie bleibt nur ein Spiegel. V2 wird erst beim erfolgreichen V3-Write migriert und sichert das Profil davor einmalig. Ergebnis-, Recruitment-, Team- und Reset-Aktionen werden durch eine Browser-Schreibsperre und einen Revisionsvergleich geschützt; alte Tabs können keinen neueren Stand überschreiben. Fehlerhafte, fremdversionierte oder nicht lesbare Daten werden nicht still als neue Karriere interpretiert. Im HQ und nach einem League-Match erscheinen ein verständlicher Fehler, erneutes Laden sowie ein Export der vorhandenen Save-Rohdaten. Bestehen: 257/257 Tests, Typecheck, Produktionsbuild und 13/13 Browser-E2E. Kein Audio geändert. |
+| 2026-09-04 | Combat-Ökonomie-Slice umgesetzt: Qualifier hat nun zwei Pulse- und zwei symmetrische Rocket-Pickups mittig vor den Basen, außerhalb der Spawnzonen. Kampftode droppen jede getragene Spezialwaffe mit exakter Restmunition für vier Sekunden; Teilaufnahme, Ablauf und Ausschluss bei Stürzen sind automatisiert abgedeckt. Classic CTFs Rückgabe einer eigenen gedroppten Flagge per Berührung wurde als Regressionstest festgeschrieben. Audio blieb unberührt. |
+| 2026-09-04 | Bulk 4 technisch geschlossen: Der frische Proving→Contender-Flow bestand dreimal direkt hintereinander; zuvor waren Unit-, Typ-, Produktionsbuild- und vollständige Browser-Gates grün. Das ersetzt ausdrücklich nicht den Owner-/Produktdurchlauf. Apex bleibt bis zu einer bewussten Freigabe gesperrt. |
+| 2026-09-04 | Öffentlichen Pages-Stand nach Deploy #53 direkt geprüft: Menü lädt und die neue deutsche Hybridsteuerung ist in der Hilfe sichtbar; CI-Flake und Action-Runtime-Warnungen bleiben transparent dokumentiert. |
+| 2026-09-04 | PR #6 nach grüner CI als `3f6d88b` in `main` integriert, Pages-Deploy #53 erfolgreich und `codex/phase-6-career-expansion` direkt davon angelegt; ein beim Retry bestandener Karriere-E2E-Flake bleibt vermerkt, Produktgate weiterhin offen. |
+| 2026-09-04 | Bulk 3 abgeschlossen: Proving → Contender im HQ spielbar verbunden. Bei Top 2 startet bewusst eine frische Contender-Tabelle, bei Scheitern wird nur die aktuelle Liga wiederholt; Profil/Freischaltungen bleiben. Drei Contender-Matches mit den geplanten Maps/Modi sowie `strong` nur im finalen CTF sind durch Unit-, Typ-, Build- und vollständigen 13/13-Browserlauf belegt. Apex bleibt gesperrt; Bulk 4 ist das Pflichtgate. |
+| 2026-09-04 | Bulk 2 abgeschlossen: schlanke V3-Karrierehülle mit aktivem Circuit, Versuchsnummern und Qualifikationen; bestehende V2-Proving-Saves werden ohne Löschen übernommen. Aufstieg/Wiederholung sind testbar vorbereitet, ohne Cloud-, Archiv- oder Mehrtab-Komplexität. Unit-, Typ- und Build-Gates grün. |
+| 2026-09-04 | Bulk 1 abgeschlossen: Kanonischer Circuit-Katalog für Proving, Contender und Apex, gemeinsamer strikter Disziplinresolver und V2-kompatibler Circuit-Marker. Proving bleibt die einzige spielbare Saison; 240 Unit-Tests, Typecheck, Build und ein isolierter 13/13-Playwright-Lauf auf Port 4198 grün. Audio unberührt. |
+| 2026-09-04 | Den einmaligen Karriere-E2E-Flake mit fünf fokussierten direkten Wiederholungen geprüft: 5/5 bestanden. Das Owner-/Produktgate bleibt ausdrücklich offen. |
 | 2026-09-04 | Rubrik 1/Bulk 0 gestartet: Remote- und WIP-Schutz geprüft; 238 Tests, Typecheck, Build und 13 E2E-Tests erneut grün. Hybridsteuerung noch nicht als in `main` behauptet. |
 | 2026-08-31 | Phase-6-Bulk-Plan erstellt und Variante B konkretisiert: Vier-Team-Circuits, 3+3+3 Matches, Save-/Aufstiegsregeln und Pflicht-Gate nach sechs Matches. Keine Spiellogik geändert; Phase 5 bleibt offen und Phase 6 `PLANNED`. |
 | 2026-08-30 | Phase 5 gestartet und die aus der Eigenabnahme abgeleitete Hybridsteuerung als erste Steuerungskorrektur umgesetzt. |

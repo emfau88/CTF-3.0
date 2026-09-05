@@ -79,15 +79,24 @@ test("qualifier route is one fixed desktop 2v2 Helix TDM slice", () => {
   assert.equal(QUALIFIER_TDM_CONFIG.durationMs, 90_000);
 });
 
-test("qualifier world exposes Arc Lash plus one pickup weapon without changing Helix", () => {
+test("qualifier world exposes paired Pulse and base Rocket pickups without changing Helix", () => {
   const world = createQualifierWorld(HELIX_CANOPY_V2, { blue: 2, red: 2 });
   assert.equal(world.actors.length, 4);
-  assert.deepEqual(world.map?.weaponRoster, ["whip", "pulse"]);
+  assert.deepEqual(world.map?.weaponRoster, ["whip", "pulse", "rocket"]);
+  assert.equal(world.pickups.filter((pickup) => pickup.type === "pulse").length, 2);
+  const rockets = world.pickups.filter((pickup) => pickup.type === "rocket");
+  assert.equal(rockets.length, 2);
+  assert.deepEqual(rockets.map((pickup) => pickup.id).sort(), [
+    "qualifier-rocket-blue-base",
+    "qualifier-rocket-red-base",
+  ]);
   assert.deepEqual(
-    [...new Set(world.pickups
-      .filter((pickup) => pickup.type !== "health" && pickup.type !== "armor")
-      .map((pickup) => pickup.type))],
-    ["pulse"],
+    rockets.find((pickup) => pickup.id === "qualifier-rocket-blue-base")?.position,
+    { x: HELIX_CANOPY_V2.gameplay.blueBase.x + HELIX_CANOPY_V2.gameplay.blueBase.width + 80, y: HELIX_CANOPY_V2.gameplay.blueBase.y + HELIX_CANOPY_V2.gameplay.blueBase.height / 2 },
+  );
+  assert.deepEqual(
+    rockets.find((pickup) => pickup.id === "qualifier-rocket-red-base")?.position,
+    { x: HELIX_CANOPY_V2.gameplay.redBase.x - 80, y: HELIX_CANOPY_V2.gameplay.redBase.y + HELIX_CANOPY_V2.gameplay.redBase.height / 2 },
   );
   assert.deepEqual(HELIX_CANOPY_V2.weaponRoster, ["whip", "rail", "pulse", "shard"]);
 });
