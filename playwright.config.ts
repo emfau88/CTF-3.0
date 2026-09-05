@@ -12,6 +12,8 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${e2ePort}/CTF-3.0/`,
     headless: true,
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
     launchOptions: {
       args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
     },

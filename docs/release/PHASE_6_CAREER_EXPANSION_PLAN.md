@@ -482,8 +482,13 @@ Keine Spieltests neu ausgeführt, da ausschließlich Markdown geändert wurde.
 
 ## Änderungsprotokoll
 
+Lokaler Nachweis für den CI-Nachtrag vom 2026-09-05: Produktionsbuild und
+Test-Typecheck bestanden; vollständiger Browserlauf 13/13 in 1,3 Minuten
+ohne Retry bestanden. Remote-CI wird nach dem Push getrennt geprüft.
+
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-05 | CI-Nachtrag: PR-Run `33975877726` erreichte während Contender das 30-Sekunden-Gesamtlimit des Sechs-Match-Tests. Dessen Budget beträgt nun 120 Sekunden; lokale Assertions bleiben zeitlich begrenzt, jeder Ergebnis-Write wird vor der Rückkehr ins HQ ausdrücklich geprüft. Kein belegter Race-Condition-Fehler im Ergebnisbutton; die vorläufige Änderung daran wurde verworfen. Trace/Screenshot werden bei Browserfehlern als CI-Artefakt aufbewahrt. |
 | 2026-09-04 | Bulk 4 technisch abgeschlossen: Der frische vollständige Proving→Contender-Flow lief dreimal direkt hintereinander grün (18 geroutete Matchstarts, sechs Recruitment-Momente und V3-Persistenz). Zusätzlich sind die Unit-, Typ-, Produktionsbuild- und vollständigen 13/13-Playwright-Gates aus Bulk 3 grün. Ein lokaler Sichtcheck traf auf einen bereits aktiven Qualifier-Spielstand und wurde nicht verändert. Das ist bewusst kein behaupteter Owner-/Produktdurchlauf; Apex bleibt gesperrt, bis dessen Fortsetzung ausdrücklich entschieden ist. |
 | 2026-09-04 | Bulk 3 abgeschlossen: Top 2 in Proving bietet im HQ den bewussten Einstieg in Contender; Platz 3/4 wiederholt nur den aktuellen Circuit. Contender startet mit einer frischen Drei-Match-Tabelle, behält Profil/Freischaltungen, zeigt alle drei Rivalen und führt genau einen weiteren sieggebundenen Recruitment-Moment aus. Die Routen nutzen Helix One Flag, Foundry TDM und Temple CTF; der letzte Gegner läuft auf `strong`, ohne Statboni. 243 Unit-Tests, Typecheck, Produktionsbuild und ein vollständiger 13/13-Playwright-Lauf auf Port 4202 bestanden. Apex bleibt gesperrt. |
 | 2026-09-05 | Bulk-2-Nachtrag abgeschlossen: V3 wird erst beim erfolgreichen Write angelegt; der V2-Ausgangspunkt bleibt unverändert, das V1-Profil erhält davor eine einmalige Sicherung. Karriereprofil und Saison werden zusammen im V3-Dokument geschrieben, die V1-Kopie ist nur noch Spiegel. Web Locks und Snapshot-/Revisionsvergleich verhindern veraltete Tabs und Doppelresultate. Speicherfehler lassen Daten liegen und zeigen Wiederholen/Laden sowie Rohdatenexport. 257 Unit-/Integrationschecks, Typecheck, Produktionsbuild und 13/13 Playwright-E2E bestanden. |

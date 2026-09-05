@@ -13,6 +13,9 @@ const QUALIFIED_STATE = {
 test("qualified first run creates a team and completes the six-match Proving-to-Contender career", async ({
   page,
 }) => {
+  // Six arena loads, team setup and two recruitment decisions share one test.
+  // Keep individual assertions bounded; allow the complete journey time on CI.
+  test.setTimeout(120_000);
   await page.addInitScript((qualifier) => {
     if (sessionStorage.getItem("career-flow-test-seeded") === "1") return;
     localStorage.clear();
@@ -55,7 +58,9 @@ test("qualified first run creates a team and completes the six-match Proving-to-
     await expect(page.locator("#game canvas")).toBeVisible({ timeout: 15_000 });
     await finishLeagueMatch(page, 3, 1);
     await expect(page.locator("#v2-result-overlay")).toBeVisible();
-    await page.locator("#v2-result-play-again").click();
+    const returnToLeague = page.locator("#v2-result-play-again");
+    await expect(returnToLeague).toBeEnabled();
+    await returnToLeague.click();
     await expect(page).toHaveURL(/leagueHub=1/);
     await expect(page.locator("#league-progression")).toBeVisible();
     await expect(page.locator("#league-progression")).toContainText(
@@ -86,7 +91,10 @@ test("qualified first run creates a team and completes the six-match Proving-to-
     await expect(page).toHaveURL(new RegExp(`leagueRound=${roundIndex}`));
     await expect(page.locator("#game canvas")).toBeVisible({ timeout: 15_000 });
     await finishLeagueMatch(page, 3, 1);
-    await page.locator("#v2-result-play-again").click();
+    const returnToLeague = page.locator("#v2-result-play-again");
+    await expect(returnToLeague).toBeEnabled();
+    await returnToLeague.click();
+    await expect(page).toHaveURL(/leagueHub=1/);
     await expect(page.locator("#league-progression")).toBeVisible();
     if (roundIndex === 0) {
       const continueButton = page.locator("#league-progression-continue");
@@ -117,6 +125,9 @@ async function finishLeagueMatch(
   blueScore: number,
   redScore: number,
 ): Promise<void> {
+  const context = new URL(page.url()).searchParams;
+  const seasonId = context.get("leagueSeason");
+  const nextRound = Number(context.get("leagueRound")) + 1;
   await page.evaluate(({ blueScore, redScore }) => {
     window.dispatchEvent(new window.CustomEvent("v2-match-state", {
       detail: {
@@ -130,4 +141,9 @@ async function finishLeagueMatch(
       },
     }));
   }, { blueScore, redScore });
+  await expect.poll(() => page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem("core-arena.league.v3") ?? "null");
+    return { seasonId: saved?.season?.seasonId, round: saved?.season?.currentRound };
+  }), { message: "The match result must be persisted before leaving the arena" })
+    .toEqual({ seasonId, round: nextRound });
 }
