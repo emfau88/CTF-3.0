@@ -4,8 +4,8 @@ import {
   LEAGUE_TEAMS,
   PLAYER_LEAGUE_TEAM_ID,
   STARTER_WINGMAN_IDS,
-  type LeagueTeamId,
-} from "./meta/league";
+} from "./meta/league/leagueCatalog";
+import type { LeagueTeamId } from "./meta/league/leagueTypes";
 import { isPlayerSkinId } from "./playerSkinPreference";
 import type { V2PlayerSkinId } from "./v2Route";
 
@@ -227,7 +227,7 @@ export function wingmanUnlockTeamId(characterId: string): LeagueTeamId | null {
   return character.teamId;
 }
 
-function isCareerProfile(value: unknown): value is CareerProfile {
+export function isCareerProfile(value: unknown): value is CareerProfile {
   if (!value || typeof value !== "object") return false;
   const profile = value as Partial<CareerProfile>;
   const knownCharacters = new Set(LEAGUE_CHARACTERS.map((character) => character.id));
@@ -255,6 +255,11 @@ export function createCareerProfileRepository(storage: CareerProfileStoragePort)
   return {
     load(): CareerProfile | null {
       try {
+        const careerRaw = storage.getItem("core-arena.league.v3");
+        if (careerRaw) {
+          const career = JSON.parse(careerRaw);
+          if (career?.version === 3 && isCareerProfile(career.profile)) return career.profile;
+        }
         const raw = storage.getItem(CAREER_PROFILE_STORAGE_KEY);
         if (!raw) return null;
         const parsed: unknown = JSON.parse(raw);

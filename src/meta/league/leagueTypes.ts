@@ -1,7 +1,9 @@
 import type { V2PlayerSkinId } from "../../v2Route";
 import type { BotArchetypeId } from "../../core/bots";
+import type { CareerProfile } from "../../careerProfile";
 
 export const LEAGUE_SAVE_VERSION = 2 as const;
+export const LEAGUE_CAREER_SAVE_VERSION = 3 as const;
 
 export type LeagueTeamId =
   | "iron-vanguard"
@@ -10,6 +12,14 @@ export type LeagueTeamId =
   | "grave-circuit"
   | "solar-wardens"
   | "void-runners";
+
+/**
+ * A circuit identifies the fixed three-match season ruleset. It is optional
+ * on persisted V2 saves so existing Proving saves remain loadable until the
+ * career-save migration in the next bulk.
+ */
+export type LeagueCircuitId = "proving" | "contender" | "apex";
+export type LeaguePlayableCircuitId = "proving" | "contender";
 
 export interface LeagueCharacterDefinition {
   readonly id: string;
@@ -103,6 +113,7 @@ export interface LeagueSeasonState {
   readonly version: typeof LEAGUE_SAVE_VERSION;
   readonly seasonId: string;
   readonly simulationSeed: number;
+  readonly circuitId?: LeagueCircuitId;
   status: "active" | "completed";
   currentRound: number;
   readonly playerTeamId: LeagueTeamId;
@@ -114,6 +125,23 @@ export interface LeagueSeasonState {
   defeatedTeamIds: LeagueTeamId[];
   recruitment: LeagueRecruitmentState;
   lastProgression: LeagueProgressionEvent | null;
+  updatedAt: string;
+}
+
+/**
+ * The small V3 envelope keeps the active three-match season and the minimum
+ * cross-circuit progress needed for Proving → Contender. Career identity and
+ * unlocked fighters remain in the existing career profile.
+ */
+export interface LeagueCareerState {
+  readonly version: typeof LEAGUE_CAREER_SAVE_VERSION;
+  revision?: number;
+  /** Committed together with the season; the separate profile key is a mirror. */
+  profile?: CareerProfile;
+  activeCircuitId: LeaguePlayableCircuitId;
+  attempts: Record<LeaguePlayableCircuitId, number>;
+  qualifiedCircuitIds: LeagueCircuitId[];
+  season: LeagueSeasonState;
   updatedAt: string;
 }
 

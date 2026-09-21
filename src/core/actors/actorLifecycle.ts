@@ -1,4 +1,5 @@
 import type { GameEvent } from "../events";
+import { captureWeaponDeathDrops } from "../pickups/weaponDeathDrops";
 import type { ActorId, ActorState } from "./actor";
 import type { ActorLifecycleConfig } from "./ActorLifecycleConfig";
 
@@ -83,6 +84,8 @@ export function applyDamage(
 
   const killed = actor.health <= 0;
   if (killed) {
+    const weaponDrops = captureWeaponDeathDrops(actor);
+    const deathPosition = { ...actor.position };
     actor.lifeState = "dead";
     actor.velocity.x = 0;
     actor.velocity.y = 0;
@@ -120,6 +123,8 @@ export function applyDamage(
         victimActorId: actor.id,
         victimLifeId: actor.lifeId,
         respawnDelayMs: config.respawnDelayMs,
+        position: deathPosition,
+        weaponDrops,
         ...(weaponId ? { weaponId } : {}),
       },
     });

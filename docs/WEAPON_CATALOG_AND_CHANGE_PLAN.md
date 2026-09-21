@@ -575,9 +575,9 @@ Vorlaeufige, noch nicht endgueltig freigegebene Testidentitaet:
 - manuell gerichtete, schmale Projektile,
 - mittlere Reichweite,
 - kontinuierliches Tracking statt Splash, Hitscan oder Autoziel,
-- 10 Schaden, 160 ms Feuerrhythmus, Geschwindigkeit 760,
+- 10 Schaden, 160 ms Feuerrhythmus, Geschwindigkeit 836,
 - Reichweite 640,
-- Pickup +36, Maximum 54,
+- Pickup +54, Maximum 54,
 - kein Splash, kein Homing und kein Knockback.
 
 Die ehemaligen Arc-Pickup-Positionen sind Kandidaten, aber keine automatische
@@ -690,7 +690,7 @@ Neu oder gezielt zu erweitern:
 - Pulse-Projektil verursacht 10 Schaden und respektiert das Map-Roster.
 - Disc kann genau dreimal abprallen, erhaelt nach dem ersten Abpraller
   50 Schaden und endet bei jedem gegnerischen Treffer sofort.
-- Pulse-Pickup gibt 36 Schuss, Disc-Pickup 8; beide respektieren weiter ihr
+- Pulse-Pickup gibt 54 Schuss, Disc-Pickup 8; beide respektieren weiter ihr
   bestehendes Maximum.
 - Disc-Feuer auf `C` und Kamera-Reset auf `Home` sind konfliktfrei.
 - Fuenf Waffen-/Projektilassets besitzen 256 x 256 Pixel, Alpha und bleiben

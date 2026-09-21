@@ -1,3 +1,17 @@
+.career-save-notice {
+  position: relative;
+  z-index: 100;
+  padding: 16px;
+  margin: 12px;
+  border: 2px solid #eab85e;
+  border-radius: 10px;
+  background: #101e2d;
+  color: #fff4db;
+  font: 16px/1.5 var(--font-ui);
+  text-transform: none;
+}
+.career-save-notice p { margin: 0 0 12px; }
+.career-save-notice button { margin: 4px 12px 4px 0; padding: 10px 14px; }
 :root {
   --font-ui: "Inter Variable", Inter, Arial, sans-serif;
   --font-display: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;

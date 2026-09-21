@@ -4,6 +4,16 @@ const UI_LANGUAGE_STORAGE_KEY = "core-arena.ui-language";
 const UI_LANGUAGE_EVENT = "core-arena-language-change";
 
 const EN = {
+  "save.corrupt": "Your career save could not be read. The existing data has been kept. Export a backup before attempting recovery.",
+  "save.version": "This save belongs to a different game version. Open the matching version; your data has been kept.",
+  "save.read": "Your browser could not read the career save. Check browser storage access, then try again.",
+  "save.write": "The last change could not be saved. Keep this page open. Check available browser storage, then try again.",
+  "save.stale": "Another tab has changed this career. Your old action was not saved. Reload the latest career from the menu before continuing.",
+  "save.unsupported": "This browser cannot safely coordinate career saves. Use a current Chrome or Edge browser over HTTPS or localhost.",
+  "save.retry": "Try again",
+  "save.reload": "Reload career",
+  "save.menuWrite": "Your change was not saved. Check browser storage, reload your career, then repeat the action.",
+  "save.backup": "Export save backup",
   "common.back": "Back",
   "common.mainMenu": "Main Menu",
   "common.settings": "Settings",
@@ -347,6 +357,10 @@ const EN = {
   "league.recruitmentUnlocked": "All candidates remain unlocked in Team Manager.",
   "league.promotedCopy": "You reached a qualification place in {circuit}. {next} is in development; review your final table and squad in League HQ.",
   "league.finalRoundCopy": "Your first circuit is complete. Review the table, strengthen your squad and run it back.",
+  "league.advanceContender": "Enter Contender Circuit",
+  "league.retryCircuit": "Retry {circuit}",
+  "league.apexAwaiting": "Contender complete. Apex remains the final future circuit.",
+  "league.contenderReadyCopy": "You qualified for Contender. Return to League HQ, review your table and start the next circuit when ready.",
   "league.tableShiftCopy": "The other result moved you to #{position}. {remaining} {matches} remain.",
   "league.remainingCopy": "{remaining} {matches} remain. Every result can reshape the table.",
 } as const;
@@ -354,6 +368,16 @@ const EN = {
 export type UiCopyKey = keyof typeof EN;
 
 const DE: Record<UiCopyKey, string> = {
+  "save.corrupt": "Dein Karriere-Spielstand konnte nicht gelesen werden. Die vorhandenen Daten bleiben erhalten. Sichere sie vor einem Wiederherstellungsversuch als Datei.",
+  "save.version": "Dieser Spielstand gehört zu einer anderen Spielversion. Öffne die passende Version; deine Daten bleiben erhalten.",
+  "save.read": "Der Browser konnte den Karriere-Spielstand nicht lesen. Prüfe den Speicherzugriff und versuche es erneut.",
+  "save.write": "Die letzte Änderung konnte nicht gespeichert werden. Lass diese Seite offen. Prüfe den verfügbaren Browserspeicher und versuche es erneut.",
+  "save.stale": "Ein anderer Tab hat diese Karriere geändert. Deine alte Aktion wurde nicht gespeichert. Lade den aktuellen Karrierestand über das Menü, bevor du weitermachst.",
+  "save.unsupported": "Dieser Browser kann Karriere-Speicherzugriffe nicht sicher abstimmen. Nutze einen aktuellen Chrome oder Edge über HTTPS oder localhost.",
+  "save.retry": "Erneut versuchen",
+  "save.reload": "Karriere erneut laden",
+  "save.menuWrite": "Deine Änderung wurde nicht gespeichert. Prüfe den Browserspeicher, lade die Karriere erneut und wiederhole die Aktion.",
+  "save.backup": "Spielstand als Datei sichern",
   "common.back": "Zurück",
   "common.mainMenu": "Hauptmenü",
   "common.settings": "Einstellungen",
@@ -697,6 +721,10 @@ const DE: Record<UiCopyKey, string> = {
   "league.recruitmentUnlocked": "Alle Kandidaten bleiben in der Teamverwaltung freigeschaltet.",
   "league.promotedCopy": "Du hast einen Qualifikationsplatz im {circuit} erreicht. {next} ist in Entwicklung; prüfe Tabelle und Kader im League HQ.",
   "league.finalRoundCopy": "Dein erster Circuit ist beendet. Prüfe die Tabelle, verstärke den Kader und starte erneut.",
+  "league.advanceContender": "Contender Circuit starten",
+  "league.retryCircuit": "{circuit} wiederholen",
+  "league.apexAwaiting": "Contender abgeschlossen. Apex bleibt der finale Circuit für einen späteren Schritt.",
+  "league.contenderReadyCopy": "Du hast dich für Contender qualifiziert. Kehre ins League HQ zurück, prüfe die Tabelle und starte den nächsten Circuit, wenn du bereit bist.",
   "league.tableShiftCopy": "Das andere Ergebnis verschiebt dich auf Platz #{position}. Noch {remaining} {matches}.",
   "league.remainingCopy": "Noch {remaining} {matches}. Jedes Ergebnis kann die Tabelle verändern.",
 };

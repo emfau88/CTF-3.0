@@ -168,16 +168,21 @@ export {
 } from "./objectives";
 export {
   createPickupState,
+  captureWeaponDeathDrops,
+  spawnWeaponDeathDrops,
   updatePickups,
   V2_ARENA_PICKUP_PARITY_CONFIG,
   V2_DIAGNOSTIC_PICKUP_CONFIG,
+  WEAPON_DEATH_DROP_LIFETIME_MS,
   type CreatePickupStateInput,
   type PickupConfig,
   type PickupId,
   type PickupLifeState,
+  type PickupOrigin,
   type PickupState,
   type PickupType,
   type PickupUpdateResult,
+  type WeaponDeathDrop,
 } from "./pickups";
 export {
   createClassicCtfWorldState,

@@ -6,7 +6,7 @@ import {
   LEAGUE_CIRCUITS,
 } from "../src/meta/league";
 
-test("career presentation exposes one current circuit and two honest future previews", () => {
+test("career presentation exposes Proving and Contender while keeping Apex an honest preview", () => {
   assert.deepEqual(
     LEAGUE_CIRCUITS.map((circuit) => circuit.name),
     ["Proving Circuit", "Contender Circuit", "Apex Circuit"],
@@ -18,11 +18,11 @@ test("career presentation exposes one current circuit and two honest future prev
   assert.equal(CURRENT_LEAGUE_CIRCUIT.id, "proving");
   assert.equal(
     LEAGUE_CIRCUITS.filter((circuit) => circuit.availability === "current").length,
-    1,
+    2,
   );
   assert.equal(
     LEAGUE_CIRCUITS.filter((circuit) => circuit.availability === "coming-soon").length,
-    2,
+    1,
   );
 });
 

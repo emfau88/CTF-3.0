@@ -1,6 +1,6 @@
 import type { WorldPosition } from "../actors";
 import type { PickupConfig } from "./PickupConfig";
-import type { PickupId, PickupState, PickupType } from "./pickup";
+import type { PickupId, PickupOrigin, PickupState, PickupType } from "./pickup";
 
 export interface CreatePickupStateInput {
   readonly id: PickupId;
@@ -9,6 +9,8 @@ export interface CreatePickupStateInput {
   readonly radius?: number;
   readonly value?: number;
   readonly respawnDelayMs?: number;
+  readonly origin?: PickupOrigin;
+  readonly expiresAfterMs?: number | null;
 }
 
 export function createPickupState(
@@ -16,6 +18,7 @@ export function createPickupState(
   config: PickupConfig,
 ): PickupState {
   const defaultValue = valueForType(input.type, config);
+  const expiresAfterMs = input.expiresAfterMs ?? null;
   return {
     id: input.id,
     type: input.type,
@@ -24,8 +27,11 @@ export function createPickupState(
     value: input.value ?? defaultValue,
     respawnDelayMs: input.respawnDelayMs ??
       config.defaultRespawnDelayMs,
+    origin: input.origin ?? "map",
+    expiresAfterMs,
     lifeState: "active",
     respawnRemainingMs: 0,
+    expiresRemainingMs: expiresAfterMs,
   };
 }
 

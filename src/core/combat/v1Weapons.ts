@@ -341,7 +341,7 @@ function fireArenaProjectile(
     "attack",
   );
   const radius = weaponId === "disc" ? 14 : weaponId === "pulse" ? 6 : 5;
-  const speed = weaponId === "pulse" ? 760 : weaponId === "disc" ? 620 : 560;
+  const speed = weaponId === "pulse" ? 836 : weaponId === "disc" ? 620 : 560;
   const offset = actor.radius + radius + 3;
   const homingTarget = weaponId === "shard"
     ? selectShardTarget(world, actor, direction, definition.range)

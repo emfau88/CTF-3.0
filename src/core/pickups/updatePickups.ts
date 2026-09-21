@@ -24,7 +24,28 @@ export function updatePickups(
   const ms = Math.max(0, deltaMs);
   const humans = new Set(humanActorIds);
 
-  for (const pickup of pickups) {
+  for (const pickup of [...pickups]) {
+    if (pickup.origin === "death-drop") {
+      pickup.expiresRemainingMs = Math.max(
+        0,
+        (pickup.expiresRemainingMs ?? 0) - ms,
+      );
+      if (pickup.expiresRemainingMs <= 0) {
+        removePickup(pickups, pickup);
+        events.push({
+          id: `pickup-expired-${pickup.id}-${timeMs}`,
+          type: "pickup.expired",
+          timeMs,
+          payload: {
+            pickupId: pickup.id,
+            pickupType: pickup.type,
+            pickupOrigin: pickup.origin,
+            position: { ...pickup.position },
+          },
+        });
+        continue;
+      }
+    }
     if (pickup.lifeState === "inactive") {
       pickup.respawnRemainingMs = Math.max(
         0,
@@ -60,8 +81,13 @@ export function updatePickups(
     }
 
     const appliedValue = applyPickup(collector, pickup);
-    pickup.lifeState = "inactive";
-    pickup.respawnRemainingMs = pickup.respawnDelayMs;
+    if (pickup.origin === "death-drop") {
+      pickup.value = Math.max(0, pickup.value - appliedValue);
+      if (pickup.value <= 0) removePickup(pickups, pickup);
+    } else {
+      pickup.lifeState = "inactive";
+      pickup.respawnRemainingMs = pickup.respawnDelayMs;
+    }
     events.push({
       id: `pickup-collected-${pickup.id}-${timeMs}`,
       type: "pickup.collected",
@@ -72,7 +98,13 @@ export function updatePickups(
         pickupId: pickup.id,
         pickupType: pickup.type,
         appliedValue,
-        respawnDelayMs: pickup.respawnDelayMs,
+        pickupOrigin: pickup.origin,
+        ...(pickup.origin === "death-drop"
+          ? {
+            remainingValue: pickup.value,
+            expiresRemainingMs: pickup.expiresRemainingMs,
+          }
+          : { respawnDelayMs: pickup.respawnDelayMs }),
       },
     });
   }
@@ -91,6 +123,11 @@ function canApplyPickup(actor: ActorState, pickup: PickupState): boolean {
   if (!isAmmoWeaponId(weaponId)) return false;
   return (weaponAmmo(actor.weapons, weaponId) ?? 0) <
     ARENA_WEAPON_CATALOG[weaponId].maxAmmo!;
+}
+
+function removePickup(pickups: PickupState[], pickup: PickupState): void {
+  const index = pickups.indexOf(pickup);
+  if (index >= 0) pickups.splice(index, 1);
 }
 
 function applyPickup(actor: ActorState, pickup: PickupState): number {

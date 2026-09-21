@@ -71,7 +71,7 @@ export const ARENA_WEAPON_CATALOG: Readonly<
     inputKey: "R",
     hudTexture: "uiPulseButton",
     pickupTexture: "pickupPulse",
-    pickupValue: 36,
+    pickupValue: 54,
     maxAmmo: 54,
     cooldownMs: 160,
     range: 640,

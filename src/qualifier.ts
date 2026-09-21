@@ -1,6 +1,8 @@
 import type { GameEvent, CoreInputFrame, WorldState } from "./core";
 import {
+  createPickupState,
   createTeamDeathmatchWorldState,
+  V2_ARENA_PICKUP_PARITY_CONFIG,
   type TeamDeathmatchModeConfig,
   type WorldMapData,
 } from "./core";
@@ -183,11 +185,41 @@ export function createQualifierWorld(
   teamSizes: ArenaTeamSizes,
 ): WorldState {
   const world = createTeamDeathmatchWorldState(map, { teamSizes });
-  if (world.map) world.map = { ...world.map, weaponRoster: ["whip", "pulse"] };
+  if (world.map) world.map = {
+    ...world.map,
+    weaponRoster: ["whip", "pulse", "rocket"],
+  };
   world.pickups = world.pickups.filter((pickup) =>
     pickup.type === "health" || pickup.type === "armor" || pickup.type === "pulse"
   );
+  world.pickups.push(
+    createPickupState({
+      id: "qualifier-rocket-blue-base",
+      type: "rocket",
+      position: qualifierBaseFrontRocketPosition(map.gameplay.blueBase, "blue"),
+    }, V2_ARENA_PICKUP_PARITY_CONFIG),
+    createPickupState({
+      id: "qualifier-rocket-red-base",
+      type: "rocket",
+      position: qualifierBaseFrontRocketPosition(map.gameplay.redBase, "red"),
+    }, V2_ARENA_PICKUP_PARITY_CONFIG),
+  );
   return world;
+}
+
+function qualifierBaseFrontRocketPosition(
+  base: WorldMapData["gameplay"]["blueBase"],
+  teamId: "blue" | "red",
+): {
+  x: number;
+  y: number;
+} {
+  return {
+    x: teamId === "blue"
+      ? base.x + base.width + 80
+      : base.x - 80,
+    y: base.y + base.height / 2,
+  };
 }
 
 export function detectQualifierTutorialActions(input: {
