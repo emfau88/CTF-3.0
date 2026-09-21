@@ -3,7 +3,7 @@
 ## Dokumentstatus
 
 - **Status:** ACTIVE – CANONICAL ROADMAP
-- **Letzte Aktualisierung:** 2026-09-05
+- **Letzte Aktualisierung:** 2026-09-21
 - **Aktive Phase:** Phase 5 – Produktvalidierung (`IN PROGRESS`)
 - **Nächstes Gate:** wiederholte Solo-Produktabnahme; externe Tests nach
   Verfügbarkeit
@@ -694,6 +694,7 @@ Push separat geprüft; die Veröffentlichung erfolgt erst nach Integration.
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-21 | README-Spiel-Link gegen den veröffentlichten `main`-Stand `3f6d88b` geprüft. Der dortige untere Helix-Qualifier-Pickup ist der Pulse Repeater. Für ein verlässlicheres Einsteigergefühl steigt sein Projektiltempo global um 10 Prozent von 760 auf 836 und ein Pickup füllt nun das bestehende Maximum von 54 statt 36 Schuss. Schaden, Reichweite und 160-ms-Feuerrhythmus bleiben unverändert; Qualifier und reguläre Matches verwenden weiterhin dieselben Waffenregeln. |
 | 2026-09-05 | PR-Run `33975877726` scheiterte im Sechs-Match-Browserflow am Gesamtlimit von 30 Sekunden; Unit-Tests, Typecheck und Build waren grün. Die anfängliche Vermutung eines klickbaren Zeitfensters vor der Ergebnissperre wurde durch die synchrone Ausführung widerlegt; kein Gameplay-Fix dafür übernommen. Nur dieser lange E2E erhält 120 Sekunden Gesamtbudget, einzelne Assertions behalten ihre Limits. Nach jedem Match wird die gespeicherte Saison-ID und nächste Runde geprüft. Fehlgeschlagene Browserläufe liefern künftig Trace/Screenshot als CI-Artefakt. |
 | 2026-09-05 | Save-Absicherung ergänzt: V3 enthält den bestätigten Profilstand zusammen mit dem Karrierefortschritt; die ältere Profilkopie bleibt nur ein Spiegel. V2 wird erst beim erfolgreichen V3-Write migriert und sichert das Profil davor einmalig. Ergebnis-, Recruitment-, Team- und Reset-Aktionen werden durch eine Browser-Schreibsperre und einen Revisionsvergleich geschützt; alte Tabs können keinen neueren Stand überschreiben. Fehlerhafte, fremdversionierte oder nicht lesbare Daten werden nicht still als neue Karriere interpretiert. Im HQ und nach einem League-Match erscheinen ein verständlicher Fehler, erneutes Laden sowie ein Export der vorhandenen Save-Rohdaten. Bestehen: 257/257 Tests, Typecheck, Produktionsbuild und 13/13 Browser-E2E. Kein Audio geändert. |
 | 2026-09-04 | Combat-Ökonomie-Slice umgesetzt: Qualifier hat nun zwei Pulse- und zwei symmetrische Rocket-Pickups mittig vor den Basen, außerhalb der Spawnzonen. Kampftode droppen jede getragene Spezialwaffe mit exakter Restmunition für vier Sekunden; Teilaufnahme, Ablauf und Ausschluss bei Stürzen sind automatisiert abgedeckt. Classic CTFs Rückgabe einer eigenen gedroppten Flagge per Berührung wurde als Regressionstest festgeschrieben. Audio blieb unberührt. |

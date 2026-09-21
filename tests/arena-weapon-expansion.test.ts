@@ -28,15 +28,15 @@ test("Disc fire no longer shares its C key with the camera reset", () => {
   );
 });
 
-test("Pulse and Disc pickups grant doubled ammunition", () => {
+test("Pulse pickups grant a full 54-round load and Disc keeps eight rounds", () => {
   assert.equal(V2_ARENA_PICKUP_PARITY_CONFIG.healthValue, 75);
-  assert.equal(ARENA_WEAPON_CATALOG.pulse.pickupValue, 36);
+  assert.equal(ARENA_WEAPON_CATALOG.pulse.pickupValue, 54);
   assert.equal(ARENA_WEAPON_CATALOG.disc.pickupValue, 8);
   assert.equal(ARENA_WEAPON_CATALOG.pulse.maxAmmo, 54);
   assert.equal(ARENA_WEAPON_CATALOG.disc.maxAmmo, 12);
-  assert.equal(V2_ARENA_PICKUP_PARITY_CONFIG.pulseValue, 36);
+  assert.equal(V2_ARENA_PICKUP_PARITY_CONFIG.pulseValue, 54);
   assert.equal(V2_ARENA_PICKUP_PARITY_CONFIG.discValue, 8);
-  assert.equal(V2_DIAGNOSTIC_PICKUP_CONFIG.pulseValue, 36);
+  assert.equal(V2_DIAGNOSTIC_PICKUP_CONFIG.pulseValue, 54);
   assert.equal(V2_DIAGNOSTIC_PICKUP_CONFIG.discValue, 8);
 });
 
@@ -135,6 +135,9 @@ test("Pulse Repeater is a fast readable ten-damage projectile", () => {
   );
   assert.equal(fired.some((event) => event.type === "weapon.pulseFired"), true);
   assert.equal(owner.weapons.pulseAmmo, 0);
+  assert.equal(world.projectiles[0]?.velocity.x, 836);
+  assert.equal(world.projectiles[0]?.velocity.y, 0);
+  assert.equal(ARENA_WEAPON_CATALOG.pulse.cooldownMs, 160);
   stepProjectiles(world, 8);
   assert.equal(target.health, 90);
 });
