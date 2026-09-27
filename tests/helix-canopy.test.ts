@@ -323,6 +323,23 @@ test("Helix Canopy ships the approved undistorted v2.1 arena master", () => {
   assert.doesNotMatch(renderer, /helixCoreInlay/);
 });
 
+test("Helix terminal shields remain separate reversible visual assets", () => {
+  const png = readFileSync(resolve("public/assets/helix-canopy/terminal-forcefield-topdown-v1.png"));
+  assert.equal(png.subarray(1, 4).toString("ascii"), "PNG");
+  assert.equal(png.readUInt32BE(16), 1289);
+  assert.equal(png.readUInt32BE(20), 1220);
+  assert.equal(png[25], 6, "terminal field needs RGBA transparency");
+
+  const renderer = readFileSync(resolve("src/arenaRenderer.ts"), "utf8");
+  const assets = readFileSync(resolve("src/assets.ts"), "utf8");
+  assert.match(renderer, /drawHelixTerminalFields\(scene, level\)/);
+  assert.match(renderer, /helix-terminal-north/);
+  assert.match(renderer, /helix-terminal-south/);
+  assert.match(renderer, /WORLD_MAP_ACTOR_RADIUS \* 2/);
+  assert.match(renderer, /helixField/);
+  assert.match(assets, /helix-canopy\/terminal-forcefield-topdown-v1\.png/);
+});
+
 test("Quick Play exposes Helix Canopy", () => {
   const html = readFileSync(resolve("index.html"), "utf8");
   assert.match(html, /<option value="helix-canopy-v2">Helix Canopy<\/option>/);

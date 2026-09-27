@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { WORLD_MAP_ACTOR_RADIUS } from "./core/world/maps";
 import {
   ARENA_TEAM_PALETTE,
   ARENA_THEME_VISUALS,
@@ -210,6 +211,60 @@ function drawHelixFloor(scene: Phaser.Scene, level: ArenaPresentationData) {
     0x050b18,
   ).setDepth(-2.1);
   drawRegisteredArenaMaster(scene, level, "helixArenaMaster");
+  drawHelixTerminalFields(scene, level);
+}
+
+function drawHelixTerminalFields(
+  scene: Phaser.Scene,
+  level: ArenaPresentationData,
+): void {
+  // The shield is a removable visual cue around the existing terminal solids.
+  // Size it to their actor-expanded footprint; the master and collision stay untouched.
+  if (new URLSearchParams(window.location.search).get("helixField") === "off") {
+    return;
+  }
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  for (const [index, id] of [
+    "helix-terminal-north",
+    "helix-terminal-south",
+  ].entries()) {
+    const wall = level.walls.find((candidate) => candidate.id === id);
+    if (!wall) continue;
+    const x = wall.x + wall.w / 2;
+    const y = wall.y + wall.h / 2;
+    const width = wall.w + WORLD_MAP_ACTOR_RADIUS * 2;
+    const height = wall.h + WORLD_MAP_ACTOR_RADIUS * 2;
+    const field = scene.add.image(x, y, "helixTerminalField")
+      .setDisplaySize(width, height)
+      .setAlpha(.58)
+      .setDepth(-1.88);
+    const halo = scene.add.image(x, y, "helixTerminalField")
+      .setDisplaySize(width, height)
+      .setAlpha(.1)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setDepth(-1.87);
+    if (reducedMotion) continue;
+    scene.tweens.add({
+      targets: field,
+      alpha: .76,
+      duration: 1700 + index * 260,
+      ease: "Sine.InOut",
+      yoyo: true,
+      repeat: -1,
+      delay: index * 520,
+    });
+    scene.tweens.add({
+      targets: halo,
+      alpha: .21,
+      scaleX: halo.scaleX * 1.035,
+      scaleY: halo.scaleY * 1.035,
+      duration: 2300 + index * 310,
+      ease: "Sine.InOut",
+      yoyo: true,
+      repeat: -1,
+      delay: index * 610,
+    });
+  }
 }
 
 function drawHelixCombatZone(scene: Phaser.Scene, r: ArenaPresentationRect) {

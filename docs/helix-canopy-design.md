@@ -254,3 +254,17 @@ Phase-4-Art-Status als aktuelle Produktionsgrundlage:
 - Pickups sind auf Route, Reentry und Risiko verteilt. Die Mitte enthält nur
   zwei Arc-Lash-Pads und zwei Exchange-Armor-Pads statt einer durchgehenden
   Loadout-Reihe.
+
+## Reversibler Test: Terminal-Kraftfelder (September 2026)
+
+Der aktive Map-Master ist inzwischen `arena-master-v2.png`. Eine separate,
+transparente Top-down-Kraftfeldgrafik (`terminal-forcefield-topdown-v1.png`)
+markiert die beiden nicht begehbaren zentralen Helix-Terminals. Das zuvor
+erprobte Metallkanten-Overlay wurde verworfen. Position und Größe werden aus
+den benannten Nord-/Süd-Kollisionsrechtecken und dem Spielerradius abgeleitet;
+Mastergrafik und Kollisionsdaten bleiben unverändert. Die Felder pulsieren
+derzeit sehr dezent in Leuchtstärke und Randgröße; im Spiel ist diese Animation
+noch kaum wahrnehmbar. Eine klar lebendige, aber nicht störende Animation bleibt
+als nächster Polish-Schritt offen. Bei reduzierter Bewegung bleiben die Felder
+statisch. Für den Vorher/Nachher-Vergleich blendet `helixField=off` nur die
+Felder aus. Der lokale Spieltest bestätigte die Platzierung und Funktion.

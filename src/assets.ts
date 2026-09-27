@@ -342,6 +342,10 @@ function preloadJungleTempleAssets(
 
 function preloadHelixCanopyAssets(scene: Phaser.Scene) {
   scene.load.image("helixArenaMaster", assetUrl("helix-canopy/arena-master-v2.png"));
+  scene.load.image(
+    "helixTerminalField",
+    assetUrl("helix-canopy/terminal-forcefield-topdown-v1.png"),
+  );
 }
 
 function preloadFoundryCircuitAssets(scene: Phaser.Scene) {
