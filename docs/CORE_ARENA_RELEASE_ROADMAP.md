@@ -3,18 +3,22 @@
 ## Dokumentstatus
 
 - **Status:** ACTIVE – CANONICAL ROADMAP
-- **Letzte Aktualisierung:** 2026-09-21
-- **Aktive Phase:** Phase 5 – Produktvalidierung (`IN PROGRESS`)
-- **Nächstes Gate:** wiederholte Solo-Produktabnahme; externe Tests nach
-  Verfügbarkeit
-- **Kanonischer Integrationsstand:** `main` @ `3f6d88b` (PR #6, 2026-09-04)
-- **Veröffentlichter Stand:** GitHub Pages @ `3f6d88b`; Deploy #53 am
-  2026-09-04 erfolgreich abgeschlossen
-- **Aktiver Arbeitsbranch:** `codex/phase-6-career-expansion`, direkt von
-  `main` @ `3f6d88b`
-- **Nächste geplante Umsetzung:** Vor Phase-6-Bulk 5 die ausdrückliche
-  Owner-Entscheidung zu Apex einholen; Proving → Contender ist technisch
-  spielbar und im [Bulk-Plan](release/PHASE_6_CAREER_EXPANSION_PLAN.md) belegt
+- **Letzte Aktualisierung:** 2026-09-27
+- **Aktive Phasen:** Phase 5 – Produktvalidierung und Phase 6 – Karriereausbau
+  (beide `IN PROGRESS`)
+- **Nächstes Gate:** lokalen Ergebnisdialog-Fix veröffentlichen und danach den
+  echten Owner-Durchlauf des Sechs-Match-Wegs fortsetzen; externe First-Run-Tests
+  bleiben anschließend offen
+- **Kanonischer Integrationsstand:** `main` @ `5c176dd` (PR #7, 2026-09-21)
+- **Veröffentlichter Stand:** GitHub Pages @ `5c176dd`; Deploy #57 am
+  2026-09-21 mit Build und Deployment erfolgreich abgeschlossen
+- **Fix-Branch:** `codex/league-result-dialog-viewport` basiert auf
+  `main` @ `5c176dd`; der lokal geprüfte Dialog-Fix ist noch nicht auf Pages.
+  Sonstiger lokaler WIP bleibt außerhalb des Release-Scopes.
+- **Nächste geplante Umsetzung:** nach Veröffentlichung des Dialog-Fixes erst
+  Owner-Feedback zu Proving → Contender und die ausdrückliche Apex-Entscheidung;
+  Bulk 5 bleibt bis dahin gesperrt.
+  Der technische Stand steht im [Bulk-Plan](release/PHASE_6_CAREER_EXPANSION_PLAN.md).
 
 > Diese Datei ist die verbindliche Produkt- und Release-Roadmap für Core Arena.
 > Frühere Produkt-, Audit- und Umsetzungspläne bleiben als historische oder
@@ -31,9 +35,10 @@ sind; vorhandener Code allein reicht dafür nicht.
 - Das aktive Repository liegt unter `C:\Users\madde\Documents\CTF-3.0`.
 - Pull Request 4 ist in `main` integriert. Der Merge-Commit `4ce36f5` enthält
   denselben Dateibaum wie der vorherige Feature-Head `9811b51`.
-- Der aktuelle öffentliche Build enthält Quick Start, Custom Match, drei Modi,
-  sieben Arenen, drei Premium-Arenen, Bots mit drei Schwierigkeitsprofilen und
-  den spielbaren Drei-Match-Proving-Circuit der League.
+- Der aktuelle öffentliche Build enthält Qualifier, Quick Start, Custom Match,
+  drei Modi, sieben Arenen, drei Premium-Arenen, Bots mit drei
+  Schwierigkeitsprofilen und die spielbare Sechs-Match-Karriere aus Proving und
+  Contender. Apex ist noch nicht spielbar.
 - Die vorhandene Core-/Adapter-Trennung ist eine tragfähige Basis. Es gibt
   keinen sachlichen Grund für einen Rewrite oder einen Enginewechsel.
 - Als zuletzt belegte automatische Baseline bestehen 223
@@ -161,8 +166,9 @@ bevor Produktverhalten verändert wird.
 
 - [x] Release-Branch basiert nachweislich auf `main` @ `4ce36f5`.
 - [x] Nutzer-WIP ist dokumentiert und unberührt.
-- [ ] Pull Requests führen Tests, Test-Typecheck, Build und Browser-E2E aus,
-      ohne eine Pages-Veröffentlichung auszulösen.
+- [x] Pull Requests führen Tests, Test-Typecheck, Build und Browser-E2E aus,
+      ohne eine Pages-Veröffentlichung auszulösen (PR #7: Build erfolgreich,
+      Deploy übersprungen).
 - [x] Smoke-Test-Code ist nicht mehr Teil des Produktions-Barrels.
 - [x] Produktions-Dependency-Audit ist dokumentiert; angewandte Patches ändern
       kein Spielverhalten.
@@ -443,6 +449,23 @@ Technisches Gate:
 `npm.cmd run build` und `npm.cmd run test:e2e` 13/13 bestanden. Der lokale
 Qualifier-Canvas lud die neue Kartenvariante ohne Konsolenfehler.
 
+### Owner-Fund nach Proving-Match 1 am 2026-09-27
+
+- Im veröffentlichten Stand lag die League-Ergebnis-/Fortschrittskarte nach
+  Match 1 teilweise unterhalb des sichtbaren Fensters; der Weiter-Button war
+  dadurch praktisch nicht erreichbar. Das ist ein Produktblocker, keine
+  abgeschlossene Sechs-Match-Abnahme.
+- Ursache: feste Dialogpositionierung wurde durch die beibehaltene
+  Transform-Animation und `backdrop-filter` der Menüvorfahren an der hohen
+  League-Seite statt am Viewport ausgerichtet. Der Qualifier-Ergebnisdialog
+  liegt außerhalb dieser Vorfahren und war nicht betroffen.
+- Lokal korrigiert: Während ein Menüdialog offen ist, erzeugen diese Vorfahren
+  keinen eigenen Positionierungsbezug mehr. Der Karriere-Browsertest prüft die
+  Dialoggrenzen nun bei 1920 × 945 und durchläuft anschließend Proving und
+  Contender. 257/257 Unit-Tests, Test-Typecheck, Produktionsbuild und 13/13
+  Browser-E2E bestanden. Der Owner muss den Fix nach Veröffentlichung selbst
+  erneut prüfen; Audio blieb unangetastet.
+
 ### Testaufbau
 
 - zunächst wiederholte Solo-Abnahme durch den Entwickler/Owner; externe
@@ -480,6 +503,10 @@ versioniert festgelegt, damit das Gate nicht nachträglich passend gemacht wird.
 **Status:** `IN PROGRESS` – Proving → Contender ist technisch als
 Sechs-Match-Weg spielbar. Owner-/Produktabnahme und die bewusste
 Apex-Fortsetzung bleiben offen.
+
+**Integration:** PR #7 wurde am 2026-09-21 als `5c176dd` in `main` gemergt;
+GitHub-Pages-Deploy #57 bestand Build und Deployment. Das belegt die
+Veröffentlichung, nicht die manuelle Produktabnahme.
 
 **Ausführungsplan:** [PHASE_6_CAREER_EXPANSION_PLAN.md](release/PHASE_6_CAREER_EXPANSION_PLAN.md)
 
@@ -688,12 +715,14 @@ Datenschutz-/Plattformentscheidung extern versendet:
 
 ## Änderungsverlauf
 
-CI-Nachtrag vom 2026-09-05 lokal geprüft: Build, Test-Typecheck und 13/13
-Browser-E2E in 1,3 Minuten ohne Retry grün. Das Remote-Gate wird nach dem
-Push separat geprüft; die Veröffentlichung erfolgt erst nach Integration.
+Historischer CI-Nachtrag vom 2026-09-05: Build, Test-Typecheck und 13/13
+Browser-E2E lokal in 1,3 Minuten ohne Retry grün. Der spätere Integrations-
+und Veröffentlichungsstand ist im Dokumentstatus und Änderungsverlauf belegt.
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-27 | Owner-Spieltest nach Proving-Match 1 durch abgeschnittenen Fortschrittsdialog blockiert. Ursache in CSS-Containing-Blocks lokal behoben und durch Viewport-Geometrie im vollständigen Karriere-Browsertest abgesichert; 257 Unit-Tests, Typecheck, Build und 13 Browser-E2E grün. Noch keine Veröffentlichung oder erneute Owner-Abnahme behauptet. |
+| 2026-09-27 | Veröffentlichungsstand abgeglichen: PR #7 ist als `5c176dd` in `main` integriert; Pages-Deploy #57 für denselben Commit bestand Build und Deployment. Proving → Contender ist öffentlich spielbar, Apex bleibt gesperrt. Phase 5, Owner-Sechs-Match-Abnahme und spätere Release-Gates bleiben offen; Status und README wurden ohne Gameplay- oder Audioänderung korrigiert. |
 | 2026-09-21 | README-Spiel-Link gegen den veröffentlichten `main`-Stand `3f6d88b` geprüft. Der dortige untere Helix-Qualifier-Pickup ist der Pulse Repeater. Für ein verlässlicheres Einsteigergefühl steigt sein Projektiltempo global um 10 Prozent von 760 auf 836 und ein Pickup füllt nun das bestehende Maximum von 54 statt 36 Schuss. Schaden, Reichweite und 160-ms-Feuerrhythmus bleiben unverändert; Qualifier und reguläre Matches verwenden weiterhin dieselben Waffenregeln. |
 | 2026-09-05 | PR-Run `33975877726` scheiterte im Sechs-Match-Browserflow am Gesamtlimit von 30 Sekunden; Unit-Tests, Typecheck und Build waren grün. Die anfängliche Vermutung eines klickbaren Zeitfensters vor der Ergebnissperre wurde durch die synchrone Ausführung widerlegt; kein Gameplay-Fix dafür übernommen. Nur dieser lange E2E erhält 120 Sekunden Gesamtbudget, einzelne Assertions behalten ihre Limits. Nach jedem Match wird die gespeicherte Saison-ID und nächste Runde geprüft. Fehlgeschlagene Browserläufe liefern künftig Trace/Screenshot als CI-Artefakt. |
 | 2026-09-05 | Save-Absicherung ergänzt: V3 enthält den bestätigten Profilstand zusammen mit dem Karrierefortschritt; die ältere Profilkopie bleibt nur ein Spiegel. V2 wird erst beim erfolgreichen V3-Write migriert und sichert das Profil davor einmalig. Ergebnis-, Recruitment-, Team- und Reset-Aktionen werden durch eine Browser-Schreibsperre und einen Revisionsvergleich geschützt; alte Tabs können keinen neueren Stand überschreiben. Fehlerhafte, fremdversionierte oder nicht lesbare Daten werden nicht still als neue Karriere interpretiert. Im HQ und nach einem League-Match erscheinen ein verständlicher Fehler, erneutes Laden sowie ein Export der vorhandenen Save-Rohdaten. Bestehen: 257/257 Tests, Typecheck, Produktionsbuild und 13/13 Browser-E2E. Kein Audio geändert. |

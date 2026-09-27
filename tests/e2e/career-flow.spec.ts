@@ -67,6 +67,21 @@ test("qualified first run creates a team and completes the six-match Proving-to-
       `MATCH ${roundIndex + 1} OF 3`,
     );
     if (roundIndex === 0) {
+      // The taller HQ must not become the containing block for its fixed dialog.
+      await page.setViewportSize({ width: 1920, height: 945 });
+      const dialogBounds = await page.locator("#league-progression").evaluate((dialog) => {
+        const overlay = dialog.getBoundingClientRect();
+        const card = dialog.querySelector(".league-progression-card")!.getBoundingClientRect();
+        return {
+          overlay: { x: overlay.x, y: overlay.y, width: overlay.width, height: overlay.height },
+          card: { top: card.top, bottom: card.bottom },
+        };
+      });
+      expect(dialogBounds.overlay).toEqual({ x: 0, y: 0, width: 1920, height: 945 });
+      expect(dialogBounds.card.top).toBeGreaterThanOrEqual(0);
+      expect(dialogBounds.card.bottom).toBeLessThanOrEqual(945);
+      await page.setViewportSize({ width: 1280, height: 720 });
+
       const continueButton = page.locator("#league-progression-continue");
       await expect(page.locator(".league-recruitment-choice")).toHaveCount(3);
       await expect(continueButton).toBeDisabled();

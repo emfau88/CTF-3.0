@@ -19,15 +19,27 @@ play.
 
 > [!NOTE]
 > Core Arena is in active development. The current public experience is a
-> single-player-versus-bots build with instant Quick Start, a configurable
-> Custom Match flow and the first three-match League circuit. Progress and UI
-> language are stored locally in the browser. Online multiplayer, accounts and
-> cloud saves are not implemented.
+> single-player-versus-bots build with a guided Qualifier, instant Quick Start,
+> configurable Custom Match and the first two three-match League circuits
+> (Proving and Contender). Apex is not yet playable. Progress and UI language
+> are stored locally in the browser. Online multiplayer, accounts and cloud
+> saves are not implemented.
 
 The binding product sequence, release gates and current phase are maintained in
 the [canonical Core Arena release roadmap](docs/CORE_ARENA_RELEASE_ROADMAP.md).
 Older plans remain useful as historical or technical references, but are not
 the current release backlog.
+
+## Current release status — September 27, 2026
+
+The playable code from [PR #7](https://github.com/emfau88/CTF-3.0/pull/7) is
+merged into `main` at `5c176dd`; [GitHub Pages deploy #57](https://github.com/emfau88/CTF-3.0/actions/runs/35641915118)
+completed successfully. Proving and Contender are technically playable as a
+six-match career. That is not yet a release candidate: the complete route still
+needs a real owner playthrough, difficulty and pickup placement need gameplay
+review, and Apex requires a separate go/no-go decision. Portal preparation,
+release-candidate QA and final audio/rights polish follow later. The detailed
+gates remain in the [release roadmap](docs/CORE_ARENA_RELEASE_ROADMAP.md).
 
 ## Development update — August 24, 2026
 
@@ -110,6 +122,13 @@ matches context without turning the arena into an RPG grind.
 
 ## What you can play today
 
+### Qualifier
+
+The first-run Qualifier teaches movement, aiming, combat, a weapon pickup and
+jumping in a short match. Its Helix Canopy layout is deliberately different
+from the regular map loadout: it offers two Pulse Repeater and two Rocket
+Launcher pickups. Arc Lash is the starting weapon, not a map pickup.
+
 ### Quick Start and Custom Match
 
 Quick Start immediately launches a recommended TDM setup. Custom Match lets
@@ -135,10 +154,14 @@ the next rival, then compete through the **Proving Circuit**:
 2. One Flag in the Temple of the Drowned Sun
 3. Classic CTF in the Temple final
 
-League HQ tracks the four-team table, match performance and permanent cosmetic
-wingman unlocks. Defeat a rival team to make its fighters available in Team
-Manager. The Contender and Apex circuits are visible as honest future previews;
-only the Proving Circuit is currently playable.
+Finishing Proving in the top two lets you enter the playable **Contender
+Circuit**, with three more matches: One Flag on Helix Canopy, Team Deathmatch
+on Foundry Circuit and Classic CTF in the Temple of the Drowned Sun. If you do
+not qualify, you can repeat the current circuit without losing earlier
+progress. League HQ tracks each four-team table, match performance and
+cosmetic wingman unlocks. Defeating a rival team can make its fighters
+available in Team Manager. **Apex is visible as a locked preview**, not a
+playable championship or completed career ending.
 
 ![League HQ with match dossier, squad, standings and progression path](docs/screenshots/menu-refresh-2026-08-24-v2/league-hq-desktop-de.png)
 
@@ -307,12 +330,15 @@ described in the
 
 Development is focused on:
 
-- completing the reproducible release baseline on `main` before product work;
-- introducing clean release-profile and platform-service boundaries;
-- building a one-click Qualifier and contextual first-run onboarding;
-- simplifying the transition into the three-match Proving Circuit;
-- making Recruitment meaningful through bot behavior rather than stat bonuses;
-- validating that full loop with new players before expanding Contender or Apex;
+- a real six-match Proving-to-Contender playthrough, including save/resume and
+  the player's assessment of combat, difficulty, progression and recruitment;
+- reviewing bot difficulty and pickup placement in actual matches rather than
+  treating automated flow checks as a balance verdict;
+- deciding explicitly whether the six-match loop warrants Apex and its planned
+  three-match championship;
+- obtaining independent first-run feedback when players are available;
+- preparing the portal build and completing release-candidate QA after the
+  career scope is accepted;
 - treating desktop as the supported release path while retaining mobile as an
   experimental path.
 
