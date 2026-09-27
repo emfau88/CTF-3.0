@@ -1862,6 +1862,16 @@ button.league-profile-fighter:hover { border-color: rgb(102 197 223 / .64); tran
   animation: p1-surface-enter .22s cubic-bezier(.2, .75, .25, 1) both;
 }
 
+/* Fixed League dialogs must use the viewport, not filtered/animated menu ancestors. */
+.v2-main-menu.has-modal-open .v2-menu-card.v2-menu-shell,
+.v2-main-menu.has-modal-open .v2-league-hub {
+  backdrop-filter: none;
+}
+
+.v2-main-menu.has-modal-open .v2-league-hub {
+  animation: none;
+}
+
 .v2-home-actions > * {
   animation: p1-card-enter .24s cubic-bezier(.2, .75, .25, 1) both;
 }

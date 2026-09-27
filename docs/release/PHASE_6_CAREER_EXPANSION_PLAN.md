@@ -2,15 +2,17 @@
 
 ## Status und Auftrag
 
-- Stand: 2026-09-05.
+- Stand: 2026-09-27.
 - Status: `IN PROGRESS` – Proving → Contender ist technisch als
   Sechs-Match-Weg umgesetzt und wiederholt geprüft. Die Produktabnahme aus
   Phase 5 sowie die bewusste Apex-Entscheidung bleiben getrennt offen.
 - Übergeordnete Quelle: [kanonische Release-Roadmap](../CORE_ARENA_RELEASE_ROADMAP.md).
 - Gewählte Richtung: erst Contender und sechs zusammenhängende Matches,
   danach Apex und Abschluss nur nach bestandenem Zwischen-Gate.
-- Aktiver Auftrag: den technischen Sechs-Match-Gate-Bericht festhalten; keine
-  Apex-Freischaltung, Veröffentlichung oder vorweggenommene Produktabnahme.
+- Aktiver Prüfpunkt: den bereits veröffentlichten Sechs-Match-Weg real spielen,
+  einschließlich Wiederaufnahme und bewusstem Urteil über Schwierigkeit,
+  Combat, Recruitment und Weiterspielwunsch. Die Veröffentlichung durch PR #7
+  ist keine Produktabnahme und keine Apex-Freigabe.
 - Aktueller Umsetzungsstand: **Bulk 1–4 technisch abgeschlossen**; als
   Nächstes braucht Bulk 5 eine ausdrückliche Apex-Freigabe.
 
@@ -456,8 +458,8 @@ damalige Baseline, kein neuer Lauf für diesen Plan.
 
 | Bulk | Status | Ergebnis / noch offen |
 | --- | --- | --- |
-| 0 – Startbasis/Proving-Gate | `IN PROGRESS` | PR #6 als `3f6d88b` integriert und auf Pages veröffentlicht; Fokus-Karriereflow fünfmal hintereinander bestanden; Owner-/Produktfreigabe bleibt offen |
-| 1 – Circuit-Modell | `COMPLETE` | Datenmodell, strikter Resolver und Regressionstests umgesetzt; 240 Unit-Tests, Typecheck, Produktionsbuild und 13 Playwright-E2E grün; Commit folgt |
+| 0 – Startbasis/Proving-Gate | `IN PROGRESS` | PR #7 als `5c176dd` integriert und per Pages-Deploy #57 veröffentlicht; automatisierte Flows bestanden, Owner-/Produktfreigabe bleibt offen |
+| 1 – Circuit-Modell | `COMPLETE` | Datenmodell, strikter Resolver und Regressionstests umgesetzt; 240 Unit-Tests, Typecheck, Produktionsbuild und 13 Playwright-E2E grün; in PR #7 integriert |
 | 2 – Karriere/Saves | `COMPLETE` | V3-Karrierehülle, V2-Übernahme, Wiederholung/Aufstieg und Safe-Write-Nachtrag umgesetzt: Profil im V3-Dokument, V2-Profilbackup, Revisionsvergleich, Browser-Schreibsperre, Fehler-/Export-UI. 257 Tests, Typecheck, Produktionsbuild und 13 Playwright-E2E grün |
 | 3 – Contender | `COMPLETE` | Aufstieg, Wiederholung, HQ-Anzeige und drei reale Contender-Matches umgesetzt; 243 Unit-Tests, Typecheck, Build und 13 Playwright-E2E grün |
 | 4 – Sechs-Match-Gate | `COMPLETE` (technisch) | Frischer Sechs-Match-Flow dreimal in Folge grün; Owner-/Produkturteil bleibt offen |
@@ -470,10 +472,10 @@ Bei Unterbrechung zusätzlich uncommitted Arbeit und letzten tatsächlich
 bestandenen Test nennen. Beim Wiederaufnehmen zuerst Status/Diff prüfen;
 nichts aus einer bloßen früheren Absicht als erledigt übernehmen.
 
-Aktueller Wiederaufnahmepunkt: **Entscheidung vor Bulk 5.** Proving →
-Contender ist als Sechs-Match-Weg technisch abgenommen. Vor Apex braucht es
-die bewusste Owner-Entscheidung zum Spielrhythmus; ohne sie bleibt Apex
-gesperrt.
+Aktueller Wiederaufnahmepunkt: **Owner-Spieltest und Entscheidung vor Bulk 5.**
+Proving → Contender ist als Sechs-Match-Weg technisch abgenommen und
+veröffentlicht. Vor Apex braucht es die bewusste Owner-Entscheidung zum
+Spielrhythmus; ohne sie bleibt Apex gesperrt.
 
 Planprüfung am 2026-08-31: lokale Dokumentlinks und Codeblock-Paare geprüft,
 sieben Bulk-Abschnitte mit sieben `PLANNED`-Einträgen sowie neun eindeutige
@@ -484,10 +486,12 @@ Keine Spieltests neu ausgeführt, da ausschließlich Markdown geändert wurde.
 
 Lokaler Nachweis für den CI-Nachtrag vom 2026-09-05: Produktionsbuild und
 Test-Typecheck bestanden; vollständiger Browserlauf 13/13 in 1,3 Minuten
-ohne Retry bestanden. Remote-CI wird nach dem Push getrennt geprüft.
+ohne Retry bestanden. Der spätere Integrations- und Veröffentlichungsstand
+ist im aktuellen Status und nachfolgendem Protokoll vermerkt.
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-27 | Status mit GitHub abgeglichen: PR #7 ist als `5c176dd` in `main` gemergt; Pages-Deploy #57 für denselben Commit bestand Build und Deployment. Proving und Contender sind öffentlich spielbar. Die manuelle Sechs-Match-Abnahme, das Phase-5-Produktgate und die Apex-Freigabe bleiben getrennt offen. Nur Dokumentation angepasst; kein neuer Spieltest oder Audioeingriff. |
 | 2026-09-05 | CI-Nachtrag: PR-Run `33975877726` erreichte während Contender das 30-Sekunden-Gesamtlimit des Sechs-Match-Tests. Dessen Budget beträgt nun 120 Sekunden; lokale Assertions bleiben zeitlich begrenzt, jeder Ergebnis-Write wird vor der Rückkehr ins HQ ausdrücklich geprüft. Kein belegter Race-Condition-Fehler im Ergebnisbutton; die vorläufige Änderung daran wurde verworfen. Trace/Screenshot werden bei Browserfehlern als CI-Artefakt aufbewahrt. |
 | 2026-09-04 | Bulk 4 technisch abgeschlossen: Der frische vollständige Proving→Contender-Flow lief dreimal direkt hintereinander grün (18 geroutete Matchstarts, sechs Recruitment-Momente und V3-Persistenz). Zusätzlich sind die Unit-, Typ-, Produktionsbuild- und vollständigen 13/13-Playwright-Gates aus Bulk 3 grün. Ein lokaler Sichtcheck traf auf einen bereits aktiven Qualifier-Spielstand und wurde nicht verändert. Das ist bewusst kein behaupteter Owner-/Produktdurchlauf; Apex bleibt gesperrt, bis dessen Fortsetzung ausdrücklich entschieden ist. |
 | 2026-09-04 | Bulk 3 abgeschlossen: Top 2 in Proving bietet im HQ den bewussten Einstieg in Contender; Platz 3/4 wiederholt nur den aktuellen Circuit. Contender startet mit einer frischen Drei-Match-Tabelle, behält Profil/Freischaltungen, zeigt alle drei Rivalen und führt genau einen weiteren sieggebundenen Recruitment-Moment aus. Die Routen nutzen Helix One Flag, Foundry TDM und Temple CTF; der letzte Gegner läuft auf `strong`, ohne Statboni. 243 Unit-Tests, Typecheck, Produktionsbuild und ein vollständiger 13/13-Playwright-Lauf auf Port 4202 bestanden. Apex bleibt gesperrt. |
