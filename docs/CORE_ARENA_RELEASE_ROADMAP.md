@@ -3,7 +3,7 @@
 ## Dokumentstatus
 
 - **Status:** ACTIVE – CANONICAL ROADMAP
-- **Letzte Aktualisierung:** 2026-09-27
+- **Letzte Aktualisierung:** 2026-09-30
 - **Aktive Phasen:** Phase 5 – Produktvalidierung und Phase 6 – Karriereausbau
   (beide `IN PROGRESS`)
 - **Nächstes Gate:** lokalen Ergebnisdialog-Fix veröffentlichen und danach den
@@ -88,7 +88,10 @@ einer späteren, datenbasierten Entscheidung als experimentell behandelt.
 - CrazyGames ist der erste strukturierte Portaltest; Kongregate und Y8 folgen
   bei positivem Ergebnis. Poki/GamePix setzen eine neue Mobile-Entscheidung
   voraus.
-- Audio wird vor Phase 9 weder bewertet noch bearbeitet noch integriert.
+- Audio-Bearbeitung und neue Audiointegration bleiben Phase 9 vorbehalten.
+  Ausnahme auf ausdrücklichen Owner-Wunsch vom 2026-09-30: Die 17 bereits
+  geladenen WAV-Dateien wurden lediglich funktionsbezogen umbenannt und ihre
+  bisherigen Namen zur Provenienzprüfung dokumentiert. Das Rechte-Gate bleibt offen.
 - Ein kommerzieller Release ist ohne abschließende Rechteprüfung aller Bild-,
   UI- und Audioassets ausgeschlossen.
 
@@ -101,7 +104,9 @@ einer späteren, datenbasierten Entscheidung als experimentell behandelt.
 - viele neue Maps, Waffen oder Modi;
 - großflächige Godfile- oder CSS-Neuschreibungen ohne konkreten Featurebedarf;
 - Monetarisierung vor einem tragfähigen und gemessenen Produktloop;
-- Audioarbeit außerhalb der abschließenden Polish-Phase.
+- weitere Audioarbeit außerhalb der abschließenden Polish-Phase; die
+  ausdrücklich beauftragte reine Dateiumbenennung vom 2026-09-30 bleibt eine
+  einmalige Ausnahme ohne Änderung am Sound oder am Rechte-Status.
 
 ## Release-Definition
 
@@ -618,7 +623,9 @@ unterstützte Plattform ausweist.
 
 **Status:** `PLANNED`
 
-**Harte Regel:** Vor Abschluss von Phase 8 findet keine Audioarbeit statt.
+**Harte Regel:** Vor Abschluss von Phase 8 findet keine weitere Audioarbeit
+statt. Die reine, ausdrücklich beauftragte Dateiumbenennung vom 2026-09-30
+nimmt keine Klang- oder Rechteprüfung vorweg.
 
 ### Ziel und Scope
 
@@ -691,8 +698,9 @@ Datenschutz-/Plattformentscheidung extern versendet:
 - Evidenz wird verlinkt; Behauptungen ohne Beleg setzen eine Phase höchstens auf
   `VALIDATION`, nicht auf `COMPLETE`.
 - Unrelated oder untracked Nutzerdateien werden nie pauschal gestaged.
-- Audioänderungen vor Phase 9 sind nicht zulässig, auch wenn entsprechende
-  Dateien im Workspace vorhanden sind.
+- Weitere Audioänderungen vor Phase 9 sind nicht zulässig, auch wenn
+  entsprechende Dateien im Workspace vorhanden sind. Die dokumentierte
+  Dateiumbenennung vom 2026-09-30 ist die einmalige Ausnahme.
 
 ## Entscheidungsprotokoll
 
@@ -721,6 +729,7 @@ und Veröffentlichungsstand ist im Dokumentstatus und Änderungsverlauf belegt.
 
 | Datum | Änderung |
 | --- | --- |
+| 2026-09-30 | Auf ausdrücklichen Owner-Wunsch alle 17 eingecheckten WAV-Dateien funktionsbezogen umbenannt, Ladepfade angepasst und Alt-/Neunamen in `ASSET_PROVENANCE.md` gesichert. Die Audiodaten blieben byteidentisch. Das war eine eng begrenzte Ausnahme von der Audio-Sperre; Klangbearbeitung, Ersatz und Rechteprüfung bleiben Phase 9. Sechs ungetrackte Audio-WIP-Dateien blieben unangetastet. |
 | 2026-09-27 | Owner-Spieltest nach Proving-Match 1 durch abgeschnittenen Fortschrittsdialog blockiert. Ursache in CSS-Containing-Blocks lokal behoben und durch Viewport-Geometrie im vollständigen Karriere-Browsertest abgesichert; 257 Unit-Tests, Typecheck, Build und 13 Browser-E2E grün. Noch keine Veröffentlichung oder erneute Owner-Abnahme behauptet. |
 | 2026-09-27 | Veröffentlichungsstand abgeglichen: PR #7 ist als `5c176dd` in `main` integriert; Pages-Deploy #57 für denselben Commit bestand Build und Deployment. Proving → Contender ist öffentlich spielbar, Apex bleibt gesperrt. Phase 5, Owner-Sechs-Match-Abnahme und spätere Release-Gates bleiben offen; Status und README wurden ohne Gameplay- oder Audioänderung korrigiert. |
 | 2026-09-21 | README-Spiel-Link gegen den veröffentlichten `main`-Stand `3f6d88b` geprüft. Der dortige untere Helix-Qualifier-Pickup ist der Pulse Repeater. Für ein verlässlicheres Einsteigergefühl steigt sein Projektiltempo global um 10 Prozent von 760 auf 836 und ein Pickup füllt nun das bestehende Maximum von 54 statt 36 Schuss. Schaden, Reichweite und 160-ms-Feuerrhythmus bleiben unverändert; Qualifier und reguläre Matches verwenden weiterhin dieselben Waffenregeln. |

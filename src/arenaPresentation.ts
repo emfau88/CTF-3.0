@@ -15,6 +15,7 @@ export interface ArenaPresentationRect {
 }
 
 export type ArenaPresentationWall = ArenaPresentationRect & {
+  readonly id?: string;
   readonly visual?: WorldMapWallVisual;
 };
 export type ArenaPresentationGap = ArenaPresentationRect & {

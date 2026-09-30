@@ -700,8 +700,9 @@ function toPresentationLevel(map: WorldMapData): ArenaPresentationData {
     blueSpawn: { ...blueSpawn },
     redBase: rect(map.gameplay.redBase),
     blueBase: rect(map.gameplay.blueBase),
-    walls: map.presentation.walls.map((wall) => ({
+    walls: map.presentation.walls.map((wall, index) => ({
       ...rect(wall),
+      id: map.geometry.solids[index]?.id,
       visual: wall.visual,
     })),
     gaps: map.presentation.gaps.map((gap) => ({
