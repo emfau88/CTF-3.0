@@ -1,11 +1,48 @@
 # Asset Provenance
 
-Stand: 2026-08-24
+Stand: 2026-09-30
 
 Nach Angabe des Projekteigentuemers wurden die vorhandenen Spielassets mit
 ChatGPT erzeugt. Fuer aeltere Assets liegen in diesem Repository derzeit keine
 einzelnen Prompts oder Erstellungsdaten vor. Neue Assets werden ab jetzt hier
 einzeln dokumentiert.
+
+## Vorläufige Audio-Inventur und Dateiumbenennung
+
+Am 2026-09-30 wurden die 17 bereits eingecheckten WAV-Dateien ausschließlich
+nach ihrer Funktion im Spiel umbenannt. Der SHA-256-Wert jeder Datei war vor
+und nach dem Umbenennen identisch: Es gab **keine** Klangbearbeitung und keine
+neue Rechtefreigabe. Die ursprünglichen Namen bleiben hier zur Rückverfolgung
+erhalten. Für keine der 17 Dateien liegt im Repository derzeit ein belastbarer
+Einzelnachweis zu Urheber, Quelle und Nutzungsrecht vor; auch unauffällige
+Dateinamen sind deshalb nicht als freigegeben anzusehen.
+
+| Runtime-Key | Bisheriger Dateiname | Neuer Dateiname |
+| --- | --- | --- |
+| `step1` | `step1.wav` | `footstep-01.wav` |
+| `step2` | `step2.wav` | `footstep-02.wav` |
+| `step3` | `step3.wav` | `footstep-03.wav` |
+| `step4` | `step4.wav` | `footstep-04.wav` |
+| `step5` | `step5.wav` | `footstep-05.wav` |
+| `getPowerup` | `get powerup.wav` | `pickup-powerup.wav` |
+| `weaponUp` | `weapon up.wav` | `pickup-weapon.wav` |
+| `playerUmf` | `player umf.wav` | `player-hurt.wav` |
+| `railFire` | `doom_sniper_smg_crit.wav` | `rail-fire.wav` |
+| `rocketFire` | `quake_rpg_fire.wav` | `rocket-fire.wav` |
+| `healthGlass` | `syringegun_reload_glass2.wav` | `health-glass.wav` |
+| `healthAir` | `syringegun_reload_air2.wav` | `health-air.wav` |
+| `botBulletFire` | `pistol.wav` | `bot-bullet-fire.wav` |
+| `botDeath` | `imp death 2.wav` | `bot-death.wav` |
+| `railHitConfirm` | `CrowdPlay_ControllerPress.wav` | `rail-hit-confirm.wav` |
+| `whipSwing` | `slap_swing.wav` | `arc-lash-swing.wav` |
+| `whipHit` | `slap_hit4.wav` | `arc-lash-hit.wav` |
+
+Die sechs lokalen, nicht eingecheckten Dateien unter `public/assets/sounds/neu/`
+gehören zu separatem WIP und wurden weder umbenannt noch in den Runtime-Pfad
+aufgenommen. Vor einem Release muss die Herkunft aller tatsächlich
+ausgelieferten Audiodateien belegt oder die betroffenen Sounds durch
+eigenständig erstellte beziehungsweise nachweisbar lizenzierte Aufnahmen
+ersetzt werden. Ein neuer Name oder eine leichte Verfremdung genügt dafür nicht.
 
 ## `public/assets/league-menu-arena-v1.png`
 

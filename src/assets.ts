@@ -160,23 +160,23 @@ export function preloadArenaAssets(
       assetUrl(premiumMapLighting.assetFile),
     );
   }
-  scene.load.audio("step1", assetUrl("sounds/step1.wav"));
-  scene.load.audio("step2", assetUrl("sounds/step2.wav"));
-  scene.load.audio("step3", assetUrl("sounds/step3.wav"));
-  scene.load.audio("step4", assetUrl("sounds/step4.wav"));
-  scene.load.audio("step5", assetUrl("sounds/step5.wav"));
-  scene.load.audio("getPowerup", assetUrl("sounds/get powerup.wav"));
-  scene.load.audio("weaponUp", assetUrl("sounds/weapon up.wav"));
-  scene.load.audio("playerUmf", assetUrl("sounds/player umf.wav"));
-  scene.load.audio("railFire", assetUrl("sounds/doom_sniper_smg_crit.wav"));
-  scene.load.audio("rocketFire", assetUrl("sounds/quake_rpg_fire.wav"));
-  scene.load.audio("healthGlass", assetUrl("sounds/syringegun_reload_glass2.wav"));
-  scene.load.audio("healthAir", assetUrl("sounds/syringegun_reload_air2.wav"));
-  scene.load.audio("botBulletFire", assetUrl("sounds/pistol.wav"));
-  scene.load.audio("botDeath", assetUrl("sounds/imp death 2.wav"));
-  scene.load.audio("railHitConfirm", assetUrl("sounds/CrowdPlay_ControllerPress.wav"));
-  scene.load.audio("whipSwing", assetUrl("sounds/slap_swing.wav"));
-  scene.load.audio("whipHit", assetUrl("sounds/slap_hit4.wav"));
+  scene.load.audio("step1", assetUrl("sounds/footstep-01.wav"));
+  scene.load.audio("step2", assetUrl("sounds/footstep-02.wav"));
+  scene.load.audio("step3", assetUrl("sounds/footstep-03.wav"));
+  scene.load.audio("step4", assetUrl("sounds/footstep-04.wav"));
+  scene.load.audio("step5", assetUrl("sounds/footstep-05.wav"));
+  scene.load.audio("getPowerup", assetUrl("sounds/pickup-powerup.wav"));
+  scene.load.audio("weaponUp", assetUrl("sounds/pickup-weapon.wav"));
+  scene.load.audio("playerUmf", assetUrl("sounds/player-hurt.wav"));
+  scene.load.audio("railFire", assetUrl("sounds/rail-fire.wav"));
+  scene.load.audio("rocketFire", assetUrl("sounds/rocket-fire.wav"));
+  scene.load.audio("healthGlass", assetUrl("sounds/health-glass.wav"));
+  scene.load.audio("healthAir", assetUrl("sounds/health-air.wav"));
+  scene.load.audio("botBulletFire", assetUrl("sounds/bot-bullet-fire.wav"));
+  scene.load.audio("botDeath", assetUrl("sounds/bot-death.wav"));
+  scene.load.audio("railHitConfirm", assetUrl("sounds/rail-hit-confirm.wav"));
+  scene.load.audio("whipSwing", assetUrl("sounds/arc-lash-swing.wav"));
+  scene.load.audio("whipHit", assetUrl("sounds/arc-lash-hit.wav"));
 }
 
 const CHARACTER_ASSETS: Record<
